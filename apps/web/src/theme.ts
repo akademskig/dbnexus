@@ -61,7 +61,7 @@ export const theme = createTheme({
         },
     },
     shape: {
-        borderRadius: 8,
+        borderRadius: 0,
     },
     components: {
         MuiButton: {
@@ -69,6 +69,7 @@ export const theme = createTheme({
                 root: {
                     textTransform: 'none',
                     fontWeight: 500,
+                    borderRadius: 0,
                 },
             },
         },
@@ -76,6 +77,7 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: 'none',
+                    borderRadius: 0,
                 },
             },
         },
@@ -84,6 +86,7 @@ export const theme = createTheme({
                 root: {
                     backgroundImage: 'none',
                     border: '1px solid #27272a',
+                    borderRadius: 0,
                 },
             },
         },
@@ -91,16 +94,43 @@ export const theme = createTheme({
             defaultProps: {
                 size: 'small',
             },
+            styleOverrides: {
+                root: {
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: 0,
+                    },
+                },
+            },
         },
         MuiSelect: {
             defaultProps: {
                 size: 'small',
+            },
+            styleOverrides: {
+                root: {
+                    borderRadius: 0,
+                },
             },
         },
         MuiChip: {
             styleOverrides: {
                 root: {
                     fontWeight: 500,
+                    borderRadius: 16,
+                },
+            },
+        },
+        MuiAvatar: {
+            styleOverrides: {
+                root: {
+                    borderRadius: '50%',
+                },
+            },
+        },
+        MuiIconButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: '50%',
                 },
             },
         },
@@ -119,13 +149,14 @@ export const theme = createTheme({
             styleOverrides: {
                 paper: {
                     borderRight: '1px solid #27272a',
+                    borderRadius: 0,
                 },
             },
         },
         MuiListItemButton: {
             styleOverrides: {
                 root: {
-                    borderRadius: 8,
+                    borderRadius: 0,
                     marginBottom: 4,
                     '&.Mui-selected': {
                         backgroundColor: 'rgba(14, 165, 233, 0.15)',
@@ -133,6 +164,51 @@ export const theme = createTheme({
                             backgroundColor: 'rgba(14, 165, 233, 0.25)',
                         },
                     },
+                },
+            },
+        },
+        MuiDialog: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: 0,
+                },
+            },
+        },
+        MuiAlert: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 0,
+                },
+            },
+        },
+        MuiMenu: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: 0,
+                },
+            },
+        },
+        MuiAutocomplete: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: 0,
+                },
+                inputRoot: {
+                    borderRadius: 0,
+                },
+            },
+        },
+        MuiTabs: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 0,
+                },
+            },
+        },
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 0,
                 },
             },
         },

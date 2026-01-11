@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Button, IconButton, CircularProgress, Chip } from '@mui/material';
 import {
     Storage as StorageIcon,
     TrendingUp as TrendingUpIcon,
@@ -47,7 +47,7 @@ function StatCard({
                     <Typography
                         variant="caption"
                         sx={{
-                            color: 'rgba(255,255,255,0.5)',
+                            color: 'text.secondary',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             fontSize: 11,
@@ -58,14 +58,14 @@ function StatCard({
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mt: 1 }}>
                         {loading ? (
-                            <CircularProgress size={24} sx={{ color: 'rgba(255,255,255,0.3)' }} />
+                            <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
                         ) : (
                             <>
                                 <Typography
                                     variant="h4"
                                     sx={{
                                         fontWeight: 600,
-                                        color: '#e4e4e7',
+                                        color: 'text.primary',
                                         letterSpacing: '-0.02em',
                                     }}
                                 >
@@ -75,12 +75,12 @@ function StatCard({
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         {changeType === 'up' && (
                                             <TrendingUpIcon
-                                                sx={{ fontSize: 14, color: '#10b981' }}
+                                                sx={{ fontSize: 14, color: 'success.main' }}
                                             />
                                         )}
                                         {changeType === 'down' && (
                                             <TrendingDownIcon
-                                                sx={{ fontSize: 14, color: '#ef4444' }}
+                                                sx={{ fontSize: 14, color: 'error.main' }}
                                             />
                                         )}
                                         <Typography
@@ -88,10 +88,10 @@ function StatCard({
                                             sx={{
                                                 color:
                                                     changeType === 'up'
-                                                        ? '#10b981'
+                                                        ? 'success.main'
                                                         : changeType === 'down'
-                                                          ? '#ef4444'
-                                                          : 'rgba(255,255,255,0.4)',
+                                                            ? 'error.main'
+                                                            : 'text.secondary',
                                                 fontWeight: 500,
                                             }}
                                         >
@@ -138,7 +138,7 @@ function ConnectionRow({
 }) {
     const statusColors = {
         online: '#10b981',
-        offline: 'rgba(255,255,255,0.3)',
+        offline: '#71717a',
         checking: '#f59e0b',
     };
 
@@ -151,27 +151,44 @@ function ConnectionRow({
                 alignItems: 'center',
                 px: 2,
                 py: 1.5,
-                borderTop: isFirst ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                borderTop: isFirst ? 'none' : '1px solid',
+                borderColor: 'divider',
                 cursor: 'pointer',
                 '&:hover': {
-                    bgcolor: 'rgba(255,255,255,0.03)',
+                    bgcolor: 'action.hover',
                 },
             }}
         >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <StorageIcon sx={{ fontSize: 18, color: 'rgba(255,255,255,0.3)' }} />
-                <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#e4e4e7' }}>
+                <StorageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
                         {connection.name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                        {connection.engine}
-                    </Typography>
+                    <Chip
+                        label={connection.engine.toUpperCase()}
+                        size="small"
+                        sx={{
+                            height: 20,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            bgcolor:
+                                connection.engine === 'postgres'
+                                    ? 'rgba(51, 103, 145, 0.25)'
+                                    : 'rgba(0, 122, 204, 0.25)',
+                            color: connection.engine === 'postgres' ? '#6BA3D6' : '#47A3F3',
+                            border: '1px solid',
+                            borderColor:
+                                connection.engine === 'postgres'
+                                    ? 'rgba(51, 103, 145, 0.5)'
+                                    : 'rgba(0, 122, 204, 0.5)',
+                        }}
+                    />
                 </Box>
             </Box>
             <Typography
                 variant="body2"
-                sx={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace', fontSize: 13 }}
+                sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: 13 }}
             >
                 {connection.host}:{connection.port}
             </Typography>
@@ -183,14 +200,14 @@ function ConnectionRow({
                 )}
                 <Typography
                     variant="caption"
-                    sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'capitalize' }}
+                    sx={{ color: 'text.secondary', textTransform: 'capitalize' }}
                 >
                     {status === 'checking' ? 'checking...' : status}
                 </Typography>
             </Box>
             <IconButton
                 size="small"
-                sx={{ color: 'rgba(255,255,255,0.3)' }}
+                sx={{ color: 'text.disabled' }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <MoreHorizIcon fontSize="small" />
@@ -208,14 +225,14 @@ function ActivityItem({ entry }: { entry: QueryHistoryEntry }) {
     return (
         <Box sx={{ display: 'flex', gap: 2, py: 1.5 }}>
             <Box sx={{ pt: 0.25 }}>
-                {isSuccess && <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />}
-                {isError && <ErrorIcon sx={{ fontSize: 16, color: '#ef4444' }} />}
+                {isSuccess && <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />}
+                {isError && <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />}
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                     variant="body2"
                     sx={{
-                        color: 'rgba(255,255,255,0.7)',
+                        color: 'text.primary',
                         fontFamily: 'monospace',
                         fontSize: 12,
                         overflow: 'hidden',
@@ -227,12 +244,12 @@ function ActivityItem({ entry }: { entry: QueryHistoryEntry }) {
                     {entry.sql.length > 50 ? '...' : ''}
                 </Typography>
                 {entry.executionTimeMs > 0 && (
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         {entry.executionTimeMs}ms
                     </Typography>
                 )}
             </Box>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', flexShrink: 0 }}>
                 {timeAgo}
             </Typography>
         </Box>
@@ -314,13 +331,7 @@ export function DashboardPage() {
             : 0;
 
     return (
-        <Box
-            sx={{
-                minHeight: '100vh',
-                background: 'linear-gradient(180deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)',
-                p: 4,
-            }}
-        >
+        <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
             {/* Header */}
             <Box
                 sx={{
@@ -335,21 +346,21 @@ export function DashboardPage() {
                         variant="h4"
                         sx={{
                             fontWeight: 600,
-                            color: '#e4e4e7',
+                            color: 'text.primary',
                             letterSpacing: '-0.02em',
                             mb: 1,
                         }}
                     >
                         Dashboard
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         Overview of your database connections and activity
                     </Typography>
                 </Box>
                 <IconButton
                     onClick={handleRefresh}
                     disabled={refreshing}
-                    sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#e4e4e7' } }}
+                    sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
                 >
                     <RefreshIcon
                         sx={{
@@ -413,12 +424,13 @@ export function DashboardPage() {
                                 alignItems: 'center',
                                 px: 2,
                                 py: 1.5,
-                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
                             }}
                         >
                             <Typography
                                 variant="subtitle2"
-                                sx={{ color: '#e4e4e7', fontWeight: 600 }}
+                                sx={{ color: 'text.primary', fontWeight: 600 }}
                             >
                                 Connections
                             </Typography>
@@ -427,11 +439,10 @@ export function DashboardPage() {
                                 startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                                 onClick={() => navigate('/connections')}
                                 sx={{
-                                    color: '#0ea5e9',
+                                    color: 'primary.main',
                                     textTransform: 'none',
                                     fontSize: 13,
-                                    borderRadius: 0.5,
-                                    '&:hover': { bgcolor: 'rgba(14, 165, 233, 0.1)' },
+                                    '&:hover': { bgcolor: 'action.hover' },
                                 }}
                             >
                                 Add new
@@ -445,24 +456,25 @@ export function DashboardPage() {
                                 px: 2,
                                 py: 1,
                                 bgcolor: 'rgba(0,0,0,0.2)',
-                                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
                             }}
                         >
                             <Typography
                                 variant="caption"
-                                sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}
+                                sx={{ color: 'text.secondary', fontWeight: 500 }}
                             >
                                 NAME
                             </Typography>
                             <Typography
                                 variant="caption"
-                                sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}
+                                sx={{ color: 'text.secondary', fontWeight: 500 }}
                             >
                                 HOST
                             </Typography>
                             <Typography
                                 variant="caption"
-                                sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}
+                                sx={{ color: 'text.secondary', fontWeight: 500 }}
                             >
                                 STATUS
                             </Typography>
@@ -470,14 +482,11 @@ export function DashboardPage() {
                         </Box>
                         {loading ? (
                             <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <CircularProgress
-                                    size={24}
-                                    sx={{ color: 'rgba(255,255,255,0.3)' }}
-                                />
+                                <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
                             </Box>
                         ) : connections.length === 0 ? (
                             <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                     No connections yet
                                 </Typography>
                                 <Button
@@ -485,7 +494,7 @@ export function DashboardPage() {
                                     onClick={() => navigate('/connections')}
                                     sx={{
                                         mt: 1,
-                                        color: 'rgba(255,255,255,0.7)',
+                                        color: 'text.primary',
                                         textTransform: 'none',
                                     }}
                                 >
@@ -519,29 +528,23 @@ export function DashboardPage() {
                         >
                             <Typography
                                 variant="subtitle2"
-                                sx={{ color: '#e4e4e7', fontWeight: 600 }}
+                                sx={{ color: 'text.primary', fontWeight: 600 }}
                             >
                                 Recent Activity
                             </Typography>
                             {history.length > 0 && (
-                                <Typography
-                                    variant="caption"
-                                    sx={{ color: 'rgba(255,255,255,0.4)' }}
-                                >
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                                     {successfulQueries}/{totalQueries} successful
                                 </Typography>
                             )}
                         </Box>
                         {loading ? (
                             <Box sx={{ py: 4, textAlign: 'center' }}>
-                                <CircularProgress
-                                    size={24}
-                                    sx={{ color: 'rgba(255,255,255,0.3)' }}
-                                />
+                                <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
                             </Box>
                         ) : history.length === 0 ? (
                             <Box sx={{ py: 4, textAlign: 'center' }}>
-                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                     No recent activity
                                 </Typography>
                             </Box>
@@ -549,7 +552,8 @@ export function DashboardPage() {
                             <Box
                                 sx={{
                                     '& > *:not(:last-child)': {
-                                        borderBottom: '1px solid rgba(255,255,255,0.08)',
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
                                     },
                                 }}
                             >

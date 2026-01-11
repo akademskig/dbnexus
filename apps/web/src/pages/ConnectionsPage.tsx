@@ -5,10 +5,6 @@ import {
     Box,
     Typography,
     Button,
-    Card,
-    CardContent,
-    CardActions,
-    Grid,
     IconButton,
     Chip,
     Dialog,
@@ -23,16 +19,20 @@ import {
     Stack,
     ToggleButton,
     ToggleButtonGroup,
+    Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { connectionsApi } from '../lib/api';
 import type { ConnectionConfig, ConnectionCreateInput } from '@dbnexus/shared';
 import { useTagsStore } from '../stores/tagsStore';
+import { GlassCard } from '../components/GlassCard';
 
 export function ConnectionsPage() {
     const queryClient = useQueryClient();
@@ -97,14 +97,14 @@ export function ConnectionsPage() {
                 onClose={handleCloseForm}
             />
 
-            {/* Connections Grid */}
+            {/* Connections List */}
             {isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                     <CircularProgress />
                 </Box>
             ) : connections.length === 0 ? (
-                <Card sx={{ textAlign: 'center', py: 8 }}>
-                    <CardContent>
+                <GlassCard>
+                    <Box sx={{ textAlign: 'center', py: 6 }}>
                         <StorageIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                         <Typography variant="h6" gutterBottom>
                             No connections yet
@@ -115,21 +115,20 @@ export function ConnectionsPage() {
                         <Button variant="contained" onClick={() => setFormOpen(true)}>
                             Add Connection
                         </Button>
-                    </CardContent>
-                </Card>
+                    </Box>
+                </GlassCard>
             ) : (
-                <Grid container spacing={3}>
+                <Stack spacing={2}>
                     {connections.map((connection) => (
-                        <Grid item xs={12} sm={6} lg={4} key={connection.id}>
-                            <ConnectionCard
-                                connection={connection}
-                                onEdit={() => handleEdit(connection)}
-                                onDelete={() => deleteMutation.mutate(connection.id)}
-                                onQuery={() => navigate(`/query/${connection.id}`)}
-                            />
-                        </Grid>
+                        <ConnectionCard
+                            key={connection.id}
+                            connection={connection}
+                            onEdit={() => handleEdit(connection)}
+                            onDelete={() => deleteMutation.mutate(connection.id)}
+                            onQuery={() => navigate(`/query/${connection.id}`)}
+                        />
                     ))}
-                </Grid>
+                </Stack>
             )}
         </Box>
     );
@@ -146,13 +145,15 @@ function ConnectionCard({
     onDelete: () => void;
     onQuery: () => void;
 }) {
+    const [expanded, setExpanded] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
         null
     );
     const { tags: availableTags } = useTagsStore();
 
-    const handleTest = async () => {
+    const handleTest = async (e: React.MouseEvent) => {
+        e.stopPropagation();
         setTesting(true);
         setTestResult(null);
         try {
@@ -180,104 +181,81 @@ function ConnectionCard({
         return {};
     };
 
+    const connectionSummary =
+        connection.engine === 'sqlite'
+            ? connection.database
+            : `${connection.host}:${connection.port}`;
+
     return (
-        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flex: 1 }}>
-                {/* Header */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        mb: 2,
-                    }}
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box
+        <GlassCard noPadding>
+            {/* Header - always visible */}
+            <Box
+                onClick={() => setExpanded(!expanded)}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    px: 2.5,
+                    py: 2,
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                    '&:hover': {
+                        bgcolor: 'action.hover',
+                    },
+                }}
+            >
+                {/* Expand icon */}
+                <IconButton size="small" sx={{ p: 0.5 }}>
+                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+
+                {/* Icon */}
+                <StorageIcon sx={{ fontSize: 22, color: 'primary.main' }} />
+
+                {/* Name & Connection Info */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body1" fontWeight={600}>
+                            {connection.name}
+                        </Typography>
+                        {/* Engine tag */}
+                        <Chip
+                            label={connection.engine.toUpperCase()}
+                            size="small"
                             sx={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 2,
-                                bgcolor: 'primary.dark',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                height: 20,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                bgcolor:
+                                    connection.engine === 'postgres'
+                                        ? 'rgba(51, 103, 145, 0.25)'
+                                        : 'rgba(0, 122, 204, 0.25)',
+                                color: connection.engine === 'postgres' ? '#6BA3D6' : '#47A3F3',
+                                border: '1px solid',
+                                borderColor:
+                                    connection.engine === 'postgres'
+                                        ? 'rgba(51, 103, 145, 0.5)'
+                                        : 'rgba(0, 122, 204, 0.5)',
                             }}
-                        >
-                            <StorageIcon sx={{ color: 'primary.light' }} />
-                        </Box>
-                        <Box>
-                            <Typography variant="subtitle1" fontWeight={600}>
-                                {connection.name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                {connection.engine}
-                            </Typography>
-                        </Box>
+                        />
                     </Box>
-                    <Box>
-                        <IconButton size="small" onClick={onEdit}>
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" onClick={onDelete} color="error">
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </Box>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontFamily="monospace"
+                        sx={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {connectionSummary}
+                    </Typography>
                 </Box>
 
-                {/* Connection details */}
-                <Stack spacing={1} sx={{ mb: 2 }}>
-                    {connection.engine === 'sqlite' ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">
-                                File
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                fontFamily="monospace"
-                                sx={{
-                                    maxWidth: 200,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                                title={connection.database}
-                            >
-                                {connection.database}
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Host
-                                </Typography>
-                                <Typography variant="body2" fontFamily="monospace">
-                                    {connection.host}:{connection.port}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Database
-                                </Typography>
-                                <Typography variant="body2" fontFamily="monospace">
-                                    {connection.database}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    User
-                                </Typography>
-                                <Typography variant="body2" fontFamily="monospace">
-                                    {connection.username}
-                                </Typography>
-                            </Box>
-                        </>
-                    )}
-                </Stack>
-
                 {/* Tags */}
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     {connection.tags.map((tag) => (
                         <Chip
                             key={tag}
@@ -285,7 +263,6 @@ function ConnectionCard({
                             size="small"
                             sx={{
                                 ...getTagStyle(tag),
-                                borderRadius: 0.5,
                                 fontWeight: 500,
                                 border: '1px solid',
                             }}
@@ -296,7 +273,6 @@ function ConnectionCard({
                             label="read-only"
                             size="small"
                             sx={{
-                                borderRadius: 0.5,
                                 fontWeight: 500,
                                 bgcolor: 'rgba(139, 92, 246, 0.15)',
                                 color: 'rgb(139, 92, 246)',
@@ -306,38 +282,139 @@ function ConnectionCard({
                     )}
                 </Box>
 
-                {/* Test result */}
-                {testResult && (
-                    <Alert
-                        severity={testResult.success ? 'success' : 'error'}
-                        sx={{ mb: 2 }}
-                        onClose={() => setTestResult(null)}
+                {/* Quick actions */}
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<PlayArrowIcon />}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onQuery();
+                        }}
                     >
-                        {testResult.message}
-                    </Alert>
-                )}
-            </CardContent>
+                        Query
+                    </Button>
+                </Box>
+            </Box>
 
-            <CardActions sx={{ px: 2, pb: 2 }}>
-                <Button
-                    size="small"
-                    startIcon={testing ? <CircularProgress size={16} /> : <ScienceIcon />}
-                    onClick={handleTest}
-                    disabled={testing}
+            {/* Expanded content */}
+            <Collapse in={expanded}>
+                <Box
+                    sx={{
+                        px: 2.5,
+                        pb: 2.5,
+                        pt: 1,
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
+                    }}
                 >
-                    Test
-                </Button>
-                <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<PlayArrowIcon />}
-                    onClick={onQuery}
-                    sx={{ ml: 'auto' }}
-                >
-                    Query
-                </Button>
-            </CardActions>
-        </Card>
+                    {/* Connection details */}
+                    <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+                        {connection.engine === 'sqlite' ? (
+                            <Box sx={{ display: 'flex', gap: 4 }}>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ minWidth: 80 }}
+                                >
+                                    File
+                                </Typography>
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {connection.database}
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <>
+                                <Box sx={{ display: 'flex', gap: 4 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ minWidth: 80 }}
+                                    >
+                                        Host
+                                    </Typography>
+                                    <Typography variant="body2" fontFamily="monospace">
+                                        {connection.host}:{connection.port}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 4 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ minWidth: 80 }}
+                                    >
+                                        Database
+                                    </Typography>
+                                    <Typography variant="body2" fontFamily="monospace">
+                                        {connection.database}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 4 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ minWidth: 80 }}
+                                    >
+                                        User
+                                    </Typography>
+                                    <Typography variant="body2" fontFamily="monospace">
+                                        {connection.username}
+                                    </Typography>
+                                </Box>
+                                {connection.ssl && (
+                                    <Box sx={{ display: 'flex', gap: 4 }}>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{ minWidth: 80 }}
+                                        >
+                                            SSL
+                                        </Typography>
+                                        <Typography variant="body2">Enabled</Typography>
+                                    </Box>
+                                )}
+                            </>
+                        )}
+                    </Stack>
+
+                    {/* Test result */}
+                    {testResult && (
+                        <Alert
+                            severity={testResult.success ? 'success' : 'error'}
+                            onClose={() => setTestResult(null)}
+                            sx={{ mb: 2 }}
+                        >
+                            {testResult.message}
+                        </Alert>
+                    )}
+
+                    {/* Actions */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            size="small"
+                            startIcon={testing ? <CircularProgress size={14} /> : <ScienceIcon />}
+                            onClick={handleTest}
+                            disabled={testing}
+                        >
+                            Test Connection
+                        </Button>
+                        <Button size="small" startIcon={<EditIcon />} onClick={onEdit}>
+                            Edit
+                        </Button>
+                        <Button
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={onDelete}
+                            sx={{ ml: 'auto' }}
+                        >
+                            Delete
+                        </Button>
+                    </Box>
+                </Box>
+            </Collapse>
+        </GlassCard>
     );
 }
 
