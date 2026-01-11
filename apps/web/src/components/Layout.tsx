@@ -47,22 +47,40 @@ export function Layout() {
                 }}
             >
                 {/* Logo */}
-                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ px: 1, py: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                         component="img"
                         src="/logo.svg"
                         alt="DB Nexus"
                         sx={{
-                            width: 40,
-                            height: 40,
+                            width: 48,
+                            height: 48,
                         }}
                     />
-                    <Box>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                            DB Nexus
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 700,
+                                letterSpacing: '-0.02em',
+                                background:
+                                    'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}
+                        >
+                            DB
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Database Manager
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 300,
+                                letterSpacing: '0.05em',
+                                color: 'text.primary',
+                            }}
+                        >
+                            Nexus
                         </Typography>
                     </Box>
                 </Box>

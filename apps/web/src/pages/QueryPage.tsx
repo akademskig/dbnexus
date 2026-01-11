@@ -1120,12 +1120,16 @@ function DataTab({
                                 pageSizeOptions={[25, 50, 100]}
                                 sx={{
                                     border: 'none',
+                                    borderRadius: 0,
                                     '& .MuiDataGrid-cell': {
                                         fontFamily: 'monospace',
                                         fontSize: 12,
+                                        display: 'flex',
+                                        alignItems: 'center',
                                     },
                                     '& .MuiDataGrid-columnHeaders': {
                                         bgcolor: 'background.paper',
+                                        borderRadius: 0,
                                     },
                                     '& .MuiDataGrid-columnHeader': {
                                         '&:focus': {
@@ -1137,6 +1141,9 @@ function DataTab({
                                     },
                                     '& .MuiDataGrid-row:hover': {
                                         bgcolor: 'action.hover',
+                                    },
+                                    '& .MuiDataGrid-footerContainer': {
+                                        borderRadius: 0,
                                     },
                                 }}
                             />
