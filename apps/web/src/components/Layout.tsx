@@ -13,7 +13,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
-import LayersIcon from '@mui/icons-material/Layers';
 import PaletteIcon from '@mui/icons-material/Palette';
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -50,18 +49,14 @@ export function Layout() {
                 {/* Logo */}
                 <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Box
+                        component="img"
+                        src="/logo.svg"
+                        alt="DB Nexus"
                         sx={{
                             width: 40,
                             height: 40,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
                         }}
-                    >
-                        <LayersIcon sx={{ color: 'white' }} />
-                    </Box>
+                    />
                     <Box>
                         <Typography variant="subtitle1" fontWeight={600}>
                             DB Nexus
