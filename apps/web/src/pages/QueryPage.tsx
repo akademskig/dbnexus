@@ -53,6 +53,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
 import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
+import { useQueryPageStore } from '../stores/queryPageStore';
 
 const SIDEBAR_WIDTH = 280;
 
@@ -71,28 +72,63 @@ export function QueryPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    // Get state from URL params
+    // Persisted state store
+    const { lastState, saveState } = useQueryPageStore();
+
+    // Get state from URL params, falling back to persisted state
     const urlSchema = searchParams.get('schema');
     const urlTable = searchParams.get('table');
     const urlTab = searchParams.get('tab');
 
+    // Determine initial values - URL params take priority, then persisted state
+    const getInitialConnectionId = () => {
+        if (routeConnectionId) return routeConnectionId;
+        if (lastState?.connectionId) return lastState.connectionId;
+        return '';
+    };
+
+    const getInitialSchema = () => {
+        if (urlSchema) return urlSchema;
+        if (!routeConnectionId && lastState?.schema) return lastState.schema;
+        return '';
+    };
+
+    const getInitialTab = () => {
+        if (urlTab) return getTabIndex(urlTab);
+        if (!routeConnectionId && lastState?.tab) return getTabIndex(lastState.tab);
+        return 0;
+    };
+
     // Local state
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
-        routeConnectionId ?? ''
-    );
-    const [selectedSchema, setSelectedSchema] = useState<string>(urlSchema ?? '');
+    const [selectedConnectionId, setSelectedConnectionId] =
+        useState<string>(getInitialConnectionId());
+    const [selectedSchema, setSelectedSchema] = useState<string>(getInitialSchema());
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [tableSearch, setTableSearch] = useState('');
     const [sql, setSql] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState(getTabIndex(urlTab));
+    const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
         message: string;
         type: string;
     } | null>(null);
     const [schemasExpanded, setSchemasExpanded] = useState<Record<string, boolean>>({});
     const [historyOpen, setHistoryOpen] = useState(false);
+
+    // Restore from persisted state on mount if no URL params
+    useEffect(() => {
+        if (!routeConnectionId && lastState?.connectionId) {
+            // Navigate to the persisted connection with its state
+            const params = new URLSearchParams();
+            if (lastState.schema) params.set('schema', lastState.schema);
+            if (lastState.table) params.set('table', lastState.table);
+            if (lastState.tab) params.set('tab', lastState.tab);
+            navigate(`/query/${lastState.connectionId}?${params.toString()}`, { replace: true });
+        }
+        // Only run on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Update URL when state changes
     const updateUrl = useCallback(
@@ -163,6 +199,18 @@ export function QueryPage() {
         },
         [updateUrl]
     );
+
+    // Save state to store whenever it changes (for persistence across navigation)
+    useEffect(() => {
+        if (selectedConnectionId) {
+            saveState({
+                connectionId: selectedConnectionId,
+                schema: selectedSchema,
+                table: selectedTable?.name ?? '',
+                tab: TAB_NAMES[activeTab] ?? 'data',
+            });
+        }
+    }, [selectedConnectionId, selectedSchema, selectedTable?.name, activeTab, saveState]);
 
     // Connections query
     const { data: connections = [] } = useQuery({
@@ -285,21 +333,29 @@ export function QueryPage() {
         executeMutation.mutate({ query: sql, confirmed: true });
     };
 
-    // Restore table selection from URL when tables load
+    // Restore table selection from URL or persisted state when tables load
     useEffect(() => {
-        if (tables.length > 0 && urlTable && !selectedTable) {
-            const tableFromUrl = tables.find(
-                (t) => t.name === urlTable && (!urlSchema || t.schema === urlSchema)
-            );
-            if (tableFromUrl) {
-                setSelectedTable(tableFromUrl);
-                // Load the table data
-                const query =
-                    selectedConnection?.engine === 'sqlite'
-                        ? `SELECT * FROM "${tableFromUrl.name}" LIMIT 100;`
-                        : `SELECT * FROM "${tableFromUrl.schema}"."${tableFromUrl.name}" LIMIT 100;`;
-                setSql(query);
-                executeMutation.mutate({ query });
+        if (tables.length > 0 && !selectedTable) {
+            // Try URL table first, then persisted state
+            const tableNameToRestore = urlTable || lastState?.table;
+            const schemaToMatch = urlSchema || lastState?.schema;
+
+            if (tableNameToRestore) {
+                const tableToRestore = tables.find(
+                    (t) =>
+                        t.name === tableNameToRestore &&
+                        (!schemaToMatch || t.schema === schemaToMatch)
+                );
+                if (tableToRestore) {
+                    setSelectedTable(tableToRestore);
+                    // Load the table data
+                    const query =
+                        selectedConnection?.engine === 'sqlite'
+                            ? `SELECT * FROM "${tableToRestore.name}" LIMIT 100;`
+                            : `SELECT * FROM "${tableToRestore.schema}"."${tableToRestore.name}" LIMIT 100;`;
+                    setSql(query);
+                    executeMutation.mutate({ query });
+                }
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
