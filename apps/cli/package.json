@@ -1,0 +1,27 @@
+{
+    "name": "@dbnexus/cli",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "bin": {
+        "dbnexus": "./dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node dist/index.js",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@dbnexus/connectors": "workspace:*",
+        "@dbnexus/metadata": "workspace:*",
+        "@dbnexus/shared": "workspace:*",
+        "chalk": "^5.3.0",
+        "commander": "^12.1.0",
+        "ora": "^8.1.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "typescript": "^5.3.3"
+    }
+}
