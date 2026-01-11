@@ -5,7 +5,7 @@
 // Tags are now dynamic strings (managed in Settings)
 export type ConnectionTag = string;
 
-export type DatabaseEngine = 'postgres'; // More engines later: 'mysql' | 'sqlite'
+export type DatabaseEngine = 'postgres' | 'sqlite';
 
 export interface ConnectionConfig {
     id: string;

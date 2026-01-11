@@ -13,6 +13,10 @@ export interface ConnectorConfig {
     ssl?: boolean;
 }
 
+export interface SqliteConnectorConfig {
+    filepath: string;
+}
+
 export interface DatabaseConnector {
     /**
      * Test the connection

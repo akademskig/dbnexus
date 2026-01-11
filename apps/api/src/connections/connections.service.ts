@@ -2,7 +2,9 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { MetadataService } from '../metadata/metadata.service.js';
 import {
     PostgresConnector,
+    SqliteConnector,
     type ConnectorConfig,
+    type SqliteConnectorConfig,
     type DatabaseConnector,
 } from '@dbnexus/connectors';
 import type {
@@ -107,6 +109,13 @@ export class ConnectionsService {
      */
     async test(id: string): Promise<ConnectionTestResult> {
         const connection = this.findById(id);
+
+        // SQLite doesn't need a password
+        if (connection.engine === 'sqlite') {
+            const connector = this.createConnector(connection, '');
+            return connector.testConnection();
+        }
+
         const password = this.metadataService.connectionRepository.getPassword(id);
 
         if (!password) {
@@ -124,6 +133,14 @@ export class ConnectionsService {
      * Test connection settings without saving
      */
     async testSettings(settings: ConnectionCreateInput): Promise<ConnectionTestResult> {
+        if (settings.engine === 'sqlite') {
+            // For SQLite, database field contains the file path
+            const connector = new SqliteConnector({
+                filepath: settings.database,
+            });
+            return connector.testConnection();
+        }
+
         const connector = new PostgresConnector({
             host: settings.host,
             port: settings.port,
@@ -148,18 +165,24 @@ export class ConnectionsService {
 
         // Create and connect
         const connection = this.findById(id);
-        const password = this.metadataService.connectionRepository.getPassword(id);
 
-        if (!password) {
-            throw new BadRequestException(
-                'Password not found. Please update the connection with the password.'
-            );
+        // SQLite doesn't need a password
+        let password = '';
+        if (connection.engine !== 'sqlite') {
+            password = this.metadataService.connectionRepository.getPassword(id) ?? '';
+            if (!password) {
+                throw new BadRequestException(
+                    'Password not found. Please update the connection with the password.'
+                );
+            }
         }
 
         const connector = this.createConnector(connection, password);
-        this.logger.log(
-            `Connecting to "${connection.name}" (${connection.host}:${connection.port})`
-        );
+        const logInfo =
+            connection.engine === 'sqlite'
+                ? `"${connection.name}" (${connection.database})`
+                : `"${connection.name}" (${connection.host}:${connection.port})`;
+        this.logger.log(`Connecting to ${logInfo}`);
         await connector.connect();
         this.connectors.set(id, connector);
         this.logger.log(`Connected to "${connection.name}"`);
@@ -191,6 +214,13 @@ export class ConnectionsService {
      * Create a connector instance
      */
     private createConnector(connection: ConnectionConfig, password: string): DatabaseConnector {
+        if (connection.engine === 'sqlite') {
+            const config: SqliteConnectorConfig = {
+                filepath: connection.database, // For SQLite, database field stores the file path
+            };
+            return new SqliteConnector(config);
+        }
+
         const config: ConnectorConfig = {
             host: connection.host,
             port: connection.port,
@@ -200,7 +230,6 @@ export class ConnectionsService {
             ssl: connection.ssl,
         };
 
-        // For now, only Postgres is supported
         return new PostgresConnector(config);
     }
 }

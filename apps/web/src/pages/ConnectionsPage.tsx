@@ -21,6 +21,8 @@ import {
     Alert,
     CircularProgress,
     Stack,
+    ToggleButton,
+    ToggleButtonGroup,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -225,30 +227,53 @@ function ConnectionCard({
 
                 {/* Connection details */}
                 <Stack spacing={1} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">
-                            Host
-                        </Typography>
-                        <Typography variant="body2" fontFamily="monospace">
-                            {connection.host}:{connection.port}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">
-                            Database
-                        </Typography>
-                        <Typography variant="body2" fontFamily="monospace">
-                            {connection.database}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">
-                            User
-                        </Typography>
-                        <Typography variant="body2" fontFamily="monospace">
-                            {connection.username}
-                        </Typography>
-                    </Box>
+                    {connection.engine === 'sqlite' ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                File
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                fontFamily="monospace"
+                                sx={{
+                                    maxWidth: 200,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                                title={connection.database}
+                            >
+                                {connection.database}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Host
+                                </Typography>
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {connection.host}:{connection.port}
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Database
+                                </Typography>
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {connection.database}
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    User
+                                </Typography>
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {connection.username}
+                                </Typography>
+                            </Box>
+                        </>
+                    )}
                 </Stack>
 
                 {/* Tags */}
@@ -349,7 +374,7 @@ function ConnectionFormDialog({
         if (connection) {
             setFormData({
                 name: connection.name,
-                engine: 'postgres',
+                engine: connection.engine,
                 host: connection.host,
                 port: connection.port,
                 database: connection.database,
@@ -375,6 +400,8 @@ function ConnectionFormDialog({
         }
         setTestResult(null);
     };
+
+    const isSqlite = formData.engine === 'sqlite';
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
@@ -439,59 +466,114 @@ function ConnectionFormDialog({
                             fullWidth
                         />
 
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <TextField
-                                label="Host"
-                                value={formData.host}
-                                onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                                placeholder="localhost"
-                                required
-                                sx={{ flex: 2 }}
-                            />
-                            <TextField
-                                label="Port"
-                                type="number"
-                                value={formData.port}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, port: parseInt(e.target.value) })
-                                }
-                                required
-                                sx={{ flex: 1 }}
-                            />
+                        {/* Engine Selection */}
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Database Engine
+                            </Typography>
+                            <ToggleButtonGroup
+                                value={formData.engine}
+                                exclusive
+                                onChange={(_, value) => {
+                                    if (value) {
+                                        setFormData({
+                                            ...formData,
+                                            engine: value,
+                                            // Reset fields when switching engines
+                                            host: value === 'sqlite' ? '' : 'localhost',
+                                            port: value === 'sqlite' ? 0 : 5432,
+                                            username: value === 'sqlite' ? '' : formData.username,
+                                            password: value === 'sqlite' ? '' : formData.password,
+                                        });
+                                    }
+                                }}
+                                size="small"
+                            >
+                                <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                <ToggleButton value="sqlite">SQLite</ToggleButton>
+                            </ToggleButtonGroup>
                         </Box>
 
-                        <TextField
-                            label="Database"
-                            value={formData.database}
-                            onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-                            placeholder="mydb"
-                            required
-                            fullWidth
-                        />
+                        {/* PostgreSQL fields */}
+                        {!isSqlite && (
+                            <>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField
+                                        label="Host"
+                                        value={formData.host}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, host: e.target.value })
+                                        }
+                                        placeholder="localhost"
+                                        required
+                                        sx={{ flex: 2 }}
+                                    />
+                                    <TextField
+                                        label="Port"
+                                        type="number"
+                                        value={formData.port}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                port: parseInt(e.target.value),
+                                            })
+                                        }
+                                        required
+                                        sx={{ flex: 1 }}
+                                    />
+                                </Box>
 
-                        <Box sx={{ display: 'flex', gap: 2 }}>
+                                <TextField
+                                    label="Database"
+                                    value={formData.database}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, database: e.target.value })
+                                    }
+                                    placeholder="mydb"
+                                    required
+                                    fullWidth
+                                />
+
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField
+                                        label="Username"
+                                        value={formData.username}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, username: e.target.value })
+                                        }
+                                        placeholder="postgres"
+                                        required
+                                        sx={{ flex: 1 }}
+                                    />
+                                    <TextField
+                                        label="Password"
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, password: e.target.value })
+                                        }
+                                        placeholder={connection ? '••••••••' : ''}
+                                        required={!connection}
+                                        sx={{ flex: 1 }}
+                                    />
+                                </Box>
+                            </>
+                        )}
+
+                        {/* SQLite fields */}
+                        {isSqlite && (
                             <TextField
-                                label="Username"
-                                value={formData.username}
+                                label="Database File Path"
+                                value={formData.database}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, username: e.target.value })
+                                    setFormData({ ...formData, database: e.target.value })
                                 }
-                                placeholder="postgres"
+                                placeholder="/path/to/database.db"
+                                helperText="Absolute path to the SQLite database file"
                                 required
-                                sx={{ flex: 1 }}
+                                fullWidth
                             />
-                            <TextField
-                                label="Password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, password: e.target.value })
-                                }
-                                placeholder={connection ? '••••••••' : ''}
-                                required={!connection}
-                                sx={{ flex: 1 }}
-                            />
-                        </Box>
+                        )}
 
                         <Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -548,17 +630,19 @@ function ConnectionFormDialog({
                         </Box>
 
                         <Box sx={{ display: 'flex', gap: 3 }}>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={formData.ssl}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, ssl: e.target.checked })
-                                        }
-                                    />
-                                }
-                                label="Use SSL"
-                            />
+                            {!isSqlite && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.ssl}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, ssl: e.target.checked })
+                                            }
+                                        />
+                                    }
+                                    label="Use SSL"
+                                />
+                            )}
                             <FormControlLabel
                                 control={
                                     <Checkbox

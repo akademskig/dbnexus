@@ -18,9 +18,11 @@
     },
     "dependencies": {
         "@dbnexus/shared": "workspace:*",
+        "better-sqlite3": "^11.10.0",
         "pg": "^8.13.1"
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.11",
         "@types/pg": "^8.11.10",
         "typescript": "^5.3.3"
     }
