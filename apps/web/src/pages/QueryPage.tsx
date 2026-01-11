@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import Editor from '@monaco-editor/react';
 import {
@@ -56,22 +56,113 @@ import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
 
 const SIDEBAR_WIDTH = 280;
 
+// Tab name mapping for URL
+const TAB_NAMES = ['data', 'structure', 'indexes', 'foreignKeys', 'sql'] as const;
+type TabName = (typeof TAB_NAMES)[number];
+
+const getTabIndex = (name: string | null): number => {
+    if (!name) return 0;
+    const index = TAB_NAMES.indexOf(name as TabName);
+    return index >= 0 ? index : 0;
+};
+
 export function QueryPage() {
-    const { connectionId } = useParams();
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>(connectionId ?? '');
-    const [selectedSchema, setSelectedSchema] = useState<string>('');
+    const { connectionId: routeConnectionId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+
+    // Get state from URL params
+    const urlSchema = searchParams.get('schema');
+    const urlTable = searchParams.get('table');
+    const urlTab = searchParams.get('tab');
+
+    // Local state
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
+        routeConnectionId ?? ''
+    );
+    const [selectedSchema, setSelectedSchema] = useState<string>(urlSchema ?? '');
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [tableSearch, setTableSearch] = useState('');
     const [sql, setSql] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState(0); // 0: Data, 1: Structure, 2: Indexes, 3: Foreign Keys, 4: SQL
+    const [activeTab, setActiveTab] = useState(getTabIndex(urlTab));
     const [confirmDangerous, setConfirmDangerous] = useState<{
         message: string;
         type: string;
     } | null>(null);
     const [schemasExpanded, setSchemasExpanded] = useState<Record<string, boolean>>({});
     const [historyOpen, setHistoryOpen] = useState(false);
+
+    // Update URL when state changes
+    const updateUrl = useCallback(
+        (updates: { schema?: string; table?: string; tab?: number }) => {
+            const newParams = new URLSearchParams(searchParams);
+
+            if (updates.schema !== undefined) {
+                if (updates.schema) {
+                    newParams.set('schema', updates.schema);
+                } else {
+                    newParams.delete('schema');
+                }
+            }
+
+            if (updates.table !== undefined) {
+                if (updates.table) {
+                    newParams.set('table', updates.table);
+                } else {
+                    newParams.delete('table');
+                }
+            }
+
+            if (updates.tab !== undefined) {
+                const tabName = TAB_NAMES[updates.tab];
+                if (tabName) {
+                    newParams.set('tab', tabName);
+                }
+            }
+
+            setSearchParams(newParams, { replace: true });
+        },
+        [searchParams, setSearchParams]
+    );
+
+    // Handle connection change - update URL path
+    const handleConnectionChange = useCallback(
+        (newConnectionId: string) => {
+            setSelectedConnectionId(newConnectionId);
+            // Navigate to new connection URL, preserving tab preference
+            const tab = TAB_NAMES[activeTab];
+            navigate(`/query/${newConnectionId}?tab=${tab}`, { replace: true });
+            // Reset table selection
+            setSelectedTable(null);
+            setSelectedSchema('');
+            setResult(null);
+            setError(null);
+            setSql('');
+        },
+        [navigate, activeTab]
+    );
+
+    // Handle schema change
+    const handleSchemaChange = useCallback(
+        (newSchema: string) => {
+            setSelectedSchema(newSchema);
+            setSchemasExpanded((prev) => ({ ...prev, [newSchema]: true }));
+            updateUrl({ schema: newSchema, table: '' });
+            setSelectedTable(null);
+        },
+        [updateUrl]
+    );
+
+    // Handle tab change
+    const handleTabChange = useCallback(
+        (newTab: number) => {
+            setActiveTab(newTab);
+            updateUrl({ tab: newTab });
+        },
+        [updateUrl]
+    );
 
     // Connections query
     const { data: connections = [] } = useQuery({
@@ -128,28 +219,27 @@ export function QueryPage() {
         onSuccess: () => refetchHistory(),
     });
 
-    // Set default schema when schemas load
+    // Set default schema when schemas load (or restore from URL)
     useEffect(() => {
         if (schemas.length > 0 && !selectedSchema) {
-            const defaultSchema =
-                schemas.find((s) => s === 'public') ??
-                schemas.find((s) => s === 'main') ??
-                schemas[0];
-            if (defaultSchema) {
-                setSelectedSchema(defaultSchema);
-                setSchemasExpanded({ [defaultSchema]: true });
+            // Check if URL has a schema param
+            const schemaFromUrl = urlSchema;
+            if (schemaFromUrl && schemas.includes(schemaFromUrl)) {
+                setSelectedSchema(schemaFromUrl);
+                setSchemasExpanded({ [schemaFromUrl]: true });
+            } else {
+                const defaultSchema =
+                    schemas.find((s) => s === 'public') ??
+                    schemas.find((s) => s === 'main') ??
+                    schemas[0];
+                if (defaultSchema) {
+                    setSelectedSchema(defaultSchema);
+                    setSchemasExpanded({ [defaultSchema]: true });
+                    updateUrl({ schema: defaultSchema });
+                }
             }
         }
-    }, [schemas, selectedSchema]);
-
-    // Reset state when connection changes
-    useEffect(() => {
-        setSelectedSchema('');
-        setSelectedTable(null);
-        setResult(null);
-        setError(null);
-        setSql('');
-    }, [selectedConnectionId]);
+    }, [schemas, selectedSchema, urlSchema, updateUrl]);
 
     // Execute mutation
     const executeMutation = useMutation({
@@ -195,6 +285,26 @@ export function QueryPage() {
         executeMutation.mutate({ query: sql, confirmed: true });
     };
 
+    // Restore table selection from URL when tables load
+    useEffect(() => {
+        if (tables.length > 0 && urlTable && !selectedTable) {
+            const tableFromUrl = tables.find(
+                (t) => t.name === urlTable && (!urlSchema || t.schema === urlSchema)
+            );
+            if (tableFromUrl) {
+                setSelectedTable(tableFromUrl);
+                // Load the table data
+                const query =
+                    selectedConnection?.engine === 'sqlite'
+                        ? `SELECT * FROM "${tableFromUrl.name}" LIMIT 100;`
+                        : `SELECT * FROM "${tableFromUrl.schema}"."${tableFromUrl.name}" LIMIT 100;`;
+                setSql(query);
+                executeMutation.mutate({ query });
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tables, urlTable, urlSchema, selectedTable, selectedConnection?.engine]);
+
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -206,16 +316,20 @@ export function QueryPage() {
     );
 
     // Load table data when selecting a table
-    const handleTableSelect = (table: TableInfo) => {
-        setSelectedTable(table);
-        setActiveTab(0); // Switch to Data tab
-        const query =
-            selectedConnection?.engine === 'sqlite'
-                ? `SELECT * FROM "${table.name}" LIMIT 100;`
-                : `SELECT * FROM "${table.schema}"."${table.name}" LIMIT 100;`;
-        setSql(query);
-        executeMutation.mutate({ query });
-    };
+    const handleTableSelect = useCallback(
+        (table: TableInfo) => {
+            setSelectedTable(table);
+            // Update URL with table (keep current tab)
+            updateUrl({ table: table.name });
+            const query =
+                selectedConnection?.engine === 'sqlite'
+                    ? `SELECT * FROM "${table.name}" LIMIT 100;`
+                    : `SELECT * FROM "${table.schema}"."${table.name}" LIMIT 100;`;
+            setSql(query);
+            executeMutation.mutate({ query });
+        },
+        [selectedConnection?.engine, updateUrl, executeMutation]
+    );
 
     // Filter tables by search
     const filteredTables = tables.filter((t) =>
@@ -257,7 +371,7 @@ export function QueryPage() {
                     <InputLabel>Connection</InputLabel>
                     <Select
                         value={selectedConnectionId}
-                        onChange={(e) => setSelectedConnectionId(e.target.value)}
+                        onChange={(e) => handleConnectionChange(e.target.value)}
                         label="Connection"
                     >
                         {connections.map((conn) => (
@@ -330,10 +444,7 @@ export function QueryPage() {
                                 <InputLabel>Schema</InputLabel>
                                 <Select
                                     value={selectedSchema}
-                                    onChange={(e) => {
-                                        setSelectedSchema(e.target.value);
-                                        setSchemasExpanded({ [e.target.value]: true });
-                                    }}
+                                    onChange={(e) => handleSchemaChange(e.target.value)}
                                     label="Schema"
                                     startAdornment={
                                         <InputAdornment position="start">
@@ -548,7 +659,7 @@ export function QueryPage() {
                             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                                 <Tabs
                                     value={activeTab}
-                                    onChange={(_, v) => setActiveTab(v)}
+                                    onChange={(_, v) => handleTabChange(v)}
                                     sx={{ minHeight: 40 }}
                                 >
                                     <Tab
@@ -729,17 +840,17 @@ export function QueryPage() {
                     onSelect={(entry) => {
                         setSql(entry.sql);
                         if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
-                            setSelectedConnectionId(entry.connectionId);
+                            handleConnectionChange(entry.connectionId);
                         }
-                        setActiveTab(4); // Switch to SQL tab
+                        handleTabChange(4); // Switch to SQL tab
                         setHistoryOpen(false);
                     }}
                     onRerun={(entry) => {
                         setSql(entry.sql);
                         if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
-                            setSelectedConnectionId(entry.connectionId);
+                            handleConnectionChange(entry.connectionId);
                         }
-                        setActiveTab(4);
+                        handleTabChange(4);
                         setHistoryOpen(false);
                         // Execute after state updates
                         setTimeout(() => {
