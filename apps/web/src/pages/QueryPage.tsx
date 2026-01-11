@@ -29,6 +29,9 @@ import {
     Tab,
     Badge,
     Drawer,
+    Dialog,
+    DialogTitle,
+    DialogContent,
 } from '@mui/material';
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -52,6 +55,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
 import { useQueryPageStore } from '../stores/queryPageStore';
@@ -1576,6 +1580,8 @@ function EmptyState({ connectionSelected }: { connectionSelected: boolean }) {
 }
 
 function CellValue({ value }: { value: unknown }) {
+    const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+
     if (value === null) {
         return (
             <Typography variant="body2" color="text.disabled" fontStyle="italic">
@@ -1595,20 +1601,110 @@ function CellValue({ value }: { value: unknown }) {
         );
     }
 
-    if (typeof value === 'object') {
-        const json = JSON.stringify(value);
+    // Check if value is JSON object/array or a JSON string
+    const isJsonObject = typeof value === 'object';
+    let parsedJson: unknown = null;
+    let isJsonString = false;
+
+    if (typeof value === 'string') {
+        try {
+            const trimmed = value.trim();
+            if (
+                (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+                (trimmed.startsWith('[') && trimmed.endsWith(']'))
+            ) {
+                parsedJson = JSON.parse(value);
+                isJsonString = true;
+            }
+        } catch {
+            // Not valid JSON
+        }
+    }
+
+    if (isJsonObject || isJsonString) {
+        const jsonValue = isJsonObject ? value : parsedJson;
+        const jsonPreview = JSON.stringify(jsonValue);
+        const formattedJson = JSON.stringify(jsonValue, null, 2);
+
         return (
-            <Tooltip title={json}>
-                <Typography
-                    variant="body2"
-                    color="warning.main"
-                    fontFamily="monospace"
-                    sx={{ maxWidth: 200, cursor: 'pointer' }}
-                    noWrap
+            <>
+                <Box
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setJsonDialogOpen(true);
+                    }}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        cursor: 'pointer',
+                        '&:hover': { opacity: 0.8 },
+                    }}
                 >
-                    {json.length > 50 ? json.slice(0, 50) + '...' : json}
-                </Typography>
-            </Tooltip>
+                    <CodeIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                    <Typography
+                        variant="body2"
+                        color="warning.main"
+                        fontFamily="monospace"
+                        sx={{ maxWidth: 180 }}
+                        noWrap
+                    >
+                        {jsonPreview.length > 40 ? jsonPreview.slice(0, 40) + '...' : jsonPreview}
+                    </Typography>
+                </Box>
+
+                {/* JSON Viewer Dialog */}
+                <Dialog
+                    open={jsonDialogOpen}
+                    onClose={() => setJsonDialogOpen(false)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CodeIcon color="warning" />
+                        JSON Viewer
+                        <Box sx={{ flex: 1 }} />
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                navigator.clipboard.writeText(formattedJson);
+                            }}
+                            sx={{ mr: 1 }}
+                        >
+                            <Tooltip title="Copy to clipboard">
+                                <ContentCopyIcon fontSize="small" />
+                            </Tooltip>
+                        </IconButton>
+                        <IconButton size="small" onClick={() => setJsonDialogOpen(false)}>
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box
+                            sx={{
+                                bgcolor: 'background.default',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                p: 2,
+                                overflow: 'auto',
+                                maxHeight: '60vh',
+                            }}
+                        >
+                            <pre
+                                style={{
+                                    margin: 0,
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                }}
+                            >
+                                <JsonSyntaxHighlight json={formattedJson} />
+                            </pre>
+                        </Box>
+                    </DialogContent>
+                </Dialog>
+            </>
         );
     }
 
@@ -1633,6 +1729,27 @@ function CellValue({ value }: { value: unknown }) {
             {strValue}
         </Typography>
     );
+}
+
+// JSON syntax highlighting component
+function JsonSyntaxHighlight({ json }: { json: string }) {
+    const highlightJson = (text: string) => {
+        // Simple regex-based JSON syntax highlighting
+        return text
+            .replace(/("(?:[^"\\]|\\.)*")(\s*:)?/g, (match, key, colon) => {
+                if (colon) {
+                    // It's a key
+                    return `<span style="color: #93c5fd">${key}</span>${colon}`;
+                }
+                // It's a string value
+                return `<span style="color: #86efac">${match}</span>`;
+            })
+            .replace(/\b(true|false)\b/g, '<span style="color: #fbbf24">$1</span>')
+            .replace(/\b(null)\b/g, '<span style="color: #f87171">$1</span>')
+            .replace(/\b(-?\d+\.?\d*)\b/g, '<span style="color: #c4b5fd">$1</span>');
+    };
+
+    return <span dangerouslySetInnerHTML={{ __html: highlightJson(json) }} />;
 }
 
 function formatBytes(bytes: number): string {
