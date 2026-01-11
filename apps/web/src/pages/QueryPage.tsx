@@ -30,6 +30,7 @@ import {
     Badge,
     Drawer,
 } from '@mui/material';
+import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -997,6 +998,35 @@ function DataTab({
     onConfirm: () => void;
     onCancel: () => void;
 }) {
+    // Convert result to DataGrid format
+    const columns: GridColDef[] = result
+        ? result.columns.map((col) => ({
+              field: col.name,
+              headerName: col.name,
+              description: col.dataType,
+              flex: 1,
+              minWidth: 120,
+              renderCell: (params: GridRenderCellParams) => <CellValue value={params.value} />,
+              renderHeader: () => (
+                  <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                          {col.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                          {col.dataType}
+                      </Typography>
+                  </Box>
+              ),
+          }))
+        : [];
+
+    const rows = result
+        ? result.rows.map((row, index) => ({
+              id: index,
+              ...row,
+          }))
+        : [];
+
     return (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {loading && <LinearProgress />}
@@ -1074,67 +1104,42 @@ function DataTab({
                         </Box>
                     </Box>
 
-                    {/* Results Table */}
-                    <Box sx={{ flex: 1, overflow: 'auto' }}>
+                    {/* Results DataGrid */}
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
                         {result.rows.length > 0 ? (
-                            <TableContainer>
-                                <Table size="small" stickyHeader>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell
-                                                sx={{
-                                                    bgcolor: 'background.paper',
-                                                    fontWeight: 600,
-                                                    borderRight: 1,
-                                                    borderColor: 'divider',
-                                                    width: 50,
-                                                }}
-                                            >
-                                                #
-                                            </TableCell>
-                                            {result.columns.map((col, i) => (
-                                                <TableCell
-                                                    key={i}
-                                                    sx={{
-                                                        bgcolor: 'background.paper',
-                                                        minWidth: 120,
-                                                    }}
-                                                >
-                                                    <Typography variant="body2" fontWeight={600}>
-                                                        {col.name}
-                                                    </Typography>
-                                                    <Typography
-                                                        variant="caption"
-                                                        color="text.secondary"
-                                                    >
-                                                        {col.dataType}
-                                                    </Typography>
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {result.rows.map((row, rowIndex) => (
-                                            <TableRow key={rowIndex} hover>
-                                                <TableCell
-                                                    sx={{
-                                                        color: 'text.secondary',
-                                                        borderRight: 1,
-                                                        borderColor: 'divider',
-                                                    }}
-                                                >
-                                                    {rowIndex + 1}
-                                                </TableCell>
-                                                {result.columns.map((col, colIndex) => (
-                                                    <TableCell key={colIndex}>
-                                                        <CellValue value={row[col.name]} />
-                                                    </TableCell>
-                                                ))}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                            <DataGrid
+                                rows={rows}
+                                columns={columns}
+                                density="compact"
+                                disableRowSelectionOnClick
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { pageSize: 50 },
+                                    },
+                                }}
+                                pageSizeOptions={[25, 50, 100]}
+                                sx={{
+                                    border: 'none',
+                                    '& .MuiDataGrid-cell': {
+                                        fontFamily: 'monospace',
+                                        fontSize: 12,
+                                    },
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        bgcolor: 'background.paper',
+                                    },
+                                    '& .MuiDataGrid-columnHeader': {
+                                        '&:focus': {
+                                            outline: 'none',
+                                        },
+                                    },
+                                    '& .MuiDataGrid-cell:focus': {
+                                        outline: 'none',
+                                    },
+                                    '& .MuiDataGrid-row:hover': {
+                                        bgcolor: 'action.hover',
+                                    },
+                                }}
+                            />
                         ) : (
                             <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
                                 Query executed successfully. No rows returned.
