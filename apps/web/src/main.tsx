@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from './theme';
+import { createAppTheme } from './theme';
+import { useThemeModeStore } from './stores/themeModeStore';
 import App from './App';
 import './index.css';
 
@@ -17,15 +18,24 @@ const queryClient = new QueryClient({
     },
 });
 
+function ThemedApp() {
+    const mode = useThemeModeStore((state) => state.mode);
+    const theme = createAppTheme(mode);
+
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <BrowserRouter>
+                <App />
+            </BrowserRouter>
+        </ThemeProvider>
+    );
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <BrowserRouter>
-                    <App />
-                </BrowserRouter>
-            </ThemeProvider>
+            <ThemedApp />
         </QueryClientProvider>
     </React.StrictMode>
 );

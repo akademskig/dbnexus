@@ -5,7 +5,6 @@ import {
     Button,
     ToggleButton,
     ToggleButtonGroup,
-    Divider,
     Tabs,
     Tab,
     TextField,
@@ -19,28 +18,28 @@ import {
     Edit as EditIcon,
     Check as CheckIcon,
     Close as CloseIcon,
+    LightMode as LightModeIcon,
+    DarkMode as DarkModeIcon,
 } from '@mui/icons-material';
-import { GlassCard, ACCENT_COLORS } from '../components/GlassCard';
-import { useThemeStore } from '../stores/themeStore';
+import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
+import { useThemeModeStore } from '../stores/themeModeStore';
 
+// Color picker for tag colors only
 function ColorPicker({
     label,
     value,
     onChange,
-    colors = ACCENT_COLORS,
+    colors,
 }: {
     label: string;
     value: string;
     onChange: (color: string) => void;
-    colors?: Record<string, string>;
+    colors: Record<string, string>;
 }) {
     return (
         <Box>
-            <Typography
-                variant="caption"
-                sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block' }}
-            >
+            <Typography variant="caption" sx={{ color: 'text.secondary', mb: 1, display: 'block' }}>
                 {label}
             </Typography>
             <ToggleButtonGroup
@@ -76,158 +75,64 @@ function ColorPicker({
     );
 }
 
-function OpacitySlider({
-    label,
-    value,
-    onChange,
-    max = 50,
-    accentColor,
-}: {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    max?: number;
-    accentColor: string;
-}) {
-    return (
-        <Box sx={{ minWidth: 140 }}>
-            <Typography
-                variant="caption"
-                sx={{ color: 'rgba(255,255,255,0.5)', mb: 0.5, display: 'block' }}
-            >
-                {label}: {(value * 100).toFixed(0)}%
-            </Typography>
-            <input
-                type="range"
-                min="0"
-                max={max}
-                value={value * 100}
-                onChange={(e) => onChange(Number(e.target.value) / 100)}
-                style={{ width: '100%', accentColor: `rgb(${accentColor})` }}
-            />
-        </Box>
-    );
-}
-
 // Appearance Tab Content
 function AppearanceTab() {
-    const { style, setStyle, resetStyle } = useThemeStore();
+    const { mode, toggleMode } = useThemeModeStore();
 
     return (
-        <>
-            <GlassCard>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 3,
-                    }}
-                >
-                    <Typography variant="h6" sx={{ color: '#e4e4e7', fontWeight: 600 }}>
-                        Card Style
+        <GlassCard>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                }}
+            >
+                <Box>
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                        Theme
                     </Typography>
-                    <Button
-                        size="small"
-                        startIcon={<ResetIcon />}
-                        onClick={resetStyle}
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                        Choose between light and dark mode
+                    </Typography>
+                </Box>
+                <ToggleButtonGroup
+                    value={mode}
+                    exclusive
+                    onChange={(_, v) => v && toggleMode()}
+                    size="small"
+                >
+                    <ToggleButton
+                        value="light"
                         sx={{
-                            color: 'rgba(255,255,255,0.5)',
-                            textTransform: 'none',
-                            '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.05)' },
+                            px: 2,
+                            '&.Mui-selected': {
+                                bgcolor: 'rgba(255, 193, 7, 0.15)',
+                                color: '#fbbf24',
+                                '&:hover': { bgcolor: 'rgba(255, 193, 7, 0.25)' },
+                            },
                         }}
                     >
-                        Reset to defaults
-                    </Button>
-                </Box>
-
-                {/* Background */}
-                <Typography variant="subtitle2" sx={{ color: '#e4e4e7', mb: 2 }}>
-                    Background
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 3 }}>
-                    <ColorPicker
-                        label="Color"
-                        value={style.bgColor}
-                        onChange={(bgColor) => setStyle({ bgColor })}
-                    />
-                    <OpacitySlider
-                        label="Opacity"
-                        value={style.bgOpacity}
-                        onChange={(bgOpacity) => setStyle({ bgOpacity })}
-                        max={30}
-                        accentColor={style.bgColor}
-                    />
-                </Box>
-
-                <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 3 }} />
-
-                {/* Border */}
-                <Typography variant="subtitle2" sx={{ color: '#e4e4e7', mb: 2 }}>
-                    Border
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 3 }}>
-                    <ColorPicker
-                        label="Color"
-                        value={style.borderColor}
-                        onChange={(borderColor) => setStyle({ borderColor })}
-                    />
-                    <OpacitySlider
-                        label="Opacity"
-                        value={style.borderOpacity}
-                        onChange={(borderOpacity) => setStyle({ borderOpacity })}
-                        max={50}
-                        accentColor={style.borderColor}
-                    />
-                </Box>
-
-                <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 3 }} />
-
-                {/* Hover Border */}
-                <Typography variant="subtitle2" sx={{ color: '#e4e4e7', mb: 2 }}>
-                    Border on Hover
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <ColorPicker
-                        label="Color"
-                        value={style.hoverBorderColor}
-                        onChange={(hoverBorderColor) => setStyle({ hoverBorderColor })}
-                    />
-                    <OpacitySlider
-                        label="Opacity"
-                        value={style.hoverBorderOpacity}
-                        onChange={(hoverBorderOpacity) => setStyle({ hoverBorderOpacity })}
-                        max={100}
-                        accentColor={style.hoverBorderColor}
-                    />
-                </Box>
-            </GlassCard>
-
-            {/* Preview */}
-            <Box sx={{ mt: 4 }}>
-                <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.5)', mb: 2 }}>
-                    Preview (hover to see effect)
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <GlassCard>
-                        <Typography variant="body2" sx={{ color: '#e4e4e7' }}>
-                            Sample Card
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                            Hover over me to see the border effect
-                        </Typography>
-                    </GlassCard>
-                    <GlassCard>
-                        <Typography variant="body2" sx={{ color: '#e4e4e7' }}>
-                            Another Card
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                            Settings are persisted in localStorage
-                        </Typography>
-                    </GlassCard>
-                </Box>
+                        <LightModeIcon sx={{ mr: 1, fontSize: 18 }} />
+                        Light
+                    </ToggleButton>
+                    <ToggleButton
+                        value="dark"
+                        sx={{
+                            px: 2,
+                            '&.Mui-selected': {
+                                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                                color: '#818cf8',
+                                '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.25)' },
+                            },
+                        }}
+                    >
+                        <DarkModeIcon sx={{ mr: 1, fontSize: 18 }} />
+                        Dark
+                    </ToggleButton>
+                </ToggleButtonGroup>
             </Box>
-        </>
+        </GlassCard>
     );
 }
 
@@ -266,7 +171,8 @@ function TagRow({
                     alignItems: 'flex-start',
                     gap: 2,
                     py: 2,
-                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                    borderBottom: 1,
+                    borderColor: 'divider',
                 }}
             >
                 <Box sx={{ flex: 1 }}>
@@ -276,16 +182,7 @@ function TagRow({
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Tag name"
                         autoFocus
-                        sx={{
-                            mb: 1.5,
-                            '& .MuiOutlinedInput-root': {
-                                bgcolor: 'rgba(0,0,0,0.2)',
-                                '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                                '&.Mui-focused fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                            },
-                            '& .MuiInputBase-input': { color: '#e4e4e7', fontSize: 14 },
-                        }}
+                        sx={{ mb: 1.5 }}
                         fullWidth
                     />
                     <ColorPicker
@@ -299,14 +196,14 @@ function TagRow({
                     <IconButton
                         size="small"
                         onClick={handleSave}
-                        sx={{ color: '#22c55e', '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.1)' } }}
+                        sx={{ color: 'success.main', '&:hover': { bgcolor: 'action.hover' } }}
                     >
                         <CheckIcon fontSize="small" />
                     </IconButton>
                     <IconButton
                         size="small"
                         onClick={handleCancel}
-                        sx={{ color: '#6b6b76', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
                     >
                         <CloseIcon fontSize="small" />
                     </IconButton>
@@ -322,7 +219,8 @@ function TagRow({
                 alignItems: 'center',
                 gap: 2,
                 py: 1.5,
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                borderBottom: 1,
+                borderColor: 'divider',
             }}
         >
             <Chip
@@ -341,8 +239,8 @@ function TagRow({
                 size="small"
                 onClick={() => setEditing(true)}
                 sx={{
-                    color: '#6b6b76',
-                    '&:hover': { color: '#e4e4e7', bgcolor: 'rgba(255,255,255,0.05)' },
+                    color: 'text.secondary',
+                    '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
                 }}
             >
                 <EditIcon fontSize="small" />
@@ -351,8 +249,8 @@ function TagRow({
                 size="small"
                 onClick={onDelete}
                 sx={{
-                    color: '#6b6b76',
-                    '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.1)' },
+                    color: 'text.secondary',
+                    '&:hover': { color: 'error.main', bgcolor: 'action.hover' },
                 }}
             >
                 <DeleteIcon fontSize="small" />
@@ -393,7 +291,7 @@ function TagsTab() {
                     mb: 3,
                 }}
             >
-                <Typography variant="h6" sx={{ color: '#e4e4e7', fontWeight: 600 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
                     Connection Tags
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -402,9 +300,9 @@ function TagsTab() {
                         startIcon={<ResetIcon />}
                         onClick={resetTags}
                         sx={{
-                            color: 'rgba(255,255,255,0.5)',
+                            color: 'text.secondary',
                             textTransform: 'none',
-                            '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.05)' },
+                            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
                         }}
                     >
                         Reset
@@ -415,9 +313,9 @@ function TagsTab() {
                             startIcon={<AddIcon />}
                             onClick={() => setAdding(true)}
                             sx={{
-                                color: '#22c55e',
+                                color: 'success.main',
                                 textTransform: 'none',
-                                '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.1)' },
+                                '&:hover': { bgcolor: 'action.hover' },
                             }}
                         >
                             Add tag
@@ -426,7 +324,7 @@ function TagsTab() {
                 </Box>
             </Box>
 
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mb: 3 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
                 Tags help you organize and categorize your database connections.
             </Typography>
 
@@ -439,8 +337,12 @@ function TagsTab() {
                         gap: 2,
                         py: 2,
                         mb: 2,
-                        borderBottom: '1px solid rgba(255,255,255,0.1)',
-                        bgcolor: 'rgba(34, 197, 94, 0.05)',
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        bgcolor: (theme) =>
+                            theme.palette.mode === 'dark'
+                                ? 'rgba(34, 197, 94, 0.05)'
+                                : 'rgba(34, 197, 94, 0.08)',
                         mx: -2.5,
                         px: 2.5,
                     }}
@@ -456,18 +358,7 @@ function TagsTab() {
                                 if (e.key === 'Enter') handleAdd();
                                 if (e.key === 'Escape') handleCancel();
                             }}
-                            sx={{
-                                mb: 1.5,
-                                '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'rgba(0,0,0,0.2)',
-                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'rgba(34, 197, 94, 0.5)',
-                                    },
-                                },
-                                '& .MuiInputBase-input': { color: '#e4e4e7', fontSize: 14 },
-                            }}
+                            sx={{ mb: 1.5 }}
                             fullWidth
                         />
                         <ColorPicker
@@ -483,8 +374,8 @@ function TagsTab() {
                             onClick={handleAdd}
                             disabled={!newName.trim()}
                             sx={{
-                                color: '#22c55e',
-                                '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.1)' },
+                                color: 'success.main',
+                                '&:hover': { bgcolor: 'action.hover' },
                             }}
                         >
                             <CheckIcon fontSize="small" />
@@ -493,8 +384,8 @@ function TagsTab() {
                             size="small"
                             onClick={handleCancel}
                             sx={{
-                                color: '#6b6b76',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+                                color: 'text.secondary',
+                                '&:hover': { bgcolor: 'action.hover' },
                             }}
                         >
                             <CloseIcon fontSize="small" />
@@ -506,7 +397,7 @@ function TagsTab() {
             {/* Tags list */}
             {tags.length === 0 ? (
                 <Box sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         No tags yet. Add your first tag to get started.
                     </Typography>
                 </Box>
@@ -554,13 +445,7 @@ export function SettingsPage() {
     const [tab, setTab] = useState(0);
 
     return (
-        <Box
-            sx={{
-                minHeight: '100vh',
-                background: 'linear-gradient(180deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)',
-                p: 4,
-            }}
-        >
+        <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
             <Box sx={{ maxWidth: 800, mx: 'auto' }}>
                 {/* Header */}
                 <Box sx={{ mb: 4 }}>
@@ -568,14 +453,14 @@ export function SettingsPage() {
                         variant="h4"
                         sx={{
                             fontWeight: 600,
-                            color: '#e4e4e7',
+                            color: 'text.primary',
                             letterSpacing: '-0.02em',
                             mb: 1,
                         }}
                     >
                         Settings
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         Customize the appearance and manage tags
                     </Typography>
                 </Box>
@@ -587,14 +472,14 @@ export function SettingsPage() {
                     sx={{
                         mb: 3,
                         '& .MuiTabs-indicator': {
-                            bgcolor: '#e4e4e7',
+                            bgcolor: 'text.primary',
                         },
                         '& .MuiTab-root': {
-                            color: 'rgba(255,255,255,0.5)',
+                            color: 'text.secondary',
                             textTransform: 'none',
                             fontWeight: 500,
                             '&.Mui-selected': {
-                                color: '#e4e4e7',
+                                color: 'text.primary',
                             },
                         },
                     }}

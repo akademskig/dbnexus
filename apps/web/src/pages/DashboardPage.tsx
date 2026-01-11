@@ -455,7 +455,7 @@ export function DashboardPage() {
                                 gridTemplateColumns: '1fr 1fr 100px 40px',
                                 px: 2,
                                 py: 1,
-                                bgcolor: 'rgba(0,0,0,0.2)',
+                                bgcolor: 'background.default',
                                 borderBottom: '1px solid',
                                 borderColor: 'divider',
                             }}
