@@ -116,10 +116,7 @@ export function QueryPage() {
     });
 
     // Query history
-    const {
-        data: queryHistory = [],
-        refetch: refetchHistory,
-    } = useQuery({
+    const { data: queryHistory = [], refetch: refetchHistory } = useQuery({
         queryKey: ['queryHistory', selectedConnectionId],
         queryFn: () => queriesApi.getHistory(selectedConnectionId || undefined, 50),
         enabled: historyOpen,
@@ -1137,53 +1134,56 @@ function IndexesTab({ schema, loading }: { schema?: TableSchema; loading: boolea
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {schema.indexes.map((idx) => (
-                            <TableRow key={idx.name} hover>
-                                <TableCell>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {idx.name}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                        {idx.columns.map((col) => (
-                                            <Chip
-                                                key={col}
-                                                label={col}
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
-                                            />
-                                        ))}
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {idx.type || 'btree'}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                        {idx.isPrimary && (
-                                            <Chip
-                                                label="PRIMARY"
-                                                size="small"
-                                                color="warning"
-                                                sx={{ fontSize: 10 }}
-                                            />
-                                        )}
-                                        {idx.isUnique && (
-                                            <Chip
-                                                label="UNIQUE"
-                                                size="small"
-                                                color="info"
-                                                sx={{ fontSize: 10 }}
-                                            />
-                                        )}
-                                    </Box>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {schema.indexes.map((idx, index) => {
+                            const columns = Array.isArray(idx.columns) ? idx.columns : [];
+                            return (
+                                <TableRow key={idx.name || index} hover>
+                                    <TableCell>
+                                        <Typography variant="body2" fontFamily="monospace">
+                                            {idx.name || `idx_${index}`}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                            {columns.map((col) => (
+                                                <Chip
+                                                    key={col}
+                                                    label={col}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ fontFamily: 'monospace', fontSize: 11 }}
+                                                />
+                                            ))}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {idx.type || 'btree'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                            {idx.isPrimary && (
+                                                <Chip
+                                                    label="PRIMARY"
+                                                    size="small"
+                                                    color="warning"
+                                                    sx={{ fontSize: 10 }}
+                                                />
+                                            )}
+                                            {idx.isUnique && (
+                                                <Chip
+                                                    label="UNIQUE"
+                                                    size="small"
+                                                    color="info"
+                                                    sx={{ fontSize: 10 }}
+                                                />
+                                            )}
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -1228,52 +1228,62 @@ function ForeignKeysTab({ schema, loading }: { schema?: TableSchema; loading: bo
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {schema.foreignKeys.map((fk) => (
-                            <TableRow key={fk.name} hover>
-                                <TableCell>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {fk.name}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                        {fk.columns.map((col) => (
-                                            <Chip
-                                                key={col}
-                                                label={col}
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
-                                            />
-                                        ))}
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {fk.referencedSchema}.{fk.referencedTable}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        ({fk.referencedColumns.join(', ')})
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={fk.onDelete || 'NO ACTION'}
-                                        size="small"
-                                        color={fk.onDelete === 'CASCADE' ? 'error' : 'default'}
-                                        sx={{ fontSize: 10 }}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={fk.onUpdate || 'NO ACTION'}
-                                        size="small"
-                                        color={fk.onUpdate === 'CASCADE' ? 'warning' : 'default'}
-                                        sx={{ fontSize: 10 }}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {schema.foreignKeys.map((fk, index) => {
+                            // Ensure columns are arrays (handle edge cases from different DB drivers)
+                            const columns = Array.isArray(fk.columns) ? fk.columns : [];
+                            const referencedColumns = Array.isArray(fk.referencedColumns)
+                                ? fk.referencedColumns
+                                : [];
+
+                            return (
+                                <TableRow key={fk.name || index} hover>
+                                    <TableCell>
+                                        <Typography variant="body2" fontFamily="monospace">
+                                            {fk.name || `fk_${index}`}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                            {columns.map((col) => (
+                                                <Chip
+                                                    key={col}
+                                                    label={col}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ fontFamily: 'monospace', fontSize: 11 }}
+                                                />
+                                            ))}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" fontFamily="monospace">
+                                            {fk.referencedSchema}.{fk.referencedTable}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            ({referencedColumns.join(', ')})
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={fk.onDelete || 'NO ACTION'}
+                                            size="small"
+                                            color={fk.onDelete === 'CASCADE' ? 'error' : 'default'}
+                                            sx={{ fontSize: 10 }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={fk.onUpdate || 'NO ACTION'}
+                                            size="small"
+                                            color={
+                                                fk.onUpdate === 'CASCADE' ? 'warning' : 'default'
+                                            }
+                                            sx={{ fontSize: 10 }}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -1543,9 +1553,7 @@ function HistoryPanel({
                     <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
                         <HistoryIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
                         <Typography variant="body2">No query history yet</Typography>
-                        <Typography variant="caption">
-                            Executed queries will appear here
-                        </Typography>
+                        <Typography variant="caption">Executed queries will appear here</Typography>
                     </Box>
                 ) : (
                     history.map((entry) => (
@@ -1571,9 +1579,7 @@ function HistoryPanel({
                                 }}
                             >
                                 {entry.success ? (
-                                    <CheckCircleIcon
-                                        sx={{ fontSize: 16, color: 'success.main' }}
-                                    />
+                                    <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
                                 ) : (
                                     <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
                                 )}
@@ -1669,9 +1675,8 @@ function HistoryPanel({
                     }}
                 >
                     <Typography variant="caption" color="text.secondary">
-                        {history.length} queries •{' '}
-                        {history.filter((h) => h.success).length} successful •{' '}
-                        {history.filter((h) => !h.success).length} failed
+                        {history.length} queries • {history.filter((h) => h.success).length}{' '}
+                        successful • {history.filter((h) => !h.success).length} failed
                     </Typography>
                 </Box>
             )}
