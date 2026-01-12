@@ -15,10 +15,12 @@ import {
     Bolt as BoltIcon,
     Speed as SpeedIcon,
     Warning as WarningIcon,
+    Sync as SyncIcon,
+    Layers as LayersIcon,
 } from '@mui/icons-material';
-import { connectionsApi, queriesApi } from '../lib/api';
+import { connectionsApi, queriesApi, syncApi } from '../lib/api';
 import { GlassCard } from '../components/GlassCard';
-import type { ConnectionConfig, QueryHistoryEntry } from '@dbnexus/shared';
+import type { ConnectionConfig, QueryHistoryEntry, InstanceGroup } from '@dbnexus/shared';
 
 // Stat Card - clean with subtle icon color
 function StatCard({
@@ -267,6 +269,82 @@ function getTimeAgo(date: Date): string {
     return `${days}d`;
 }
 
+// Sync Status Row
+function SyncGroupRow({ group, onClick }: { group: InstanceGroup; onClick: () => void }) {
+    const hasSource = !!group.sourceConnectionId;
+    const syncEnabled = group.syncSchema || group.syncData;
+
+    return (
+        <Box
+            onClick={onClick}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                px: 2,
+                py: 1.5,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'action.hover' },
+                '&:last-child': { borderBottom: 'none' },
+            }}
+        >
+            <LayersIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+            <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
+                    {group.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {group.projectName}
+                </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {group.syncSchema && (
+                    <Chip label="Schema" size="small" sx={{ height: 20, fontSize: 10 }} />
+                )}
+                {group.syncData && (
+                    <Chip label="Data" size="small" sx={{ height: 20, fontSize: 10 }} />
+                )}
+            </Box>
+            {!hasSource ? (
+                <Chip
+                    label="No source"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: 10,
+                        bgcolor: 'rgba(245, 158, 11, 0.1)',
+                        color: '#f59e0b',
+                    }}
+                />
+            ) : !syncEnabled ? (
+                <Chip
+                    label="Disabled"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: 10,
+                        bgcolor: 'rgba(107, 114, 128, 0.1)',
+                        color: '#6b7280',
+                    }}
+                />
+            ) : (
+                <Chip
+                    label="Active"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: 10,
+                        bgcolor: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e',
+                    }}
+                />
+            )}
+        </Box>
+    );
+}
+
 // Main Dashboard Page
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -275,6 +353,7 @@ export function DashboardPage() {
         Record<string, 'online' | 'offline' | 'checking'>
     >({});
     const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
+    const [syncGroups, setSyncGroups] = useState<InstanceGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -293,12 +372,14 @@ export function DashboardPage() {
 
     const loadData = async () => {
         try {
-            const [conns, hist] = await Promise.all([
+            const [conns, hist, groups] = await Promise.all([
                 connectionsApi.getAll(),
                 queriesApi.getHistory(undefined, 10),
+                syncApi.getSyncEnabledGroups().catch(() => []),
             ]);
             setConnections(conns);
             setHistory(hist);
+            setSyncGroups(groups);
 
             // Check status for each connection
             conns.forEach((conn) => {
@@ -564,6 +645,45 @@ export function DashboardPage() {
                         )}
                     </GlassCard>
                 </Grid>
+
+                {/* Instance Group Sync Status */}
+                {syncGroups.length > 0 && (
+                    <Grid item xs={12}>
+                        <GlassCard noPadding>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    px: 2,
+                                    py: 1.5,
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <SyncIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                                    <Typography
+                                        variant="subtitle2"
+                                        sx={{ color: 'text.primary', fontWeight: 600 }}
+                                    >
+                                        Instance Groups with Sync
+                                    </Typography>
+                                </Box>
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                    {syncGroups.length} group{syncGroups.length !== 1 ? 's' : ''}
+                                </Typography>
+                            </Box>
+                            {syncGroups.map((group) => (
+                                <SyncGroupRow
+                                    key={group.id}
+                                    group={group}
+                                    onClick={() => navigate(`/groups/${group.id}/sync`)}
+                                />
+                            ))}
+                        </GlassCard>
+                    </Grid>
+                )}
             </Grid>
         </Box>
     );

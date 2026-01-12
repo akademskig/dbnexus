@@ -39,6 +39,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderIcon from '@mui/icons-material/Folder';
 import LayersIcon from '@mui/icons-material/Layers';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SyncIcon from '@mui/icons-material/Sync';
 import { connectionsApi, projectsApi, groupsApi } from '../lib/api';
 import type {
     ConnectionConfig,
@@ -538,6 +539,16 @@ function DatabaseGroupSection({
                 <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
                     {group.name}
                 </Typography>
+                {(group.syncSchema || group.syncData) && (
+                    <Chip
+                        label="Sync"
+                        size="small"
+                        icon={<SyncIcon />}
+                        sx={{ height: 20 }}
+                        color="primary"
+                        variant="outlined"
+                    />
+                )}
                 <Chip label={`${connections.length} instances`} size="small" sx={{ height: 20 }} />
                 <IconButton
                     size="small"
@@ -556,6 +567,16 @@ function DatabaseGroupSection({
                 open={Boolean(menuAnchor)}
                 onClose={() => setMenuAnchor(null)}
             >
+                <MenuItem
+                    component="a"
+                    href={`/groups/${group.id}/sync`}
+                    onClick={() => setMenuAnchor(null)}
+                >
+                    <ListItemIcon>
+                        <SyncIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Sync Status</ListItemText>
+                </MenuItem>
                 <MenuItem
                     onClick={() => {
                         setMenuAnchor(null);

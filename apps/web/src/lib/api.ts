@@ -21,6 +21,8 @@ import type {
     DatabaseGroup,
     DatabaseGroupCreateInput,
     DatabaseGroupUpdateInput,
+    InstanceGroup,
+    InstanceGroupSyncStatus,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -292,4 +294,100 @@ export const groupsApi = {
 
     getConnections: (groupId: string) =>
         fetchApi<ConnectionConfig[]>(`/groups/${groupId}/connections`),
+};
+
+// ============ Sync ============
+
+export interface TableDataDiff {
+    table: string;
+    schema: string;
+    sourceCount: number;
+    targetCount: number;
+    missingInTarget: number;
+    missingInSource: number;
+    different: number;
+}
+
+export interface DataSyncResult {
+    table: string;
+    schema: string;
+    inserted: number;
+    updated: number;
+    deleted: number;
+    errors: string[];
+}
+
+export const syncApi = {
+    // Get sync status for an instance group
+    getGroupSyncStatus: (groupId: string) =>
+        fetchApi<InstanceGroupSyncStatus>(`/sync/groups/${groupId}/status`),
+
+    // Get all groups with sync enabled
+    getSyncEnabledGroups: () => fetchApi<InstanceGroup[]>('/sync/groups'),
+
+    // Get table row counts comparison
+    getTableRowCounts: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        schema: string = 'public'
+    ) =>
+        fetchApi<TableDataDiff[]>(
+            `/sync/data/${sourceConnectionId}/${targetConnectionId}/counts?schema=${schema}`
+        ),
+
+    // Get detailed data diff for a table
+    getTableDataDiff: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        schema: string,
+        table: string,
+        primaryKeys: string[]
+    ) =>
+        fetchApi<{
+            missingInTarget: Record<string, unknown>[];
+            missingInSource: Record<string, unknown>[];
+            different: { source: Record<string, unknown>; target: Record<string, unknown> }[];
+        }>(
+            `/sync/data/${sourceConnectionId}/${targetConnectionId}/diff/${schema}/${table}?primaryKeys=${primaryKeys.join(',')}`
+        ),
+
+    // Sync data for a specific table
+    syncTableData: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        schema: string,
+        table: string,
+        options: {
+            primaryKeys: string[];
+            insertMissing?: boolean;
+            updateDifferent?: boolean;
+            deleteExtra?: boolean;
+        }
+    ) =>
+        fetchApi<DataSyncResult>(
+            `/sync/data/${sourceConnectionId}/${targetConnectionId}/sync/${schema}/${table}`,
+            {
+                method: 'POST',
+                body: JSON.stringify(options),
+            }
+        ),
+
+    // Sync all tables in a group
+    syncAllTables: (
+        groupId: string,
+        targetConnectionId: string,
+        schema: string = 'public',
+        options?: {
+            insertMissing?: boolean;
+            updateDifferent?: boolean;
+            deleteExtra?: boolean;
+        }
+    ) =>
+        fetchApi<DataSyncResult[]>(
+            `/sync/groups/${groupId}/sync-all?targetConnectionId=${targetConnectionId}&schema=${schema}`,
+            {
+                method: 'POST',
+                body: JSON.stringify(options || {}),
+            }
+        ),
 };

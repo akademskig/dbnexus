@@ -40,10 +40,14 @@ export interface InstanceGroup {
     projectId: string;
     name: string;
     description?: string;
+    sourceConnectionId?: string;
+    syncSchema: boolean;
+    syncData: boolean;
     createdAt: Date;
     updatedAt: Date;
     // Populated from joins
     projectName?: string;
+    sourceConnectionName?: string;
     connectionCount?: number;
 }
 
@@ -51,11 +55,39 @@ export interface InstanceGroupCreateInput {
     projectId: string;
     name: string;
     description?: string;
+    sourceConnectionId?: string;
+    syncSchema?: boolean;
+    syncData?: boolean;
 }
 
 export interface InstanceGroupUpdateInput {
     name?: string;
     description?: string;
+    sourceConnectionId?: string | null;
+    syncSchema?: boolean;
+    syncData?: boolean;
+}
+
+/**
+ * Sync status for an instance group
+ */
+export interface InstanceGroupSyncStatus {
+    groupId: string;
+    groupName: string;
+    sourceConnectionId?: string;
+    sourceConnectionName?: string;
+    targets: InstanceGroupTargetStatus[];
+    lastChecked?: Date;
+}
+
+export interface InstanceGroupTargetStatus {
+    connectionId: string;
+    connectionName: string;
+    schemaStatus: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked';
+    schemaDiffCount?: number;
+    dataStatus: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked';
+    dataDiffSummary?: string;
+    error?: string;
 }
 
 // Backwards compatibility aliases
