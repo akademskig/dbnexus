@@ -3,6 +3,7 @@ import { MetadataService } from '../metadata/metadata.service.js';
 import {
     PostgresConnector,
     SqliteConnector,
+    MysqlConnector,
     type ConnectorConfig,
     type SqliteConnectorConfig,
     type DatabaseConnector,
@@ -141,15 +142,26 @@ export class ConnectionsService {
             return connector.testConnection();
         }
 
-        const connector = new PostgresConnector({
+        const config: ConnectorConfig = {
             host: settings.host,
             port: settings.port,
             database: settings.database,
             username: settings.username,
             password: settings.password,
             ssl: settings.ssl,
-        });
+        };
 
+        if (settings.engine === 'mysql') {
+            const connector = new MysqlConnector(config, false);
+            return connector.testConnection();
+        }
+
+        if (settings.engine === 'mariadb') {
+            const connector = new MysqlConnector(config, true);
+            return connector.testConnection();
+        }
+
+        const connector = new PostgresConnector(config);
         return connector.testConnection();
     }
 
@@ -229,6 +241,14 @@ export class ConnectionsService {
             password,
             ssl: connection.ssl,
         };
+
+        if (connection.engine === 'mysql') {
+            return new MysqlConnector(config, false);
+        }
+
+        if (connection.engine === 'mariadb') {
+            return new MysqlConnector(config, true);
+        }
 
         return new PostgresConnector(config);
     }

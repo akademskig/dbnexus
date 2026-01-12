@@ -8,8 +8,24 @@ import type {
     IndexInfo,
     ForeignKeyInfo,
     DiffType,
+    DatabaseEngine,
 } from '@dbnexus/shared';
 import { MetadataService } from '../metadata/metadata.service.js';
+
+// Helper to quote identifiers based on database engine
+function q(name: string, engine: DatabaseEngine): string {
+    if (engine === 'mysql' || engine === 'mariadb') {
+        return `\`${name}\``;
+    }
+    return `"${name}"`;
+}
+
+function qTable(schema: string, table: string, engine: DatabaseEngine): string {
+    if (engine === 'sqlite') {
+        return q(table, engine);
+    }
+    return `${q(schema, engine)}.${q(table, engine)}`;
+}
 
 @Injectable()
 export class SchemaDiffService {
@@ -81,7 +97,7 @@ export class SchemaDiffService {
                     schema: targetSchema,
                     table: table.name,
                     target: tableSchema,
-                    migrationSql: [`DROP TABLE IF EXISTS "${targetSchema}"."${table.name}";`],
+                    migrationSql: [`DROP TABLE IF EXISTS ${qTable(targetSchema, table.name, targetConn.engine)};`],
                 });
             }
         }
@@ -189,6 +205,7 @@ export class SchemaDiffService {
         // Columns to remove
         for (const [name, col] of targetColumns) {
             if (!sourceColumns.has(name)) {
+                const eng = engine as DatabaseEngine;
                 items.push({
                     type: 'column_removed',
                     schema: targetSchema,
@@ -196,7 +213,7 @@ export class SchemaDiffService {
                     name,
                     target: col,
                     migrationSql: [
-                        `ALTER TABLE "${targetSchema}"."${target.name}" DROP COLUMN "${name}";`,
+                        `ALTER TABLE ${qTable(targetSchema, target.name, eng)} DROP COLUMN ${q(name, eng)};`,
                     ],
                 });
             }
@@ -264,13 +281,17 @@ export class SchemaDiffService {
         // Indexes to remove
         for (const [name, idx] of targetIdxMap) {
             if (!sourceIdxMap.has(name)) {
+                const eng = engine as DatabaseEngine;
+                const dropSql = eng === 'mysql' || eng === 'mariadb'
+                    ? `DROP INDEX ${q(name, eng)} ON ${qTable(targetSchema, target.name, eng)};`
+                    : `DROP INDEX IF EXISTS ${q(targetSchema, eng)}.${q(name, eng)};`;
                 items.push({
                     type: 'index_removed',
                     schema: targetSchema,
                     table: target.name,
                     name,
                     target: idx,
-                    migrationSql: [`DROP INDEX IF EXISTS "${targetSchema}"."${name}";`],
+                    migrationSql: [dropSql],
                 });
             }
         }
@@ -279,6 +300,10 @@ export class SchemaDiffService {
         for (const [name, sourceIdx] of sourceIdxMap) {
             const targetIdx = targetIdxMap.get(name);
             if (targetIdx && !this.indexesEqual(sourceIdx, targetIdx)) {
+                const eng = engine as DatabaseEngine;
+                const dropSql = eng === 'mysql' || eng === 'mariadb'
+                    ? `DROP INDEX ${q(name, eng)} ON ${qTable(targetSchema, target.name, eng)};`
+                    : `DROP INDEX IF EXISTS ${q(targetSchema, eng)}.${q(name, eng)};`;
                 items.push({
                     type: 'index_modified',
                     schema: targetSchema,
@@ -287,7 +312,7 @@ export class SchemaDiffService {
                     source: sourceIdx,
                     target: targetIdx,
                     migrationSql: [
-                        `DROP INDEX IF EXISTS "${targetSchema}"."${name}";`,
+                        dropSql,
                         this.generateCreateIndexSql(targetSchema, target.name, sourceIdx, engine),
                     ],
                 });
@@ -329,15 +354,17 @@ export class SchemaDiffService {
         // FKs to remove
         for (const [name, fk] of targetFks) {
             if (!sourceFks.has(name)) {
+                const eng = engine as DatabaseEngine;
+                const dropSql = eng === 'mysql' || eng === 'mariadb'
+                    ? `ALTER TABLE ${qTable(targetSchema, target.name, eng)} DROP FOREIGN KEY ${q(name, eng)};`
+                    : `ALTER TABLE ${qTable(targetSchema, target.name, eng)} DROP CONSTRAINT ${q(name, eng)};`;
                 items.push({
                     type: 'fk_removed',
                     schema: targetSchema,
                     table: target.name,
                     name,
                     target: fk,
-                    migrationSql: [
-                        `ALTER TABLE "${targetSchema}"."${target.name}" DROP CONSTRAINT "${name}";`,
-                    ],
+                    migrationSql: [dropSql],
                 });
             }
         }
@@ -346,6 +373,10 @@ export class SchemaDiffService {
         for (const [name, sourceFk] of sourceFks) {
             const targetFk = targetFks.get(name);
             if (targetFk && !this.foreignKeysEqual(sourceFk, targetFk)) {
+                const eng = engine as DatabaseEngine;
+                const dropSql = eng === 'mysql' || eng === 'mariadb'
+                    ? `ALTER TABLE ${qTable(targetSchema, target.name, eng)} DROP FOREIGN KEY ${q(name, eng)};`
+                    : `ALTER TABLE ${qTable(targetSchema, target.name, eng)} DROP CONSTRAINT ${q(name, eng)};`;
                 items.push({
                     type: 'fk_modified',
                     schema: targetSchema,
@@ -354,7 +385,7 @@ export class SchemaDiffService {
                     source: sourceFk,
                     target: targetFk,
                     migrationSql: [
-                        `ALTER TABLE "${targetSchema}"."${target.name}" DROP CONSTRAINT "${name}";`,
+                        dropSql,
                         this.generateAddForeignKeySql(targetSchema, target.name, sourceFk, engine),
                     ],
                 });
@@ -412,11 +443,12 @@ export class SchemaDiffService {
      * Generate CREATE TABLE SQL
      */
     private generateCreateTableSql(table: TableSchema, engine: string): string[] {
+        const eng = engine as DatabaseEngine;
         const sql: string[] = [];
         const columnDefs: string[] = [];
 
         for (const col of table.columns) {
-            let def = `"${col.name}" ${col.dataType}`;
+            let def = `${q(col.name, eng)} ${col.dataType}`;
             if (!col.nullable) def += ' NOT NULL';
             if (col.defaultValue !== null) def += ` DEFAULT ${col.defaultValue}`;
             columnDefs.push(def);
@@ -425,11 +457,11 @@ export class SchemaDiffService {
         // Add primary key constraint (ensure primaryKey is an array)
         const primaryKey = Array.isArray(table.primaryKey) ? table.primaryKey : [];
         if (primaryKey.length > 0) {
-            columnDefs.push(`PRIMARY KEY (${primaryKey.map((c) => `"${c}"`).join(', ')})`);
+            columnDefs.push(`PRIMARY KEY (${primaryKey.map((c) => q(c, eng)).join(', ')})`);
         }
 
         sql.push(
-            `CREATE TABLE "${table.schema}"."${table.name}" (\n  ${columnDefs.join(',\n  ')}\n);`
+            `CREATE TABLE ${qTable(table.schema, table.name, eng)} (\n  ${columnDefs.join(',\n  ')}\n);`
         );
 
         // Add indexes
@@ -454,9 +486,10 @@ export class SchemaDiffService {
         schema: string,
         table: string,
         col: ColumnInfo,
-        _engine: string
+        engine: string
     ): string {
-        let sql = `ALTER TABLE "${schema}"."${table}" ADD COLUMN "${col.name}" ${col.dataType}`;
+        const eng = engine as DatabaseEngine;
+        let sql = `ALTER TABLE ${qTable(schema, table, eng)} ADD COLUMN ${q(col.name, eng)} ${col.dataType}`;
         if (!col.nullable) sql += ' NOT NULL';
         if (col.defaultValue !== null) sql += ` DEFAULT ${col.defaultValue}`;
         return sql + ';';
@@ -472,15 +505,22 @@ export class SchemaDiffService {
         target: ColumnInfo,
         engine: string
     ): string[] {
+        const eng = engine as DatabaseEngine;
         const sql: string[] = [];
-        const prefix = `ALTER TABLE "${schema}"."${table}"`;
+        const prefix = `ALTER TABLE ${qTable(schema, table, eng)}`;
 
         // Type change
         if (source.dataType.toLowerCase() !== target.dataType.toLowerCase()) {
             if (engine === 'postgres') {
                 sql.push(
-                    `${prefix} ALTER COLUMN "${source.name}" TYPE ${source.dataType} USING "${source.name}"::${source.dataType};`
+                    `${prefix} ALTER COLUMN ${q(source.name, eng)} TYPE ${source.dataType} USING ${q(source.name, eng)}::${source.dataType};`
                 );
+            } else if (engine === 'mysql' || engine === 'mariadb') {
+                // MySQL uses MODIFY COLUMN
+                let colDef = `${q(source.name, eng)} ${source.dataType}`;
+                if (!source.nullable) colDef += ' NOT NULL';
+                if (source.defaultValue !== null) colDef += ` DEFAULT ${source.defaultValue}`;
+                sql.push(`${prefix} MODIFY COLUMN ${colDef};`);
             } else {
                 // SQLite doesn't support ALTER COLUMN - would need table recreation
                 sql.push(
@@ -493,10 +533,16 @@ export class SchemaDiffService {
         if (source.nullable !== target.nullable) {
             if (engine === 'postgres') {
                 if (source.nullable) {
-                    sql.push(`${prefix} ALTER COLUMN "${source.name}" DROP NOT NULL;`);
+                    sql.push(`${prefix} ALTER COLUMN ${q(source.name, eng)} DROP NOT NULL;`);
                 } else {
-                    sql.push(`${prefix} ALTER COLUMN "${source.name}" SET NOT NULL;`);
+                    sql.push(`${prefix} ALTER COLUMN ${q(source.name, eng)} SET NOT NULL;`);
                 }
+            } else if (engine === 'mysql' || engine === 'mariadb') {
+                // MySQL uses MODIFY COLUMN for nullable changes
+                let colDef = `${q(source.name, eng)} ${source.dataType}`;
+                if (!source.nullable) colDef += ' NOT NULL';
+                if (source.defaultValue !== null) colDef += ` DEFAULT ${source.defaultValue}`;
+                sql.push(`${prefix} MODIFY COLUMN ${colDef};`);
             } else {
                 sql.push(
                     `-- SQLite: Cannot alter column nullability. Manual migration required for "${source.name}"`
@@ -508,10 +554,18 @@ export class SchemaDiffService {
         if (source.defaultValue !== target.defaultValue) {
             if (engine === 'postgres') {
                 if (source.defaultValue === null) {
-                    sql.push(`${prefix} ALTER COLUMN "${source.name}" DROP DEFAULT;`);
+                    sql.push(`${prefix} ALTER COLUMN ${q(source.name, eng)} DROP DEFAULT;`);
                 } else {
                     sql.push(
-                        `${prefix} ALTER COLUMN "${source.name}" SET DEFAULT ${source.defaultValue};`
+                        `${prefix} ALTER COLUMN ${q(source.name, eng)} SET DEFAULT ${source.defaultValue};`
+                    );
+                }
+            } else if (engine === 'mysql' || engine === 'mariadb') {
+                if (source.defaultValue === null) {
+                    sql.push(`${prefix} ALTER COLUMN ${q(source.name, eng)} DROP DEFAULT;`);
+                } else {
+                    sql.push(
+                        `${prefix} ALTER COLUMN ${q(source.name, eng)} SET DEFAULT ${source.defaultValue};`
                     );
                 }
             } else {
@@ -531,12 +585,13 @@ export class SchemaDiffService {
         schema: string,
         table: string,
         idx: IndexInfo,
-        _engine: string
+        engine: string
     ): string {
+        const eng = engine as DatabaseEngine;
         const unique = idx.isUnique ? 'UNIQUE ' : '';
         const idxColumns = Array.isArray(idx.columns) ? idx.columns : [];
-        const columns = idxColumns.map((c) => `"${c}"`).join(', ');
-        return `CREATE ${unique}INDEX "${idx.name}" ON "${schema}"."${table}" (${columns});`;
+        const columns = idxColumns.map((c) => q(c, eng)).join(', ');
+        return `CREATE ${unique}INDEX ${q(idx.name, eng)} ON ${qTable(schema, table, eng)} (${columns});`;
     }
 
     /**
@@ -546,13 +601,14 @@ export class SchemaDiffService {
         schema: string,
         table: string,
         fk: ForeignKeyInfo,
-        _engine: string
+        engine: string
     ): string {
+        const eng = engine as DatabaseEngine;
         const fkColumns = Array.isArray(fk.columns) ? fk.columns : [];
         const fkRefColumns = Array.isArray(fk.referencedColumns) ? fk.referencedColumns : [];
-        const columns = fkColumns.map((c) => `"${c}"`).join(', ');
-        const refColumns = fkRefColumns.map((c) => `"${c}"`).join(', ');
-        return `ALTER TABLE "${schema}"."${table}" ADD CONSTRAINT "${fk.name}" FOREIGN KEY (${columns}) REFERENCES "${fk.referencedSchema}"."${fk.referencedTable}" (${refColumns}) ON DELETE ${fk.onDelete} ON UPDATE ${fk.onUpdate};`;
+        const columns = fkColumns.map((c) => q(c, eng)).join(', ');
+        const refColumns = fkRefColumns.map((c) => q(c, eng)).join(', ');
+        return `ALTER TABLE ${qTable(schema, table, eng)} ADD CONSTRAINT ${q(fk.name, eng)} FOREIGN KEY (${columns}) REFERENCES ${qTable(fk.referencedSchema, fk.referencedTable, eng)} (${refColumns}) ON DELETE ${fk.onDelete} ON UPDATE ${fk.onUpdate};`;
     }
 
     /**

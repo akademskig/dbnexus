@@ -7,7 +7,31 @@ import type {
     InstanceGroupSyncStatus,
     InstanceGroupTargetStatus,
     ConnectionConfig,
+    DatabaseEngine,
 } from '@dbnexus/shared';
+
+// Helper to quote identifiers based on database engine
+function quoteIdentifier(name: string, engine: DatabaseEngine): string {
+    if (engine === 'mysql' || engine === 'mariadb') {
+        return `\`${name}\``;
+    }
+    return `"${name}"`;
+}
+
+function quoteTableRef(schema: string, table: string, engine: DatabaseEngine): string {
+    if (engine === 'sqlite') {
+        return quoteIdentifier(table, engine);
+    }
+    return `${quoteIdentifier(schema, engine)}.${quoteIdentifier(table, engine)}`;
+}
+
+// Helper to get placeholder syntax for parameterized queries
+function getPlaceholder(index: number, engine: DatabaseEngine): string {
+    if (engine === 'mysql' || engine === 'mariadb') {
+        return '?';
+    }
+    return `$${index}`;
+}
 
 export interface TableDataDiff {
     table: string;
@@ -168,6 +192,8 @@ export class SyncService {
         targetConnectionId: string,
         schema: string = 'public'
     ): Promise<TableDataDiff[]> {
+        const sourceConnection = this.connectionsService.findById(sourceConnectionId);
+        const targetConnection = this.connectionsService.findById(targetConnectionId);
         const sourceConnector = await this.connectionsService.getConnector(sourceConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
 
@@ -177,11 +203,14 @@ export class SyncService {
 
         for (const table of sourceTables) {
             try {
+                const sourceTableRef = quoteTableRef(schema, table.name, sourceConnection.engine);
+                const targetTableRef = quoteTableRef(schema, table.name, targetConnection.engine);
+                
                 const sourceCountResult = await sourceConnector.query(
-                    `SELECT COUNT(*) as count FROM "${schema}"."${table.name}"`
+                    `SELECT COUNT(*) as count FROM ${sourceTableRef}`
                 );
                 const targetCountResult = await targetConnector.query(
-                    `SELECT COUNT(*) as count FROM "${schema}"."${table.name}"`
+                    `SELECT COUNT(*) as count FROM ${targetTableRef}`
                 );
 
                 const sourceCount = Number(sourceCountResult.rows[0]?.count ?? 0);
@@ -218,15 +247,22 @@ export class SyncService {
         missingInSource: Record<string, unknown>[];
         different: { source: Record<string, unknown>; target: Record<string, unknown> }[];
     }> {
+        const sourceConnection = this.connectionsService.findById(sourceConnectionId);
+        const targetConnection = this.connectionsService.findById(targetConnectionId);
         const sourceConnector = await this.connectionsService.getConnector(sourceConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
 
+        const sourceTableRef = quoteTableRef(schema, table, sourceConnection.engine);
+        const targetTableRef = quoteTableRef(schema, table, targetConnection.engine);
+        const sourceOrderBy = primaryKeyColumns.map((c) => quoteIdentifier(c, sourceConnection.engine)).join(', ');
+        const targetOrderBy = primaryKeyColumns.map((c) => quoteIdentifier(c, targetConnection.engine)).join(', ');
+
         // Get all rows from both
         const sourceResult = await sourceConnector.query(
-            `SELECT * FROM "${schema}"."${table}" ORDER BY ${primaryKeyColumns.map((c) => `"${c}"`).join(', ')}`
+            `SELECT * FROM ${sourceTableRef} ORDER BY ${sourceOrderBy}`
         );
         const targetResult = await targetConnector.query(
-            `SELECT * FROM "${schema}"."${table}" ORDER BY ${primaryKeyColumns.map((c) => `"${c}"`).join(', ')}`
+            `SELECT * FROM ${targetTableRef} ORDER BY ${targetOrderBy}`
         );
 
         // Create maps by primary key
@@ -292,6 +328,7 @@ export class SyncService {
             errors: [],
         };
 
+        const targetConnection = this.connectionsService.findById(targetConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
         const diff = await this.getTableDataDiff(
             sourceConnectionId,
@@ -304,15 +341,18 @@ export class SyncService {
         // Get column info
         const tableSchema = await targetConnector.getTableSchema(schema, table);
         const columns = tableSchema.columns.map((c) => c.name);
+        const engine = targetConnection.engine;
+        const tableRef = quoteTableRef(schema, table, engine);
 
         // Insert missing rows
         if (options.insertMissing && diff.missingInTarget.length > 0) {
             for (const row of diff.missingInTarget) {
                 try {
                     const values = columns.map((c) => row[c]);
-                    const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+                    const placeholders = columns.map((_, i) => getPlaceholder(i + 1, engine)).join(', ');
+                    const quotedColumns = columns.map((c) => quoteIdentifier(c, engine)).join(', ');
                     await targetConnector.execute(
-                        `INSERT INTO "${schema}"."${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders})`,
+                        `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`,
                         values
                     );
                     result.inserted++;
@@ -329,9 +369,11 @@ export class SyncService {
             for (const { source } of diff.different) {
                 try {
                     const nonPkColumns = columns.filter((c) => !primaryKeyColumns.includes(c));
-                    const setClause = nonPkColumns.map((c, i) => `"${c}" = $${i + 1}`).join(', ');
+                    const setClause = nonPkColumns
+                        .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
+                        .join(', ');
                     const whereClause = primaryKeyColumns
-                        .map((c, i) => `"${c}" = $${nonPkColumns.length + i + 1}`)
+                        .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(nonPkColumns.length + i + 1, engine)}`)
                         .join(' AND ');
                     const values = [
                         ...nonPkColumns.map((c) => source[c]),
@@ -339,7 +381,7 @@ export class SyncService {
                     ];
 
                     await targetConnector.execute(
-                        `UPDATE "${schema}"."${table}" SET ${setClause} WHERE ${whereClause}`,
+                        `UPDATE ${tableRef} SET ${setClause} WHERE ${whereClause}`,
                         values
                     );
                     result.updated++;
@@ -356,12 +398,12 @@ export class SyncService {
             for (const row of diff.missingInSource) {
                 try {
                     const whereClause = primaryKeyColumns
-                        .map((c, i) => `"${c}" = $${i + 1}`)
+                        .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
                         .join(' AND ');
                     const values = primaryKeyColumns.map((c) => row[c]);
 
                     await targetConnector.execute(
-                        `DELETE FROM "${schema}"."${table}" WHERE ${whereClause}`,
+                        `DELETE FROM ${tableRef} WHERE ${whereClause}`,
                         values
                     );
                     result.deleted++;

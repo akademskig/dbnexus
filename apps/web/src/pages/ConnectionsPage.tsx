@@ -1348,7 +1348,18 @@ function ConnectionFormDialog({
     };
 
     const isSqlite = formData.engine === 'sqlite';
+    const isMysql = formData.engine === 'mysql' || formData.engine === 'mariadb';
     const availableGroups = groups.filter((g) => g.projectId === formData.projectId);
+
+    // Get default port based on engine
+    const getDefaultPort = (engine: string) => {
+        switch (engine) {
+            case 'postgres': return 5432;
+            case 'mysql': return 3306;
+            case 'mariadb': return 3306;
+            default: return 0;
+        }
+    };
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
@@ -1496,15 +1507,18 @@ function ConnectionFormDialog({
                                             ...formData,
                                             engine: value,
                                             host: value === 'sqlite' ? '' : 'localhost',
-                                            port: value === 'sqlite' ? 0 : 5432,
+                                            port: getDefaultPort(value),
                                             username: value === 'sqlite' ? '' : formData.username,
                                             password: value === 'sqlite' ? '' : formData.password,
                                         });
                                     }
                                 }}
                                 size="small"
+                                sx={{ flexWrap: 'wrap' }}
                             >
                                 <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                <ToggleButton value="mysql">MySQL</ToggleButton>
+                                <ToggleButton value="mariadb">MariaDB</ToggleButton>
                                 <ToggleButton value="sqlite">SQLite</ToggleButton>
                             </ToggleButtonGroup>
                         </Box>
@@ -1590,8 +1604,8 @@ function ConnectionFormDialog({
                             />
                         )}
 
-                        {/* Default Schema - only for Postgres */}
-                        {!isSqlite && (
+                        {/* Default Schema - for Postgres and MySQL/MariaDB */}
+                        {!isSqlite && !isMysql && (
                             <TextField
                                 label="Default Schema"
                                 value={formData.defaultSchema || ''}

@@ -5,7 +5,7 @@
 // Tags are now dynamic strings (managed in Settings)
 export type ConnectionTag = string;
 
-export type DatabaseEngine = 'postgres' | 'sqlite';
+export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql' | 'mariadb';
 
 /**
  * Project - top-level grouping for connections

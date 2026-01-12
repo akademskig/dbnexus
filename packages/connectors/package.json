@@ -19,6 +19,7 @@
     "dependencies": {
         "@dbnexus/shared": "workspace:*",
         "better-sqlite3": "^11.10.0",
+        "mysql2": "^3.16.0",
         "pg": "^8.13.1"
     },
     "devDependencies": {
