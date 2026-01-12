@@ -1221,7 +1221,7 @@ function DataTab({
                             alignItems: 'center',
                             gap: 2,
                             px: 2,
-                            py: 1,
+                            py: 1.5,
                             bgcolor: 'background.paper',
                             borderBottom: 1,
                             borderColor: 'divider',
