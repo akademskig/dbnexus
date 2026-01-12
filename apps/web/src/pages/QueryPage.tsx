@@ -1296,7 +1296,7 @@ function DataTab({
                                 ),
                             }}
                             sx={{
-                                width: 280,
+                                width: 200,
                                 '& .MuiOutlinedInput-root': {
                                     bgcolor: 'background.default',
                                 },
