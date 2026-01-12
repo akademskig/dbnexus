@@ -54,26 +54,63 @@ export interface SchemaSnapshot {
     tables: TableSchema[];
 }
 
+export type DiffType =
+    | 'table_added'
+    | 'table_removed'
+    | 'column_added'
+    | 'column_removed'
+    | 'column_modified'
+    | 'index_added'
+    | 'index_removed'
+    | 'index_modified'
+    | 'fk_added'
+    | 'fk_removed'
+    | 'fk_modified';
+
 export interface SchemaDiffItem {
-    type:
-        | 'table_added'
-        | 'table_removed'
-        | 'column_added'
-        | 'column_removed'
-        | 'column_changed'
-        | 'index_added'
-        | 'index_removed';
+    type: DiffType;
     schema: string;
     table: string;
-    column?: string;
-    index?: string;
-    details: Record<string, unknown>;
+    name?: string; // column, index, or FK name
+    source?: ColumnInfo | IndexInfo | ForeignKeyInfo | TableSchema;
+    target?: ColumnInfo | IndexInfo | ForeignKeyInfo | TableSchema;
+    migrationSql?: string[];
 }
 
 export interface SchemaDiff {
     sourceConnectionId: string;
     targetConnectionId: string;
-    generatedAt: Date;
+    sourceSchema: string;
+    targetSchema: string;
+    generatedAt: string;
     items: SchemaDiffItem[];
-    migrationSql: string[];
+    summary: {
+        tablesAdded: number;
+        tablesRemoved: number;
+        columnsAdded: number;
+        columnsRemoved: number;
+        columnsModified: number;
+        indexesAdded: number;
+        indexesRemoved: number;
+        indexesModified: number;
+        fksAdded: number;
+        fksRemoved: number;
+        fksModified: number;
+    };
+}
+
+export interface MigrationHistoryEntry {
+    id: string;
+    sourceConnectionId: string;
+    targetConnectionId: string;
+    sourceSchema: string;
+    targetSchema: string;
+    description?: string;
+    sqlStatements: string[];
+    appliedAt: string;
+    success: boolean;
+    error?: string;
+    // Populated from joins
+    sourceConnectionName?: string;
+    targetConnectionName?: string;
 }

@@ -13,6 +13,8 @@ import type {
     QueryHistoryEntry,
     TableInfo,
     TableSchema,
+    SchemaDiff,
+    MigrationHistoryEntry,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -153,4 +155,69 @@ export const schemaApi = {
 
     getServerVersion: (connectionId: string) =>
         fetchApi<{ version: string }>(`/schema/${connectionId}/version`),
+
+    // Schema diff
+    compareSchemasApi: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        sourceSchema?: string,
+        targetSchema?: string
+    ) => {
+        const params = new URLSearchParams();
+        if (sourceSchema) params.set('sourceSchema', sourceSchema);
+        if (targetSchema) params.set('targetSchema', targetSchema);
+        return fetchApi<SchemaDiff>(
+            `/schema/diff/${sourceConnectionId}/${targetConnectionId}?${params}`
+        );
+    },
+
+    getMigrationSql: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        sourceSchema?: string,
+        targetSchema?: string
+    ) => {
+        const params = new URLSearchParams();
+        if (sourceSchema) params.set('sourceSchema', sourceSchema);
+        if (targetSchema) params.set('targetSchema', targetSchema);
+        return fetchApi<{ sql: string[] }>(
+            `/schema/diff/${sourceConnectionId}/${targetConnectionId}/sql?${params}`
+        );
+    },
+
+    // Apply migration
+    applyMigration: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        sourceSchema?: string,
+        targetSchema?: string,
+        description?: string
+    ) => {
+        const params = new URLSearchParams();
+        if (sourceSchema) params.set('sourceSchema', sourceSchema);
+        if (targetSchema) params.set('targetSchema', targetSchema);
+        return fetchApi<MigrationHistoryEntry>(
+            `/schema/diff/${sourceConnectionId}/${targetConnectionId}/apply?${params}`,
+            {
+                method: 'POST',
+                body: JSON.stringify({ description }),
+            }
+        );
+    },
+
+    // Migration history
+    getMigrationHistory: (options?: { targetConnectionId?: string; limit?: number }) => {
+        const params = new URLSearchParams();
+        if (options?.targetConnectionId)
+            params.set('targetConnectionId', options.targetConnectionId);
+        if (options?.limit) params.set('limit', String(options.limit));
+        return fetchApi<MigrationHistoryEntry[]>(`/schema/migrations?${params}`);
+    },
+
+    getMigration: (id: string) => fetchApi<MigrationHistoryEntry>(`/schema/migrations/${id}`),
+
+    deleteMigration: (id: string) =>
+        fetchApi<{ success: boolean }>(`/schema/migrations/${id}`, {
+            method: 'DELETE',
+        }),
 };

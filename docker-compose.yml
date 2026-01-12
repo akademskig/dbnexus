@@ -1,0 +1,105 @@
+# Docker Compose for DB Nexus development and testing
+# Provides various database instances for testing connections and schema diff
+
+services:
+    # PostgreSQL - Primary test database
+    postgres-primary:
+        image: postgres:16-alpine
+        container_name: dbnexus-postgres-primary
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: admin123
+            POSTGRES_DB: testdb
+        ports:
+            - '5432:5432'
+        volumes:
+            - postgres-primary-data:/var/lib/postgresql/data
+            - ./docker/init/postgres-primary.sql:/docker-entrypoint-initdb.d/init.sql:ro
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    # PostgreSQL - Secondary (for schema diff testing)
+    postgres-secondary:
+        image: postgres:16-alpine
+        container_name: dbnexus-postgres-secondary
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: admin123
+            POSTGRES_DB: testdb
+        ports:
+            - '5433:5432'
+        volumes:
+            - postgres-secondary-data:/var/lib/postgresql/data
+            - ./docker/init/postgres-secondary.sql:/docker-entrypoint-initdb.d/init.sql:ro
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    # PostgreSQL - Older version for compatibility testing
+    postgres-14:
+        image: postgres:14-alpine
+        container_name: dbnexus-postgres-14
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: admin123
+            POSTGRES_DB: testdb
+        ports:
+            - '5434:5432'
+        volumes:
+            - postgres-14-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    # MySQL - For future MySQL support
+    mysql:
+        image: mysql:8.0
+        container_name: dbnexus-mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: root123
+            MYSQL_USER: admin
+            MYSQL_PASSWORD: admin123
+            MYSQL_DATABASE: testdb
+        ports:
+            - '3306:3306'
+        volumes:
+            - mysql-data:/var/lib/mysql
+            - ./docker/init/mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'admin', '-padmin123']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    # MariaDB - For future MariaDB support
+    mariadb:
+        image: mariadb:11
+        container_name: dbnexus-mariadb
+        environment:
+            MARIADB_ROOT_PASSWORD: root123
+            MARIADB_USER: admin
+            MARIADB_PASSWORD: admin123
+            MARIADB_DATABASE: testdb
+        ports:
+            - '3307:3306'
+        volumes:
+            - mariadb-data:/var/lib/mysql
+        healthcheck:
+            test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    postgres-primary-data:
+    postgres-secondary-data:
+    postgres-14-data:
+    mysql-data:
+    mariadb-data:

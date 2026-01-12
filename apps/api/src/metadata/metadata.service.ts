@@ -1,5 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { MetadataDatabase, ConnectionRepository, QueryRepository } from '@dbnexus/metadata';
+import {
+    MetadataDatabase,
+    ConnectionRepository,
+    QueryRepository,
+    MigrationHistoryRepository,
+} from '@dbnexus/metadata';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
@@ -9,6 +14,7 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private db!: MetadataDatabase;
     private _connectionRepository!: ConnectionRepository;
     private _queryRepository!: QueryRepository;
+    private _migrationHistoryRepository!: MigrationHistoryRepository;
 
     onModuleInit() {
         // Get workspace path from environment or use current directory
@@ -26,6 +32,7 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
         this._connectionRepository = new ConnectionRepository(this.db);
         this._queryRepository = new QueryRepository(this.db);
+        this._migrationHistoryRepository = new MigrationHistoryRepository(this.db);
 
         this.logger.log(`📦 Metadata database initialized at ${dbPath}`);
     }
@@ -40,6 +47,10 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get queryRepository(): QueryRepository {
         return this._queryRepository;
+    }
+
+    get migrationHistoryRepository(): MigrationHistoryRepository {
+        return this._migrationHistoryRepository;
     }
 
     get database(): MetadataDatabase {

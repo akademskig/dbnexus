@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -130,5 +130,30 @@ export const MIGRATIONS: string[] = [
     `
   ALTER TABLE connections ADD COLUMN encrypted_password TEXT;
   UPDATE schema_version SET version = 2;
+  `,
+
+    // Version 3: Add migration_history table for tracking applied migrations
+    `
+  DROP TABLE IF EXISTS schema_diffs;
+
+  CREATE TABLE IF NOT EXISTS migration_history (
+    id TEXT PRIMARY KEY,
+    source_connection_id TEXT NOT NULL,
+    target_connection_id TEXT NOT NULL,
+    source_schema TEXT NOT NULL,
+    target_schema TEXT NOT NULL,
+    description TEXT,
+    sql_statements TEXT NOT NULL,
+    applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+    success INTEGER NOT NULL DEFAULT 1,
+    error TEXT,
+    FOREIGN KEY (source_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_migration_history_applied_at ON migration_history(applied_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_migration_history_target ON migration_history(target_connection_id);
+
+  UPDATE schema_version SET version = 3;
   `,
 ];
