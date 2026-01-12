@@ -32,6 +32,8 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
+    DialogActions,
+    Menu,
 } from '@mui/material';
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -56,6 +58,10 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AddBoxIcon from '@mui/icons-material/AddBox';
 import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
 import { useQueryPageStore } from '../stores/queryPageStore';
@@ -131,6 +137,12 @@ export function QueryPage() {
         return initial;
     });
     const [historyOpen, setHistoryOpen] = useState(false);
+
+    // Edit dialogs state
+    const [createTableOpen, setCreateTableOpen] = useState(false);
+    const [dropTableConfirmOpen, setDropTableConfirmOpen] = useState(false);
+    const [addRowOpen, setAddRowOpen] = useState(false);
+    const [tableActionsAnchor, setTableActionsAnchor] = useState<null | HTMLElement>(null);
 
     // Restore from persisted state on mount if no URL params
     useEffect(() => {
@@ -540,6 +552,109 @@ export function QueryPage() {
         refetchTables();
     };
 
+    // Handle drop table
+    const handleDropTable = useCallback(() => {
+        if (!selectedTable || !selectedConnectionId) return;
+
+        const tableName =
+            selectedConnection?.engine === 'sqlite'
+                ? `"${selectedTable.name}"`
+                : `"${selectedTable.schema}"."${selectedTable.name}"`;
+
+        const query = `DROP TABLE ${tableName};`;
+        setSql(query);
+        executeMutation.mutate(
+            { query },
+            {
+                onSuccess: () => {
+                    setSelectedTable(null);
+                    setResult(null);
+                    refetchTables();
+                    setDropTableConfirmOpen(false);
+                },
+            }
+        );
+    }, [selectedTable, selectedConnectionId, selectedConnection?.engine, executeMutation, refetchTables]);
+
+    // Handle add row
+    const handleAddRow = useCallback(
+        (values: Record<string, string>) => {
+            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
+
+            const tableName =
+                selectedConnection?.engine === 'sqlite'
+                    ? `"${selectedTable.name}"`
+                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+
+            const columns = Object.keys(values).filter((k) => values[k] !== '');
+            const vals = columns.map((k) => {
+                const col = tableSchema.columns.find((c) => c.name === k);
+                const val = values[k] ?? '';
+                // Quote strings, leave numbers unquoted
+                if (
+                    col?.dataType.toLowerCase().includes('int') ||
+                    col?.dataType.toLowerCase().includes('numeric') ||
+                    col?.dataType.toLowerCase().includes('decimal') ||
+                    col?.dataType.toLowerCase().includes('float') ||
+                    col?.dataType.toLowerCase().includes('double') ||
+                    col?.dataType.toLowerCase().includes('real')
+                ) {
+                    return val;
+                }
+                return `'${val.replaceAll("'", "''")}'`;
+            });
+
+            const query = `INSERT INTO ${tableName} (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${vals.join(', ')});`;
+            setSql(query);
+            executeMutation.mutate(
+                { query },
+                {
+                    onSuccess: () => {
+                        setAddRowOpen(false);
+                        // Refresh data
+                        if (selectedTable) {
+                            fetchTableData(selectedTable, paginationModel.page, paginationModel.pageSize, searchQuery, tableSchema);
+                        }
+                    },
+                }
+            );
+        },
+        [selectedTable, selectedConnectionId, selectedConnection?.engine, tableSchema, executeMutation, fetchTableData, paginationModel, searchQuery]
+    );
+
+    // Handle create table
+    const handleCreateTable = useCallback(
+        (tableName: string, columns: Array<{ name: string; type: string; nullable: boolean; primaryKey: boolean }>) => {
+            if (!selectedConnectionId) return;
+
+            const schema = selectedSchema || 'public';
+            const fullTableName =
+                selectedConnection?.engine === 'sqlite'
+                    ? `"${tableName}"`
+                    : `"${schema}"."${tableName}"`;
+
+            const columnDefs = columns.map((col) => {
+                let def = `"${col.name}" ${col.type}`;
+                if (col.primaryKey) def += ' PRIMARY KEY';
+                if (!col.nullable && !col.primaryKey) def += ' NOT NULL';
+                return def;
+            });
+
+            const query = `CREATE TABLE ${fullTableName} (\n  ${columnDefs.join(',\n  ')}\n);`;
+            setSql(query);
+            executeMutation.mutate(
+                { query },
+                {
+                    onSuccess: () => {
+                        setCreateTableOpen(false);
+                        refetchTables();
+                    },
+                }
+            );
+        },
+        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables]
+    );
+
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Top Toolbar */}
@@ -653,8 +768,8 @@ export function QueryPage() {
                         </Box>
                     )}
 
-                    {/* Search */}
-                    <Box sx={{ p: 1.5 }}>
+                    {/* Search and Create Table */}
+                    <Box sx={{ p: 1.5, display: 'flex', gap: 1 }}>
                         <TextField
                             size="small"
                             placeholder="Search tables..."
@@ -674,6 +789,16 @@ export function QueryPage() {
                                 },
                             }}
                         />
+                        <Tooltip title="Create Table">
+                            <IconButton
+                                size="small"
+                                onClick={() => setCreateTableOpen(true)}
+                                disabled={!selectedConnectionId}
+                                sx={{ bgcolor: 'background.paper' }}
+                            >
+                                <AddBoxIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
                     </Box>
 
                     {/* Tables List */}
@@ -821,6 +946,45 @@ export function QueryPage() {
                                 )}
 
                                 <Box sx={{ flex: 1 }} />
+
+                                {/* Table Actions */}
+                                {selectedTable.type !== 'view' && (
+                                    <>
+                                        <Tooltip title="Add Row">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setAddRowOpen(true)}
+                                                disabled={!tableSchema}
+                                            >
+                                                <AddIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Table Actions">
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => setTableActionsAnchor(e.currentTarget)}
+                                            >
+                                                <MoreVertIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Menu
+                                            anchorEl={tableActionsAnchor}
+                                            open={Boolean(tableActionsAnchor)}
+                                            onClose={() => setTableActionsAnchor(null)}
+                                        >
+                                            <MenuItem
+                                                onClick={() => {
+                                                    setTableActionsAnchor(null);
+                                                    setDropTableConfirmOpen(true);
+                                                }}
+                                                sx={{ color: 'error.main' }}
+                                            >
+                                                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                                                Drop Table
+                                            </MenuItem>
+                                        </Menu>
+                                    </>
+                                )}
 
                                 <Tooltip title="Run Query (⌘+Enter)">
                                     <span>
@@ -1056,6 +1220,52 @@ export function QueryPage() {
                     clearing={clearHistoryMutation.isPending}
                 />
             </Drawer>
+
+            {/* Create Table Dialog */}
+            <CreateTableDialog
+                open={createTableOpen}
+                onClose={() => setCreateTableOpen(false)}
+                onSubmit={handleCreateTable}
+                engine={selectedConnection?.engine || 'postgres'}
+            />
+
+            {/* Drop Table Confirmation Dialog */}
+            <Dialog
+                open={dropTableConfirmOpen}
+                onClose={() => setDropTableConfirmOpen(false)}
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <WarningIcon color="error" />
+                    Drop Table
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to drop the table{' '}
+                        <strong>{selectedTable?.name}</strong>? This action cannot be undone
+                        and all data will be permanently deleted.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDropTableConfirmOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDropTable}
+                        disabled={executeMutation.isPending}
+                    >
+                        Drop Table
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Add Row Dialog */}
+            <AddRowDialog
+                open={addRowOpen}
+                onClose={() => setAddRowOpen(false)}
+                onSubmit={handleAddRow}
+                columns={tableSchema?.columns || []}
+                tableName={selectedTable?.name || ''}
+            />
         </Box>
     );
 }
@@ -2189,5 +2399,269 @@ function HistoryPanel({
                 </Box>
             )}
         </Box>
+    );
+}
+
+// ============ Create Table Dialog ============
+
+interface ColumnDefinition {
+    name: string;
+    type: string;
+    nullable: boolean;
+    primaryKey: boolean;
+}
+
+const COMMON_TYPES = {
+    postgres: [
+        'INTEGER',
+        'BIGINT',
+        'SERIAL',
+        'BIGSERIAL',
+        'VARCHAR(255)',
+        'TEXT',
+        'BOOLEAN',
+        'TIMESTAMP',
+        'TIMESTAMPTZ',
+        'DATE',
+        'NUMERIC',
+        'REAL',
+        'DOUBLE PRECISION',
+        'UUID',
+        'JSONB',
+        'JSON',
+    ],
+    sqlite: [
+        'INTEGER',
+        'TEXT',
+        'REAL',
+        'BLOB',
+        'NUMERIC',
+    ],
+};
+
+function CreateTableDialog({
+    open,
+    onClose,
+    onSubmit,
+    engine,
+}: {
+    open: boolean;
+    onClose: () => void;
+    onSubmit: (tableName: string, columns: ColumnDefinition[]) => void;
+    engine: string;
+}) {
+    const [tableName, setTableName] = useState('');
+    const [columns, setColumns] = useState<ColumnDefinition[]>([
+        { name: 'id', type: engine === 'sqlite' ? 'INTEGER' : 'SERIAL', nullable: false, primaryKey: true },
+    ]);
+
+    const types = engine === 'sqlite' ? COMMON_TYPES.sqlite : COMMON_TYPES.postgres;
+
+    const handleAddColumn = () => {
+        setColumns([...columns, { name: '', type: types[0] ?? 'TEXT', nullable: true, primaryKey: false }]);
+    };
+
+    const handleRemoveColumn = (index: number) => {
+        setColumns(columns.filter((_, i) => i !== index));
+    };
+
+    const handleColumnChange = (index: number, field: keyof ColumnDefinition, value: string | boolean) => {
+        const newColumns = [...columns];
+        const currentCol = newColumns[index];
+        if (currentCol) {
+            newColumns[index] = { ...currentCol, [field]: value };
+            // If setting primary key, unset others
+            if (field === 'primaryKey' && value === true) {
+                newColumns.forEach((col, i) => {
+                    if (i !== index) col.primaryKey = false;
+                });
+            }
+        }
+        setColumns(newColumns);
+    };
+
+    const handleSubmit = () => {
+        if (!tableName.trim() || columns.length === 0) return;
+        onSubmit(tableName, columns.filter((c) => c.name.trim()));
+        // Reset form
+        setTableName('');
+        setColumns([{ name: 'id', type: engine === 'sqlite' ? 'INTEGER' : 'SERIAL', nullable: false, primaryKey: true }]);
+    };
+
+    const handleClose = () => {
+        setTableName('');
+        setColumns([{ name: 'id', type: engine === 'sqlite' ? 'INTEGER' : 'SERIAL', nullable: false, primaryKey: true }]);
+        onClose();
+    };
+
+    return (
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+            <DialogTitle>Create Table</DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    <TextField
+                        label="Table Name"
+                        value={tableName}
+                        onChange={(e) => setTableName(e.target.value)}
+                        fullWidth
+                        size="small"
+                        autoFocus
+                    />
+
+                    <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                        Columns
+                    </Typography>
+
+                    {columns.map((col, index) => (
+                        <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <TextField
+                                label="Name"
+                                value={col.name}
+                                onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
+                                size="small"
+                                sx={{ flex: 1 }}
+                            />
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                                <InputLabel>Type</InputLabel>
+                                <Select
+                                    value={col.type}
+                                    onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
+                                    label="Type"
+                                >
+                                    {types.map((t) => (
+                                        <MenuItem key={t} value={t}>
+                                            {t}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Tooltip title="Primary Key">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => handleColumnChange(index, 'primaryKey', !col.primaryKey)}
+                                    color={col.primaryKey ? 'primary' : 'default'}
+                                >
+                                    <KeyIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title={col.nullable ? 'Nullable' : 'Not Null'}>
+                                <Chip
+                                    label={col.nullable ? 'NULL' : 'NOT NULL'}
+                                    size="small"
+                                    onClick={() => handleColumnChange(index, 'nullable', !col.nullable)}
+                                    color={col.nullable ? 'default' : 'warning'}
+                                    sx={{ minWidth: 80 }}
+                                />
+                            </Tooltip>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleRemoveColumn(index)}
+                                disabled={columns.length === 1}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    ))}
+
+                    <Button
+                        startIcon={<AddIcon />}
+                        onClick={handleAddColumn}
+                        size="small"
+                        sx={{ alignSelf: 'flex-start' }}
+                    >
+                        Add Column
+                    </Button>
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={!tableName.trim() || columns.filter((c) => c.name.trim()).length === 0}
+                >
+                    Create Table
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// ============ Add Row Dialog ============
+
+function AddRowDialog({
+    open,
+    onClose,
+    onSubmit,
+    columns,
+    tableName,
+}: {
+    open: boolean;
+    onClose: () => void;
+    onSubmit: (values: Record<string, string>) => void;
+    columns: Array<{ name: string; dataType: string; nullable: boolean; defaultValue?: string | null }>;
+    tableName: string;
+}) {
+    const [values, setValues] = useState<Record<string, string>>({});
+
+    const handleSubmit = () => {
+        onSubmit(values);
+        setValues({});
+    };
+
+    const handleClose = () => {
+        setValues({});
+        onClose();
+    };
+
+    // Filter out auto-generated columns (serial, identity, etc.)
+    const editableColumns = columns.filter(
+        (col) =>
+            !col.dataType.toLowerCase().includes('serial') &&
+            !col.dataType.toLowerCase().includes('identity')
+    );
+
+    return (
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <DialogTitle>Add Row to {tableName}</DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    {editableColumns.map((col) => (
+                        <TextField
+                            key={col.name}
+                            label={
+                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    {col.name}
+                                    <Typography
+                                        component="span"
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ ml: 0.5 }}
+                                    >
+                                        ({col.dataType})
+                                    </Typography>
+                                    {!col.nullable && (
+                                        <Typography component="span" color="error.main">
+                                            *
+                                        </Typography>
+                                    )}
+                                </Box>
+                            }
+                            value={values[col.name] || ''}
+                            onChange={(e) => setValues({ ...values, [col.name]: e.target.value })}
+                            size="small"
+                            fullWidth
+                            placeholder={col.defaultValue ? `Default: ${col.defaultValue}` : undefined}
+                        />
+                    ))}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button variant="contained" onClick={handleSubmit}>
+                    Add Row
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 }
