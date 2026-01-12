@@ -118,7 +118,15 @@ export function QueryPage() {
         message: string;
         type: string;
     } | null>(null);
-    const [schemasExpanded, setSchemasExpanded] = useState<Record<string, boolean>>({});
+    // Default to showing selected schema expanded
+    const [schemasExpanded, setSchemasExpanded] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {};
+        const schemaToExpand = urlSchema || lastState?.schema;
+        if (schemaToExpand) {
+            initial[schemaToExpand] = true;
+        }
+        return initial;
+    });
     const [historyOpen, setHistoryOpen] = useState(false);
 
     // Restore from persisted state on mount if no URL params
@@ -281,7 +289,12 @@ export function QueryPage() {
                 setSelectedSchema(schemaFromUrl);
                 setSchemasExpanded({ [schemaFromUrl]: true });
             } else {
+                // Use connection's defaultSchema if available, otherwise fall back to common defaults
                 const defaultSchema =
+                    (selectedConnection?.defaultSchema &&
+                    schemas.includes(selectedConnection.defaultSchema)
+                        ? selectedConnection.defaultSchema
+                        : null) ??
                     schemas.find((s) => s === 'public') ??
                     schemas.find((s) => s === 'main') ??
                     schemas[0];
@@ -292,7 +305,7 @@ export function QueryPage() {
                 }
             }
         }
-    }, [schemas, selectedSchema, urlSchema, updateUrl]);
+    }, [schemas, selectedSchema, urlSchema, updateUrl, selectedConnection?.defaultSchema]);
 
     // Execute mutation
     const executeMutation = useMutation({

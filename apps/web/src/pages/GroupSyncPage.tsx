@@ -329,6 +329,7 @@ function TargetRow({
     const queryClient = useQueryClient();
 
     // Fetch schema diff when expanded and diff is requested
+    // Cache for 5 minutes to avoid repeated API calls
     const { data: schemaDiff, isLoading: loadingDiff } = useQuery({
         queryKey: [
             'schemaDiff',
@@ -345,6 +346,8 @@ function TargetRow({
                 targetSchema
             ),
         enabled: showDiff && !!sourceConnectionId,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     });
 
     // Fetch migration SQL
@@ -364,6 +367,8 @@ function TargetRow({
                 targetSchema
             ),
         enabled: showDiff && !!sourceConnectionId && !!schemaDiff,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
     });
 
     const handleApplyMigration = async () => {
