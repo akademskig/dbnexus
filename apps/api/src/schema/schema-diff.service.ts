@@ -18,7 +18,7 @@ export class SchemaDiffService {
     constructor(
         private readonly schemaService: SchemaService,
         private readonly metadataService: MetadataService
-    ) {}
+    ) { }
 
     /**
      * Compare schemas between two connections

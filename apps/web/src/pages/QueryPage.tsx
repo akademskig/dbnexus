@@ -35,7 +35,16 @@ import {
     DialogActions,
     Menu,
 } from '@mui/material';
-import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
+import {
+    DataGrid,
+    type GridColDef,
+    type GridRenderCellParams,
+    type GridRowId,
+    type GridRowModel,
+    type GridRowModesModel,
+    GridRowModes,
+    GridActionsCellItem,
+} from '@mui/x-data-grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -62,6 +71,9 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
 import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
 import { useQueryPageStore } from '../stores/queryPageStore';
@@ -656,6 +668,153 @@ export function QueryPage() {
         [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables]
     );
 
+    // Helper function to format value for SQL
+    const formatSqlValue = useCallback((value: unknown, colName: string): string => {
+        if (value === null || value === undefined) return 'NULL';
+
+        const col = tableSchema?.columns.find((c) => c.name === colName);
+        const dataType = col?.dataType.toLowerCase() || '';
+
+        // Check if it's a numeric type
+        if (
+            dataType.includes('int') ||
+            dataType.includes('numeric') ||
+            dataType.includes('decimal') ||
+            dataType.includes('float') ||
+            dataType.includes('double') ||
+            dataType.includes('real')
+        ) {
+            return String(value);
+        }
+
+        // Check if it's a boolean type
+        if (dataType.includes('bool')) {
+            return String(value);
+        }
+
+        // Check if it's a JSON type - stringify the object
+        if (dataType.includes('json') || dataType.includes('jsonb')) {
+            const jsonStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+            return `'${jsonStr.replaceAll("'", "''")}'`;
+        }
+
+        // If value is an object (shouldn't happen for non-JSON, but handle it)
+        if (typeof value === 'object') {
+            const jsonStr = JSON.stringify(value);
+            return `'${jsonStr.replaceAll("'", "''")}'`;
+        }
+
+        // String type - escape single quotes
+        return `'${String(value).replaceAll("'", "''")}'`;
+    }, [tableSchema]);
+
+    // Handle update row (inline editing)
+    const handleUpdateRow = useCallback(
+        async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
+            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
+
+            const tableName =
+                selectedConnection?.engine === 'sqlite'
+                    ? `"${selectedTable.name}"`
+                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+
+            // Get primary key columns
+            const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
+            if (pkColumns.length === 0) {
+                throw new Error('Cannot update row: no primary key defined');
+            }
+
+            // Build SET clause - only include changed columns
+            const changes: string[] = [];
+            for (const key of Object.keys(newRow)) {
+                if (key === 'id') continue; // Skip our internal id
+                // Deep comparison for objects (JSON)
+                const oldVal = oldRow[key];
+                const newVal = newRow[key];
+                const hasChanged = typeof oldVal === 'object' || typeof newVal === 'object'
+                    ? JSON.stringify(oldVal) !== JSON.stringify(newVal)
+                    : oldVal !== newVal;
+                if (hasChanged) {
+                    changes.push(`"${key}" = ${formatSqlValue(newVal, key)}`);
+                }
+            }
+
+            if (changes.length === 0) {
+                return; // No changes
+            }
+
+            // Build WHERE clause using primary key
+            const whereConditions = pkColumns.map(
+                (pk) => `"${pk}" = ${formatSqlValue(oldRow[pk], pk)}`
+            );
+
+            const query = `UPDATE ${tableName} SET ${changes.join(', ')} WHERE ${whereConditions.join(' AND ')};`;
+            setSql(query);
+
+            return new Promise<void>((resolve, reject) => {
+                executeMutation.mutate(
+                    { query, confirmed: true },
+                    {
+                        onSuccess: () => {
+                            // Refresh data
+                            if (selectedTable) {
+                                fetchTableData(selectedTable, paginationModel.page, paginationModel.pageSize, searchQuery, tableSchema);
+                            }
+                            resolve();
+                        },
+                        onError: (err) => {
+                            reject(err);
+                        },
+                    }
+                );
+            });
+        },
+        [selectedTable, selectedConnectionId, selectedConnection?.engine, tableSchema, executeMutation, fetchTableData, paginationModel, searchQuery, formatSqlValue]
+    );
+
+    // Handle delete row
+    const handleDeleteRow = useCallback(
+        (row: Record<string, unknown>) => {
+            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
+
+            const tableName =
+                selectedConnection?.engine === 'sqlite'
+                    ? `"${selectedTable.name}"`
+                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+
+            // Get primary key columns
+            const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
+            if (pkColumns.length === 0) {
+                setError('Cannot delete row: no primary key defined');
+                return;
+            }
+
+            // Build WHERE clause using primary key
+            const whereConditions = pkColumns.map(
+                (pk) => `"${pk}" = ${formatSqlValue(row[pk], pk)}`
+            );
+
+            const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
+            setSql(query);
+            executeMutation.mutate(
+                { query, confirmed: true },
+                {
+                    onSuccess: () => {
+                        // Refresh data
+                        if (selectedTable) {
+                            fetchTableData(selectedTable, paginationModel.page, paginationModel.pageSize, searchQuery, tableSchema);
+                        }
+                        // Update row count
+                        if (totalRowCount !== null) {
+                            setTotalRowCount(totalRowCount - 1);
+                        }
+                    },
+                }
+            );
+        },
+        [selectedTable, selectedConnectionId, selectedConnection?.engine, tableSchema, executeMutation, fetchTableData, paginationModel, searchQuery, formatSqlValue, totalRowCount]
+    );
+
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Top Toolbar */}
@@ -1141,6 +1300,9 @@ export function QueryPage() {
                                         onPaginationChange={handlePaginationChange}
                                         onSearch={handleSearch}
                                         searchQuery={searchQuery}
+                                        tableSchema={tableSchema}
+                                        onUpdateRow={handleUpdateRow}
+                                        onDeleteRow={handleDeleteRow}
                                     />
                                 )}
 
@@ -1342,6 +1504,9 @@ function DataTab({
     onPaginationChange,
     onSearch,
     searchQuery,
+    tableSchema,
+    onUpdateRow,
+    onDeleteRow,
 }: {
     result: QueryResult | null;
     error: string | null;
@@ -1354,29 +1519,163 @@ function DataTab({
     onPaginationChange: (model: { page: number; pageSize: number }) => void;
     onSearch: (query: string) => void;
     searchQuery: string;
+    tableSchema?: TableSchema;
+    onUpdateRow?: (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => Promise<void>;
+    onDeleteRow?: (row: Record<string, unknown>) => void;
 }) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
+    const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+    const [deleteConfirmRow, setDeleteConfirmRow] = useState<Record<string, unknown> | null>(null);
+
+    // Get primary key columns for identifying rows
+    const primaryKeyColumns = tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || [];
+    // Show edit/delete actions if callbacks are provided (we'll disable edit if no PK)
+    const hasActionColumn = !!(onUpdateRow || onDeleteRow);
+    // Can only edit/delete if we have primary keys to identify rows
+    const canEditRows = primaryKeyColumns.length > 0;
+
+    const handleEditClick = (id: GridRowId) => () => {
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+    };
+
+    const handleSaveClick = (id: GridRowId) => () => {
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+    };
+
+    const handleCancelClick = (id: GridRowId) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+    };
+
+    const handleDeleteClick = (row: Record<string, unknown>) => () => {
+        setDeleteConfirmRow(row);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteConfirmRow && onDeleteRow) {
+            onDeleteRow(deleteConfirmRow);
+        }
+        setDeleteConfirmRow(null);
+    };
+
+    const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
+        if (onUpdateRow) {
+            await onUpdateRow(oldRow as Record<string, unknown>, newRow as Record<string, unknown>);
+        }
+        return newRow;
+    };
+
+    const handleProcessRowUpdateError = (err: Error) => {
+        console.error('Row update error:', err);
+    };
+
+    // Check if a column type is JSON-like
+    const isJsonColumn = (dataType: string): boolean => {
+        const lower = dataType.toLowerCase();
+        return lower.includes('json') || lower.includes('jsonb');
+    };
+
+    // Handle JSON save from cell viewer
+    const handleJsonCellSave = (row: Record<string, unknown>, field: string, newValue: unknown) => {
+        if (!onUpdateRow) return;
+        const newRow = { ...row, [field]: newValue };
+        onUpdateRow(row, newRow);
+    };
+
     // Convert result to DataGrid format
-    const columns: GridColDef[] = result
-        ? result.columns.map((col) => ({
-            field: col.name,
-            headerName: col.name,
-            description: col.dataType,
-            flex: 1,
-            minWidth: 120,
-            renderCell: (params: GridRenderCellParams) => <CellValue value={params.value} />,
-            renderHeader: () => (
-                <Box>
-                    <Typography variant="body2" fontWeight={600}>
-                        {col.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {col.dataType}
-                    </Typography>
-                </Box>
-            ),
-        }))
+    const dataColumns: GridColDef[] = result
+        ? result.columns.map((col) => {
+            const isPrimaryKey = primaryKeyColumns.includes(col.name);
+            const isJson = isJsonColumn(col.dataType);
+            // JSON columns are edited via dialog, not inline; PK columns are not editable
+            const isEditable = canEditRows && !isPrimaryKey && !isJson;
+            // JSON columns can be edited via dialog if we have edit capability
+            const canEditJson = canEditRows && !isPrimaryKey && isJson;
+
+            return {
+                field: col.name,
+                headerName: col.name,
+                description: col.dataType,
+                flex: 1,
+                minWidth: 120,
+                editable: isEditable,
+                renderCell: (params: GridRenderCellParams) => (
+                    <CellValue
+                        value={params.value}
+                        onSaveJson={canEditJson ? (newValue) => handleJsonCellSave(params.row as Record<string, unknown>, col.name, newValue) : undefined}
+                    />
+                ),
+                renderHeader: () => (
+                    <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                            {col.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {col.dataType}
+                        </Typography>
+                    </Box>
+                ),
+            };
+        })
         : [];
+
+    // Add actions column if callbacks are provided
+    const columns: GridColDef[] = hasActionColumn
+        ? [
+            ...dataColumns,
+            {
+                field: 'actions',
+                type: 'actions',
+                headerName: '',
+                width: 100,
+                cellClassName: 'actions',
+                getActions: ({ id, row }) => {
+                    const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
+
+                    if (isInEditMode) {
+                        return [
+                            <GridActionsCellItem
+                                key="save"
+                                icon={<SaveIcon />}
+                                label="Save"
+                                sx={{ color: 'success.main' }}
+                                onClick={handleSaveClick(id)}
+                            />,
+                            <GridActionsCellItem
+                                key="cancel"
+                                icon={<CancelIcon />}
+                                label="Cancel"
+                                onClick={handleCancelClick(id)}
+                                color="inherit"
+                            />,
+                        ];
+                    }
+
+                    // Show edit/delete buttons, but disable if no primary key
+                    return [
+                        <GridActionsCellItem
+                            key="edit"
+                            icon={<EditIcon />}
+                            label={canEditRows ? "Edit" : "Edit (no primary key)"}
+                            onClick={handleEditClick(id)}
+                            color="inherit"
+                            disabled={!canEditRows}
+                        />,
+                        <GridActionsCellItem
+                            key="delete"
+                            icon={<DeleteIcon />}
+                            label={canEditRows ? "Delete" : "Delete (no primary key)"}
+                            onClick={handleDeleteClick(row as Record<string, unknown>)}
+                            color="inherit"
+                            disabled={!canEditRows}
+                        />,
+                    ];
+                },
+            },
+        ]
+        : dataColumns;
 
     const rows = result
         ? result.rows.map((row, index) => ({
@@ -1545,6 +1844,11 @@ function DataTab({
                                 paginationModel={paginationModel}
                                 onPaginationModelChange={onPaginationChange}
                                 pageSizeOptions={[50, 100, 250, 500]}
+                                editMode="row"
+                                rowModesModel={rowModesModel}
+                                onRowModesModelChange={setRowModesModel}
+                                processRowUpdate={processRowUpdate}
+                                onProcessRowUpdateError={handleProcessRowUpdateError}
                                 sx={{
                                     border: 'none',
                                     borderRadius: 0,
@@ -1572,6 +1876,9 @@ function DataTab({
                                     '& .MuiDataGrid-footerContainer': {
                                         borderRadius: 0,
                                     },
+                                    '& .MuiDataGrid-cell--editing': {
+                                        bgcolor: 'action.selected',
+                                    },
                                 }}
                             />
                         ) : (
@@ -1596,6 +1903,38 @@ function DataTab({
                     <Typography variant="body2">Loading data...</Typography>
                 </Box>
             )}
+
+            {/* Delete Row Confirmation Dialog */}
+            <Dialog open={!!deleteConfirmRow} onClose={() => setDeleteConfirmRow(null)}>
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <WarningIcon color="error" />
+                    Delete Row
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete this row? This action cannot be undone.
+                    </Typography>
+                    {deleteConfirmRow && primaryKeyColumns.length > 0 && (
+                        <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                                Row identifier:
+                            </Typography>
+                            {primaryKeyColumns.map((pk) => (
+                                <Typography key={pk} variant="body2" fontFamily="monospace">
+                                    {pk}: {String(deleteConfirmRow[pk])}
+                                </Typography>
+                            ))}
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteConfirmRow(null)}>Cancel</Button>
+                    <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+                        Delete Row
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 }
@@ -2002,8 +2341,11 @@ function EmptyState({ connectionSelected }: { connectionSelected: boolean }) {
     );
 }
 
-function CellValue({ value }: { value: unknown }) {
+function CellValue({ value, onSaveJson }: { value: unknown; onSaveJson?: (newValue: unknown) => void }) {
     const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState('');
+    const [jsonError, setJsonError] = useState<string | null>(null);
 
     if (value === null) {
         return (
@@ -2049,13 +2391,48 @@ function CellValue({ value }: { value: unknown }) {
         const jsonPreview = JSON.stringify(jsonValue);
         const formattedJson = JSON.stringify(jsonValue, null, 2);
 
+        const handleOpen = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            setJsonDialogOpen(true);
+            setIsEditing(false);
+            setEditValue(formattedJson);
+            setJsonError(null);
+        };
+
+        const handleClose = () => {
+            setJsonDialogOpen(false);
+            setIsEditing(false);
+            setJsonError(null);
+        };
+
+        const handleStartEdit = () => {
+            setIsEditing(true);
+            setEditValue(formattedJson);
+        };
+
+        const handleCancelEdit = () => {
+            setIsEditing(false);
+            setEditValue(formattedJson);
+            setJsonError(null);
+        };
+
+        const handleSave = () => {
+            try {
+                const parsed = JSON.parse(editValue);
+                if (onSaveJson) {
+                    onSaveJson(parsed);
+                }
+                setJsonDialogOpen(false);
+                setIsEditing(false);
+            } catch (e) {
+                setJsonError('Invalid JSON: ' + (e as Error).message);
+            }
+        };
+
         return (
             <>
                 <Box
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setJsonDialogOpen(true);
-                    }}
+                    onClick={handleOpen}
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2076,56 +2453,87 @@ function CellValue({ value }: { value: unknown }) {
                     </Typography>
                 </Box>
 
-                {/* JSON Viewer Dialog */}
+                {/* JSON Viewer/Editor Dialog */}
                 <Dialog
                     open={jsonDialogOpen}
-                    onClose={() => setJsonDialogOpen(false)}
-                    maxWidth="md"
-                    fullWidth
+                    onClose={handleClose}
+                    maxWidth={false}
+                    PaperProps={{
+                        sx: {
+                            width: '60vw',
+                            maxWidth: '900px',
+                            minWidth: '400px',
+                            height: '70vh',
+                            maxHeight: '800px',
+                            minHeight: '300px',
+                            resize: 'both',
+                            overflow: 'auto',
+                        },
+                    }}
                 >
                     <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <CodeIcon color="warning" />
-                        JSON Viewer
+                        {isEditing ? 'Edit JSON' : 'JSON Viewer'}
                         <Box sx={{ flex: 1 }} />
-                        <IconButton
-                            size="small"
-                            onClick={() => {
-                                navigator.clipboard.writeText(formattedJson);
-                            }}
-                            sx={{ mr: 1 }}
-                        >
-                            <Tooltip title="Copy to clipboard">
-                                <ContentCopyIcon fontSize="small" />
-                            </Tooltip>
-                        </IconButton>
-                        <IconButton size="small" onClick={() => setJsonDialogOpen(false)}>
+                        {!isEditing && (
+                            <>
+                                {onSaveJson && (
+                                    <Tooltip title="Edit">
+                                        <IconButton size="small" onClick={handleStartEdit} sx={{ mr: 1 }}>
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                <Tooltip title="Copy to clipboard">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => navigator.clipboard.writeText(formattedJson)}
+                                        sx={{ mr: 1 }}
+                                    >
+                                        <ContentCopyIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </>
+                        )}
+                        <IconButton size="small" onClick={handleClose}>
                             <CloseIcon fontSize="small" />
                         </IconButton>
                     </DialogTitle>
-                    <DialogContent>
-                        <Box
-                            sx={{
-                                bgcolor: 'background.default',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                p: 2,
-                                overflow: 'auto',
-                                maxHeight: '60vh',
-                            }}
-                        >
-                            <pre
-                                style={{
-                                    margin: 0,
-                                    fontFamily: 'monospace',
+                    <DialogContent sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                        {jsonError && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {jsonError}
+                            </Alert>
+                        )}
+                        <Box sx={{ flex: 1, minHeight: 0 }}>
+                            <Editor
+                                height="100%"
+                                defaultLanguage="json"
+                                value={isEditing ? editValue : formattedJson}
+                                onChange={(val) => setEditValue(val ?? '')}
+                                theme="vs-dark"
+                                options={{
+                                    readOnly: !isEditing,
+                                    minimap: { enabled: false },
                                     fontSize: 13,
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
+                                    fontFamily: 'JetBrains Mono, Fira Code, monospace',
+                                    lineNumbers: 'on',
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                    tabSize: 2,
+                                    wordWrap: 'on',
                                 }}
-                            >
-                                <JsonSyntaxHighlight json={formattedJson} />
-                            </pre>
+                            />
                         </Box>
                     </DialogContent>
+                    {isEditing && (
+                        <DialogActions>
+                            <Button onClick={handleCancelEdit}>Cancel</Button>
+                            <Button variant="contained" onClick={handleSave}>
+                                Save
+                            </Button>
+                        </DialogActions>
+                    )}
                 </Dialog>
             </>
         );
@@ -2152,27 +2560,6 @@ function CellValue({ value }: { value: unknown }) {
             {strValue}
         </Typography>
     );
-}
-
-// JSON syntax highlighting component
-function JsonSyntaxHighlight({ json }: { json: string }) {
-    const highlightJson = (text: string) => {
-        // Simple regex-based JSON syntax highlighting
-        return text
-            .replace(/("(?:[^"\\]|\\.)*")(\s*:)?/g, (match, key, colon) => {
-                if (colon) {
-                    // It's a key
-                    return `<span style="color: #93c5fd">${key}</span>${colon}`;
-                }
-                // It's a string value
-                return `<span style="color: #86efac">${match}</span>`;
-            })
-            .replace(/\b(true|false)\b/g, '<span style="color: #fbbf24">$1</span>')
-            .replace(/\b(null)\b/g, '<span style="color: #f87171">$1</span>')
-            .replace(/\b(-?\d+\.?\d*)\b/g, '<span style="color: #c4b5fd">$1</span>');
-    };
-
-    return <span dangerouslySetInnerHTML={{ __html: highlightJson(json) }} />;
 }
 
 function formatBytes(bytes: number): string {

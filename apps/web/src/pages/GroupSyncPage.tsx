@@ -156,7 +156,7 @@ function SchemaDiffDisplay({
         for (const item of diff.items) {
             const key = item.table || 'Other';
             if (!groups[key]) groups[key] = [];
-            groups[key].push(item);
+            groups[key]?.push(item);
         }
         return groups;
     }, [diff.items]);
@@ -646,7 +646,7 @@ function DataSyncDialog({
                                             <Checkbox
                                                 checked={
                                                     selectedTables.length ===
-                                                        outOfSyncTables.length &&
+                                                    outOfSyncTables.length &&
                                                     outOfSyncTables.length > 0
                                                 }
                                                 indeterminate={
