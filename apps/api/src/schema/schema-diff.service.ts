@@ -422,9 +422,10 @@ export class SchemaDiffService {
             columnDefs.push(def);
         }
 
-        // Add primary key constraint
-        if (table.primaryKey.length > 0) {
-            columnDefs.push(`PRIMARY KEY (${table.primaryKey.map((c) => `"${c}"`).join(', ')})`);
+        // Add primary key constraint (ensure primaryKey is an array)
+        const primaryKey = Array.isArray(table.primaryKey) ? table.primaryKey : [];
+        if (primaryKey.length > 0) {
+            columnDefs.push(`PRIMARY KEY (${primaryKey.map((c) => `"${c}"`).join(', ')})`);
         }
 
         sql.push(
