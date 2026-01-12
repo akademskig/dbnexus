@@ -1044,7 +1044,7 @@ export function GroupSyncPage() {
 
     // Get source connection and its default schema
     const sourceConnection = connections.find((c) => c.id === group?.sourceConnectionId);
-    
+
     // Helper to get default schema for a connection
     // For MySQL/MariaDB, the database name is the schema
     const getConnectionDefaultSchema = (conn: typeof sourceConnection) => {
@@ -1054,7 +1054,7 @@ export function GroupSyncPage() {
         }
         return conn.defaultSchema || 'public';
     };
-    
+
     // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
     const sourceSchema = group?.syncTargetSchema || getConnectionDefaultSchema(sourceConnection);
 

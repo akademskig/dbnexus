@@ -80,6 +80,22 @@ import { useQueryPageStore } from '../stores/queryPageStore';
 
 const SIDEBAR_WIDTH = 280;
 
+// Helper to quote identifiers based on database engine
+const quoteIdentifier = (name: string, engine?: string) => {
+    if (engine === 'mysql' || engine === 'mariadb') {
+        return `\`${name}\``;
+    }
+    return `"${name}"`;
+};
+
+// Helper to build fully qualified table name
+const buildTableName = (schema: string, table: string, engine?: string) => {
+    if (engine === 'sqlite') {
+        return quoteIdentifier(table, engine);
+    }
+    return `${quoteIdentifier(schema, engine)}.${quoteIdentifier(table, engine)}`;
+};
+
 // Tab name mapping for URL
 const TAB_NAMES = ['data', 'structure', 'indexes', 'foreignKeys', 'sql'] as const;
 type TabName = (typeof TAB_NAMES)[number];
@@ -321,7 +337,7 @@ export function QueryPage() {
                 // For SQLite, use 'main' as the default
                 const engine = selectedConnection?.engine;
                 let defaultSchema: string | undefined;
-                
+
                 if (engine === 'mysql' || engine === 'mariadb') {
                     // MySQL: database name is the schema
                     defaultSchema = selectedConnection?.database && schemas.includes(selectedConnection.database)
@@ -338,7 +354,7 @@ export function QueryPage() {
                         schemas.find((s) => s === 'main') ??
                         schemas[0];
                 }
-                
+
                 if (defaultSchema) {
                     setSelectedSchema(defaultSchema);
                     setSchemasExpanded({ [defaultSchema]: true });
@@ -433,10 +449,8 @@ export function QueryPage() {
             schema?: TableSchema | null
         ) => {
             const offset = page * pageSize;
-            const tableName =
-                selectedConnection?.engine === 'sqlite'
-                    ? `"${table.name}"`
-                    : `"${table.schema}"."${table.name}"`;
+            const engine = selectedConnection?.engine;
+            const tableName = buildTableName(table.schema, table.name, engine);
 
             let query: string;
             if (search && search.trim() && schema?.columns.length) {
@@ -460,10 +474,13 @@ export function QueryPage() {
 
                 if (searchableColumns.length > 0) {
                     const conditions = searchableColumns.map((col) => {
-                        if (selectedConnection?.engine === 'sqlite') {
-                            return `"${col.name}" LIKE '%${searchTerm}%'`;
+                        const quotedCol = quoteIdentifier(col.name, engine);
+                        if (engine === 'sqlite') {
+                            return `${quotedCol} LIKE '%${searchTerm}%'`;
+                        } else if (engine === 'mysql' || engine === 'mariadb') {
+                            return `${quotedCol} LIKE '%${searchTerm}%'`;
                         } else {
-                            return `"${col.name}"::text ILIKE '%${searchTerm}%'`;
+                            return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
                         }
                     });
                     query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')} LIMIT ${pageSize} OFFSET ${offset};`;
@@ -582,10 +599,7 @@ export function QueryPage() {
     const handleDropTable = useCallback(() => {
         if (!selectedTable || !selectedConnectionId) return;
 
-        const tableName =
-            selectedConnection?.engine === 'sqlite'
-                ? `"${selectedTable.name}"`
-                : `"${selectedTable.schema}"."${selectedTable.name}"`;
+        const tableName = buildTableName(selectedTable.schema, selectedTable.name, selectedConnection?.engine);
 
         const query = `DROP TABLE ${tableName};`;
         setSql(query);
@@ -608,10 +622,8 @@ export function QueryPage() {
         (values: Record<string, string>) => {
             if (!selectedTable || !selectedConnectionId || !tableSchema) return;
 
-            const tableName =
-                selectedConnection?.engine === 'sqlite'
-                    ? `"${selectedTable.name}"`
-                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+            const engine = selectedConnection?.engine;
+            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
             const columns = Object.keys(values).filter((k) => values[k] !== '');
             const vals = columns.map((k) => {
@@ -631,7 +643,7 @@ export function QueryPage() {
                 return `'${val.replaceAll("'", "''")}'`;
             });
 
-            const query = `INSERT INTO ${tableName} (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${vals.join(', ')});`;
+            const query = `INSERT INTO ${tableName} (${columns.map((c) => quoteIdentifier(c, engine)).join(', ')}) VALUES (${vals.join(', ')});`;
             setSql(query);
             executeMutation.mutate(
                 { query },
@@ -654,14 +666,12 @@ export function QueryPage() {
         (tableName: string, columns: Array<{ name: string; type: string; nullable: boolean; primaryKey: boolean }>) => {
             if (!selectedConnectionId) return;
 
+            const engine = selectedConnection?.engine;
             const schema = selectedSchema || 'public';
-            const fullTableName =
-                selectedConnection?.engine === 'sqlite'
-                    ? `"${tableName}"`
-                    : `"${schema}"."${tableName}"`;
+            const fullTableName = buildTableName(schema, tableName, engine);
 
             const columnDefs = columns.map((col) => {
-                let def = `"${col.name}" ${col.type}`;
+                let def = `${quoteIdentifier(col.name, engine)} ${col.type}`;
                 if (col.primaryKey) def += ' PRIMARY KEY';
                 if (!col.nullable && !col.primaryKey) def += ' NOT NULL';
                 return def;
@@ -727,10 +737,8 @@ export function QueryPage() {
         async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
             if (!selectedTable || !selectedConnectionId || !tableSchema) return;
 
-            const tableName =
-                selectedConnection?.engine === 'sqlite'
-                    ? `"${selectedTable.name}"`
-                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+            const engine = selectedConnection?.engine;
+            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
             // Get primary key columns
             const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -749,7 +757,7 @@ export function QueryPage() {
                     ? JSON.stringify(oldVal) !== JSON.stringify(newVal)
                     : oldVal !== newVal;
                 if (hasChanged) {
-                    changes.push(`"${key}" = ${formatSqlValue(newVal, key)}`);
+                    changes.push(`${quoteIdentifier(key, engine)} = ${formatSqlValue(newVal, key)}`);
                 }
             }
 
@@ -759,7 +767,7 @@ export function QueryPage() {
 
             // Build WHERE clause using primary key
             const whereConditions = pkColumns.map(
-                (pk) => `"${pk}" = ${formatSqlValue(oldRow[pk], pk)}`
+                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(oldRow[pk], pk)}`
             );
 
             const query = `UPDATE ${tableName} SET ${changes.join(', ')} WHERE ${whereConditions.join(' AND ')};`;
@@ -791,10 +799,8 @@ export function QueryPage() {
         (row: Record<string, unknown>) => {
             if (!selectedTable || !selectedConnectionId || !tableSchema) return;
 
-            const tableName =
-                selectedConnection?.engine === 'sqlite'
-                    ? `"${selectedTable.name}"`
-                    : `"${selectedTable.schema}"."${selectedTable.name}"`;
+            const engine = selectedConnection?.engine;
+            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
             // Get primary key columns
             const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -805,7 +811,7 @@ export function QueryPage() {
 
             // Build WHERE clause using primary key
             const whereConditions = pkColumns.map(
-                (pk) => `"${pk}" = ${formatSqlValue(row[pk], pk)}`
+                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(row[pk], pk)}`
             );
 
             const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
