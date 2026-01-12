@@ -27,6 +27,10 @@ import {
     FormControl,
     InputLabel,
     LinearProgress,
+    Paper,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
@@ -41,10 +45,20 @@ import {
     ArrowBack as BackIcon,
     Settings as SettingsIcon,
     CompareArrows as CompareIcon,
+    Add as AddIcon,
+    Remove as RemoveIcon,
+    Edit as EditIcon,
+    ContentCopy as CopyIcon,
+    Check as CheckIcon,
 } from '@mui/icons-material';
-import { groupsApi, syncApi, projectsApi } from '../lib/api';
+import { groupsApi, syncApi, projectsApi, schemaApi } from '../lib/api';
 import { GlassCard } from '../components/GlassCard';
-import type { InstanceGroupTargetStatus, ConnectionConfig } from '@dbnexus/shared';
+import type {
+    InstanceGroupTargetStatus,
+    ConnectionConfig,
+    SchemaDiff,
+    SchemaDiffItem,
+} from '@dbnexus/shared';
 
 // Status icon component
 function StatusIcon({ status }: { status: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked' }) {
@@ -83,19 +97,273 @@ function StatusChip({ status }: { status: 'in_sync' | 'out_of_sync' | 'error' | 
     );
 }
 
-// Target status row
+// Get diff category from DiffType
+function getDiffCategory(type: string): 'added' | 'removed' | 'modified' {
+    if (type.includes('added')) return 'added';
+    if (type.includes('removed')) return 'removed';
+    return 'modified';
+}
+
+// Diff type badge
+function DiffTypeBadge({ type }: { type: string }) {
+    const category = getDiffCategory(type);
+    const config = {
+        added: { icon: <AddIcon sx={{ fontSize: 14 }} />, color: '#22c55e', label: 'Added' },
+        removed: { icon: <RemoveIcon sx={{ fontSize: 14 }} />, color: '#ef4444', label: 'Removed' },
+        modified: { icon: <EditIcon sx={{ fontSize: 14 }} />, color: '#f59e0b', label: 'Modified' },
+    }[category];
+
+    return (
+        <Chip
+            icon={config.icon}
+            label={config.label}
+            size="small"
+            sx={{
+                bgcolor: `${config.color}20`,
+                color: config.color,
+                border: `1px solid ${config.color}`,
+                height: 22,
+                '& .MuiChip-icon': { color: config.color },
+            }}
+        />
+    );
+}
+
+// Schema Diff Display Component
+function SchemaDiffDisplay({
+    diff,
+    migrationSql,
+    onApplyMigration,
+    applying,
+}: {
+    diff: SchemaDiff;
+    migrationSql: string[];
+    onApplyMigration: () => void;
+    applying: boolean;
+}) {
+    const [copied, setCopied] = useState(false);
+    const sqlText = migrationSql.join('\n\n');
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(sqlText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // Group items by table
+    const groupedItems = useMemo(() => {
+        const groups: Record<string, SchemaDiffItem[]> = {};
+        for (const item of diff.items) {
+            const key = item.table || 'Other';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        }
+        return groups;
+    }, [diff.items]);
+
+    // Calculate totals
+    const totalAdded =
+        diff.summary.tablesAdded +
+        diff.summary.columnsAdded +
+        diff.summary.indexesAdded +
+        diff.summary.fksAdded;
+    const totalRemoved =
+        diff.summary.tablesRemoved +
+        diff.summary.columnsRemoved +
+        diff.summary.indexesRemoved +
+        diff.summary.fksRemoved;
+    const totalModified =
+        diff.summary.columnsModified + diff.summary.indexesModified + diff.summary.fksModified;
+
+    if (diff.items.length === 0) {
+        return (
+            <Alert severity="success" sx={{ mt: 2 }}>
+                Schemas are in sync! No differences found.
+            </Alert>
+        );
+    }
+
+    return (
+        <Box sx={{ mt: 2 }}>
+            {/* Summary */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <Chip
+                    label={`${totalAdded} added`}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}
+                />
+                <Chip
+                    label={`${totalRemoved} removed`}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
+                />
+                <Chip
+                    label={`${totalModified} modified`}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}
+                />
+            </Box>
+
+            {/* Grouped diff items */}
+            {Object.entries(groupedItems).map(([tableName, items]) => (
+                <Accordion key={tableName} defaultExpanded sx={{ mb: 1 }}>
+                    <AccordionSummary expandIcon={<ExpandIcon />}>
+                        <Typography fontWeight={500}>{tableName}</Typography>
+                        <Box sx={{ ml: 2, display: 'flex', gap: 0.5 }}>
+                            {items.map((item, idx) => (
+                                <DiffTypeBadge key={idx} type={item.type} />
+                            ))}
+                        </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        {items.map((item, idx) => (
+                            <Box
+                                key={idx}
+                                sx={{
+                                    p: 1.5,
+                                    mb: 1,
+                                    bgcolor: 'background.default',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                    <DiffTypeBadge type={item.type} />
+                                    <Typography variant="body2" fontWeight={500}>
+                                        {item.type.replace(/_/g, ' ')}: {item.name || item.table}
+                                    </Typography>
+                                </Box>
+                                {item.migrationSql && item.migrationSql.length > 0 && (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        component="pre"
+                                        sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
+                                    >
+                                        {item.migrationSql.join('\n')}
+                                    </Typography>
+                                )}
+                            </Box>
+                        ))}
+                    </AccordionDetails>
+                </Accordion>
+            ))}
+
+            {/* Migration SQL */}
+            {migrationSql.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            mb: 1,
+                        }}
+                    >
+                        <Typography variant="subtitle2">Migration SQL</Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                size="small"
+                                startIcon={copied ? <CheckIcon /> : <CopyIcon />}
+                                onClick={handleCopy}
+                            >
+                                {copied ? 'Copied!' : 'Copy'}
+                            </Button>
+                            <Button
+                                size="small"
+                                variant="contained"
+                                color="warning"
+                                startIcon={applying ? <CircularProgress size={16} /> : <SyncIcon />}
+                                onClick={onApplyMigration}
+                                disabled={applying}
+                            >
+                                Apply Migration
+                            </Button>
+                        </Box>
+                    </Box>
+                    <Paper
+                        sx={{
+                            p: 2,
+                            bgcolor: 'background.default',
+                            maxHeight: 300,
+                            overflow: 'auto',
+                        }}
+                    >
+                        <Typography
+                            component="pre"
+                            sx={{
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                whiteSpace: 'pre-wrap',
+                                m: 0,
+                            }}
+                        >
+                            {sqlText}
+                        </Typography>
+                    </Paper>
+                </Box>
+            )}
+        </Box>
+    );
+}
+
+// Target status row with inline diff
 function TargetRow({
     target,
     group,
-    onViewSchemaDiff,
+    sourceConnectionId,
     onSyncData,
 }: {
     target: InstanceGroupTargetStatus;
     group: { id: string; projectId: string; syncSchema: boolean; syncData: boolean };
-    onViewSchemaDiff: (targetId: string) => void;
+    sourceConnectionId: string;
     onSyncData: (targetId: string) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
+    const [showDiff, setShowDiff] = useState(false);
+    const [applying, setApplying] = useState(false);
+    const queryClient = useQueryClient();
+
+    // Fetch schema diff when expanded and diff is requested
+    const { data: schemaDiff, isLoading: loadingDiff } = useQuery({
+        queryKey: ['schemaDiff', sourceConnectionId, target.connectionId],
+        queryFn: () =>
+            schemaApi.compareSchemasApi(
+                sourceConnectionId,
+                target.connectionId,
+                'public',
+                'public'
+            ),
+        enabled: showDiff && !!sourceConnectionId,
+    });
+
+    // Fetch migration SQL
+    const { data: migrationSqlData } = useQuery({
+        queryKey: ['migrationSql', sourceConnectionId, target.connectionId],
+        queryFn: () =>
+            schemaApi.getMigrationSql(sourceConnectionId, target.connectionId, 'public', 'public'),
+        enabled: showDiff && !!sourceConnectionId && !!schemaDiff,
+    });
+
+    const handleApplyMigration = async () => {
+        setApplying(true);
+        try {
+            await schemaApi.applyMigration(
+                sourceConnectionId,
+                target.connectionId,
+                'public',
+                'public',
+                'Applied from Instance Group Sync'
+            );
+            queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+            queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
+            setShowDiff(false);
+        } catch (error) {
+            console.error('Failed to apply migration:', error);
+        } finally {
+            setApplying(false);
+        }
+    };
 
     return (
         <>
@@ -141,14 +409,15 @@ function TargetRow({
                         {group.syncSchema && target.schemaStatus === 'out_of_sync' && (
                             <Button
                                 size="small"
-                                variant="outlined"
+                                variant={showDiff ? 'contained' : 'outlined'}
                                 startIcon={<CompareIcon />}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onViewSchemaDiff(target.connectionId);
+                                    setShowDiff(!showDiff);
+                                    if (!expanded) setExpanded(true);
                                 }}
                             >
-                                View Diff
+                                {showDiff ? 'Hide Diff' : 'View Diff'}
                             </Button>
                         )}
                         {group.syncData && target.dataStatus === 'out_of_sync' && (
@@ -170,15 +439,45 @@ function TargetRow({
             <TableRow>
                 <TableCell colSpan={5} sx={{ py: 0, borderBottom: expanded ? undefined : 'none' }}>
                     <Collapse in={expanded}>
-                        <Box sx={{ py: 2 }}>
+                        <Box sx={{ py: 2, px: 1 }}>
                             {target.error && (
                                 <Alert severity="error" sx={{ mb: 2 }}>
                                     {target.error}
                                 </Alert>
                             )}
-                            <Typography variant="body2" color="text.secondary">
-                                Connection ID: {target.connectionId}
-                            </Typography>
+
+                            {/* Inline Schema Diff */}
+                            {showDiff && (
+                                <Box sx={{ mb: 2 }}>
+                                    {loadingDiff ? (
+                                        <Box sx={{ py: 4, textAlign: 'center' }}>
+                                            <CircularProgress size={24} />
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{ mt: 1 }}
+                                            >
+                                                Loading schema diff...
+                                            </Typography>
+                                        </Box>
+                                    ) : schemaDiff ? (
+                                        <SchemaDiffDisplay
+                                            diff={schemaDiff}
+                                            migrationSql={migrationSqlData?.sql || []}
+                                            onApplyMigration={handleApplyMigration}
+                                            applying={applying}
+                                        />
+                                    ) : (
+                                        <Alert severity="info">Unable to load schema diff</Alert>
+                                    )}
+                                </Box>
+                            )}
+
+                            {!showDiff && (
+                                <Typography variant="body2" color="text.secondary">
+                                    Connection ID: {target.connectionId}
+                                </Typography>
+                            )}
                         </Box>
                     </Collapse>
                 </TableCell>
@@ -590,11 +889,6 @@ export function GroupSyncPage() {
         enabled: !!groupId && !!group?.sourceConnectionId,
     });
 
-    const handleViewSchemaDiff = (targetConnectionId: string) => {
-        // Navigate to schema diff page with pre-filled connections
-        navigate(`/schema-diff?source=${group?.sourceConnectionId}&target=${targetConnectionId}`);
-    };
-
     const handleSyncData = (targetConnectionId: string) => {
         const target = connections.find((c) => c.id === targetConnectionId);
         if (target) {
@@ -631,6 +925,7 @@ export function GroupSyncPage() {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                         Instance Group Sync Status
+                        {group.projectName && ` • ${group.projectName}`}
                     </Typography>
                 </Box>
                 <Button
@@ -700,7 +995,7 @@ export function GroupSyncPage() {
                                             key={target.connectionId}
                                             target={target}
                                             group={group}
-                                            onViewSchemaDiff={handleViewSchemaDiff}
+                                            sourceConnectionId={group.sourceConnectionId!}
                                             onSyncData={handleSyncData}
                                         />
                                     ))}

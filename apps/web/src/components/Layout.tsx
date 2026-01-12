@@ -1,4 +1,5 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     Box,
     Drawer,
@@ -10,6 +11,8 @@ import {
     Divider,
     IconButton,
     Tooltip,
+    Collapse,
+    CircularProgress,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -18,8 +21,14 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import SyncIcon from '@mui/icons-material/Sync';
+import LayersIcon from '@mui/icons-material/Layers';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { groupsApi } from '../lib/api';
+import type { DatabaseGroup } from '@dbnexus/shared';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -27,14 +36,18 @@ const DRAWER_WIDTH_COLLAPSED = 64;
 // Sidebar state store
 interface SidebarStore {
     collapsed: boolean;
+    syncExpanded: boolean;
     toggle: () => void;
+    toggleSync: () => void;
 }
 
 const useSidebarStore = create<SidebarStore>()(
     persist(
         (set) => ({
             collapsed: false,
+            syncExpanded: true,
             toggle: () => set((state) => ({ collapsed: !state.collapsed })),
+            toggleSync: () => set((state) => ({ syncExpanded: !state.syncExpanded })),
         }),
         { name: 'dbnexus-sidebar' }
     )
@@ -49,8 +62,23 @@ const navItems = [
 
 export function Layout() {
     const location = useLocation();
-    const { collapsed, toggle } = useSidebarStore();
+    const navigate = useNavigate();
+    const { collapsed, syncExpanded, toggle, toggleSync } = useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
+
+    const [groups, setGroups] = useState<DatabaseGroup[]>([]);
+    const [loadingGroups, setLoadingGroups] = useState(true);
+
+    useEffect(() => {
+        groupsApi
+            .getAll()
+            .then(setGroups)
+            .catch(() => setGroups([]))
+            .finally(() => setLoadingGroups(false));
+    }, []);
+
+    const isSyncActive =
+        location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
 
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -158,6 +186,113 @@ export function Layout() {
                             </Tooltip>
                         );
                     })}
+
+                    {/* Sync Section */}
+                    {!collapsed && groups.length > 0 && (
+                        <>
+                            <Divider sx={{ my: 1.5 }} />
+                            <ListItemButton
+                                onClick={toggleSync}
+                                sx={{ px: 2 }}
+                                selected={isSyncActive}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 40,
+                                        color: isSyncActive ? 'primary.main' : 'text.secondary',
+                                    }}
+                                >
+                                    <SyncIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Instance Sync"
+                                    primaryTypographyProps={{ fontSize: 14 }}
+                                />
+                                {syncExpanded ? (
+                                    <ExpandLessIcon fontSize="small" />
+                                ) : (
+                                    <ExpandMoreIcon fontSize="small" />
+                                )}
+                            </ListItemButton>
+                            <Collapse in={syncExpanded}>
+                                <List disablePadding>
+                                    {loadingGroups ? (
+                                        <Box sx={{ py: 2, textAlign: 'center' }}>
+                                            <CircularProgress size={16} />
+                                        </Box>
+                                    ) : (
+                                        groups.map((group) => {
+                                            const groupPath = `/groups/${group.id}/sync`;
+                                            const isGroupActive = location.pathname === groupPath;
+                                            return (
+                                                <ListItemButton
+                                                    key={group.id}
+                                                    onClick={() => navigate(groupPath)}
+                                                    selected={isGroupActive}
+                                                    sx={{
+                                                        pl: 4,
+                                                        py: 0.75,
+                                                    }}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 32 }}>
+                                                        <LayersIcon
+                                                            sx={{
+                                                                fontSize: 18,
+                                                                color: isGroupActive
+                                                                    ? 'primary.main'
+                                                                    : 'text.disabled',
+                                                            }}
+                                                        />
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={group.name}
+                                                        primaryTypographyProps={{
+                                                            fontSize: 13,
+                                                            noWrap: true,
+                                                        }}
+                                                        secondary={group.projectName}
+                                                        secondaryTypographyProps={{
+                                                            fontSize: 11,
+                                                            noWrap: true,
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            );
+                                        })
+                                    )}
+                                </List>
+                            </Collapse>
+                        </>
+                    )}
+
+                    {/* Collapsed sync icon */}
+                    {collapsed && groups.length > 0 && (
+                        <Tooltip title="Instance Sync" placement="right" arrow>
+                            <ListItemButton
+                                onClick={() => {
+                                    const firstGroup = groups[0];
+                                    if (firstGroup) {
+                                        navigate(`/groups/${firstGroup.id}/sync`);
+                                    }
+                                }}
+                                selected={isSyncActive}
+                                sx={{
+                                    mb: 0.5,
+                                    justifyContent: 'center',
+                                    px: 1.5,
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        color: isSyncActive ? 'primary.main' : 'text.secondary',
+                                    }}
+                                >
+                                    <SyncIcon />
+                                </ListItemIcon>
+                            </ListItemButton>
+                        </Tooltip>
+                    )}
                 </List>
 
                 <Divider />
