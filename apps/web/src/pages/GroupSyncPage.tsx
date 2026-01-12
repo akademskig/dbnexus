@@ -44,7 +44,6 @@ import {
     Sync as SyncIcon,
     ArrowBack as BackIcon,
     Settings as SettingsIcon,
-    CompareArrows as CompareIcon,
     Add as AddIcon,
     Remove as RemoveIcon,
     Edit as EditIcon,
@@ -324,9 +323,11 @@ function TargetRow({
     onSyncData: (targetId: string) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
-    const [showDiff, setShowDiff] = useState(false);
     const [applying, setApplying] = useState(false);
     const queryClient = useQueryClient();
+
+    // Show diff when expanded and schema sync is enabled
+    const showDiff = expanded && group.syncSchema;
 
     // Fetch schema diff when expanded and diff is requested
     // Cache for 5 minutes to avoid repeated API calls
@@ -383,7 +384,8 @@ function TargetRow({
             );
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
             queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
-            setShowDiff(false);
+            // Collapse after successful migration
+            setExpanded(false);
         } catch (error) {
             console.error('Failed to apply migration:', error);
         } finally {
@@ -435,15 +437,22 @@ function TargetRow({
                         {group.syncSchema && target.schemaStatus === 'out_of_sync' && (
                             <Button
                                 size="small"
-                                variant={showDiff ? 'contained' : 'outlined'}
-                                startIcon={<CompareIcon />}
+                                variant="outlined"
+                                startIcon={<RefreshIcon />}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowDiff(!showDiff);
+                                    // Invalidate the cache to force refetch
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['schemaDiff', sourceConnectionId, target.connectionId],
+                                    });
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['migrationSql', sourceConnectionId, target.connectionId],
+                                    });
+                                    // Expand if not already
                                     if (!expanded) setExpanded(true);
                                 }}
                             >
-                                {showDiff ? 'Hide Diff' : 'View Diff'}
+                                Recheck Schema
                             </Button>
                         )}
                         {group.syncData && target.dataStatus === 'out_of_sync' && (
