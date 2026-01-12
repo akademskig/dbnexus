@@ -344,7 +344,7 @@ function ProjectSection({
         },
     });
 
-    const projectColor = project.color || PROJECT_COLORS[0];
+    const projectColor = project.color || PROJECT_COLORS[0] || '#0ea5e9';
     const totalConnections = Array.from(groupsMap.values()).reduce(
         (sum, conns) => sum + conns.length,
         0
@@ -484,6 +484,7 @@ function ProjectSection({
                                 key={group.id}
                                 group={group}
                                 connections={groupsMap.get(group.id) || []}
+                                projectColor={projectColor}
                                 onEditGroup={() => onEditGroup(group)}
                                 onEditConnection={onEditConnection}
                                 onDeleteConnection={onDeleteConnection}
@@ -543,6 +544,7 @@ function ProjectSection({
 function DatabaseGroupSection({
     group,
     connections,
+    projectColor,
     onEditGroup,
     onEditConnection,
     onDeleteConnection,
@@ -550,6 +552,7 @@ function DatabaseGroupSection({
 }: {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
+    projectColor: string;
     onEditGroup: () => void;
     onEditConnection: (conn: ConnectionConfig) => void;
     onDeleteConnection: (id: string) => void;
@@ -595,19 +598,14 @@ function DatabaseGroupSection({
                         width: 32,
                         height: 32,
                         borderRadius: 0.5,
-                        bgcolor: 'primary.main',
-                        opacity: 0.1,
+                        bgcolor: `${projectColor}15`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                     }}
                 >
-                    <LayersIcon
-                        fontSize="small"
-                        sx={{ color: 'primary.main', opacity: 10, position: 'absolute' }}
-                    />
+                    <LayersIcon fontSize="small" sx={{ color: projectColor }} />
                 </Box>
-                <LayersIcon fontSize="small" sx={{ color: 'primary.main', ml: -5 }} />
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" fontWeight={600}>
                         {group.name}
