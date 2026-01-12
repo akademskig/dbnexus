@@ -582,9 +582,9 @@ function DatabaseGroupSection({
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.5,
+                    gap: 2,
+                    px: 2.5,
+                    py: 2,
                     cursor: 'pointer',
                     transition: 'background 0.15s',
                     '&:hover': { bgcolor: 'action.hover' },
@@ -592,8 +592,8 @@ function DatabaseGroupSection({
             >
                 <Box
                     sx={{
-                        width: 28,
-                        height: 28,
+                        width: 32,
+                        height: 32,
                         borderRadius: 0.5,
                         bgcolor: 'primary.main',
                         opacity: 0.1,
@@ -607,7 +607,7 @@ function DatabaseGroupSection({
                         sx={{ color: 'primary.main', opacity: 10, position: 'absolute' }}
                     />
                 </Box>
-                <LayersIcon fontSize="small" sx={{ color: 'primary.main', ml: -4.5 }} />
+                <LayersIcon fontSize="small" sx={{ color: 'primary.main', ml: -5 }} />
                 <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" fontWeight={600}>
                         {group.name}
@@ -706,8 +706,8 @@ function DatabaseGroupSection({
             <Collapse in={expanded}>
                 <Box
                     sx={{
-                        px: 2,
-                        py: 1.5,
+                        px: 2.5,
+                        py: 2,
                         bgcolor: 'background.default',
                         borderTop: '1px solid',
                         borderColor: 'divider',
