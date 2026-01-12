@@ -43,7 +43,6 @@ import {
     type GridRowModel,
     type GridRowModesModel,
     GridRowModes,
-    GridActionsCellItem,
 } from '@mui/x-data-grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -1328,8 +1327,8 @@ export function QueryPage() {
                                         tableSchema={tableSchema}
                                         onUpdateRow={handleUpdateRow}
                                         onDeleteRow={handleDeleteRow}
-                                        onSyncRow={(row) => {
-                                            setRowsToSync([row]);
+                                        onSyncRow={(rows) => {
+                                            setRowsToSync(rows);
                                             setSyncRowDialogOpen(true);
                                         }}
                                     />
@@ -1568,22 +1567,19 @@ function DataTab({
     tableSchema?: TableSchema;
     onUpdateRow?: (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => Promise<void>;
     onDeleteRow?: (row: Record<string, unknown>) => void;
-    onSyncRow?: (row: Record<string, unknown>) => void;
+    onSyncRow?: (rows: Record<string, unknown>[]) => void;
 }) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [deleteConfirmRow, setDeleteConfirmRow] = useState<Record<string, unknown> | null>(null);
+    const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
 
     // Get primary key columns for identifying rows
     const primaryKeyColumns = tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || [];
-    // Show edit/delete/sync actions if callbacks are provided (we'll disable edit if no PK)
-    const hasActionColumn = !!(onUpdateRow || onDeleteRow || onSyncRow);
     // Can only edit/delete/sync if we have primary keys to identify rows
     const canEditRows = primaryKeyColumns.length > 0;
-
-    const handleEditClick = (id: GridRowId) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-    };
+    // Check if we have any selected rows
+    const hasSelectedRows = selectedRowIds.length > 0;
 
     const handleSaveClick = (id: GridRowId) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
@@ -1594,10 +1590,6 @@ function DataTab({
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
-    };
-
-    const handleDeleteClick = (row: Record<string, unknown>) => () => {
-        setDeleteConfirmRow(row);
     };
 
     const handleConfirmDelete = () => {
@@ -1669,68 +1661,12 @@ function DataTab({
         : [];
 
     // Add actions column if callbacks are provided
-    const columns: GridColDef[] = hasActionColumn
-        ? [
-            ...dataColumns,
-            {
-                field: 'actions',
-                type: 'actions',
-                headerName: '',
-                width: 100,
-                cellClassName: 'actions',
-                getActions: ({ id, row }) => {
-                    const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
+    // Get the currently editing row id (if any)
+    const editingRowId = Object.entries(rowModesModel).find(
+        ([, mode]) => mode.mode === GridRowModes.Edit
+    )?.[0];
 
-                    if (isInEditMode) {
-                        return [
-                            <GridActionsCellItem
-                                key="save"
-                                icon={<SaveIcon />}
-                                label="Save"
-                                sx={{ color: 'success.main' }}
-                                onClick={handleSaveClick(id)}
-                            />,
-                            <GridActionsCellItem
-                                key="cancel"
-                                icon={<CancelIcon />}
-                                label="Cancel"
-                                onClick={handleCancelClick(id)}
-                                color="inherit"
-                            />,
-                        ];
-                    }
-
-                    // Show edit/delete/sync buttons, but disable edit/delete if no primary key
-                    return [
-                        <GridActionsCellItem
-                            key="edit"
-                            icon={<EditIcon />}
-                            label={canEditRows ? "Edit" : "Edit (no primary key)"}
-                            onClick={handleEditClick(id)}
-                            color="inherit"
-                            disabled={!canEditRows}
-                        />,
-                        <GridActionsCellItem
-                            key="delete"
-                            icon={<DeleteIcon />}
-                            label={canEditRows ? "Delete" : "Delete (no primary key)"}
-                            onClick={handleDeleteClick(row as Record<string, unknown>)}
-                            color="inherit"
-                            disabled={!canEditRows}
-                        />,
-                        <GridActionsCellItem
-                            key="sync"
-                            icon={<SyncIcon />}
-                            label={canEditRows ? "Sync to..." : "Sync (no primary key)"}
-                            onClick={() => onSyncRow?.(row as Record<string, unknown>)}
-                            color="inherit"
-                            disabled={!canEditRows || !onSyncRow}
-                        />,
-                    ];
-                },
-            },
-        ]
-        : dataColumns;
+    const columns: GridColDef[] = dataColumns;
 
     const rows = result
         ? result.rows.map((row, index) => ({
@@ -1738,6 +1674,42 @@ function DataTab({
             ...row,
         }))
         : [];
+
+    // Get selected rows data
+    const getSelectedRows = (): Record<string, unknown>[] => {
+        return selectedRowIds.map((id) => {
+            const row = rows.find((r) => r.id === id);
+            if (!row) return {};
+            // Remove the internal 'id' field we added
+            const { id: _, ...rowData } = row;
+            return rowData;
+        });
+    };
+
+    // Handle toolbar actions
+    const handleEditSelected = () => {
+        if (selectedRowIds.length === 1) {
+            const id = selectedRowIds[0];
+            setRowModesModel({ [String(id)]: { mode: GridRowModes.Edit } });
+        }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedRowIds.length === 1) {
+            const row = rows.find((r) => r.id === selectedRowIds[0]);
+            if (row) {
+                const { id: _, ...rowData } = row;
+                setDeleteConfirmRow(rowData);
+            }
+        }
+    };
+
+    const handleSyncSelected = () => {
+        const selectedRows = getSelectedRows();
+        if (selectedRows.length > 0 && onSyncRow) {
+            onSyncRow(selectedRows);
+        }
+    };
 
     return (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -1885,6 +1857,101 @@ function DataTab({
                         )}
                     </Box>
 
+                    {/* Selection Toolbar */}
+                    {(hasSelectedRows || editingRowId) && (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                px: 2,
+                                py: 1,
+                                bgcolor: 'action.selected',
+                                borderBottom: 1,
+                                borderColor: 'divider',
+                            }}
+                        >
+                            {editingRowId ? (
+                                <>
+                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                        Editing row...
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={<SaveIcon />}
+                                        onClick={handleSaveClick(editingRowId)}
+                                    >
+                                        Save
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<CancelIcon />}
+                                        onClick={handleCancelClick(editingRowId)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                        {selectedRowIds.length} row{selectedRowIds.length > 1 ? 's' : ''} selected
+                                    </Typography>
+                                    <Tooltip title={!canEditRows ? 'No primary key - cannot edit' : selectedRowIds.length > 1 ? 'Select single row to edit' : 'Edit row'}>
+                                        <span>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                startIcon={<EditIcon />}
+                                                onClick={handleEditSelected}
+                                                disabled={!canEditRows || selectedRowIds.length !== 1 || !onUpdateRow}
+                                            >
+                                                Edit
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title={!canEditRows ? 'No primary key - cannot delete' : selectedRowIds.length > 1 ? 'Select single row to delete' : 'Delete row'}>
+                                        <span>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="error"
+                                                startIcon={<DeleteIcon />}
+                                                onClick={handleDeleteSelected}
+                                                disabled={!canEditRows || selectedRowIds.length !== 1 || !onDeleteRow}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title={!canEditRows ? 'No primary key - cannot sync' : 'Sync selected rows to another database'}>
+                                        <span>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="primary"
+                                                startIcon={<SyncIcon />}
+                                                onClick={handleSyncSelected}
+                                                disabled={!canEditRows || !onSyncRow}
+                                            >
+                                                Sync to...
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                    <Box sx={{ flex: 1 }} />
+                                    <Button
+                                        size="small"
+                                        onClick={() => setSelectedRowIds([])}
+                                    >
+                                        Clear Selection
+                                    </Button>
+                                </>
+                            )}
+                        </Box>
+                    )}
+
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {result.rows.length > 0 ? (
@@ -1892,7 +1959,9 @@ function DataTab({
                                 rows={rows}
                                 columns={columns}
                                 density="compact"
-                                disableRowSelectionOnClick
+                                checkboxSelection
+                                rowSelectionModel={selectedRowIds}
+                                onRowSelectionModelChange={(newSelection) => setSelectedRowIds(newSelection as GridRowId[])}
                                 loading={loading}
                                 paginationMode={totalRowCount !== null ? 'server' : 'client'}
                                 rowCount={totalRowCount ?? result.rowCount}
@@ -3143,7 +3212,7 @@ function SyncRowDialog({
     const targetConnections = connections.filter(
         (c) => c.id !== sourceConnectionId && c.groupId === sourceGroupId && sourceGroupId
     );
-    
+
     // Check if source connection is in a group
     const isInGroup = !!sourceGroupId;
 
