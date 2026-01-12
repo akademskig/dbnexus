@@ -18,9 +18,15 @@ import {
     Sync as SyncIcon,
     Layers as LayersIcon,
 } from '@mui/icons-material';
+import { useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, syncApi } from '../lib/api';
 import { GlassCard } from '../components/GlassCard';
-import type { ConnectionConfig, QueryHistoryEntry, InstanceGroup } from '@dbnexus/shared';
+import type {
+    ConnectionConfig,
+    QueryHistoryEntry,
+    InstanceGroup,
+    InstanceGroupSyncStatus,
+} from '@dbnexus/shared';
 
 // Stat Card - clean with subtle icon color
 function StatCard({
@@ -269,10 +275,57 @@ function getTimeAgo(date: Date): string {
     return `${days}d`;
 }
 
-// Sync Status Row
-function SyncGroupRow({ group, onClick }: { group: InstanceGroup; onClick: () => void }) {
+// Sync Status Row with live status
+function SyncGroupRow({
+    group,
+    syncStatus,
+    checking,
+    onClick,
+}: {
+    group: InstanceGroup;
+    syncStatus?: InstanceGroupSyncStatus;
+    checking: boolean;
+    onClick: () => void;
+}) {
     const hasSource = !!group.sourceConnectionId;
     const syncEnabled = group.syncSchema || group.syncData;
+
+    // Determine overall status from targets
+    const getOverallStatus = () => {
+        if (!syncStatus || !syncStatus.targets || syncStatus.targets.length === 0) {
+            return 'unchecked';
+        }
+
+        const hasError = syncStatus.targets.some(
+            (t) => t.schemaStatus === 'error' || t.dataStatus === 'error'
+        );
+        if (hasError) return 'error';
+
+        const hasOutOfSync = syncStatus.targets.some(
+            (t) => t.schemaStatus === 'out_of_sync' || t.dataStatus === 'out_of_sync'
+        );
+        if (hasOutOfSync) return 'out_of_sync';
+
+        const allInSync = syncStatus.targets.every(
+            (t) =>
+                (t.schemaStatus === 'in_sync' || t.schemaStatus === 'unchecked') &&
+                (t.dataStatus === 'in_sync' || t.dataStatus === 'unchecked')
+        );
+        if (allInSync) return 'in_sync';
+
+        return 'unchecked';
+    };
+
+    const status = getOverallStatus();
+
+    const statusConfig = {
+        in_sync: { label: 'In Sync', color: '#22c55e', bgcolor: 'rgba(34, 197, 94, 0.1)' },
+        out_of_sync: { label: 'Out of Sync', color: '#f59e0b', bgcolor: 'rgba(245, 158, 11, 0.1)' },
+        error: { label: 'Error', color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.1)' },
+        unchecked: { label: 'Checking...', color: '#6b7280', bgcolor: 'rgba(107, 114, 128, 0.1)' },
+    };
+
+    const currentStatus = statusConfig[status];
 
     return (
         <Box
@@ -329,15 +382,27 @@ function SyncGroupRow({ group, onClick }: { group: InstanceGroup; onClick: () =>
                         color: '#6b7280',
                     }}
                 />
+            ) : checking ? (
+                <Chip
+                    label="Checking..."
+                    size="small"
+                    icon={<CircularProgress size={10} sx={{ color: 'inherit' }} />}
+                    sx={{
+                        height: 20,
+                        fontSize: 10,
+                        bgcolor: 'rgba(59, 130, 246, 0.1)',
+                        color: '#3b82f6',
+                    }}
+                />
             ) : (
                 <Chip
-                    label="Active"
+                    label={currentStatus.label}
                     size="small"
                     sx={{
                         height: 20,
                         fontSize: 10,
-                        bgcolor: 'rgba(34, 197, 94, 0.1)',
-                        color: '#22c55e',
+                        bgcolor: currentStatus.bgcolor,
+                        color: currentStatus.color,
                     }}
                 />
             )}
@@ -348,12 +413,15 @@ function SyncGroupRow({ group, onClick }: { group: InstanceGroup; onClick: () =>
 // Main Dashboard Page
 export function DashboardPage() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [connections, setConnections] = useState<ConnectionConfig[]>([]);
     const [connectionStatuses, setConnectionStatuses] = useState<
         Record<string, 'online' | 'offline' | 'checking'>
     >({});
     const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
     const [syncGroups, setSyncGroups] = useState<InstanceGroup[]>([]);
+    const [syncStatuses, setSyncStatuses] = useState<Record<string, InstanceGroupSyncStatus>>({});
+    const [syncChecking, setSyncChecking] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -370,6 +438,21 @@ export function DashboardPage() {
         }
     };
 
+    // Check sync status for a group in background
+    const checkGroupSyncStatus = async (groupId: string) => {
+        setSyncChecking((prev) => ({ ...prev, [groupId]: true }));
+        try {
+            const status = await syncApi.getGroupSyncStatus(groupId);
+            setSyncStatuses((prev) => ({ ...prev, [groupId]: status }));
+            // Also update React Query cache so GroupSyncPage can use it
+            queryClient.setQueryData(['groupSyncStatus', groupId], status);
+        } catch (error) {
+            console.error(`Failed to check sync status for group ${groupId}:`, error);
+        } finally {
+            setSyncChecking((prev) => ({ ...prev, [groupId]: false }));
+        }
+    };
+
     const loadData = async () => {
         try {
             const [conns, hist, groups] = await Promise.all([
@@ -381,9 +464,16 @@ export function DashboardPage() {
             setHistory(hist);
             setSyncGroups(groups);
 
-            // Check status for each connection
+            // Check status for each connection (in background)
             conns.forEach((conn) => {
                 checkConnectionStatus(conn.id);
+            });
+
+            // Check sync status for each group with sync enabled (in background)
+            groups.forEach((group) => {
+                if (group.sourceConnectionId && (group.syncSchema || group.syncData)) {
+                    checkGroupSyncStatus(group.id);
+                }
             });
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
@@ -678,6 +768,8 @@ export function DashboardPage() {
                                 <SyncGroupRow
                                     key={group.id}
                                     group={group}
+                                    syncStatus={syncStatuses[group.id]}
+                                    checking={syncChecking[group.id] || false}
                                     onClick={() => navigate(`/groups/${group.id}/sync`)}
                                 />
                             ))}

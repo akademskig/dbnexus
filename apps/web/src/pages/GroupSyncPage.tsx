@@ -996,10 +996,12 @@ export function GroupSyncPage() {
             return result;
         },
         enabled: !!groupId && !!group?.sourceConnectionId,
-        // Auto-refetch on mount/focus but respect cache
-        refetchOnMount: true,
+        // Don't refetch on mount - use cached data from Dashboard
+        // User can manually refresh with the button
+        refetchOnMount: false,
         refetchOnWindowFocus: false,
-        staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
+        staleTime: 10 * 60 * 1000, // Consider stale after 10 minutes
+        gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     });
 
     // Update lastCheckedAt when data is updated
