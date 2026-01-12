@@ -563,8 +563,9 @@ export function QueryPage() {
 
         const query = `DROP TABLE ${tableName};`;
         setSql(query);
+        // Pass confirmed: true since we already have our own confirmation dialog
         executeMutation.mutate(
-            { query },
+            { query, confirmed: true },
             {
                 onSuccess: () => {
                     setSelectedTable(null);
