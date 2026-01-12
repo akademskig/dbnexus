@@ -89,6 +89,33 @@ export class SyncController {
     }
 
     /**
+     * Sync specific rows to a target connection
+     */
+    @Post('rows/:targetConnectionId/:schema/:table')
+    async syncRows(
+        @Param('targetConnectionId') targetConnectionId: string,
+        @Param('schema') schema: string,
+        @Param('table') table: string,
+        @Body()
+        body: {
+            sourceConnectionId: string;
+            rows: Record<string, unknown>[];
+            primaryKeys: string[];
+            mode?: 'insert' | 'upsert';
+        }
+    ): Promise<{ inserted: number; updated: number; errors: string[] }> {
+        return this.syncService.syncRows(
+            body.sourceConnectionId,
+            targetConnectionId,
+            schema,
+            table,
+            body.rows,
+            body.primaryKeys,
+            body.mode ?? 'upsert'
+        );
+    }
+
+    /**
      * Sync all tables in a group
      */
     @Post('groups/:groupId/sync-all')

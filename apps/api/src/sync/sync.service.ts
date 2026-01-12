@@ -426,6 +426,91 @@ export class SyncService {
     }
 
     /**
+     * Sync specific rows from source to target
+     */
+    async syncRows(
+        _sourceConnectionId: string, // Kept for API consistency, rows are passed directly
+        targetConnectionId: string,
+        schema: string,
+        table: string,
+        rows: Record<string, unknown>[],
+        primaryKeyColumns: string[],
+        mode: 'insert' | 'upsert' = 'upsert'
+    ): Promise<{ inserted: number; updated: number; errors: string[] }> {
+        const result = { inserted: 0, updated: 0, errors: [] as string[] };
+
+        if (rows.length === 0 || primaryKeyColumns.length === 0) {
+            return result;
+        }
+
+        const targetConnection = this.connectionsService.findById(targetConnectionId);
+        const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
+        const engine = targetConnection.engine;
+        const tableRef = quoteTableRef(schema, table, engine);
+
+        // Get column info from target
+        const tableSchema = await targetConnector.getTableSchema(schema, table);
+        const columns = tableSchema.columns.map((c) => c.name);
+
+        for (const row of rows) {
+            try {
+                // Check if row exists in target
+                const whereClause = primaryKeyColumns
+                    .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
+                    .join(' AND ');
+                const pkValues = primaryKeyColumns.map((c) => row[c]);
+
+                const existsResult = await targetConnector.query(
+                    `SELECT 1 FROM ${tableRef} WHERE ${whereClause} LIMIT 1`,
+                    pkValues
+                );
+                const exists = existsResult.rows.length > 0;
+
+                if (exists && mode === 'upsert') {
+                    // Update existing row
+                    const nonPkColumns = columns.filter((c) => !primaryKeyColumns.includes(c));
+                    if (nonPkColumns.length > 0) {
+                        const setClause = nonPkColumns
+                            .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
+                            .join(', ');
+                        const updateWhereClause = primaryKeyColumns
+                            .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(nonPkColumns.length + i + 1, engine)}`)
+                            .join(' AND ');
+                        const updateValues = [
+                            ...nonPkColumns.map((c) => row[c]),
+                            ...primaryKeyColumns.map((c) => row[c]),
+                        ];
+
+                        await targetConnector.execute(
+                            `UPDATE ${tableRef} SET ${setClause} WHERE ${updateWhereClause}`,
+                            updateValues
+                        );
+                        result.updated++;
+                    }
+                } else if (!exists) {
+                    // Insert new row
+                    const rowColumns = columns.filter((c) => row[c] !== undefined);
+                    const values = rowColumns.map((c) => row[c]);
+                    const placeholders = rowColumns.map((_, i) => getPlaceholder(i + 1, engine)).join(', ');
+                    const quotedColumns = rowColumns.map((c) => quoteIdentifier(c, engine)).join(', ');
+
+                    await targetConnector.execute(
+                        `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`,
+                        values
+                    );
+                    result.inserted++;
+                }
+            } catch (error) {
+                result.errors.push(
+                    `Row sync failed: ${error instanceof Error ? error.message : String(error)}`
+                );
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Get groups with sync enabled for dashboard
      */
     getGroupsWithSyncEnabled(): InstanceGroup[] {

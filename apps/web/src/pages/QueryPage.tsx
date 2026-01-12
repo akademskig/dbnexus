@@ -74,8 +74,9 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
-import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry } from '@dbnexus/shared';
-import { connectionsApi, queriesApi, schemaApi } from '../lib/api';
+import SyncIcon from '@mui/icons-material/Sync';
+import type { TableInfo, TableSchema, QueryResult, QueryHistoryEntry, ConnectionConfig } from '@dbnexus/shared';
+import { connectionsApi, queriesApi, schemaApi, syncApi } from '../lib/api';
 import { useQueryPageStore } from '../stores/queryPageStore';
 
 const SIDEBAR_WIDTH = 280;
@@ -171,6 +172,10 @@ export function QueryPage() {
     const [dropTableConfirmOpen, setDropTableConfirmOpen] = useState(false);
     const [addRowOpen, setAddRowOpen] = useState(false);
     const [tableActionsAnchor, setTableActionsAnchor] = useState<null | HTMLElement>(null);
+
+    // Row sync state
+    const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
+    const [rowsToSync, setRowsToSync] = useState<Record<string, unknown>[]>([]);
 
     // Restore from persisted state on mount if no URL params
     useEffect(() => {
@@ -1323,6 +1328,10 @@ export function QueryPage() {
                                         tableSchema={tableSchema}
                                         onUpdateRow={handleUpdateRow}
                                         onDeleteRow={handleDeleteRow}
+                                        onSyncRow={(row) => {
+                                            setRowsToSync([row]);
+                                            setSyncRowDialogOpen(true);
+                                        }}
                                     />
                                 )}
 
@@ -1449,6 +1458,22 @@ export function QueryPage() {
                 columns={tableSchema?.columns || []}
                 tableName={selectedTable?.name || ''}
             />
+
+            {/* Sync Row Dialog */}
+            <SyncRowDialog
+                open={syncRowDialogOpen}
+                onClose={() => {
+                    setSyncRowDialogOpen(false);
+                    setRowsToSync([]);
+                }}
+                rows={rowsToSync}
+                sourceConnectionId={selectedConnectionId}
+                sourceConnection={selectedConnection}
+                schema={selectedTable?.schema || selectedSchema || ''}
+                table={selectedTable?.name || ''}
+                primaryKeys={tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || []}
+                connections={connections}
+            />
         </Box>
     );
 }
@@ -1527,6 +1552,7 @@ function DataTab({
     tableSchema,
     onUpdateRow,
     onDeleteRow,
+    onSyncRow,
 }: {
     result: QueryResult | null;
     error: string | null;
@@ -1542,6 +1568,7 @@ function DataTab({
     tableSchema?: TableSchema;
     onUpdateRow?: (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => Promise<void>;
     onDeleteRow?: (row: Record<string, unknown>) => void;
+    onSyncRow?: (row: Record<string, unknown>) => void;
 }) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
@@ -1549,9 +1576,9 @@ function DataTab({
 
     // Get primary key columns for identifying rows
     const primaryKeyColumns = tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || [];
-    // Show edit/delete actions if callbacks are provided (we'll disable edit if no PK)
-    const hasActionColumn = !!(onUpdateRow || onDeleteRow);
-    // Can only edit/delete if we have primary keys to identify rows
+    // Show edit/delete/sync actions if callbacks are provided (we'll disable edit if no PK)
+    const hasActionColumn = !!(onUpdateRow || onDeleteRow || onSyncRow);
+    // Can only edit/delete/sync if we have primary keys to identify rows
     const canEditRows = primaryKeyColumns.length > 0;
 
     const handleEditClick = (id: GridRowId) => () => {
@@ -1673,7 +1700,7 @@ function DataTab({
                         ];
                     }
 
-                    // Show edit/delete buttons, but disable if no primary key
+                    // Show edit/delete/sync buttons, but disable edit/delete if no primary key
                     return [
                         <GridActionsCellItem
                             key="edit"
@@ -1690,6 +1717,14 @@ function DataTab({
                             onClick={handleDeleteClick(row as Record<string, unknown>)}
                             color="inherit"
                             disabled={!canEditRows}
+                        />,
+                        <GridActionsCellItem
+                            key="sync"
+                            icon={<SyncIcon />}
+                            label={canEditRows ? "Sync to..." : "Sync (no primary key)"}
+                            onClick={() => onSyncRow?.(row as Record<string, unknown>)}
+                            color="inherit"
+                            disabled={!canEditRows || !onSyncRow}
                         />,
                     ];
                 },
@@ -3069,6 +3104,226 @@ function AddRowDialog({
                 <Button variant="contained" onClick={handleSubmit}>
                     Add Row
                 </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// Sync Row Dialog - sync selected rows to another connection
+function SyncRowDialog({
+    open,
+    onClose,
+    rows,
+    sourceConnectionId,
+    sourceConnection,
+    schema,
+    table,
+    primaryKeys,
+    connections,
+}: {
+    open: boolean;
+    onClose: () => void;
+    rows: Record<string, unknown>[];
+    sourceConnectionId: string;
+    sourceConnection?: ConnectionConfig;
+    schema: string;
+    table: string;
+    primaryKeys: string[];
+    connections: ConnectionConfig[];
+}) {
+    const [targetConnectionId, setTargetConnectionId] = useState('');
+    const [targetSchema, setTargetSchema] = useState('');
+    const [mode, setMode] = useState<'insert' | 'upsert'>('upsert');
+    const [syncing, setSyncing] = useState(false);
+    const [result, setResult] = useState<{ inserted: number; updated: number; errors: string[] } | null>(null);
+
+    // Filter out the source connection and get compatible connections (same engine preferred)
+    const targetConnections = connections.filter(
+        (c) => c.id !== sourceConnectionId
+    );
+
+    // Fetch schemas for target connection
+    const { data: targetSchemas = [] } = useQuery({
+        queryKey: ['schemas', targetConnectionId],
+        queryFn: () => schemaApi.getSchemas(targetConnectionId),
+        enabled: !!targetConnectionId,
+    });
+
+    // Auto-select schema when target changes
+    useEffect(() => {
+        if (targetSchemas.length > 0 && !targetSchema) {
+            const targetConn = connections.find((c) => c.id === targetConnectionId);
+            // For MySQL/MariaDB, use the database name
+            if (targetConn?.engine === 'mysql' || targetConn?.engine === 'mariadb') {
+                if (targetConn.database && targetSchemas.includes(targetConn.database)) {
+                    setTargetSchema(targetConn.database);
+                    return;
+                }
+            }
+            // Try to match source schema, otherwise use first available
+            if (targetSchemas.includes(schema)) {
+                setTargetSchema(schema);
+            } else {
+                setTargetSchema(targetSchemas[0] || '');
+            }
+        }
+    }, [targetSchemas, targetSchema, schema, targetConnectionId, connections]);
+
+    const handleClose = () => {
+        setTargetConnectionId('');
+        setTargetSchema('');
+        setResult(null);
+        onClose();
+    };
+
+    const handleSync = async () => {
+        if (!targetConnectionId || !targetSchema || rows.length === 0) return;
+
+        setSyncing(true);
+        setResult(null);
+
+        try {
+            const syncResult = await syncApi.syncRows(
+                sourceConnectionId,
+                targetConnectionId,
+                targetSchema,
+                table,
+                rows,
+                primaryKeys,
+                mode
+            );
+            setResult(syncResult);
+        } catch (error) {
+            setResult({
+                inserted: 0,
+                updated: 0,
+                errors: [error instanceof Error ? error.message : 'Sync failed'],
+            });
+        } finally {
+            setSyncing(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                Sync {rows.length} Row{rows.length > 1 ? 's' : ''} to Another Database
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    {/* Source info */}
+                    <Alert severity="info" icon={false}>
+                        <Typography variant="body2">
+                            <strong>Source:</strong> {sourceConnection?.name || 'Unknown'} → {schema}.{table}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Primary keys: {primaryKeys.join(', ')}
+                        </Typography>
+                    </Alert>
+
+                    {/* Target connection */}
+                    <FormControl fullWidth>
+                        <InputLabel>Target Connection</InputLabel>
+                        <Select
+                            value={targetConnectionId}
+                            onChange={(e) => {
+                                setTargetConnectionId(e.target.value);
+                                setTargetSchema('');
+                            }}
+                            label="Target Connection"
+                        >
+                            {targetConnections.map((conn) => (
+                                <MenuItem key={conn.id} value={conn.id}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
+                                        {conn.name}
+                                        <Chip
+                                            label={conn.engine}
+                                            size="small"
+                                            sx={{ ml: 'auto' }}
+                                        />
+                                    </Box>
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    {/* Target schema */}
+                    {targetConnectionId && (
+                        <FormControl fullWidth>
+                            <InputLabel>Target Schema/Database</InputLabel>
+                            <Select
+                                value={targetSchema}
+                                onChange={(e) => setTargetSchema(e.target.value)}
+                                label="Target Schema/Database"
+                            >
+                                {targetSchemas.map((s) => (
+                                    <MenuItem key={s} value={s}>
+                                        {s}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {/* Sync mode */}
+                    <FormControl fullWidth>
+                        <InputLabel>Sync Mode</InputLabel>
+                        <Select
+                            value={mode}
+                            onChange={(e) => setMode(e.target.value as 'insert' | 'upsert')}
+                            label="Sync Mode"
+                        >
+                            <MenuItem value="upsert">
+                                <Box>
+                                    <Typography variant="body2">Upsert (Insert or Update)</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Insert new rows, update existing ones
+                                    </Typography>
+                                </Box>
+                            </MenuItem>
+                            <MenuItem value="insert">
+                                <Box>
+                                    <Typography variant="body2">Insert Only</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Only insert new rows, skip existing
+                                    </Typography>
+                                </Box>
+                            </MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    {/* Result */}
+                    {result && (
+                        <Alert severity={result.errors.length > 0 ? 'warning' : 'success'}>
+                            <Typography variant="body2">
+                                {result.inserted > 0 && `Inserted: ${result.inserted} `}
+                                {result.updated > 0 && `Updated: ${result.updated} `}
+                                {result.inserted === 0 && result.updated === 0 && result.errors.length === 0 && 'No changes made'}
+                            </Typography>
+                            {result.errors.length > 0 && (
+                                <Typography variant="body2" color="error">
+                                    Errors: {result.errors.join(', ')}
+                                </Typography>
+                            )}
+                        </Alert>
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleClose}>
+                    {result ? 'Close' : 'Cancel'}
+                </Button>
+                {!result && (
+                    <Button
+                        variant="contained"
+                        onClick={handleSync}
+                        disabled={!targetConnectionId || !targetSchema || syncing}
+                        startIcon={syncing ? <CircularProgress size={16} /> : <SyncIcon />}
+                    >
+                        {syncing ? 'Syncing...' : 'Sync'}
+                    </Button>
+                )}
             </DialogActions>
         </Dialog>
     );

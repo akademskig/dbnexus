@@ -393,4 +393,27 @@ export const syncApi = {
                 body: JSON.stringify(options || {}),
             }
         ),
+
+    // Sync specific rows to a target connection
+    syncRows: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        schema: string,
+        table: string,
+        rows: Record<string, unknown>[],
+        primaryKeys: string[],
+        mode: 'insert' | 'upsert' = 'upsert'
+    ) =>
+        fetchApi<{ inserted: number; updated: number; errors: string[] }>(
+            `/sync/rows/${targetConnectionId}/${schema}/${table}`,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    sourceConnectionId,
+                    rows,
+                    primaryKeys,
+                    mode,
+                }),
+            }
+        ),
 };
