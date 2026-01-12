@@ -844,14 +844,7 @@ export function QueryPage() {
                             </Box>
 
                             {/* Tabs */}
-                            <Box
-                                sx={{
-                                    borderBottom: 1,
-                                    borderColor: 'divider',
-                                    px: 2,
-                                    bgcolor: 'background.paper',
-                                }}
-                            >
+                            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                                 <Tabs
                                     value={activeTab}
                                     onChange={(_, v) => handleTabChange(v)}
