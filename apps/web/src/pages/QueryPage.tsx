@@ -1222,6 +1222,7 @@ function DataTab({
                             gap: 2,
                             px: 2,
                             minHeight: 48,
+                            bgcolor: 'background.paper',
                             borderBottom: 1,
                             borderColor: 'divider',
                         }}
