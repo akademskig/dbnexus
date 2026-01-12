@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -155,5 +155,40 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_migration_history_target ON migration_history(target_connection_id);
 
   UPDATE schema_version SET version = 3;
+  `,
+
+    // Version 4: Add projects and database_groups for organizing connections
+    `
+  -- Projects (top-level grouping)
+  CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    color TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Database groups (instances of the same DB within a project)
+  CREATE TABLE IF NOT EXISTS database_groups (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    UNIQUE(project_id, name)
+  );
+
+  -- Add project and group references to connections
+  ALTER TABLE connections ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
+  ALTER TABLE connections ADD COLUMN group_id TEXT REFERENCES database_groups(id) ON DELETE SET NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id);
+  CREATE INDEX IF NOT EXISTS idx_connections_group ON connections(group_id);
+  CREATE INDEX IF NOT EXISTS idx_database_groups_project ON database_groups(project_id);
+
+  UPDATE schema_version SET version = 4;
   `,
 ];

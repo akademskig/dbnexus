@@ -15,6 +15,12 @@ import type {
     TableSchema,
     SchemaDiff,
     MigrationHistoryEntry,
+    Project,
+    ProjectCreateInput,
+    ProjectUpdateInput,
+    DatabaseGroup,
+    DatabaseGroupCreateInput,
+    DatabaseGroupUpdateInput,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -220,4 +226,70 @@ export const schemaApi = {
         fetchApi<{ success: boolean }>(`/schema/migrations/${id}`, {
             method: 'DELETE',
         }),
+};
+
+// ============ Projects ============
+
+export const projectsApi = {
+    getAll: () => fetchApi<Project[]>('/projects'),
+
+    getById: (id: string) => fetchApi<Project>(`/projects/${id}`),
+
+    create: (input: ProjectCreateInput) =>
+        fetchApi<Project>('/projects', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    update: (id: string, input: ProjectUpdateInput) =>
+        fetchApi<Project>(`/projects/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean }>(`/projects/${id}`, {
+            method: 'DELETE',
+        }),
+
+    // Groups within a project
+    getGroups: (projectId: string) => fetchApi<DatabaseGroup[]>(`/projects/${projectId}/groups`),
+
+    createGroup: (projectId: string, input: Omit<DatabaseGroupCreateInput, 'projectId'>) =>
+        fetchApi<DatabaseGroup>(`/projects/${projectId}/groups`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    updateGroup: (projectId: string, groupId: string, input: DatabaseGroupUpdateInput) =>
+        fetchApi<DatabaseGroup>(`/projects/${projectId}/groups/${groupId}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        }),
+
+    deleteGroup: (projectId: string, groupId: string) =>
+        fetchApi<{ success: boolean }>(`/projects/${projectId}/groups/${groupId}`, {
+            method: 'DELETE',
+        }),
+
+    // Connections in project/group
+    getProjectConnections: (projectId: string) =>
+        fetchApi<ConnectionConfig[]>(`/projects/${projectId}/connections`),
+
+    getGroupConnections: (projectId: string, groupId: string) =>
+        fetchApi<ConnectionConfig[]>(`/projects/${projectId}/groups/${groupId}/connections`),
+};
+
+// ============ Database Groups ============
+
+export const groupsApi = {
+    getAll: (projectId?: string) => {
+        const params = projectId ? `?projectId=${projectId}` : '';
+        return fetchApi<DatabaseGroup[]>(`/groups${params}`);
+    },
+
+    getById: (id: string) => fetchApi<DatabaseGroup>(`/groups/${id}`),
+
+    getConnections: (groupId: string) =>
+        fetchApi<ConnectionConfig[]>(`/groups/${groupId}/connections`),
 };

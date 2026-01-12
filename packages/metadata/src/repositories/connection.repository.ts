@@ -27,6 +27,10 @@ interface ConnectionRow {
     read_only: number;
     created_at: string;
     updated_at: string;
+    project_id: string | null;
+    group_id: string | null;
+    project_name?: string;
+    group_name?: string;
 }
 
 export class ConnectionRepository {
@@ -47,8 +51,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, host, port, database, username, encrypted_password, ssl, tags, read_only, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, host, port, database, username, encrypted_password, ssl, tags, read_only, project_id, group_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -63,6 +67,8 @@ export class ConnectionRepository {
                 input.ssl ? 1 : 0,
                 JSON.stringify(input.tags ?? []),
                 input.readOnly ? 1 : 0,
+                input.projectId || null,
+                input.groupId || null,
                 now,
                 now
             );
@@ -74,9 +80,20 @@ export class ConnectionRepository {
      * Find a connection by ID
      */
     findById(id: string): ConnectionConfig | null {
-        const row = this.db.prepare('SELECT * FROM connections WHERE id = ?').get(id) as
-            | ConnectionRow
-            | undefined;
+        const row = this.db
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            WHERE c.id = ?
+        `
+            )
+            .get(id) as ConnectionRow | undefined;
         return row ? this.rowToConnection(row) : null;
     }
 
@@ -84,9 +101,20 @@ export class ConnectionRepository {
      * Find a connection by name
      */
     findByName(name: string): ConnectionConfig | null {
-        const row = this.db.prepare('SELECT * FROM connections WHERE name = ?').get(name) as
-            | ConnectionRow
-            | undefined;
+        const row = this.db
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            WHERE c.name = ?
+        `
+            )
+            .get(name) as ConnectionRow | undefined;
         return row ? this.rowToConnection(row) : null;
     }
 
@@ -95,7 +123,84 @@ export class ConnectionRepository {
      */
     findAll(): ConnectionConfig[] {
         const rows = this.db
-            .prepare('SELECT * FROM connections ORDER BY name')
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            ORDER BY p.name, dg.name, c.name
+        `
+            )
+            .all() as ConnectionRow[];
+        return rows.map((row) => this.rowToConnection(row));
+    }
+
+    /**
+     * Find connections by project
+     */
+    findByProject(projectId: string): ConnectionConfig[] {
+        const rows = this.db
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            WHERE c.project_id = ?
+            ORDER BY dg.name, c.name
+        `
+            )
+            .all(projectId) as ConnectionRow[];
+        return rows.map((row) => this.rowToConnection(row));
+    }
+
+    /**
+     * Find connections by database group
+     */
+    findByGroup(groupId: string): ConnectionConfig[] {
+        const rows = this.db
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            WHERE c.group_id = ?
+            ORDER BY c.name
+        `
+            )
+            .all(groupId) as ConnectionRow[];
+        return rows.map((row) => this.rowToConnection(row));
+    }
+
+    /**
+     * Find ungrouped connections (no project assigned)
+     */
+    findUngrouped(): ConnectionConfig[] {
+        const rows = this.db
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            WHERE c.project_id IS NULL
+            ORDER BY c.name
+        `
+            )
             .all() as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
@@ -161,6 +266,14 @@ export class ConnectionRepository {
             updates.push('read_only = ?');
             values.push(input.readOnly ? 1 : 0);
         }
+        if (input.projectId !== undefined) {
+            updates.push('project_id = ?');
+            values.push(input.projectId);
+        }
+        if (input.groupId !== undefined) {
+            updates.push('group_id = ?');
+            values.push(input.groupId);
+        }
 
         if (updates.length > 0) {
             updates.push('updated_at = ?');
@@ -225,6 +338,10 @@ export class ConnectionRepository {
             readOnly: row.read_only === 1,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            projectId: row.project_id || undefined,
+            groupId: row.group_id || undefined,
+            projectName: row.project_name,
+            groupName: row.group_name,
         };
     }
 }

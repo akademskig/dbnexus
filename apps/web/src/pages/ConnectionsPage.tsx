@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,6 +20,13 @@ import {
     ToggleButton,
     ToggleButtonGroup,
     Collapse,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+    Select,
+    FormControl,
+    InputLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -29,21 +36,98 @@ import ScienceIcon from '@mui/icons-material/Science';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { connectionsApi } from '../lib/api';
-import type { ConnectionConfig, ConnectionCreateInput } from '@dbnexus/shared';
+import FolderIcon from '@mui/icons-material/Folder';
+import LayersIcon from '@mui/icons-material/Layers';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { connectionsApi, projectsApi, groupsApi } from '../lib/api';
+import type {
+    ConnectionConfig,
+    ConnectionCreateInput,
+    Project,
+    DatabaseGroup,
+} from '@dbnexus/shared';
 import { useTagsStore } from '../stores/tagsStore';
 import { GlassCard } from '../components/GlassCard';
+
+// Project colors for visual distinction
+const PROJECT_COLORS = [
+    '#ef4444', // red
+    '#f97316', // orange
+    '#eab308', // yellow
+    '#22c55e', // green
+    '#14b8a6', // teal
+    '#0ea5e9', // sky
+    '#6366f1', // indigo
+    '#a855f7', // purple
+    '#ec4899', // pink
+];
 
 export function ConnectionsPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
+    const [projectFormOpen, setProjectFormOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [groupFormOpen, setGroupFormOpen] = useState(false);
+    const [groupFormProjectId, setGroupFormProjectId] = useState<string | null>(null);
+    const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
 
-    const { data: connections = [], isLoading } = useQuery({
+    const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
+
+    const { data: projects = [], isLoading: loadingProjects } = useQuery({
+        queryKey: ['projects'],
+        queryFn: projectsApi.getAll,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+    });
+
+    const isLoading = loadingConnections || loadingProjects;
+
+    // Organize connections by project and group
+    const organizedData = useMemo(() => {
+        const projectMap = new Map<string, Project>();
+        projects.forEach((p) => projectMap.set(p.id, p));
+
+        const groupMap = new Map<string, DatabaseGroup>();
+        groups.forEach((g) => groupMap.set(g.id, g));
+
+        // Group connections
+        const projectConnections = new Map<string, Map<string | null, ConnectionConfig[]>>();
+        const ungroupedConnections: ConnectionConfig[] = [];
+
+        connections.forEach((conn) => {
+            if (conn.projectId) {
+                if (!projectConnections.has(conn.projectId)) {
+                    projectConnections.set(conn.projectId, new Map());
+                }
+                const projectGroups = projectConnections.get(conn.projectId)!;
+                const groupKey = conn.groupId || null;
+                if (!projectGroups.has(groupKey)) {
+                    projectGroups.set(groupKey, []);
+                }
+                projectGroups.get(groupKey)!.push(conn);
+            } else {
+                ungroupedConnections.push(conn);
+            }
+        });
+
+        return {
+            projects: projects.map((p) => ({
+                project: p,
+                groups: projectConnections.get(p.id) || new Map(),
+            })),
+            ungroupedConnections,
+            projectMap,
+            groupMap,
+        };
+    }, [connections, projects, groups]);
 
     const deleteMutation = useMutation({
         mutationFn: connectionsApi.delete,
@@ -62,6 +146,34 @@ export function ConnectionsPage() {
         setEditingConnection(null);
     };
 
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+        setProjectFormOpen(true);
+    };
+
+    const handleCloseProjectForm = () => {
+        setProjectFormOpen(false);
+        setEditingProject(null);
+    };
+
+    const handleAddGroup = (projectId: string) => {
+        setGroupFormProjectId(projectId);
+        setEditingGroup(null);
+        setGroupFormOpen(true);
+    };
+
+    const handleEditGroup = (group: DatabaseGroup) => {
+        setEditingGroup(group);
+        setGroupFormProjectId(group.projectId);
+        setGroupFormOpen(true);
+    };
+
+    const handleCloseGroupForm = () => {
+        setGroupFormOpen(false);
+        setGroupFormProjectId(null);
+        setEditingGroup(null);
+    };
+
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
             {/* Header */}
@@ -78,31 +190,53 @@ export function ConnectionsPage() {
                         Connections
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Manage your database connections
+                        Organize database connections by project and group
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setFormOpen(true)}
-                >
-                    Add Connection
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<FolderIcon />}
+                        onClick={() => setProjectFormOpen(true)}
+                    >
+                        New Project
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setFormOpen(true)}
+                    >
+                        Add Connection
+                    </Button>
+                </Box>
             </Box>
 
-            {/* Connection Form Dialog */}
+            {/* Dialogs */}
             <ConnectionFormDialog
                 open={formOpen}
                 connection={editingConnection}
+                projects={projects}
+                groups={groups}
                 onClose={handleCloseForm}
             />
+            <ProjectFormDialog
+                open={projectFormOpen}
+                project={editingProject}
+                onClose={handleCloseProjectForm}
+            />
+            <GroupFormDialog
+                open={groupFormOpen}
+                group={editingGroup}
+                projectId={groupFormProjectId}
+                onClose={handleCloseGroupForm}
+            />
 
-            {/* Connections List */}
+            {/* Content */}
             {isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                     <CircularProgress />
                 </Box>
-            ) : connections.length === 0 ? (
+            ) : connections.length === 0 && projects.length === 0 ? (
                 <GlassCard>
                     <Box sx={{ textAlign: 'center', py: 6 }}>
                         <StorageIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
@@ -112,35 +246,378 @@ export function ConnectionsPage() {
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                             Add your first database connection to get started
                         </Typography>
-                        <Button variant="contained" onClick={() => setFormOpen(true)}>
-                            Add Connection
-                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            <Button variant="outlined" onClick={() => setProjectFormOpen(true)}>
+                                Create Project
+                            </Button>
+                            <Button variant="contained" onClick={() => setFormOpen(true)}>
+                                Add Connection
+                            </Button>
+                        </Box>
                     </Box>
                 </GlassCard>
             ) : (
-                <Stack spacing={2}>
-                    {connections.map((connection) => (
-                        <ConnectionCard
-                            key={connection.id}
-                            connection={connection}
-                            onEdit={() => handleEdit(connection)}
-                            onDelete={() => deleteMutation.mutate(connection.id)}
-                            onQuery={() => navigate(`/query/${connection.id}`)}
+                <Stack spacing={3}>
+                    {/* Projects */}
+                    {organizedData.projects.map(({ project, groups: projectGroups }) => (
+                        <ProjectSection
+                            key={project.id}
+                            project={project}
+                            groupsMap={projectGroups}
+                            allGroups={groups.filter((g) => g.projectId === project.id)}
+                            onEditProject={() => handleEditProject(project)}
+                            onAddGroup={() => handleAddGroup(project.id)}
+                            onEditGroup={handleEditGroup}
+                            onEditConnection={handleEdit}
+                            onDeleteConnection={(id) => deleteMutation.mutate(id)}
+                            onQuery={(id) => navigate(`/query/${id}`)}
                         />
                     ))}
+
+                    {/* Ungrouped connections */}
+                    {organizedData.ungroupedConnections.length > 0 && (
+                        <Box>
+                            <Typography
+                                variant="subtitle2"
+                                sx={{ color: 'text.secondary', mb: 2, px: 1 }}
+                            >
+                                Ungrouped Connections
+                            </Typography>
+                            <Stack spacing={1.5}>
+                                {organizedData.ungroupedConnections.map((connection) => (
+                                    <ConnectionCard
+                                        key={connection.id}
+                                        connection={connection}
+                                        onEdit={() => handleEdit(connection)}
+                                        onDelete={() => deleteMutation.mutate(connection.id)}
+                                        onQuery={() => navigate(`/query/${connection.id}`)}
+                                    />
+                                ))}
+                            </Stack>
+                        </Box>
+                    )}
                 </Stack>
             )}
         </Box>
     );
 }
 
+// Project section with groups and connections
+function ProjectSection({
+    project,
+    groupsMap,
+    allGroups,
+    onEditProject,
+    onAddGroup,
+    onEditGroup,
+    onEditConnection,
+    onDeleteConnection,
+    onQuery,
+}: {
+    project: Project;
+    groupsMap: Map<string | null, ConnectionConfig[]>;
+    allGroups: DatabaseGroup[];
+    onEditProject: () => void;
+    onAddGroup: () => void;
+    onEditGroup: (group: DatabaseGroup) => void;
+    onEditConnection: (conn: ConnectionConfig) => void;
+    onDeleteConnection: (id: string) => void;
+    onQuery: (id: string) => void;
+}) {
+    const [expanded, setExpanded] = useState(true);
+    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const queryClient = useQueryClient();
+
+    const deleteProjectMutation = useMutation({
+        mutationFn: () => projectsApi.delete(project.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+        },
+    });
+
+    const projectColor = project.color || PROJECT_COLORS[0];
+    const totalConnections = Array.from(groupsMap.values()).reduce(
+        (sum, conns) => sum + conns.length,
+        0
+    );
+    const ungroupedInProject = groupsMap.get(null) || [];
+
+    return (
+        <Box>
+            {/* Project header */}
+            <Box
+                onClick={() => setExpanded(!expanded)}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
+                    cursor: 'pointer',
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderLeft: `4px solid ${projectColor}`,
+                    '&:hover': { bgcolor: 'action.hover' },
+                }}
+            >
+                <IconButton size="small" sx={{ p: 0.5 }}>
+                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+                <FolderIcon sx={{ color: projectColor }} />
+                <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
+                    {project.name}
+                </Typography>
+                <Chip label={`${totalConnections} connections`} size="small" />
+                <Chip label={`${allGroups.length} groups`} size="small" variant="outlined" />
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAnchor(e.currentTarget);
+                    }}
+                >
+                    <MoreVertIcon />
+                </IconButton>
+            </Box>
+
+            {/* Project menu */}
+            <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={() => setMenuAnchor(null)}
+            >
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchor(null);
+                        onAddGroup();
+                    }}
+                >
+                    <ListItemIcon>
+                        <LayersIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Add Instance Group</ListItemText>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchor(null);
+                        onEditProject();
+                    }}
+                >
+                    <ListItemIcon>
+                        <EditIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Edit Project</ListItemText>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchor(null);
+                        deleteProjectMutation.mutate();
+                    }}
+                    sx={{ color: 'error.main' }}
+                >
+                    <ListItemIcon>
+                        <DeleteIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Delete Project</ListItemText>
+                </MenuItem>
+            </Menu>
+
+            {/* Project content */}
+            <Collapse in={expanded}>
+                <Box sx={{ pl: 4, pt: 2 }}>
+                    <Stack spacing={2}>
+                        {/* Database groups */}
+                        {allGroups.map((group) => (
+                            <DatabaseGroupSection
+                                key={group.id}
+                                group={group}
+                                connections={groupsMap.get(group.id) || []}
+                                onEditGroup={() => onEditGroup(group)}
+                                onEditConnection={onEditConnection}
+                                onDeleteConnection={onDeleteConnection}
+                                onQuery={onQuery}
+                            />
+                        ))}
+
+                        {/* Ungrouped connections in project */}
+                        {ungroupedInProject.length > 0 && (
+                            <Box>
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: 'text.secondary', mb: 1, display: 'block' }}
+                                >
+                                    Not in a group
+                                </Typography>
+                                <Stack spacing={1}>
+                                    {ungroupedInProject.map((conn) => (
+                                        <ConnectionCard
+                                            key={conn.id}
+                                            connection={conn}
+                                            compact
+                                            onEdit={() => onEditConnection(conn)}
+                                            onDelete={() => onDeleteConnection(conn.id)}
+                                            onQuery={() => onQuery(conn.id)}
+                                        />
+                                    ))}
+                                </Stack>
+                            </Box>
+                        )}
+
+                        {totalConnections === 0 && allGroups.length === 0 && (
+                            <Typography
+                                variant="body2"
+                                sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}
+                            >
+                                No connections or groups yet. Add an instance group to organize
+                                related database instances.
+                            </Typography>
+                        )}
+                    </Stack>
+                </Box>
+            </Collapse>
+        </Box>
+    );
+}
+
+// Database group section
+function DatabaseGroupSection({
+    group,
+    connections,
+    onEditGroup,
+    onEditConnection,
+    onDeleteConnection,
+    onQuery,
+}: {
+    group: DatabaseGroup;
+    connections: ConnectionConfig[];
+    onEditGroup: () => void;
+    onEditConnection: (conn: ConnectionConfig) => void;
+    onDeleteConnection: (id: string) => void;
+    onQuery: (id: string) => void;
+}) {
+    const [expanded, setExpanded] = useState(true);
+    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const queryClient = useQueryClient();
+
+    const deleteGroupMutation = useMutation({
+        mutationFn: () => projectsApi.deleteGroup(group.projectId, group.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+        },
+    });
+
+    return (
+        <Box>
+            {/* Group header */}
+            <Box
+                onClick={() => setExpanded(!expanded)}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    cursor: 'pointer',
+                    bgcolor: 'action.hover',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': { bgcolor: 'action.selected' },
+                }}
+            >
+                <IconButton size="small" sx={{ p: 0.25 }}>
+                    {expanded ? (
+                        <ExpandLessIcon fontSize="small" />
+                    ) : (
+                        <ExpandMoreIcon fontSize="small" />
+                    )}
+                </IconButton>
+                <LayersIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
+                    {group.name}
+                </Typography>
+                <Chip label={`${connections.length} instances`} size="small" sx={{ height: 20 }} />
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAnchor(e.currentTarget);
+                    }}
+                >
+                    <MoreVertIcon fontSize="small" />
+                </IconButton>
+            </Box>
+
+            {/* Group menu */}
+            <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={() => setMenuAnchor(null)}
+            >
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchor(null);
+                        onEditGroup();
+                    }}
+                >
+                    <ListItemIcon>
+                        <EditIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Edit Instance Group</ListItemText>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchor(null);
+                        deleteGroupMutation.mutate();
+                    }}
+                    sx={{ color: 'error.main' }}
+                >
+                    <ListItemIcon>
+                        <DeleteIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Delete Instance Group</ListItemText>
+                </MenuItem>
+            </Menu>
+
+            {/* Group connections */}
+            <Collapse in={expanded}>
+                <Stack spacing={1} sx={{ pl: 4, pt: 1 }}>
+                    {connections.map((conn) => (
+                        <ConnectionCard
+                            key={conn.id}
+                            connection={conn}
+                            compact
+                            onEdit={() => onEditConnection(conn)}
+                            onDelete={() => onDeleteConnection(conn.id)}
+                            onQuery={() => onQuery(conn.id)}
+                        />
+                    ))}
+                    {connections.length === 0 && (
+                        <Typography
+                            variant="caption"
+                            sx={{ color: 'text.secondary', py: 1, display: 'block' }}
+                        >
+                            No connections in this group
+                        </Typography>
+                    )}
+                </Stack>
+            </Collapse>
+        </Box>
+    );
+}
+
+// Connection card component
 function ConnectionCard({
     connection,
+    compact = false,
     onEdit,
     onDelete,
     onQuery,
 }: {
     connection: ConnectionConfig;
+    compact?: boolean;
     onEdit: () => void;
     onDelete: () => void;
     onQuery: () => void;
@@ -188,37 +665,29 @@ function ConnectionCard({
 
     return (
         <GlassCard noPadding>
-            {/* Header - always visible */}
+            {/* Header */}
             <Box
                 onClick={() => setExpanded(!expanded)}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 2,
-                    px: 2.5,
-                    py: 2,
+                    gap: compact ? 1.5 : 2,
+                    px: compact ? 2 : 2.5,
+                    py: compact ? 1.5 : 2,
                     cursor: 'pointer',
                     transition: 'background 0.15s',
-                    '&:hover': {
-                        bgcolor: 'action.hover',
-                    },
+                    '&:hover': { bgcolor: 'action.hover' },
                 }}
             >
-                {/* Expand icon */}
                 <IconButton size="small" sx={{ p: 0.5 }}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
-
-                {/* Icon */}
-                <StorageIcon sx={{ fontSize: 22, color: 'primary.main' }} />
-
-                {/* Name & Connection Info */}
+                <StorageIcon sx={{ fontSize: compact ? 18 : 22, color: 'primary.main' }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1" fontWeight={600}>
+                        <Typography variant={compact ? 'body2' : 'body1'} fontWeight={600}>
                             {connection.name}
                         </Typography>
-                        {/* Engine tag */}
                         <Chip
                             label={connection.engine.toUpperCase()}
                             size="small"
@@ -282,103 +751,46 @@ function ConnectionCard({
                     )}
                 </Box>
 
-                {/* Quick actions */}
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Button
-                        size="small"
-                        variant="contained"
-                        startIcon={<PlayArrowIcon />}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onQuery();
-                        }}
-                    >
-                        Query
-                    </Button>
-                </Box>
+                <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onQuery();
+                    }}
+                >
+                    Query
+                </Button>
             </Box>
 
             {/* Expanded content */}
             <Collapse in={expanded}>
                 <Box
                     sx={{
-                        px: 2.5,
-                        pb: 2.5,
+                        px: compact ? 2 : 2.5,
+                        pb: compact ? 2 : 2.5,
                         pt: 1,
                         borderTop: '1px solid',
                         borderColor: 'divider',
                     }}
                 >
-                    {/* Connection details */}
                     <Stack spacing={1.5} sx={{ mb: 2.5 }}>
                         {connection.engine === 'sqlite' ? (
-                            <Box sx={{ display: 'flex', gap: 4 }}>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ minWidth: 80 }}
-                                >
-                                    File
-                                </Typography>
-                                <Typography variant="body2" fontFamily="monospace">
-                                    {connection.database}
-                                </Typography>
-                            </Box>
+                            <DetailRow label="File" value={connection.database} />
                         ) : (
                             <>
-                                <Box sx={{ display: 'flex', gap: 4 }}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{ minWidth: 80 }}
-                                    >
-                                        Host
-                                    </Typography>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {connection.host}:{connection.port}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 4 }}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{ minWidth: 80 }}
-                                    >
-                                        Database
-                                    </Typography>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {connection.database}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 4 }}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{ minWidth: 80 }}
-                                    >
-                                        User
-                                    </Typography>
-                                    <Typography variant="body2" fontFamily="monospace">
-                                        {connection.username}
-                                    </Typography>
-                                </Box>
-                                {connection.ssl && (
-                                    <Box sx={{ display: 'flex', gap: 4 }}>
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                            sx={{ minWidth: 80 }}
-                                        >
-                                            SSL
-                                        </Typography>
-                                        <Typography variant="body2">Enabled</Typography>
-                                    </Box>
-                                )}
+                                <DetailRow
+                                    label="Host"
+                                    value={`${connection.host}:${connection.port}`}
+                                />
+                                <DetailRow label="Database" value={connection.database} />
+                                <DetailRow label="User" value={connection.username} />
+                                {connection.ssl && <DetailRow label="SSL" value="Enabled" />}
                             </>
                         )}
                     </Stack>
 
-                    {/* Test result */}
                     {testResult && (
                         <Alert
                             severity={testResult.success ? 'success' : 'error'}
@@ -389,7 +801,6 @@ function ConnectionCard({
                         </Alert>
                     )}
 
-                    {/* Actions */}
                     <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button
                             size="small"
@@ -418,13 +829,256 @@ function ConnectionCard({
     );
 }
 
+function DetailRow({ label, value }: { label: string; value: string }) {
+    return (
+        <Box sx={{ display: 'flex', gap: 4 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 80 }}>
+                {label}
+            </Typography>
+            <Typography variant="body2" fontFamily="monospace">
+                {value}
+            </Typography>
+        </Box>
+    );
+}
+
+// Project form dialog
+function ProjectFormDialog({
+    open,
+    project,
+    onClose,
+}: {
+    open: boolean;
+    project: Project | null;
+    onClose: () => void;
+}) {
+    const queryClient = useQueryClient();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [color, setColor] = useState(PROJECT_COLORS[0]);
+
+    const handleEnter = () => {
+        if (project) {
+            setName(project.name);
+            setDescription(project.description || '');
+            setColor(project.color || PROJECT_COLORS[0]);
+        } else {
+            setName('');
+            setDescription('');
+            setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
+        }
+    };
+
+    const createMutation = useMutation({
+        mutationFn: projectsApi.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            onClose();
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({
+            id,
+            data,
+        }: {
+            id: string;
+            data: { name: string; description?: string; color?: string };
+        }) => projectsApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            onClose();
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (project) {
+            updateMutation.mutate({ id: project.id, data: { name, description, color } });
+        } else {
+            createMutation.mutate({ name, description, color });
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            TransitionProps={{ onEnter: handleEnter }}
+        >
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{project ? 'Edit Project' : 'New Project'}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Project Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="My Project"
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Optional description"
+                            multiline
+                            rows={2}
+                            fullWidth
+                        />
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Color
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {PROJECT_COLORS.map((c) => (
+                                    <Box
+                                        key={c}
+                                        onClick={() => setColor(c)}
+                                        sx={{
+                                            width: 32,
+                                            height: 32,
+                                            bgcolor: c,
+                                            cursor: 'pointer',
+                                            border: color === c ? '3px solid' : '1px solid',
+                                            borderColor:
+                                                color === c ? 'common.white' : 'transparent',
+                                            '&:hover': { opacity: 0.8 },
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                        {project ? 'Save Changes' : 'Create Project'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
+    );
+}
+
+// Database group form dialog
+function GroupFormDialog({
+    open,
+    group,
+    projectId,
+    onClose,
+}: {
+    open: boolean;
+    group: DatabaseGroup | null;
+    projectId: string | null;
+    onClose: () => void;
+}) {
+    const queryClient = useQueryClient();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+
+    const handleEnter = () => {
+        if (group) {
+            setName(group.name);
+            setDescription(group.description || '');
+        } else {
+            setName('');
+            setDescription('');
+        }
+    };
+
+    const createMutation = useMutation({
+        mutationFn: () => projectsApi.createGroup(projectId!, { name, description }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            onClose();
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: () => projectsApi.updateGroup(projectId!, group!.id, { name, description }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            onClose();
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (group) {
+            updateMutation.mutate();
+        } else {
+            createMutation.mutate();
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            TransitionProps={{ onEnter: handleEnter }}
+        >
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{group ? 'Edit Instance Group' : 'New Instance Group'}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Group Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="e.g., Users Database"
+                            helperText="Group instances of the same database (local/dev/staging/prod)"
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Optional description"
+                            multiline
+                            rows={2}
+                            fullWidth
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                        {group ? 'Save Changes' : 'Create Group'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
+    );
+}
+
+// Connection form dialog with project/group selection
 function ConnectionFormDialog({
     open,
     connection,
+    projects,
+    groups,
     onClose,
 }: {
     open: boolean;
     connection: ConnectionConfig | null;
+    projects: Project[];
+    groups: DatabaseGroup[];
     onClose: () => void;
 }) {
     const queryClient = useQueryClient();
@@ -440,13 +1094,14 @@ function ConnectionFormDialog({
         ssl: false,
         tags: [],
         readOnly: false,
+        projectId: undefined,
+        groupId: undefined,
     });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
         null
     );
 
-    // Reset form when dialog opens
     const handleEnter = () => {
         if (connection) {
             setFormData({
@@ -460,6 +1115,8 @@ function ConnectionFormDialog({
                 ssl: connection.ssl,
                 tags: connection.tags,
                 readOnly: connection.readOnly,
+                projectId: connection.projectId,
+                groupId: connection.groupId,
             });
         } else {
             setFormData({
@@ -473,12 +1130,15 @@ function ConnectionFormDialog({
                 ssl: false,
                 tags: [],
                 readOnly: false,
+                projectId: undefined,
+                groupId: undefined,
             });
         }
         setTestResult(null);
     };
 
     const isSqlite = formData.engine === 'sqlite';
+    const availableGroups = groups.filter((g) => g.projectId === formData.projectId);
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
@@ -490,7 +1150,12 @@ function ConnectionFormDialog({
 
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: ConnectionCreateInput }) =>
-            connectionsApi.update(id, data),
+            connectionsApi.update(id, {
+                ...data,
+                // Convert undefined to null for clearing project/group
+                projectId: data.projectId === undefined ? null : data.projectId,
+                groupId: data.groupId === undefined ? null : data.groupId,
+            }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
             onClose();
@@ -543,6 +1208,70 @@ function ConnectionFormDialog({
                             fullWidth
                         />
 
+                        {/* Project & Group selection */}
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <FormControl fullWidth>
+                                <InputLabel>Project</InputLabel>
+                                <Select
+                                    value={formData.projectId || ''}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            projectId: e.target.value || undefined,
+                                            groupId: undefined, // Reset group when project changes
+                                        })
+                                    }
+                                    label="Project"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {projects.map((p) => (
+                                        <MenuItem key={p.id} value={p.id}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        width: 12,
+                                                        height: 12,
+                                                        bgcolor: p.color || PROJECT_COLORS[0],
+                                                    }}
+                                                />
+                                                {p.name}
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl fullWidth disabled={!formData.projectId}>
+                                <InputLabel>Instance Group</InputLabel>
+                                <Select
+                                    value={formData.groupId || ''}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            groupId: e.target.value || undefined,
+                                        })
+                                    }
+                                    label="Instance Group"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {availableGroups.map((g) => (
+                                        <MenuItem key={g.id} value={g.id}>
+                                            {g.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+
                         {/* Engine Selection */}
                         <Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -556,7 +1285,6 @@ function ConnectionFormDialog({
                                         setFormData({
                                             ...formData,
                                             engine: value,
-                                            // Reset fields when switching engines
                                             host: value === 'sqlite' ? '' : 'localhost',
                                             port: value === 'sqlite' ? 0 : 5432,
                                             username: value === 'sqlite' ? '' : formData.username,

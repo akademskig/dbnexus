@@ -4,6 +4,8 @@ import {
     ConnectionRepository,
     QueryRepository,
     MigrationHistoryRepository,
+    ProjectRepository,
+    DatabaseGroupRepository,
 } from '@dbnexus/metadata';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -15,6 +17,8 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _connectionRepository!: ConnectionRepository;
     private _queryRepository!: QueryRepository;
     private _migrationHistoryRepository!: MigrationHistoryRepository;
+    private _projectRepository!: ProjectRepository;
+    private _databaseGroupRepository!: DatabaseGroupRepository;
 
     onModuleInit() {
         // Get workspace path from environment or use current directory
@@ -33,6 +37,8 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this._connectionRepository = new ConnectionRepository(this.db);
         this._queryRepository = new QueryRepository(this.db);
         this._migrationHistoryRepository = new MigrationHistoryRepository(this.db);
+        this._projectRepository = new ProjectRepository(this.db);
+        this._databaseGroupRepository = new DatabaseGroupRepository(this.db);
 
         this.logger.log(`📦 Metadata database initialized at ${dbPath}`);
     }
@@ -51,6 +57,14 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get migrationHistoryRepository(): MigrationHistoryRepository {
         return this._migrationHistoryRepository;
+    }
+
+    get projectRepository(): ProjectRepository {
+        return this._projectRepository;
+    }
+
+    get databaseGroupRepository(): DatabaseGroupRepository {
+        return this._databaseGroupRepository;
     }
 
     get database(): MetadataDatabase {
