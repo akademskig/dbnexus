@@ -1299,6 +1299,10 @@ function DataTab({
                                 width: 200,
                                 '& .MuiOutlinedInput-root': {
                                     bgcolor: 'background.default',
+                                    height: 32,
+                                },
+                                '& .MuiOutlinedInput-input': {
+                                    py: 0.5,
                                 },
                             }}
                         />
