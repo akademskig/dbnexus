@@ -132,8 +132,15 @@ export class SyncService {
         };
 
         // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
-        const sourceSchema = group.syncTargetSchema || source.defaultSchema || 'public';
-        const targetSchema = group.syncTargetSchema || target.defaultSchema || 'public';
+        // For MySQL/MariaDB, the database name is the schema
+        const getDefaultSchema = (conn: ConnectionConfig) => {
+            if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+                return conn.database;
+            }
+            return conn.defaultSchema || 'public';
+        };
+        const sourceSchema = group.syncTargetSchema || getDefaultSchema(source);
+        const targetSchema = group.syncTargetSchema || getDefaultSchema(target);
 
         // Check schema if enabled
         if (group.syncSchema) {

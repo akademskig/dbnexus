@@ -316,15 +316,29 @@ export function QueryPage() {
                 setSelectedSchema(schemaFromUrl);
                 setSchemasExpanded({ [schemaFromUrl]: true });
             } else {
-                // Use connection's defaultSchema if available, otherwise fall back to common defaults
-                const defaultSchema =
-                    (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
-                        ? selectedConnection.defaultSchema
-                        : null) ??
-                    schemas.find((s) => s === 'public') ??
-                    schemas.find((s) => s === 'main') ??
-                    schemas[0];
+                // For MySQL/MariaDB, use the database name as the default schema
+                // For PostgreSQL, use 'public' as the default
+                // For SQLite, use 'main' as the default
+                const engine = selectedConnection?.engine;
+                let defaultSchema: string | undefined;
+                
+                if (engine === 'mysql' || engine === 'mariadb') {
+                    // MySQL: database name is the schema
+                    defaultSchema = selectedConnection?.database && schemas.includes(selectedConnection.database)
+                        ? selectedConnection.database
+                        : schemas[0];
+                } else {
+                    // PostgreSQL/SQLite: use defaultSchema setting or common defaults
+                    defaultSchema =
+                        (selectedConnection?.defaultSchema &&
+                            schemas.includes(selectedConnection.defaultSchema)
+                            ? selectedConnection.defaultSchema
+                            : null) ??
+                        schemas.find((s) => s === 'public') ??
+                        schemas.find((s) => s === 'main') ??
+                        schemas[0];
+                }
+                
                 if (defaultSchema) {
                     setSelectedSchema(defaultSchema);
                     setSchemasExpanded({ [defaultSchema]: true });
@@ -332,7 +346,7 @@ export function QueryPage() {
                 }
             }
         }
-    }, [schemas, selectedSchema, urlSchema, updateUrl, selectedConnection?.defaultSchema]);
+    }, [schemas, selectedSchema, urlSchema, updateUrl, selectedConnection?.defaultSchema, selectedConnection?.engine, selectedConnection?.database]);
 
     // Execute mutation
     const executeMutation = useMutation({

@@ -850,8 +850,16 @@ function GroupSettingsDialog({
     });
 
     // Get the selected source connection's default schema
+    // For MySQL/MariaDB, the database name is the schema
     const sourceConnection = connections.find((c) => c.id === sourceConnectionId);
-    const defaultSchema = sourceConnection?.defaultSchema || 'public';
+    const getDefaultSchema = (conn: typeof sourceConnection) => {
+        if (!conn) return 'public';
+        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+            return conn.database;
+        }
+        return conn.defaultSchema || 'public';
+    };
+    const defaultSchema = getDefaultSchema(sourceConnection);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -1036,8 +1044,19 @@ export function GroupSyncPage() {
 
     // Get source connection and its default schema
     const sourceConnection = connections.find((c) => c.id === group?.sourceConnectionId);
+    
+    // Helper to get default schema for a connection
+    // For MySQL/MariaDB, the database name is the schema
+    const getConnectionDefaultSchema = (conn: typeof sourceConnection) => {
+        if (!conn) return 'public';
+        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+            return conn.database;
+        }
+        return conn.defaultSchema || 'public';
+    };
+    
     // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
-    const sourceSchema = group?.syncTargetSchema || sourceConnection?.defaultSchema || 'public';
+    const sourceSchema = group?.syncTargetSchema || getConnectionDefaultSchema(sourceConnection);
 
     // Helper to get target schema - use group's syncTargetSchema for all targets
     const getTargetSchema = (targetId: string) => {
@@ -1045,7 +1064,7 @@ export function GroupSyncPage() {
             return group.syncTargetSchema;
         }
         const targetConn = connections.find((c) => c.id === targetId);
-        return targetConn?.defaultSchema || 'public';
+        return getConnectionDefaultSchema(targetConn);
     };
 
     if (loadingGroup) {

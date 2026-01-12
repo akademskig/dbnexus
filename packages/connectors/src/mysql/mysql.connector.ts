@@ -200,7 +200,15 @@ export class MysqlConnector implements DatabaseConnector {
             ORDER BY SCHEMA_NAME
         `);
 
-        return (rows as { SCHEMA_NAME: string }[]).map((row) => row.SCHEMA_NAME);
+        const schemas = (rows as { SCHEMA_NAME: string }[]).map((row) => row.SCHEMA_NAME);
+        
+        // Put the connected database first in the list
+        const connectedDb = this.config.database;
+        if (connectedDb && schemas.includes(connectedDb)) {
+            return [connectedDb, ...schemas.filter(s => s !== connectedDb)];
+        }
+        
+        return schemas;
     }
 
     async getServerVersion(): Promise<string> {

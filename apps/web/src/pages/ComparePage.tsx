@@ -95,8 +95,8 @@ function SchemaDiffDisplay({
         const groups: Record<string, SchemaDiffItem[]> = {};
         for (const item of diff.items) {
             const tableName = item.table || 'General';
-            if (!groups[tableName]) groups[tableName] = [];
-            groups[tableName].push(item);
+            groups[tableName] ??= [];
+            groups[tableName]!.push(item);
         }
         return groups;
     }, [diff.items]);
@@ -271,8 +271,13 @@ export function ComparePage() {
     });
 
     // Set default schemas when connections change
+    // For MySQL/MariaDB, the database name is the schema
     const getDefaultSchema = (conn: ConnectionConfig | undefined, schemas: string[]) => {
         if (!conn) return '';
+        // For MySQL/MariaDB, prefer the database name as the schema
+        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+            if (conn.database && schemas.includes(conn.database)) return conn.database;
+        }
         if (conn.defaultSchema && schemas.includes(conn.defaultSchema)) return conn.defaultSchema;
         if (schemas.includes('public')) return 'public';
         if (schemas.includes('main')) return 'main';
