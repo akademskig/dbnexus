@@ -279,8 +279,15 @@ export function ConnectionsPage() {
                     {organizedData.ungroupedConnections.length > 0 && (
                         <Box>
                             <Typography
-                                variant="subtitle2"
-                                sx={{ color: 'text.secondary', mb: 2, px: 1 }}
+                                variant="caption"
+                                sx={{
+                                    color: 'text.secondary',
+                                    mb: 2,
+                                    display: 'block',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    fontWeight: 500,
+                                }}
                             >
                                 Ungrouped Connections
                             </Typography>
@@ -345,39 +352,73 @@ function ProjectSection({
     const ungroupedInProject = groupsMap.get(null) || [];
 
     return (
-        <Box>
+        <Box
+            sx={{
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+            }}
+        >
             {/* Project header */}
             <Box
                 onClick={() => setExpanded(!expanded)}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.5,
+                    gap: 2,
+                    px: 2.5,
+                    py: 2,
                     cursor: 'pointer',
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderLeft: `4px solid ${projectColor}`,
+                    borderLeft: `3px solid ${projectColor}`,
+                    transition: 'background 0.15s',
                     '&:hover': { bgcolor: 'action.hover' },
                 }}
             >
-                <IconButton size="small" sx={{ p: 0.5 }}>
+                <Box
+                    sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1,
+                        bgcolor: `${projectColor}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <FolderIcon sx={{ color: projectColor, fontSize: 20 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        {project.name}
+                    </Typography>
+                    {project.description && (
+                        <Typography variant="caption" color="text.secondary">
+                            {project.description}
+                        </Typography>
+                    )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                        {totalConnections} connection{totalConnections !== 1 ? 's' : ''}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled">
+                        •
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {allGroups.length} group{allGroups.length !== 1 ? 's' : ''}
+                    </Typography>
+                </Box>
+                <IconButton size="small" sx={{ ml: 1 }}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
-                <FolderIcon sx={{ color: projectColor }} />
-                <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-                    {project.name}
-                </Typography>
-                <Chip label={`${totalConnections} connections`} size="small" />
-                <Chip label={`${allGroups.length} groups`} size="small" variant="outlined" />
                 <IconButton
                     size="small"
                     onClick={(e) => {
                         e.stopPropagation();
                         setMenuAnchor(e.currentTarget);
                     }}
+                    sx={{ color: 'text.secondary' }}
                 >
                     <MoreVertIcon />
                 </IconButton>
@@ -427,7 +468,15 @@ function ProjectSection({
 
             {/* Project content */}
             <Collapse in={expanded}>
-                <Box sx={{ pl: 4, pt: 2 }}>
+                <Box
+                    sx={{
+                        px: 2.5,
+                        py: 2,
+                        bgcolor: 'background.default',
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
                     <Stack spacing={2}>
                         {/* Database groups */}
                         {allGroups.map((group) => (
@@ -447,9 +496,16 @@ function ProjectSection({
                             <Box>
                                 <Typography
                                     variant="caption"
-                                    sx={{ color: 'text.secondary', mb: 1, display: 'block' }}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        mb: 1.5,
+                                        display: 'block',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em',
+                                        fontWeight: 500,
+                                    }}
                                 >
-                                    Not in a group
+                                    Ungrouped
                                 </Typography>
                                 <Stack spacing={1}>
                                     {ungroupedInProject.map((conn) => (
@@ -467,13 +523,14 @@ function ProjectSection({
                         )}
 
                         {totalConnections === 0 && allGroups.length === 0 && (
-                            <Typography
-                                variant="body2"
-                                sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}
-                            >
-                                No connections or groups yet. Add an instance group to organize
-                                related database instances.
-                            </Typography>
+                            <Box sx={{ textAlign: 'center', py: 3 }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    No connections or groups yet
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled">
+                                    Add an instance group to organize related database instances
+                                </Typography>
+                            </Box>
                         )}
                     </Stack>
                 </Box>
@@ -511,51 +568,94 @@ function DatabaseGroupSection({
     });
 
     return (
-        <Box>
+        <Box
+            sx={{
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+            }}
+        >
             {/* Group header */}
             <Box
                 onClick={() => setExpanded(!expanded)}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1,
-                    px: 1.5,
-                    py: 1,
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
                     cursor: 'pointer',
-                    bgcolor: 'action.hover',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'action.selected' },
+                    transition: 'background 0.15s',
+                    '&:hover': { bgcolor: 'action.hover' },
                 }}
             >
-                <IconButton size="small" sx={{ p: 0.25 }}>
+                <Box
+                    sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 0.5,
+                        bgcolor: 'primary.main',
+                        opacity: 0.1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <LayersIcon
+                        fontSize="small"
+                        sx={{ color: 'primary.main', opacity: 10, position: 'absolute' }}
+                    />
+                </Box>
+                <LayersIcon fontSize="small" sx={{ color: 'primary.main', ml: -4.5 }} />
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" fontWeight={600}>
+                        {group.name}
+                    </Typography>
+                    {group.description && (
+                        <Typography variant="caption" color="text.secondary">
+                            {group.description}
+                        </Typography>
+                    )}
+                </Box>
+                {(group.syncSchema || group.syncData) && (
+                    <Chip
+                        label={
+                            group.syncSchema && group.syncData
+                                ? 'Schema + Data'
+                                : group.syncSchema
+                                  ? 'Schema'
+                                  : 'Data'
+                        }
+                        size="small"
+                        icon={<SyncIcon sx={{ fontSize: 14 }} />}
+                        sx={{
+                            height: 22,
+                            fontSize: 11,
+                            bgcolor: 'rgba(34, 197, 94, 0.1)',
+                            color: '#22c55e',
+                            border: '1px solid rgba(34, 197, 94, 0.3)',
+                            '& .MuiChip-icon': { color: '#22c55e' },
+                        }}
+                    />
+                )}
+                <Typography variant="caption" color="text.secondary">
+                    {connections.length} instance{connections.length !== 1 ? 's' : ''}
+                </Typography>
+                <IconButton size="small">
                     {expanded ? (
                         <ExpandLessIcon fontSize="small" />
                     ) : (
                         <ExpandMoreIcon fontSize="small" />
                     )}
                 </IconButton>
-                <LayersIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
-                    {group.name}
-                </Typography>
-                {(group.syncSchema || group.syncData) && (
-                    <Chip
-                        label="Sync"
-                        size="small"
-                        icon={<SyncIcon />}
-                        sx={{ height: 20 }}
-                        color="primary"
-                        variant="outlined"
-                    />
-                )}
-                <Chip label={`${connections.length} instances`} size="small" sx={{ height: 20 }} />
                 <IconButton
                     size="small"
                     onClick={(e) => {
                         e.stopPropagation();
                         setMenuAnchor(e.currentTarget);
                     }}
+                    sx={{ color: 'text.secondary' }}
                 >
                     <MoreVertIcon fontSize="small" />
                 </IconButton>
@@ -604,26 +704,36 @@ function DatabaseGroupSection({
 
             {/* Group connections */}
             <Collapse in={expanded}>
-                <Stack spacing={1} sx={{ pl: 4, pt: 1 }}>
-                    {connections.map((conn) => (
-                        <ConnectionCard
-                            key={conn.id}
-                            connection={conn}
-                            compact
-                            onEdit={() => onEditConnection(conn)}
-                            onDelete={() => onDeleteConnection(conn.id)}
-                            onQuery={() => onQuery(conn.id)}
-                        />
-                    ))}
-                    {connections.length === 0 && (
-                        <Typography
-                            variant="caption"
-                            sx={{ color: 'text.secondary', py: 1, display: 'block' }}
-                        >
-                            No connections in this group
-                        </Typography>
-                    )}
-                </Stack>
+                <Box
+                    sx={{
+                        px: 2,
+                        py: 1.5,
+                        bgcolor: 'background.default',
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    <Stack spacing={1}>
+                        {connections.map((conn) => (
+                            <ConnectionCard
+                                key={conn.id}
+                                connection={conn}
+                                compact
+                                onEdit={() => onEditConnection(conn)}
+                                onDelete={() => onDeleteConnection(conn.id)}
+                                onQuery={() => onQuery(conn.id)}
+                            />
+                        ))}
+                        {connections.length === 0 && (
+                            <Typography
+                                variant="caption"
+                                sx={{ color: 'text.disabled', py: 2, textAlign: 'center' }}
+                            >
+                                No connections in this group
+                            </Typography>
+                        )}
+                    </Stack>
+                </Box>
             </Collapse>
         </Box>
     );
@@ -685,7 +795,16 @@ function ConnectionCard({
             : `${connection.host}:${connection.port}`;
 
     return (
-        <GlassCard noPadding>
+        <Box
+            sx={{
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+                transition: 'border-color 0.15s',
+                '&:hover': { borderColor: 'primary.main' },
+            }}
+        >
             {/* Header */}
             <Box
                 onClick={() => setExpanded(!expanded)}
@@ -694,92 +813,131 @@ function ConnectionCard({
                     alignItems: 'center',
                     gap: compact ? 1.5 : 2,
                     px: compact ? 2 : 2.5,
-                    py: compact ? 1.5 : 2,
+                    py: compact ? 1.25 : 1.75,
                     cursor: 'pointer',
                     transition: 'background 0.15s',
                     '&:hover': { bgcolor: 'action.hover' },
                 }}
             >
-                <IconButton size="small" sx={{ p: 0.5 }}>
-                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-                <StorageIcon sx={{ fontSize: compact ? 18 : 22, color: 'primary.main' }} />
+                <StorageIcon
+                    sx={{ fontSize: compact ? 18 : 20, color: 'primary.main', flexShrink: 0 }}
+                />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant={compact ? 'body2' : 'body1'} fontWeight={600}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography
+                            variant={compact ? 'body2' : 'body1'}
+                            fontWeight={600}
+                            sx={{ lineHeight: 1.3 }}
+                        >
                             {connection.name}
                         </Typography>
                         <Chip
                             label={connection.engine.toUpperCase()}
                             size="small"
                             sx={{
-                                height: 20,
+                                height: 18,
                                 fontSize: 10,
                                 fontWeight: 600,
                                 bgcolor:
                                     connection.engine === 'postgres'
-                                        ? 'rgba(51, 103, 145, 0.25)'
-                                        : 'rgba(0, 122, 204, 0.25)',
+                                        ? 'rgba(51, 103, 145, 0.2)'
+                                        : 'rgba(0, 122, 204, 0.2)',
                                 color: connection.engine === 'postgres' ? '#6BA3D6' : '#47A3F3',
-                                border: '1px solid',
-                                borderColor:
-                                    connection.engine === 'postgres'
-                                        ? 'rgba(51, 103, 145, 0.5)'
-                                        : 'rgba(0, 122, 204, 0.5)',
                             }}
                         />
+                        {connection.readOnly && (
+                            <Chip
+                                label="READ-ONLY"
+                                size="small"
+                                sx={{
+                                    height: 18,
+                                    fontSize: 9,
+                                    fontWeight: 600,
+                                    bgcolor: 'rgba(139, 92, 246, 0.15)',
+                                    color: 'rgb(139, 92, 246)',
+                                }}
+                            />
+                        )}
                     </Box>
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontFamily="monospace"
+                    <Box
                         sx={{
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            mt: 0.25,
+                            flexWrap: 'wrap',
                         }}
                     >
-                        {connectionSummary}
-                    </Typography>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontFamily="monospace"
+                            sx={{ fontSize: 11 }}
+                        >
+                            {connectionSummary}
+                        </Typography>
+                        {connection.database && connection.engine !== 'sqlite' && (
+                            <>
+                                <Typography variant="caption" color="text.disabled">
+                                    •
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    fontFamily="monospace"
+                                    sx={{ fontSize: 11 }}
+                                >
+                                    {connection.database}
+                                </Typography>
+                            </>
+                        )}
+                    </Box>
                 </Box>
 
                 {/* Tags */}
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {connection.tags.map((tag) => (
-                        <Chip
-                            key={tag}
-                            label={tag}
-                            size="small"
-                            sx={{
-                                ...getTagStyle(tag),
-                                fontWeight: 500,
-                                border: '1px solid',
-                            }}
-                        />
-                    ))}
-                    {connection.readOnly && (
-                        <Chip
-                            label="read-only"
-                            size="small"
-                            sx={{
-                                fontWeight: 500,
-                                bgcolor: 'rgba(139, 92, 246, 0.15)',
-                                color: 'rgb(139, 92, 246)',
-                                border: '1px solid rgba(139, 92, 246, 0.3)',
-                            }}
-                        />
+                {connection.tags.length > 0 && (
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', flexShrink: 0 }}>
+                        {connection.tags.map((tag) => (
+                            <Chip
+                                key={tag}
+                                label={tag}
+                                size="small"
+                                sx={{
+                                    ...getTagStyle(tag),
+                                    height: 20,
+                                    fontSize: 10,
+                                    fontWeight: 500,
+                                    border: '1px solid',
+                                }}
+                            />
+                        ))}
+                    </Box>
+                )}
+
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(!expanded);
+                    }}
+                    sx={{ color: 'text.secondary' }}
+                >
+                    {expanded ? (
+                        <ExpandLessIcon fontSize="small" />
+                    ) : (
+                        <ExpandMoreIcon fontSize="small" />
                     )}
-                </Box>
+                </IconButton>
 
                 <Button
                     size="small"
                     variant="contained"
-                    startIcon={<PlayArrowIcon />}
+                    startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
                     onClick={(e) => {
                         e.stopPropagation();
                         onQuery();
                     }}
+                    sx={{ flexShrink: 0 }}
                 >
                     Query
                 </Button>
@@ -790,13 +948,20 @@ function ConnectionCard({
                 <Box
                     sx={{
                         px: compact ? 2 : 2.5,
-                        pb: compact ? 2 : 2.5,
-                        pt: 1,
+                        py: 2,
+                        bgcolor: 'background.default',
                         borderTop: '1px solid',
                         borderColor: 'divider',
                     }}
                 >
-                    <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                            gap: 2,
+                            mb: 2.5,
+                        }}
+                    >
                         {connection.engine === 'sqlite' ? (
                             <DetailRow label="File" value={connection.database} />
                         ) : (
@@ -816,7 +981,7 @@ function ConnectionCard({
                                 {connection.ssl && <DetailRow label="SSL" value="Enabled" />}
                             </>
                         )}
-                    </Stack>
+                    </Box>
 
                     {testResult && (
                         <Alert
@@ -828,41 +993,58 @@ function ConnectionCard({
                         </Alert>
                     )}
 
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                         <Button
                             size="small"
+                            variant="outlined"
                             startIcon={testing ? <CircularProgress size={14} /> : <ScienceIcon />}
                             onClick={handleTest}
                             disabled={testing}
                         >
-                            Test Connection
+                            Test
                         </Button>
-                        <Button size="small" startIcon={<EditIcon />} onClick={onEdit}>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<EditIcon />}
+                            onClick={onEdit}
+                        >
                             Edit
                         </Button>
+                        <Box sx={{ flex: 1 }} />
                         <Button
                             size="small"
                             color="error"
                             startIcon={<DeleteIcon />}
                             onClick={onDelete}
-                            sx={{ ml: 'auto' }}
                         >
                             Delete
                         </Button>
                     </Box>
                 </Box>
             </Collapse>
-        </GlassCard>
+        </Box>
     );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
     return (
-        <Box sx={{ display: 'flex', gap: 4 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 80 }}>
+        <Box>
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                    display: 'block',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    mb: 0.25,
+                }}
+            >
                 {label}
             </Typography>
-            <Typography variant="body2" fontFamily="monospace">
+            <Typography variant="body2" fontFamily="monospace" sx={{ fontSize: 13 }}>
                 {value}
             </Typography>
         </Box>

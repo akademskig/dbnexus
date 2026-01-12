@@ -646,7 +646,7 @@ function DataSyncDialog({
                                             <Checkbox
                                                 checked={
                                                     selectedTables.length ===
-                                                    outOfSyncTables.length &&
+                                                        outOfSyncTables.length &&
                                                     outOfSyncTables.length > 0
                                                 }
                                                 indeterminate={
