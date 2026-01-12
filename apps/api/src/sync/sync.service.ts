@@ -107,9 +107,9 @@ export class SyncService {
             dataStatus: 'unchecked',
         };
 
-        // Use connection's defaultSchema or fall back to 'public'
-        const sourceSchema = source.defaultSchema || 'public';
-        const targetSchema = target.defaultSchema || 'public';
+        // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
+        const sourceSchema = group.syncTargetSchema || source.defaultSchema || 'public';
+        const targetSchema = group.syncTargetSchema || target.defaultSchema || 'public';
 
         // Check schema if enabled
         if (group.syncSchema) {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -794,6 +794,7 @@ function GroupSettingsDialog({
         sourceConnectionId?: string;
         syncSchema: boolean;
         syncData: boolean;
+        syncTargetSchema?: string;
     };
     connections: ConnectionConfig[];
 }) {
@@ -801,6 +802,23 @@ function GroupSettingsDialog({
     const [sourceConnectionId, setSourceConnectionId] = useState(group.sourceConnectionId || '');
     const [syncSchema, setSyncSchema] = useState(group.syncSchema);
     const [syncData, setSyncData] = useState(group.syncData);
+    const [syncTargetSchema, setSyncTargetSchema] = useState(group.syncTargetSchema || '');
+    const [availableSchemas, setAvailableSchemas] = useState<string[]>([]);
+    const [loadingSchemas, setLoadingSchemas] = useState(false);
+
+    // Load schemas when source connection changes
+    useEffect(() => {
+        if (sourceConnectionId) {
+            setLoadingSchemas(true);
+            schemaApi
+                .getSchemas(sourceConnectionId)
+                .then(setAvailableSchemas)
+                .catch(() => setAvailableSchemas([]))
+                .finally(() => setLoadingSchemas(false));
+        } else {
+            setAvailableSchemas([]);
+        }
+    }, [sourceConnectionId]);
 
     const updateMutation = useMutation({
         mutationFn: () =>
@@ -808,6 +826,7 @@ function GroupSettingsDialog({
                 sourceConnectionId: sourceConnectionId || null,
                 syncSchema,
                 syncData,
+                syncTargetSchema: syncTargetSchema || null,
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['group', group.id] });
@@ -815,6 +834,10 @@ function GroupSettingsDialog({
             onClose();
         },
     });
+
+    // Get the selected source connection's default schema
+    const sourceConnection = connections.find((c) => c.id === sourceConnectionId);
+    const defaultSchema = sourceConnection?.defaultSchema || 'public';
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -825,7 +848,10 @@ function GroupSettingsDialog({
                         <InputLabel>Source Connection (Reference)</InputLabel>
                         <Select
                             value={sourceConnectionId}
-                            onChange={(e) => setSourceConnectionId(e.target.value)}
+                            onChange={(e) => {
+                                setSourceConnectionId(e.target.value);
+                                setSyncTargetSchema(''); // Reset schema when connection changes
+                            }}
                             label="Source Connection (Reference)"
                         >
                             <MenuItem value="">
@@ -834,10 +860,45 @@ function GroupSettingsDialog({
                             {connections.map((conn) => (
                                 <MenuItem key={conn.id} value={conn.id}>
                                     {conn.name}
+                                    {conn.defaultSchema && (
+                                        <Typography
+                                            component="span"
+                                            variant="caption"
+                                            sx={{ ml: 1, color: 'text.secondary' }}
+                                        >
+                                            ({conn.defaultSchema})
+                                        </Typography>
+                                    )}
                                 </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
+
+                    {/* Schema selector */}
+                    {sourceConnectionId && (
+                        <FormControl fullWidth>
+                            <InputLabel>Target Schema</InputLabel>
+                            <Select
+                                value={syncTargetSchema}
+                                onChange={(e) => setSyncTargetSchema(e.target.value)}
+                                label="Target Schema"
+                                disabled={loadingSchemas}
+                            >
+                                <MenuItem value="">
+                                    <em>Use connection default ({defaultSchema})</em>
+                                </MenuItem>
+                                {availableSchemas.map((schema) => (
+                                    <MenuItem key={schema} value={schema}>
+                                        {schema}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                                Schema to use for sync operations (applies to all connections in
+                                group)
+                            </Typography>
+                        </FormControl>
+                    )}
 
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -919,10 +980,14 @@ export function GroupSyncPage() {
 
     // Get source connection and its default schema
     const sourceConnection = connections.find((c) => c.id === group?.sourceConnectionId);
-    const sourceSchema = sourceConnection?.defaultSchema || 'public';
+    // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
+    const sourceSchema = group?.syncTargetSchema || sourceConnection?.defaultSchema || 'public';
 
-    // Helper to get target schema
+    // Helper to get target schema - use group's syncTargetSchema for all targets
     const getTargetSchema = (targetId: string) => {
+        if (group?.syncTargetSchema) {
+            return group.syncTargetSchema;
+        }
         const targetConn = connections.find((c) => c.id === targetId);
         return targetConn?.defaultSchema || 'public';
     };

@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -207,5 +207,12 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE connections ADD COLUMN default_schema TEXT;
 
   UPDATE schema_version SET version = 6;
+  `,
+
+    // Version 7: Add sync_target_schema to database_groups
+    `
+  ALTER TABLE database_groups ADD COLUMN sync_target_schema TEXT;
+
+  UPDATE schema_version SET version = 7;
   `,
 ];

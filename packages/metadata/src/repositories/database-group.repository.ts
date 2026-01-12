@@ -17,6 +17,7 @@ interface DatabaseGroupRow {
     source_connection_id: string | null;
     sync_schema: number;
     sync_data: number;
+    sync_target_schema: string | null;
     created_at: string;
     updated_at: string;
     project_name?: string;
@@ -37,8 +38,8 @@ export class DatabaseGroupRepository {
             .getDb()
             .prepare(
                 `
-            INSERT INTO database_groups (id, project_id, name, description, source_connection_id, sync_schema, sync_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO database_groups (id, project_id, name, description, source_connection_id, sync_schema, sync_data, sync_target_schema)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
             .run(
@@ -48,7 +49,8 @@ export class DatabaseGroupRepository {
                 input.description || null,
                 input.sourceConnectionId || null,
                 input.syncSchema ? 1 : 0,
-                input.syncData ? 1 : 0
+                input.syncData ? 1 : 0,
+                input.syncTargetSchema || null
             );
 
         return this.findById(id)!;
@@ -161,6 +163,10 @@ export class DatabaseGroupRepository {
             updates.push('sync_data = ?');
             values.push(input.syncData ? 1 : 0);
         }
+        if (input.syncTargetSchema !== undefined) {
+            updates.push('sync_target_schema = ?');
+            values.push(input.syncTargetSchema);
+        }
 
         if (updates.length === 0) {
             return this.findById(id);
@@ -205,6 +211,7 @@ export class DatabaseGroupRepository {
             sourceConnectionId: row.source_connection_id || undefined,
             syncSchema: row.sync_schema === 1,
             syncData: row.sync_data === 1,
+            syncTargetSchema: row.sync_target_schema || undefined,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             projectName: row.project_name,

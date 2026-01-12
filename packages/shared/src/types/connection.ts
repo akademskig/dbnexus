@@ -43,6 +43,7 @@ export interface InstanceGroup {
     sourceConnectionId?: string;
     syncSchema: boolean;
     syncData: boolean;
+    syncTargetSchema?: string; // Schema to sync (overrides connection defaultSchema)
     createdAt: Date;
     updatedAt: Date;
     // Populated from joins
@@ -58,6 +59,7 @@ export interface InstanceGroupCreateInput {
     sourceConnectionId?: string;
     syncSchema?: boolean;
     syncData?: boolean;
+    syncTargetSchema?: string;
 }
 
 export interface InstanceGroupUpdateInput {
@@ -66,6 +68,7 @@ export interface InstanceGroupUpdateInput {
     sourceConnectionId?: string | null;
     syncSchema?: boolean;
     syncData?: boolean;
+    syncTargetSchema?: string | null;
 }
 
 /**
