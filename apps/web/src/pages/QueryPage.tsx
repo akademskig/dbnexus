@@ -115,6 +115,7 @@ export function QueryPage() {
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
+    const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
         message: string;
@@ -294,7 +295,7 @@ export function QueryPage() {
                 // Use connection's defaultSchema if available, otherwise fall back to common defaults
                 const defaultSchema =
                     (selectedConnection?.defaultSchema &&
-                    schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                         ? selectedConnection.defaultSchema
                         : null) ??
                     schemas.find((s) => s === 'public') ??
@@ -384,14 +385,57 @@ export function QueryPage() {
         [handleExecute]
     );
 
-    // Fetch data with pagination
+    // Fetch data with pagination and optional search
     const fetchTableData = useCallback(
-        (table: TableInfo, page: number, pageSize: number) => {
+        (
+            table: TableInfo,
+            page: number,
+            pageSize: number,
+            search?: string,
+            schema?: TableSchema | null
+        ) => {
             const offset = page * pageSize;
-            const query =
+            const tableName =
                 selectedConnection?.engine === 'sqlite'
-                    ? `SELECT * FROM "${table.name}" LIMIT ${pageSize} OFFSET ${offset};`
-                    : `SELECT * FROM "${table.schema}"."${table.name}" LIMIT ${pageSize} OFFSET ${offset};`;
+                    ? `"${table.name}"`
+                    : `"${table.schema}"."${table.name}"`;
+
+            let query: string;
+            if (search && search.trim() && schema?.columns.length) {
+                // Build a WHERE clause that searches across all text-like columns
+                const searchTerm = search.replaceAll("'", "''"); // Escape single quotes
+                const textTypes = [
+                    'text',
+                    'varchar',
+                    'char',
+                    'character varying',
+                    'character',
+                    'name',
+                    'citext',
+                    'uuid',
+                ];
+                const searchableColumns = schema.columns.filter(
+                    (col) =>
+                        textTypes.some((t) => col.dataType.toLowerCase().includes(t)) ||
+                        col.dataType.toLowerCase().includes('text')
+                );
+
+                if (searchableColumns.length > 0) {
+                    const conditions = searchableColumns.map((col) => {
+                        if (selectedConnection?.engine === 'sqlite') {
+                            return `"${col.name}" LIKE '%${searchTerm}%'`;
+                        } else {
+                            return `"${col.name}"::text ILIKE '%${searchTerm}%'`;
+                        }
+                    });
+                    query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')} LIMIT ${pageSize} OFFSET ${offset};`;
+                } else {
+                    // No text columns, just do regular query
+                    query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
+                }
+            } else {
+                query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
+            }
             setSql(query);
             executeMutation.mutate({ query });
         },
@@ -404,6 +448,7 @@ export function QueryPage() {
             setSelectedTable(table);
             setTotalRowCount(null); // Reset while loading
             setPaginationModel({ page: 0, pageSize: 100 }); // Reset to first page
+            setSearchQuery(''); // Reset search when selecting new table
             // Update URL with table (keep current tab)
             updateUrl({ table: table.name });
 
@@ -431,10 +476,47 @@ export function QueryPage() {
         (newModel: { page: number; pageSize: number }) => {
             setPaginationModel(newModel);
             if (selectedTable) {
-                fetchTableData(selectedTable, newModel.page, newModel.pageSize);
+                fetchTableData(
+                    selectedTable,
+                    newModel.page,
+                    newModel.pageSize,
+                    searchQuery,
+                    tableSchema
+                );
             }
         },
-        [selectedTable, fetchTableData]
+        [selectedTable, fetchTableData, searchQuery, tableSchema]
+    );
+
+    // Handle search
+    const handleSearch = useCallback(
+        async (query: string) => {
+            setSearchQuery(query);
+            setPaginationModel((prev) => ({ ...prev, page: 0 })); // Reset to first page
+
+            if (selectedTable) {
+                // If searching, we need to get a new count
+                if (query.trim()) {
+                    // For search, we don't know the exact count without running COUNT with WHERE
+                    // For now, set to null to indicate unknown
+                    setTotalRowCount(null);
+                } else {
+                    // Restore original count
+                    try {
+                        const { count } = await schemaApi.getTableRowCount(
+                            selectedConnectionId,
+                            selectedTable.schema || 'main',
+                            selectedTable.name
+                        );
+                        setTotalRowCount(count);
+                    } catch {
+                        setTotalRowCount(null);
+                    }
+                }
+                fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema);
+            }
+        },
+        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema]
     );
 
     // Filter tables by search
@@ -446,8 +528,8 @@ export function QueryPage() {
     const tablesBySchema = filteredTables.reduce(
         (acc, table) => {
             const schema = table.schema || 'main';
-            if (!acc[schema]) acc[schema] = [];
-            acc[schema].push(table);
+            acc[schema] ??= [];
+            acc[schema]!.push(table);
             return acc;
         },
         {} as Record<string, TableInfo[]>
@@ -892,6 +974,8 @@ export function QueryPage() {
                                         totalRowCount={totalRowCount}
                                         paginationModel={paginationModel}
                                         onPaginationChange={handlePaginationChange}
+                                        onSearch={handleSearch}
+                                        searchQuery={searchQuery}
                                     />
                                 )}
 
@@ -1045,6 +1129,8 @@ function DataTab({
     totalRowCount,
     paginationModel,
     onPaginationChange,
+    onSearch,
+    searchQuery,
 }: {
     result: QueryResult | null;
     error: string | null;
@@ -1055,34 +1141,37 @@ function DataTab({
     totalRowCount: number | null;
     paginationModel: { page: number; pageSize: number };
     onPaginationChange: (model: { page: number; pageSize: number }) => void;
+    onSearch: (query: string) => void;
+    searchQuery: string;
 }) {
+    const [localSearch, setLocalSearch] = useState(searchQuery);
     // Convert result to DataGrid format
     const columns: GridColDef[] = result
         ? result.columns.map((col) => ({
-              field: col.name,
-              headerName: col.name,
-              description: col.dataType,
-              flex: 1,
-              minWidth: 120,
-              renderCell: (params: GridRenderCellParams) => <CellValue value={params.value} />,
-              renderHeader: () => (
-                  <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                          {col.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                          {col.dataType}
-                      </Typography>
-                  </Box>
-              ),
-          }))
+            field: col.name,
+            headerName: col.name,
+            description: col.dataType,
+            flex: 1,
+            minWidth: 120,
+            renderCell: (params: GridRenderCellParams) => <CellValue value={params.value} />,
+            renderHeader: () => (
+                <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                        {col.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {col.dataType}
+                    </Typography>
+                </Box>
+            ),
+        }))
         : [];
 
     const rows = result
         ? result.rows.map((row, index) => ({
-              id: index,
-              ...row,
-          }))
+            id: index,
+            ...row,
+        }))
         : [];
 
     return (
@@ -1125,12 +1214,12 @@ function DataTab({
 
             {result && (
                 <>
-                    {/* Stats Bar */}
+                    {/* Stats Bar with Search */}
                     <Box
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 3,
+                            gap: 2,
                             px: 2,
                             py: 1,
                             bgcolor: 'background.paper',
@@ -1149,13 +1238,13 @@ function DataTab({
                             <CheckCircleIcon fontSize="small" />
                             <Typography variant="body2">
                                 {totalRowCount !== null
-                                    ? `${totalRowCount.toLocaleString()} total rows`
+                                    ? `${totalRowCount.toLocaleString()} rows`
                                     : `${result.rowCount} rows`}
                             </Typography>
                         </Box>
                         {totalRowCount !== null && totalRowCount > paginationModel.pageSize && (
                             <Typography variant="body2" color="text.secondary">
-                                Showing {paginationModel.page * paginationModel.pageSize + 1}-
+                                {paginationModel.page * paginationModel.pageSize + 1}-
                                 {Math.min(
                                     (paginationModel.page + 1) * paginationModel.pageSize,
                                     totalRowCount
@@ -1173,6 +1262,58 @@ function DataTab({
                             <AccessTimeIcon fontSize="small" />
                             <Typography variant="body2">{result.executionTimeMs}ms</Typography>
                         </Box>
+
+                        {/* Search */}
+                        <Box sx={{ flex: 1 }} />
+                        <TextField
+                            size="small"
+                            placeholder="Search in data... (press Enter)"
+                            value={localSearch}
+                            onChange={(e) => setLocalSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onSearch(localSearch);
+                                }
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: localSearch && (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setLocalSearch('');
+                                                onSearch('');
+                                            }}
+                                        >
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                width: 280,
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: 'background.default',
+                                },
+                            }}
+                        />
+                        {searchQuery && (
+                            <Chip
+                                label={`Filtered: "${searchQuery}"`}
+                                size="small"
+                                onDelete={() => {
+                                    setLocalSearch('');
+                                    onSearch('');
+                                }}
+                                color="primary"
+                                variant="outlined"
+                            />
+                        )}
                     </Box>
 
                     {/* Results DataGrid */}
