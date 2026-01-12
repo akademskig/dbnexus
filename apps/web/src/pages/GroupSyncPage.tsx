@@ -944,6 +944,21 @@ function GroupSettingsDialog({
     );
 }
 
+// Helper to format relative time
+function formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+
+    if (diffSec < 10) return 'just now';
+    if (diffSec < 60) return `${diffSec} seconds ago`;
+    if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    return date.toLocaleString();
+}
+
 // Main page component
 export function GroupSyncPage() {
     const { groupId } = useParams<{ groupId: string }>();
@@ -953,6 +968,7 @@ export function GroupSyncPage() {
         connectionId: string;
         connectionName: string;
     } | null>(null);
+    const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
 
     const { data: group, isLoading: loadingGroup } = useQuery({
         queryKey: ['group', groupId],
@@ -969,12 +985,36 @@ export function GroupSyncPage() {
     const {
         data: syncStatus,
         isLoading: loadingStatus,
+        isFetching: fetchingStatus,
         refetch: refetchStatus,
+        dataUpdatedAt,
     } = useQuery({
         queryKey: ['groupSyncStatus', groupId],
-        queryFn: () => syncApi.getGroupSyncStatus(groupId!),
+        queryFn: async () => {
+            const result = await syncApi.getGroupSyncStatus(groupId!);
+            setLastCheckedAt(new Date());
+            return result;
+        },
         enabled: !!groupId && !!group?.sourceConnectionId,
+        // Auto-refetch on mount/focus but respect cache
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
     });
+
+    // Update lastCheckedAt when data is updated
+    useEffect(() => {
+        if (dataUpdatedAt && dataUpdatedAt > 0) {
+            setLastCheckedAt(new Date(dataUpdatedAt));
+        }
+    }, [dataUpdatedAt]);
+
+    // Force refresh - invalidate cache and refetch
+    const handleRefresh = () => {
+        // Invalidate all related caches
+        setLastCheckedAt(null);
+        refetchStatus();
+    };
 
     const handleSyncData = (targetConnectionId: string) => {
         const target = connections.find((c) => c.id === targetConnectionId);
@@ -1024,10 +1064,21 @@ export function GroupSyncPage() {
                     <Typography variant="h4" fontWeight={600}>
                         {group.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Instance Group Sync Status
-                        {group.projectName && ` • ${group.projectName}`}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Instance Group Sync Status
+                            {group.projectName && ` • ${group.projectName}`}
+                        </Typography>
+                        {lastCheckedAt && (
+                            <Typography
+                                variant="caption"
+                                color="text.disabled"
+                                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                            >
+                                • Last checked: {formatRelativeTime(lastCheckedAt)}
+                            </Typography>
+                        )}
+                    </Box>
                 </Box>
                 <Button
                     variant="outlined"
@@ -1038,11 +1089,17 @@ export function GroupSyncPage() {
                 </Button>
                 <Button
                     variant="contained"
-                    startIcon={loadingStatus ? <CircularProgress size={16} /> : <RefreshIcon />}
-                    onClick={() => refetchStatus()}
-                    disabled={loadingStatus || !group.sourceConnectionId}
+                    startIcon={
+                        loadingStatus || fetchingStatus ? (
+                            <CircularProgress size={16} />
+                        ) : (
+                            <RefreshIcon />
+                        )
+                    }
+                    onClick={handleRefresh}
+                    disabled={loadingStatus || fetchingStatus || !group.sourceConnectionId}
                 >
-                    Refresh Status
+                    {fetchingStatus ? 'Checking...' : 'Refresh Status'}
                 </Button>
             </Box>
 
