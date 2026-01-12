@@ -367,7 +367,7 @@ function ProjectSection({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
-                    px: 2.5,
+                    px: 2,
                     py: 2,
                     cursor: 'pointer',
                     borderLeft: `3px solid ${projectColor}`,
@@ -470,7 +470,7 @@ function ProjectSection({
             <Collapse in={expanded}>
                 <Box
                     sx={{
-                        px: 2.5,
+                        px: 2,
                         py: 2,
                         bgcolor: 'background.default',
                         borderTop: '1px solid',
@@ -583,7 +583,7 @@ function DatabaseGroupSection({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
-                    px: 2.5,
+                    px: 2,
                     py: 2,
                     cursor: 'pointer',
                     transition: 'background 0.15s',
@@ -706,7 +706,7 @@ function DatabaseGroupSection({
             <Collapse in={expanded}>
                 <Box
                     sx={{
-                        px: 2.5,
+                        px: 2,
                         py: 2,
                         bgcolor: 'background.default',
                         borderTop: '1px solid',
