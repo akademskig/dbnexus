@@ -23,6 +23,7 @@ interface ConnectionRow {
     username: string;
     encrypted_password: string | null;
     ssl: number;
+    default_schema: string | null;
     tags: string;
     read_only: number;
     created_at: string;
@@ -51,8 +52,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, host, port, database, username, encrypted_password, ssl, tags, read_only, project_id, group_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, project_id, group_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -65,6 +66,7 @@ export class ConnectionRepository {
                 input.username,
                 encryptedPwd,
                 input.ssl ? 1 : 0,
+                input.defaultSchema || null,
                 JSON.stringify(input.tags ?? []),
                 input.readOnly ? 1 : 0,
                 input.projectId || null,
@@ -258,6 +260,10 @@ export class ConnectionRepository {
             updates.push('ssl = ?');
             values.push(input.ssl ? 1 : 0);
         }
+        if (input.defaultSchema !== undefined) {
+            updates.push('default_schema = ?');
+            values.push(input.defaultSchema || null);
+        }
         if (input.tags !== undefined) {
             updates.push('tags = ?');
             values.push(JSON.stringify(input.tags));
@@ -334,6 +340,7 @@ export class ConnectionRepository {
             database: row.database,
             username: row.username,
             ssl: row.ssl === 1,
+            defaultSchema: row.default_schema || undefined,
             tags: JSON.parse(row.tags) as ConnectionTag[],
             readOnly: row.read_only === 1,
             createdAt: new Date(row.created_at),

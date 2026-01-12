@@ -807,6 +807,12 @@ function ConnectionCard({
                                 />
                                 <DetailRow label="Database" value={connection.database} />
                                 <DetailRow label="User" value={connection.username} />
+                                {connection.defaultSchema && (
+                                    <DetailRow
+                                        label="Default Schema"
+                                        value={connection.defaultSchema}
+                                    />
+                                )}
                                 {connection.ssl && <DetailRow label="SSL" value="Enabled" />}
                             </>
                         )}
@@ -1113,6 +1119,7 @@ function ConnectionFormDialog({
         username: '',
         password: '',
         ssl: false,
+        defaultSchema: '',
         tags: [],
         readOnly: false,
         projectId: undefined,
@@ -1134,6 +1141,7 @@ function ConnectionFormDialog({
                 username: connection.username,
                 password: '',
                 ssl: connection.ssl,
+                defaultSchema: connection.defaultSchema || '',
                 tags: connection.tags,
                 readOnly: connection.readOnly,
                 projectId: connection.projectId,
@@ -1149,6 +1157,7 @@ function ConnectionFormDialog({
                 username: '',
                 password: '',
                 ssl: false,
+                defaultSchema: '',
                 tags: [],
                 readOnly: false,
                 projectId: undefined,
@@ -1397,6 +1406,20 @@ function ConnectionFormDialog({
                                 placeholder="/path/to/database.db"
                                 helperText="Absolute path to the SQLite database file"
                                 required
+                                fullWidth
+                            />
+                        )}
+
+                        {/* Default Schema - only for Postgres */}
+                        {!isSqlite && (
+                            <TextField
+                                label="Default Schema"
+                                value={formData.defaultSchema || ''}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, defaultSchema: e.target.value })
+                                }
+                                placeholder="public"
+                                helperText="Default schema to use (leave empty for 'public')"
                                 fullWidth
                             />
                         )}

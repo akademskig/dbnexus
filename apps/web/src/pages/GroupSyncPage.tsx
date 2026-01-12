@@ -312,11 +312,15 @@ function TargetRow({
     target,
     group,
     sourceConnectionId,
+    sourceSchema,
+    targetSchema,
     onSyncData,
 }: {
     target: InstanceGroupTargetStatus;
     group: { id: string; projectId: string; syncSchema: boolean; syncData: boolean };
     sourceConnectionId: string;
+    sourceSchema: string;
+    targetSchema: string;
     onSyncData: (targetId: string) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
@@ -326,22 +330,39 @@ function TargetRow({
 
     // Fetch schema diff when expanded and diff is requested
     const { data: schemaDiff, isLoading: loadingDiff } = useQuery({
-        queryKey: ['schemaDiff', sourceConnectionId, target.connectionId],
+        queryKey: [
+            'schemaDiff',
+            sourceConnectionId,
+            target.connectionId,
+            sourceSchema,
+            targetSchema,
+        ],
         queryFn: () =>
             schemaApi.compareSchemasApi(
                 sourceConnectionId,
                 target.connectionId,
-                'public',
-                'public'
+                sourceSchema,
+                targetSchema
             ),
         enabled: showDiff && !!sourceConnectionId,
     });
 
     // Fetch migration SQL
     const { data: migrationSqlData } = useQuery({
-        queryKey: ['migrationSql', sourceConnectionId, target.connectionId],
+        queryKey: [
+            'migrationSql',
+            sourceConnectionId,
+            target.connectionId,
+            sourceSchema,
+            targetSchema,
+        ],
         queryFn: () =>
-            schemaApi.getMigrationSql(sourceConnectionId, target.connectionId, 'public', 'public'),
+            schemaApi.getMigrationSql(
+                sourceConnectionId,
+                target.connectionId,
+                sourceSchema,
+                targetSchema
+            ),
         enabled: showDiff && !!sourceConnectionId && !!schemaDiff,
     });
 
@@ -351,8 +372,8 @@ function TargetRow({
             await schemaApi.applyMigration(
                 sourceConnectionId,
                 target.connectionId,
-                'public',
-                'public',
+                sourceSchema,
+                targetSchema,
                 'Applied from Instance Group Sync'
             );
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
@@ -896,6 +917,16 @@ export function GroupSyncPage() {
         }
     };
 
+    // Get source connection and its default schema
+    const sourceConnection = connections.find((c) => c.id === group?.sourceConnectionId);
+    const sourceSchema = sourceConnection?.defaultSchema || 'public';
+
+    // Helper to get target schema
+    const getTargetSchema = (targetId: string) => {
+        const targetConn = connections.find((c) => c.id === targetId);
+        return targetConn?.defaultSchema || 'public';
+    };
+
     if (loadingGroup) {
         return (
             <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
@@ -996,6 +1027,8 @@ export function GroupSyncPage() {
                                             target={target}
                                             group={group}
                                             sourceConnectionId={group.sourceConnectionId!}
+                                            sourceSchema={sourceSchema}
+                                            targetSchema={getTargetSchema(target.connectionId)}
                                             onSyncData={handleSyncData}
                                         />
                                     ))}
@@ -1062,7 +1095,7 @@ export function GroupSyncPage() {
                     sourceConnectionId={group.sourceConnectionId}
                     targetConnectionId={dataSyncTarget.connectionId}
                     targetName={dataSyncTarget.connectionName}
-                    schema="public"
+                    schema={sourceSchema}
                 />
             )}
         </Box>

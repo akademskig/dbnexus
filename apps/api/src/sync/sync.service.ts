@@ -107,14 +107,18 @@ export class SyncService {
             dataStatus: 'unchecked',
         };
 
+        // Use connection's defaultSchema or fall back to 'public'
+        const sourceSchema = source.defaultSchema || 'public';
+        const targetSchema = target.defaultSchema || 'public';
+
         // Check schema if enabled
         if (group.syncSchema) {
             try {
                 const schemaDiff = await this.schemaDiffService.compareSchemas(
                     source.id,
                     target.id,
-                    'public', // TODO: make schema configurable
-                    'public'
+                    sourceSchema,
+                    targetSchema
                 );
 
                 if (schemaDiff.items.length === 0) {
@@ -133,7 +137,7 @@ export class SyncService {
         // Check data if enabled
         if (group.syncData) {
             try {
-                const dataDiff = await this.getTableRowCounts(source.id, target.id);
+                const dataDiff = await this.getTableRowCounts(source.id, target.id, sourceSchema);
                 const outOfSync = dataDiff.filter(
                     (d) => d.sourceCount !== d.targetCount || d.missingInTarget > 0
                 );

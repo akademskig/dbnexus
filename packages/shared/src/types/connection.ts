@@ -105,6 +105,7 @@ export interface ConnectionConfig {
     username: string;
     // Password stored separately in secrets
     ssl?: boolean;
+    defaultSchema?: string; // Default schema to use (e.g., 'public', 'dsops')
     tags: ConnectionTag[];
     readOnly: boolean;
     createdAt: Date;
@@ -126,6 +127,7 @@ export interface ConnectionCreateInput {
     username: string;
     password: string;
     ssl?: boolean;
+    defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
     projectId?: string;
@@ -140,6 +142,7 @@ export interface ConnectionUpdateInput {
     username?: string;
     password?: string;
     ssl?: boolean;
+    defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
     projectId?: string | null;
