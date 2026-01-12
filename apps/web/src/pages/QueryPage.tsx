@@ -844,11 +844,18 @@ export function QueryPage() {
                             </Box>
 
                             {/* Tabs */}
-                            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                            <Box
+                                sx={{
+                                    borderBottom: 1,
+                                    borderColor: 'divider',
+                                    px: 2,
+                                    bgcolor: 'background.paper',
+                                }}
+                            >
                                 <Tabs
                                     value={activeTab}
                                     onChange={(_, v) => handleTabChange(v)}
-                                    sx={{ minHeight: 40 }}
+                                    sx={{ minHeight: 48 }}
                                 >
                                     <Tab
                                         label={
@@ -870,7 +877,7 @@ export function QueryPage() {
                                                 </Box>
                                             </Badge>
                                         }
-                                        sx={{ minHeight: 40, textTransform: 'none' }}
+                                        sx={{ minHeight: 48, textTransform: 'none' }}
                                     />
                                     <Tab
                                         label={
@@ -891,7 +898,7 @@ export function QueryPage() {
                                                 </Box>
                                             </Badge>
                                         }
-                                        sx={{ minHeight: 40, textTransform: 'none' }}
+                                        sx={{ minHeight: 48, textTransform: 'none' }}
                                     />
                                     <Tab
                                         label={
@@ -1221,7 +1228,7 @@ function DataTab({
                             alignItems: 'center',
                             gap: 2,
                             px: 2,
-                            py: 1.5,
+                            minHeight: 48,
                             bgcolor: 'background.paper',
                             borderBottom: 1,
                             borderColor: 'divider',
