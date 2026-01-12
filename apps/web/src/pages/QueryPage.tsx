@@ -3137,10 +3137,15 @@ function SyncRowDialog({
     const [syncing, setSyncing] = useState(false);
     const [result, setResult] = useState<{ inserted: number; updated: number; errors: string[] } | null>(null);
 
-    // Filter out the source connection and get compatible connections (same engine preferred)
+    // Only allow syncing within the same instance group
+    // Filter connections to only those in the same group as the source connection
+    const sourceGroupId = sourceConnection?.groupId;
     const targetConnections = connections.filter(
-        (c) => c.id !== sourceConnectionId
+        (c) => c.id !== sourceConnectionId && c.groupId === sourceGroupId && sourceGroupId
     );
+    
+    // Check if source connection is in a group
+    const isInGroup = !!sourceGroupId;
 
     // Fetch schemas for target connection
     const { data: targetSchemas = [] } = useQuery({
@@ -3207,7 +3212,7 @@ function SyncRowDialog({
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>
-                Sync {rows.length} Row{rows.length > 1 ? 's' : ''} to Another Database
+                Sync {rows.length} Row{rows.length > 1 ? 's' : ''} Within Instance Group
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -3219,34 +3224,66 @@ function SyncRowDialog({
                         <Typography variant="body2" color="text.secondary">
                             Primary keys: {primaryKeys.join(', ')}
                         </Typography>
+                        {sourceConnection?.groupName && (
+                            <Typography variant="body2" color="text.secondary">
+                                Instance Group: {sourceConnection.groupName}
+                            </Typography>
+                        )}
                     </Alert>
 
-                    {/* Target connection */}
-                    <FormControl fullWidth>
-                        <InputLabel>Target Connection</InputLabel>
-                        <Select
-                            value={targetConnectionId}
-                            onChange={(e) => {
-                                setTargetConnectionId(e.target.value);
-                                setTargetSchema('');
-                            }}
-                            label="Target Connection"
-                        >
-                            {targetConnections.map((conn) => (
-                                <MenuItem key={conn.id} value={conn.id}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
-                                        {conn.name}
-                                        <Chip
-                                            label={conn.engine}
-                                            size="small"
-                                            sx={{ ml: 'auto' }}
-                                        />
-                                    </Box>
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    {/* Warning if not in a group */}
+                    {!isInGroup && (
+                        <Alert severity="warning">
+                            <Typography variant="body2">
+                                This connection is not part of an Instance Group.
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Row sync is only available between connections in the same Instance Group.
+                                Add this connection to a group on the Connections page to enable syncing.
+                            </Typography>
+                        </Alert>
+                    )}
+
+                    {/* No other connections in group */}
+                    {isInGroup && targetConnections.length === 0 && (
+                        <Alert severity="warning">
+                            <Typography variant="body2">
+                                No other connections in this Instance Group.
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Add more connections to the same group to enable syncing between them.
+                            </Typography>
+                        </Alert>
+                    )}
+
+                    {/* Target connection - only show if in group with other connections */}
+                    {isInGroup && targetConnections.length > 0 && (
+                        <FormControl fullWidth>
+                            <InputLabel>Target Connection</InputLabel>
+                            <Select
+                                value={targetConnectionId}
+                                onChange={(e) => {
+                                    setTargetConnectionId(e.target.value);
+                                    setTargetSchema('');
+                                }}
+                                label="Target Connection"
+                            >
+                                {targetConnections.map((conn) => (
+                                    <MenuItem key={conn.id} value={conn.id}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
+                                            {conn.name}
+                                            <Chip
+                                                label={conn.engine}
+                                                size="small"
+                                                sx={{ ml: 'auto' }}
+                                            />
+                                        </Box>
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
 
                     {/* Target schema */}
                     {targetConnectionId && (
@@ -3266,32 +3303,34 @@ function SyncRowDialog({
                         </FormControl>
                     )}
 
-                    {/* Sync mode */}
-                    <FormControl fullWidth>
-                        <InputLabel>Sync Mode</InputLabel>
-                        <Select
-                            value={mode}
-                            onChange={(e) => setMode(e.target.value as 'insert' | 'upsert')}
-                            label="Sync Mode"
-                        >
-                            <MenuItem value="upsert">
-                                <Box>
-                                    <Typography variant="body2">Upsert (Insert or Update)</Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Insert new rows, update existing ones
-                                    </Typography>
-                                </Box>
-                            </MenuItem>
-                            <MenuItem value="insert">
-                                <Box>
-                                    <Typography variant="body2">Insert Only</Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Only insert new rows, skip existing
-                                    </Typography>
-                                </Box>
-                            </MenuItem>
-                        </Select>
-                    </FormControl>
+                    {/* Sync mode - only show when target is selected */}
+                    {targetConnectionId && (
+                        <FormControl fullWidth>
+                            <InputLabel>Sync Mode</InputLabel>
+                            <Select
+                                value={mode}
+                                onChange={(e) => setMode(e.target.value as 'insert' | 'upsert')}
+                                label="Sync Mode"
+                            >
+                                <MenuItem value="upsert">
+                                    <Box>
+                                        <Typography variant="body2">Upsert (Insert or Update)</Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Insert new rows, update existing ones
+                                        </Typography>
+                                    </Box>
+                                </MenuItem>
+                                <MenuItem value="insert">
+                                    <Box>
+                                        <Typography variant="body2">Insert Only</Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Only insert new rows, skip existing
+                                        </Typography>
+                                    </Box>
+                                </MenuItem>
+                            </Select>
+                        </FormControl>
+                    )}
 
                     {/* Result */}
                     {result && (
@@ -3314,7 +3353,7 @@ function SyncRowDialog({
                 <Button onClick={handleClose}>
                     {result ? 'Close' : 'Cancel'}
                 </Button>
-                {!result && (
+                {!result && isInGroup && targetConnections.length > 0 && (
                     <Button
                         variant="contained"
                         onClick={handleSync}
