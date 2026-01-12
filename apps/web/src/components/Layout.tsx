@@ -16,9 +16,6 @@ import StorageIcon from '@mui/icons-material/Storage';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SettingsIcon from '@mui/icons-material/Settings';
-import PaletteIcon from '@mui/icons-material/Palette';
-import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { create } from 'zustand';
@@ -48,9 +45,6 @@ const navItems = [
     { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
     { to: '/schema-diff', icon: <CompareArrowsIcon />, label: 'Schema Diff' },
-    { to: '/showcase', icon: <PaletteIcon />, label: 'Showcase v1' },
-    { to: '/showcase2', icon: <ViewQuiltIcon />, label: 'Showcase v2' },
-    { to: '/showcase3', icon: <AutoAwesomeIcon />, label: 'Showcase v3' },
 ];
 
 export function Layout() {
