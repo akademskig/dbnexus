@@ -161,6 +161,9 @@ export const schemaApi = {
     getTableSchema: (connectionId: string, schema: string, table: string) =>
         fetchApi<TableSchema>(`/schema/${connectionId}/tables/${schema}/${table}`),
 
+    getTableRowCount: (connectionId: string, schema: string, table: string) =>
+        fetchApi<{ count: number }>(`/schema/${connectionId}/tables/${schema}/${table}/count`),
+
     getServerVersion: (connectionId: string) =>
         fetchApi<{ version: string }>(`/schema/${connectionId}/version`),
 

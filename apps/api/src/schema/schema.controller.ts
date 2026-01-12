@@ -36,6 +36,16 @@ export class SchemaController {
         return this.schemaService.getTableSchema(connectionId, schema, table);
     }
 
+    @Get(':connectionId/tables/:schema/:table/count')
+    async getTableRowCount(
+        @Param('connectionId') connectionId: string,
+        @Param('schema') schema: string,
+        @Param('table') table: string
+    ): Promise<{ count: number }> {
+        const count = await this.schemaService.getTableRowCount(connectionId, schema, table);
+        return { count };
+    }
+
     @Get(':connectionId/version')
     async getServerVersion(
         @Param('connectionId') connectionId: string

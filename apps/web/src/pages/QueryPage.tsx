@@ -113,6 +113,8 @@ export function QueryPage() {
     const [sql, setSql] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
         message: string;
@@ -365,19 +367,12 @@ export function QueryPage() {
                         (!schemaToMatch || t.schema === schemaToMatch)
                 );
                 if (tableToRestore) {
-                    setSelectedTable(tableToRestore);
-                    // Load the table data
-                    const query =
-                        selectedConnection?.engine === 'sqlite'
-                            ? `SELECT * FROM "${tableToRestore.name}" LIMIT 100;`
-                            : `SELECT * FROM "${tableToRestore.schema}"."${tableToRestore.name}" LIMIT 100;`;
-                    setSql(query);
-                    executeMutation.mutate({ query });
+                    handleTableSelect(tableToRestore);
                 }
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tables, urlTable, urlSchema, selectedTable, selectedConnection?.engine]);
+    }, [tables, urlTable, urlSchema, selectedTable]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -389,20 +384,57 @@ export function QueryPage() {
         [handleExecute]
     );
 
-    // Load table data when selecting a table
-    const handleTableSelect = useCallback(
-        (table: TableInfo) => {
-            setSelectedTable(table);
-            // Update URL with table (keep current tab)
-            updateUrl({ table: table.name });
+    // Fetch data with pagination
+    const fetchTableData = useCallback(
+        (table: TableInfo, page: number, pageSize: number) => {
+            const offset = page * pageSize;
             const query =
                 selectedConnection?.engine === 'sqlite'
-                    ? `SELECT * FROM "${table.name}" LIMIT 100;`
-                    : `SELECT * FROM "${table.schema}"."${table.name}" LIMIT 100;`;
+                    ? `SELECT * FROM "${table.name}" LIMIT ${pageSize} OFFSET ${offset};`
+                    : `SELECT * FROM "${table.schema}"."${table.name}" LIMIT ${pageSize} OFFSET ${offset};`;
             setSql(query);
             executeMutation.mutate({ query });
         },
-        [selectedConnection?.engine, updateUrl, executeMutation]
+        [selectedConnection?.engine, executeMutation]
+    );
+
+    // Load table data when selecting a table
+    const handleTableSelect = useCallback(
+        async (table: TableInfo) => {
+            setSelectedTable(table);
+            setTotalRowCount(null); // Reset while loading
+            setPaginationModel({ page: 0, pageSize: 100 }); // Reset to first page
+            // Update URL with table (keep current tab)
+            updateUrl({ table: table.name });
+
+            // Fetch total row count in background
+            try {
+                const { count } = await schemaApi.getTableRowCount(
+                    selectedConnectionId,
+                    table.schema || 'main',
+                    table.name
+                );
+                setTotalRowCount(count);
+            } catch {
+                // Fallback to unknown count
+                setTotalRowCount(null);
+            }
+
+            // Fetch first page of data
+            fetchTableData(table, 0, 100);
+        },
+        [selectedConnectionId, updateUrl, fetchTableData]
+    );
+
+    // Handle pagination change
+    const handlePaginationChange = useCallback(
+        (newModel: { page: number; pageSize: number }) => {
+            setPaginationModel(newModel);
+            if (selectedTable) {
+                fetchTableData(selectedTable, newModel.page, newModel.pageSize);
+            }
+        },
+        [selectedTable, fetchTableData]
     );
 
     // Filter tables by search
@@ -857,6 +889,9 @@ export function QueryPage() {
                                         confirmDangerous={confirmDangerous}
                                         onConfirm={handleConfirmDangerous}
                                         onCancel={() => setConfirmDangerous(null)}
+                                        totalRowCount={totalRowCount}
+                                        paginationModel={paginationModel}
+                                        onPaginationChange={handlePaginationChange}
                                     />
                                 )}
 
@@ -1007,6 +1042,9 @@ function DataTab({
     confirmDangerous,
     onConfirm,
     onCancel,
+    totalRowCount,
+    paginationModel,
+    onPaginationChange,
 }: {
     result: QueryResult | null;
     error: string | null;
@@ -1014,6 +1052,9 @@ function DataTab({
     confirmDangerous: { message: string; type: string } | null;
     onConfirm: () => void;
     onCancel: () => void;
+    totalRowCount: number | null;
+    paginationModel: { page: number; pageSize: number };
+    onPaginationChange: (model: { page: number; pageSize: number }) => void;
 }) {
     // Convert result to DataGrid format
     const columns: GridColDef[] = result
@@ -1106,8 +1147,21 @@ function DataTab({
                             }}
                         >
                             <CheckCircleIcon fontSize="small" />
-                            <Typography variant="body2">{result.rowCount} rows</Typography>
+                            <Typography variant="body2">
+                                {totalRowCount !== null
+                                    ? `${totalRowCount.toLocaleString()} total rows`
+                                    : `${result.rowCount} rows`}
+                            </Typography>
                         </Box>
+                        {totalRowCount !== null && totalRowCount > paginationModel.pageSize && (
+                            <Typography variant="body2" color="text.secondary">
+                                Showing {paginationModel.page * paginationModel.pageSize + 1}-
+                                {Math.min(
+                                    (paginationModel.page + 1) * paginationModel.pageSize,
+                                    totalRowCount
+                                )}
+                            </Typography>
+                        )}
                         <Box
                             sx={{
                                 display: 'flex',
@@ -1129,12 +1183,12 @@ function DataTab({
                                 columns={columns}
                                 density="compact"
                                 disableRowSelectionOnClick
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { pageSize: 50 },
-                                    },
-                                }}
-                                pageSizeOptions={[25, 50, 100]}
+                                loading={loading}
+                                paginationMode={totalRowCount !== null ? 'server' : 'client'}
+                                rowCount={totalRowCount ?? result.rowCount}
+                                paginationModel={paginationModel}
+                                onPaginationModelChange={onPaginationChange}
+                                pageSizeOptions={[50, 100, 250, 500]}
                                 sx={{
                                     border: 'none',
                                     borderRadius: 0,

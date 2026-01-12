@@ -41,4 +41,16 @@ export class SchemaService {
         const connector = await this.connectionsService.getConnector(connectionId);
         return connector.getServerVersion();
     }
+
+    /**
+     * Get row count for a table
+     */
+    async getTableRowCount(connectionId: string, schema: string, table: string): Promise<number> {
+        const connector = await this.connectionsService.getConnector(connectionId);
+        const result = await connector.query(
+            `SELECT COUNT(*) as count FROM "${schema}"."${table}"`
+        );
+        const countValue = result.rows[0]?.count;
+        return parseInt(String(countValue ?? '0'), 10);
+    }
 }

@@ -622,8 +622,8 @@ function DatabaseGroupSection({
                             group.syncSchema && group.syncData
                                 ? 'Schema + Data'
                                 : group.syncSchema
-                                    ? 'Schema'
-                                    : 'Data'
+                                  ? 'Schema'
+                                  : 'Data'
                         }
                         size="small"
                         icon={<SyncIcon sx={{ fontSize: 14 }} />}
