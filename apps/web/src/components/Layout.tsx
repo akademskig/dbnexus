@@ -17,7 +17,6 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -57,7 +56,6 @@ const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
     { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
-    { to: '/schema-diff', icon: <CompareArrowsIcon />, label: 'Schema Diff' },
 ];
 
 export function Layout() {

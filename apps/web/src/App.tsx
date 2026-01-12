@@ -4,7 +4,6 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { QueryPage } from './pages/QueryPage';
 import { SchemaPage } from './pages/SchemaPage';
-import { SchemaDiffPage } from './pages/SchemaDiffPage';
 import { GroupSyncPage } from './pages/GroupSyncPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -18,7 +17,6 @@ function App() {
                 <Route path="query" element={<QueryPage />} />
                 <Route path="query/:connectionId" element={<QueryPage />} />
                 <Route path="schema/:connectionId" element={<SchemaPage />} />
-                <Route path="schema-diff" element={<SchemaDiffPage />} />
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>
