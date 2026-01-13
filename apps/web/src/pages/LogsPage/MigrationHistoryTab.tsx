@@ -237,7 +237,7 @@ export function MigrationHistoryTab() {
                 sx={{
                     display: 'flex',
                     gap: 2,
-                    mt: 0.5,
+                    mt: 1,
                     mb: 2,
                     flexWrap: 'wrap',
                     alignItems: 'center',
