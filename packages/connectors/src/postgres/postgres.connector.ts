@@ -248,6 +248,8 @@ export class PostgresConnector implements DatabaseConnector {
         c.character_maximum_length,
         c.numeric_precision,
         c.numeric_scale,
+        c.is_identity,
+        c.identity_generation,
         pgd.description as comment,
         CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END as is_primary_key,
         CASE WHEN u.column_name IS NOT NULL THEN true ELSE false END as is_unique
@@ -292,6 +294,8 @@ export class PostgresConnector implements DatabaseConnector {
                 character_maximum_length: number | null;
                 numeric_precision: number | null;
                 numeric_scale: number | null;
+                is_identity: string;
+                identity_generation: string | null;
                 comment: string | null;
                 is_primary_key: boolean;
                 is_unique: boolean;
@@ -306,11 +310,17 @@ export class PostgresConnector implements DatabaseConnector {
                 dataType = `${r.udt_name}[]`;
             }
 
+            // For identity columns, include that info in the default value for detection
+            let defaultValue = r.column_default;
+            if (r.is_identity === 'YES') {
+                defaultValue = defaultValue || `GENERATED ${r.identity_generation || 'ALWAYS'} AS IDENTITY`;
+            }
+
             return {
                 name: r.column_name,
                 dataType,
                 nullable: r.is_nullable === 'YES',
-                defaultValue: r.column_default,
+                defaultValue,
                 isPrimaryKey: r.is_primary_key,
                 isUnique: r.is_unique,
                 comment: r.comment ?? undefined,

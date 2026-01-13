@@ -452,7 +452,7 @@ function TargetRow({
                                     if (!expanded) setExpanded(true);
                                 }}
                             >
-                                Recheck Schema
+                                Recheck
                             </Button>
                         )}
                         {group.syncData && target.dataStatus === 'out_of_sync' && (
@@ -1013,11 +1013,11 @@ export function GroupSyncPage() {
             return result;
         },
         enabled: !!groupId && !!group?.sourceConnectionId,
-        // Don't refetch on mount - use cached data from Dashboard
-        // User can manually refresh with the button
-        refetchOnMount: false,
+        // Auto-refresh every 10 minutes
+        refetchInterval: 10 * 60 * 1000, // 10 minutes
+        refetchOnMount: true,
         refetchOnWindowFocus: false,
-        staleTime: 10 * 60 * 1000, // Consider stale after 10 minutes
+        staleTime: 5 * 60 * 1000, // Consider stale after 5 minutes
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     });
 

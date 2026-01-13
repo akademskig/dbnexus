@@ -98,8 +98,8 @@ function StatCard({
                                                     changeType === 'up'
                                                         ? 'success.main'
                                                         : changeType === 'down'
-                                                          ? 'error.main'
-                                                          : 'text.secondary',
+                                                            ? 'error.main'
+                                                            : 'text.secondary',
                                                 fontWeight: 500,
                                             }}
                                         >
@@ -483,10 +483,29 @@ export function DashboardPage() {
         }
     };
 
+    // Load data on mount
     useEffect(() => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Auto-refresh sync status every 10 minutes
+    useEffect(() => {
+        const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes in ms
+
+        const refreshSyncStatuses = () => {
+            syncGroups.forEach((group) => {
+                if (group.sourceConnectionId && (group.syncSchema || group.syncData)) {
+                    checkGroupSyncStatus(group.id);
+                }
+            });
+        };
+
+        const intervalId = setInterval(refreshSyncStatuses, REFRESH_INTERVAL);
+
+        return () => clearInterval(intervalId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [syncGroups]);
 
     const handleRefresh = () => {
         setRefreshing(true);
