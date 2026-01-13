@@ -87,32 +87,31 @@ export function QueryPage() {
     const urlTable = searchParams.get('table');
     const urlTab = searchParams.get('tab');
 
-    // Determine initial values - URL params take priority, then shared store, then persisted state
-    const getInitialConnectionId = () => {
-        if (routeConnectionId) return routeConnectionId;
-        if (sharedConnectionId) return sharedConnectionId;
-        if (lastState?.connectionId) return lastState.connectionId;
-        return '';
-    };
+    // Local state - start empty, will be populated by effect
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
+    const [selectedSchema, setSelectedSchema] = useState<string>('');
 
-    const getInitialSchema = () => {
-        if (urlSchema) return urlSchema;
-        if (!routeConnectionId && sharedSchema) return sharedSchema;
-        if (!routeConnectionId && lastState?.schema) return lastState.schema;
-        return '';
-    };
+    // Initialize connection and schema from URL, store, or persisted state
+    useEffect(() => {
+        // Connection: URL route param > shared store > persisted state
+        const connId = routeConnectionId || sharedConnectionId || lastState?.connectionId || '';
+        if (connId && connId !== selectedConnectionId) {
+            setSelectedConnectionId(connId);
+        }
+
+        // Schema: URL param > shared store > persisted state (only if matching connection)
+        const schema = urlSchema || sharedSchema || lastState?.schema || '';
+        if (schema && schema !== selectedSchema) {
+            setSelectedSchema(schema);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [routeConnectionId, urlSchema, sharedConnectionId, sharedSchema]);
 
     const getInitialTab = () => {
         if (urlTab) return getTabIndex(urlTab);
         if (!routeConnectionId && lastState?.tab) return getTabIndex(lastState.tab);
         return 0;
     };
-
-    // Local state
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
-        getInitialConnectionId()
-    );
-    const [selectedSchema, setSelectedSchema] = useState<string>(getInitialSchema());
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [tableSearch, setTableSearch] = useState('');
     const [sql, setSql] = useState('');

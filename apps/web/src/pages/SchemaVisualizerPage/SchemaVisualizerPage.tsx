@@ -261,8 +261,22 @@ export function SchemaVisualizerPage() {
     const urlConnectionId = searchParams.get('connection') || '';
     const urlSchema = searchParams.get('schema') || '';
 
-    // Determine effective connection ID (URL takes priority, then store)
-    const selectedConnectionId = urlConnectionId || storeConnectionId;
+    // Local state for connection and schema
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
+    const [selectedSchema, setSelectedSchema] = useState<string>('');
+
+    // Initialize from URL or store on mount and when URL changes
+    useEffect(() => {
+        const connId = urlConnectionId || storeConnectionId;
+        const schema = urlSchema || storeSchema;
+        if (connId) {
+            setSelectedConnectionId(connId);
+        }
+        if (schema) {
+            setSelectedSchema(schema);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlConnectionId, urlSchema, storeConnectionId, storeSchema]);
 
     // Fetch connections
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
@@ -279,40 +293,30 @@ export function SchemaVisualizerPage() {
         enabled: !!selectedConnectionId,
     });
 
-    // Determine the effective schema (URL takes priority, then store, then default)
-    const selectedSchema = useMemo(() => {
-        if (urlSchema && schemas.includes(urlSchema)) {
-            return urlSchema;
-        }
-        if (storeSchema && schemas.includes(storeSchema)) {
-            return storeSchema;
-        }
-        return getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
-    }, [urlSchema, storeSchema, schemas, selectedConnection?.engine, selectedConnection?.database]);
-
-    // Sync URL with state - update URL when we have a connection but no URL params
+    // Update URL when local state changes
     useEffect(() => {
-        if (selectedConnectionId && !urlConnectionId) {
+        if (selectedConnectionId) {
             const params: Record<string, string> = { connection: selectedConnectionId };
             if (selectedSchema) {
                 params.schema = selectedSchema;
             }
             setSearchParams(params, { replace: true });
+            // Sync to shared store
+            setConnectionAndSchema(selectedConnectionId, selectedSchema);
+        } else {
+            setSearchParams({}, { replace: true });
         }
-    }, [selectedConnectionId, selectedSchema, urlConnectionId, setSearchParams]);
+    }, [selectedConnectionId, selectedSchema, setSearchParams, setConnectionAndSchema]);
 
-    // Auto-select default schema and update URL when schemas load
+    // Auto-select default schema when schemas load and no schema is selected
     useEffect(() => {
-        if (selectedConnectionId && schemas.length > 0 && !urlSchema) {
-            const schemaToUse = storeSchema && schemas.includes(storeSchema)
-                ? storeSchema
-                : getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
-            if (schemaToUse) {
-                setSearchParams({ connection: selectedConnectionId, schema: schemaToUse }, { replace: true });
-                setConnectionAndSchema(selectedConnectionId, schemaToUse);
+        if (selectedConnectionId && schemas.length > 0 && !selectedSchema) {
+            const defaultSchema = getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
+            if (defaultSchema) {
+                setSelectedSchema(defaultSchema);
             }
         }
-    }, [selectedConnectionId, schemas, urlSchema, storeSchema, selectedConnection?.engine, selectedConnection?.database, setSearchParams, setConnectionAndSchema]);
+    }, [selectedConnectionId, schemas, selectedSchema, selectedConnection?.engine, selectedConnection?.database]);
 
     // Fetch tables
     const {
@@ -367,32 +371,22 @@ export function SchemaVisualizerPage() {
 
     // Update nodes and edges when graph data changes
     useEffect(() => {
-        if (graphData.nodes.length > 0 || graphData.edges.length > 0) {
-            setNodes(graphData.nodes);
-            setEdges(graphData.edges);
-        }
-    }, [graphData.nodes.length, graphData.edges.length, setNodes, setEdges, graphData]);
+        setNodes(graphData.nodes);
+        setEdges(graphData.edges);
+    }, [graphData, setNodes, setEdges]);
 
-    // Handle connection change - update URL and shared store
+    // Handle connection change
     const handleConnectionChange = useCallback((connectionId: string) => {
         setNodes([]);
         setEdges([]);
-        if (connectionId) {
-            setSearchParams({ connection: connectionId }, { replace: true });
-            setConnectionAndSchema(connectionId, '');
-        } else {
-            setSearchParams({}, { replace: true });
-            setConnectionAndSchema('', '');
-        }
-    }, [setNodes, setEdges, setSearchParams, setConnectionAndSchema]);
+        setSelectedConnectionId(connectionId);
+        setSelectedSchema(''); // Reset schema when connection changes
+    }, [setNodes, setEdges]);
 
-    // Handle schema change - update URL and shared store
+    // Handle schema change
     const handleSchemaChange = useCallback((schema: string) => {
-        if (selectedConnectionId && schema) {
-            setSearchParams({ connection: selectedConnectionId, schema }, { replace: true });
-            setConnectionAndSchema(selectedConnectionId, schema);
-        }
-    }, [selectedConnectionId, setSearchParams, setConnectionAndSchema]);
+        setSelectedSchema(schema);
+    }, []);
 
     const isLoading = loadingConnections || loadingTables || loadingDetails;
 
