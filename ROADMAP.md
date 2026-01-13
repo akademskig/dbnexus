@@ -82,7 +82,7 @@ Features to ship in subsequent versions after v1.0:
 
 ### v1.3 - Schema Visualization
 
-- [ ] **ER diagram** - Visual entity relationship diagram showing foreign keys
+- [x] **ER diagram** - Visual entity relationship diagram showing foreign keys ✅ (moved to v1.0!)
 - [ ] **Schema designer** - Drag & drop table/column creation
 - [ ] **Rollback migrations** - Generate reverse migration SQL
 - [ ] **Schema versioning** - Track schema changes over time
