@@ -1500,7 +1500,8 @@ export function QueryPage() {
                         if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
                             handleConnectionChange(entry.connectionId);
                         }
-                        handleTabChange(4);
+                        // Switch to Data tab to show results
+                        handleTabChange(0);
                         setHistoryOpen(false);
                         setTimeout(() => {
                             executeMutation.mutate({ query: entry.sql });
@@ -1599,7 +1600,8 @@ export function QueryPage() {
                         if (query.connectionId && query.connectionId !== selectedConnectionId) {
                             handleConnectionChange(query.connectionId);
                         }
-                        handleTabChange(4);
+                        // Switch to Data tab to show results
+                        handleTabChange(0);
                         setSavedQueriesOpen(false);
                         setTimeout(() => {
                             executeMutation.mutate({ query: query.sql });
