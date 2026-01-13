@@ -4,7 +4,7 @@ import type { TableInfo, TableSchema } from '@dbnexus/shared';
 
 @Injectable()
 export class SchemaService {
-    constructor(private readonly connectionsService: ConnectionsService) {}
+    constructor(private readonly connectionsService: ConnectionsService) { }
 
     /**
      * Get all schemas in a database
@@ -48,7 +48,7 @@ export class SchemaService {
     async getTableRowCount(connectionId: string, schema: string, table: string): Promise<number> {
         const connection = this.connectionsService.findById(connectionId);
         const connector = await this.connectionsService.getConnector(connectionId);
-        
+
         // Use appropriate quoting based on engine
         let sql: string;
         if (connection.engine === 'mysql' || connection.engine === 'mariadb') {
@@ -58,7 +58,7 @@ export class SchemaService {
         } else {
             sql = `SELECT COUNT(*) as count FROM "${schema}"."${table}"`;
         }
-        
+
         const result = await connector.query(sql);
         const countValue = result.rows[0]?.count;
         return parseInt(String(countValue ?? '0'), 10);

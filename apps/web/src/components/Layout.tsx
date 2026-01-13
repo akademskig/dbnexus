@@ -131,8 +131,8 @@ export function Layout() {
                                 sx={{
                                     fontWeight: 700,
                                     letterSpacing: '-0.02em',
-                                    background:
-                                        'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)',
+                                background:
+                                    'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%)',
                                     backgroundClip: 'text',
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
