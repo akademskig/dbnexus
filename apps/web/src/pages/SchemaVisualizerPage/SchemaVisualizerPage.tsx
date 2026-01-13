@@ -8,8 +8,8 @@ import {
     useNodesState,
     useEdgesState,
     BackgroundVariant,
-    Node,
-    Edge,
+    type Node,
+    type Edge,
     MarkerType,
     Panel,
 } from '@xyflow/react';
@@ -25,16 +25,12 @@ import {
     IconButton,
     Tooltip,
     Chip,
-    CircularProgress,
     useTheme,
     alpha,
     ToggleButton,
     ToggleButtonGroup,
 } from '@mui/material';
 import {
-    ZoomIn as ZoomInIcon,
-    ZoomOut as ZoomOutIcon,
-    FitScreen as FitScreenIcon,
     Refresh as RefreshIcon,
     GridOn as GridIcon,
     GridOff as GridOffIcon,
@@ -42,10 +38,21 @@ import {
     Hub as HubIcon,
 } from '@mui/icons-material';
 import { connectionsApi, schemaApi } from '../../lib/api';
-import { TableNode, TableNodeData, TableColumn } from './TableNode';
+import { TableNode, type TableColumn } from './TableNode';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
-import type { TableInfo, ForeignKey } from '@dbnexus/shared';
+import { useConnectionStore } from '../../stores/connectionStore';
+import type { TableInfo, ForeignKeyInfo, ColumnInfo } from '@dbnexus/shared';
+
+// Helper to parse columns that might be string (PostgreSQL array format like "{col1,col2}") or actual array
+function parseColumnArray(cols: string[] | string | undefined | null): string[] {
+    if (!cols) return [];
+    if (Array.isArray(cols)) return cols;
+    if (typeof cols === 'string') {
+        return cols.replaceAll('{', '').replaceAll('}', '').split(',').map(c => c.trim()).filter(Boolean);
+    }
+    return [];
+}
 
 const nodeTypes = {
     table: TableNode,
@@ -53,32 +60,22 @@ const nodeTypes = {
 
 type LayoutType = 'tree' | 'circular';
 
+interface TableDetails {
+    columns: ColumnInfo[];
+    foreignKeys: ForeignKeyInfo[];
+}
+
 // Auto-layout algorithm for positioning nodes
 function calculateLayout(
     tables: TableInfo[],
-    foreignKeys: Map<string, ForeignKey[]>,
+    tableDetails: Record<string, TableDetails>,
     layoutType: LayoutType
-): { nodes: Node<TableNodeData>[]; edges: Edge[] } {
-    const nodes: Node<TableNodeData>[] = [];
+): { nodes: Node[]; edges: Edge[] } {
+    const nodes: Node[] = [];
     const edges: Edge[] = [];
 
     if (tables.length === 0) return { nodes, edges };
 
-    // Build adjacency list for relationships
-    const relationships = new Map<string, Set<string>>();
-    tables.forEach((t) => relationships.set(t.name, new Set()));
-
-    foreignKeys.forEach((fks, tableName) => {
-        fks.forEach((fk) => {
-            relationships.get(tableName)?.add(fk.referencedTable);
-            if (!relationships.has(fk.referencedTable)) {
-                relationships.set(fk.referencedTable, new Set());
-            }
-            relationships.get(fk.referencedTable)?.add(tableName);
-        });
-    });
-
-    // Calculate node positions based on layout type
     const nodeWidth = 250;
     const nodeHeight = 200;
     const horizontalSpacing = 100;
@@ -95,20 +92,20 @@ function calculateLayout(
             const x = centerX + radius * Math.cos(angle) - nodeWidth / 2;
             const y = centerY + radius * Math.sin(angle) - nodeHeight / 2;
 
-            const tableFks = foreignKeys.get(table.name) || [];
-            const columns: TableColumn[] = table.columns.map((col) => {
-                const fk = tableFks.find((f) => f.columns.includes(col.name));
+            const details = tableDetails[table.name];
+            const tableFks = details?.foreignKeys || [];
+
+            const columns: TableColumn[] = (details?.columns || []).map((col) => {
+                const fk = tableFks.find((f) => parseColumnArray(f.columns).includes(col.name));
+                const refColumn = fk ? parseColumnArray(fk.referencedColumns)[0] : undefined;
                 return {
                     name: col.name,
                     dataType: col.dataType,
                     nullable: col.nullable,
                     isPrimaryKey: col.isPrimaryKey,
                     isForeignKey: !!fk,
-                    references: fk
-                        ? {
-                              table: fk.referencedTable,
-                              column: fk.referencedColumns[0],
-                          }
+                    references: fk && refColumn
+                        ? { table: fk.referencedTable, column: refColumn }
                         : undefined,
                 };
             });
@@ -126,121 +123,86 @@ function calculateLayout(
             });
         });
     } else {
-        // Tree/hierarchical layout - group by relationships
-        const visited = new Set<string>();
-        const levels: string[][] = [];
+        // Tree/grid layout
+        const cols = Math.ceil(Math.sqrt(tables.length));
 
-        // Find root tables (tables with no incoming foreign keys)
-        const incomingCount = new Map<string, number>();
-        tables.forEach((t) => incomingCount.set(t.name, 0));
-        foreignKeys.forEach((fks) => {
-            fks.forEach((fk) => {
-                incomingCount.set(
-                    fk.referencedTable,
-                    (incomingCount.get(fk.referencedTable) || 0) + 1
-                );
-            });
-        });
+        tables.forEach((table, index) => {
+            const row = Math.floor(index / cols);
+            const col = index % cols;
+            const x = col * (nodeWidth + horizontalSpacing);
+            const y = row * (nodeHeight + verticalSpacing);
 
-        // Start with tables that have no foreign keys pointing to them
-        const roots = tables
-            .filter((t) => (incomingCount.get(t.name) || 0) === 0)
-            .map((t) => t.name);
+            const details = tableDetails[table.name];
+            const tableFks = details?.foreignKeys || [];
 
-        if (roots.length === 0 && tables.length > 0) {
-            roots.push(tables[0].name);
-        }
-
-        // BFS to assign levels
-        const queue = [...roots];
-        roots.forEach((r) => visited.add(r));
-        let currentLevel: string[] = [...roots];
-
-        while (currentLevel.length > 0) {
-            levels.push(currentLevel);
-            const nextLevel: string[] = [];
-
-            currentLevel.forEach((tableName) => {
-                const fks = foreignKeys.get(tableName) || [];
-                fks.forEach((fk) => {
-                    if (!visited.has(fk.referencedTable)) {
-                        visited.add(fk.referencedTable);
-                        nextLevel.push(fk.referencedTable);
-                    }
-                });
-
-                // Also check tables that reference this one
-                tables.forEach((t) => {
-                    const tFks = foreignKeys.get(t.name) || [];
-                    if (
-                        tFks.some((f) => f.referencedTable === tableName) &&
-                        !visited.has(t.name)
-                    ) {
-                        visited.add(t.name);
-                        nextLevel.push(t.name);
-                    }
-                });
+            const columns: TableColumn[] = (details?.columns || []).map((colInfo) => {
+                const fk = tableFks.find((f) => parseColumnArray(f.columns).includes(colInfo.name));
+                const refColumn = fk ? parseColumnArray(fk.referencedColumns)[0] : undefined;
+                return {
+                    name: colInfo.name,
+                    dataType: colInfo.dataType,
+                    nullable: colInfo.nullable,
+                    isPrimaryKey: colInfo.isPrimaryKey,
+                    isForeignKey: !!fk,
+                    references: fk && refColumn
+                        ? { table: fk.referencedTable, column: refColumn }
+                        : undefined,
+                };
             });
 
-            currentLevel = nextLevel;
-        }
-
-        // Add any remaining unvisited tables
-        const unvisited = tables.filter((t) => !visited.has(t.name)).map((t) => t.name);
-        if (unvisited.length > 0) {
-            levels.push(unvisited);
-        }
-
-        // Position nodes by level
-        levels.forEach((level, levelIndex) => {
-            const levelWidth = level.length * (nodeWidth + horizontalSpacing);
-            const startX = -levelWidth / 2 + nodeWidth / 2;
-
-            level.forEach((tableName, tableIndex) => {
-                const table = tables.find((t) => t.name === tableName);
-                if (!table) return;
-
-                const x = startX + tableIndex * (nodeWidth + horizontalSpacing);
-                const y = levelIndex * (nodeHeight + verticalSpacing);
-
-                const tableFks = foreignKeys.get(table.name) || [];
-                const columns: TableColumn[] = table.columns.map((col) => {
-                    const fk = tableFks.find((f) => f.columns.includes(col.name));
-                    return {
-                        name: col.name,
-                        dataType: col.dataType,
-                        nullable: col.nullable,
-                        isPrimaryKey: col.isPrimaryKey,
-                        isForeignKey: !!fk,
-                        references: fk
-                            ? {
-                                  table: fk.referencedTable,
-                                  column: fk.referencedColumns[0],
-                              }
-                            : undefined,
-                    };
-                });
-
-                nodes.push({
-                    id: table.name,
-                    type: 'table',
-                    position: { x, y },
-                    data: {
-                        label: table.name,
-                        columns,
-                        schema: table.schema,
-                        rowCount: table.rowCount,
-                    },
-                });
+            nodes.push({
+                id: table.name,
+                type: 'table',
+                position: { x, y },
+                data: {
+                    label: table.name,
+                    columns,
+                    schema: table.schema,
+                    rowCount: table.rowCount,
+                },
             });
         });
     }
 
     // Create edges for foreign key relationships
-    foreignKeys.forEach((fks, tableName) => {
-        fks.forEach((fk, index) => {
-            const sourceColumn = fk.columns[0];
-            const targetColumn = fk.referencedColumns[0];
+    // Build a set of all node IDs for validation
+    const nodeIds = new Set(nodes.map((n) => n.id));
+
+    Object.entries(tableDetails).forEach(([tableName, details]) => {
+        details.foreignKeys.forEach((fk, index) => {
+            // Skip if target table doesn't exist in our nodes
+            if (!nodeIds.has(fk.referencedTable)) {
+                return;
+            }
+
+            const fkColumns = parseColumnArray(fk.columns);
+            const refColumns = parseColumnArray(fk.referencedColumns);
+            const sourceColumn = fkColumns[0];
+            const targetColumn = refColumns[0];
+
+            // Validate column names exist and are valid strings
+            if (!sourceColumn || !targetColumn) {
+                // Use default handles if column info is missing
+                edges.push({
+                    id: `${tableName}-${fk.referencedTable}-${index}`,
+                    source: tableName,
+                    target: fk.referencedTable,
+                    sourceHandle: 'bottom',
+                    targetHandle: 'top',
+                    type: 'smoothstep',
+                    animated: true,
+                    style: { strokeWidth: 2 },
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        width: 15,
+                        height: 15,
+                    },
+                    label: fk.name,
+                    labelStyle: { fontSize: 10, fill: '#888' },
+                    labelBgStyle: { fill: 'transparent' },
+                });
+                return;
+            }
 
             edges.push({
                 id: `${tableName}-${fk.referencedTable}-${index}`,
@@ -266,14 +228,33 @@ function calculateLayout(
     return { nodes, edges };
 }
 
+// Helper to get default schema for a database engine
+function getDefaultSchema(engine: string | undefined, database: string | undefined, schemas: string[]): string {
+    if (schemas.length === 0) return '';
+    const firstSchema = schemas[0] ?? '';
+    if (engine === 'postgres') {
+        return schemas.find((s) => s === 'public') ?? firstSchema;
+    }
+    if (engine === 'mysql' || engine === 'mariadb') {
+        return database && schemas.includes(database) ? database : firstSchema;
+    }
+    return firstSchema;
+}
+
 export function SchemaVisualizerPage() {
     const theme = useTheme();
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
-    const [selectedSchema, setSelectedSchema] = useState<string>('');
     const [showGrid, setShowGrid] = useState(true);
     const [layoutType, setLayoutType] = useState<LayoutType>('tree');
-    const [nodes, setNodes, onNodesChange] = useNodesState<TableNodeData>([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+    // Use shared connection store
+    const {
+        selectedConnectionId,
+        selectedSchema: storeSchema,
+        setConnection,
+        setSchema,
+    } = useConnectionStore();
 
     // Fetch connections
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
@@ -290,18 +271,23 @@ export function SchemaVisualizerPage() {
         enabled: !!selectedConnectionId,
     });
 
-    // Auto-select default schema
-    useEffect(() => {
-        if (schemas.length > 0 && !selectedSchema) {
-            const defaultSchema =
-                selectedConnection?.engine === 'postgres'
-                    ? schemas.find((s) => s === 'public') || schemas[0]
-                    : selectedConnection?.engine === 'mysql' || selectedConnection?.engine === 'mariadb'
-                      ? selectedConnection.database || schemas[0]
-                      : schemas[0];
-            setSelectedSchema(defaultSchema);
+    // Determine the effective schema (from store or default)
+    const selectedSchema = useMemo(() => {
+        if (storeSchema && schemas.includes(storeSchema)) {
+            return storeSchema;
         }
-    }, [schemas, selectedSchema, selectedConnection]);
+        return getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
+    }, [storeSchema, schemas, selectedConnection?.engine, selectedConnection?.database]);
+
+    // Auto-select default schema when schemas load
+    useEffect(() => {
+        if (selectedConnectionId && schemas.length > 0 && !storeSchema) {
+            const defaultSchema = getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
+            if (defaultSchema) {
+                setSchema(defaultSchema);
+            }
+        }
+    }, [selectedConnectionId, schemas, storeSchema, selectedConnection?.engine, selectedConnection?.database, setSchema]);
 
     // Fetch tables
     const {
@@ -318,22 +304,23 @@ export function SchemaVisualizerPage() {
     });
 
     // Fetch table details including foreign keys
-    const { data: tableDetails = new Map(), isLoading: loadingDetails } = useQuery({
-        queryKey: ['tableDetails', selectedConnectionId, selectedSchema, tables.map((t) => t.name)],
+    const tableNamesKey = tables.map((t) => t.name).join(',');
+    const { data: tableDetails, isLoading: loadingDetails } = useQuery({
+        queryKey: ['tableDetails', selectedConnectionId, selectedSchema, tableNamesKey],
         queryFn: async () => {
-            const details = new Map<string, { columns: TableColumn[]; foreignKeys: ForeignKey[] }>();
+            const details: Record<string, TableDetails> = {};
             await Promise.all(
                 tables.map(async (table) => {
                     try {
-                        const tableInfo = await schemaApi.getTable(
+                        const tableInfo = await schemaApi.getTableSchema(
                             selectedConnectionId,
                             selectedSchema,
                             table.name
                         );
-                        details.set(table.name, {
+                        details[table.name] = {
                             columns: tableInfo.columns,
                             foreignKeys: tableInfo.foreignKeys || [],
-                        });
+                        };
                     } catch (error) {
                         console.error(`Failed to fetch details for ${table.name}:`, error);
                     }
@@ -342,59 +329,43 @@ export function SchemaVisualizerPage() {
             return details;
         },
         enabled: !!selectedConnectionId && !!selectedSchema && tables.length > 0,
+        staleTime: 60000, // Cache for 1 minute
     });
 
     // Build the graph when data changes
-    useEffect(() => {
-        if (tables.length === 0 || tableDetails.size === 0) {
-            setNodes([]);
-            setEdges([]);
-            return;
+    const graphData = useMemo(() => {
+        if (tables.length === 0 || !tableDetails || Object.keys(tableDetails).length === 0) {
+            return { nodes: [] as Node[], edges: [] as Edge[] };
         }
+        return calculateLayout(tables, tableDetails, layoutType);
+    }, [tables, tableDetails, layoutType]);
 
-        // Merge table info with details
-        const enrichedTables: TableInfo[] = tables.map((t) => {
-            const details = tableDetails.get(t.name);
-            return {
-                ...t,
-                columns: details?.columns || [],
-            };
-        });
+    // Update nodes and edges when graph data changes
+    useEffect(() => {
+        if (graphData.nodes.length > 0 || graphData.edges.length > 0) {
+            setNodes(graphData.nodes);
+            setEdges(graphData.edges);
+        }
+    }, [graphData.nodes.length, graphData.edges.length, setNodes, setEdges, graphData]);
 
-        // Build foreign keys map
-        const foreignKeys = new Map<string, ForeignKey[]>();
-        tableDetails.forEach((details, tableName) => {
-            if (details.foreignKeys.length > 0) {
-                foreignKeys.set(tableName, details.foreignKeys);
-            }
-        });
-
-        const { nodes: newNodes, edges: newEdges } = calculateLayout(
-            enrichedTables,
-            foreignKeys,
-            layoutType
-        );
-
-        setNodes(newNodes);
-        setEdges(newEdges);
-    }, [tables, tableDetails, layoutType, setNodes, setEdges]);
-
+    // Handle connection change - update shared store
     const handleConnectionChange = useCallback((connectionId: string) => {
-        setSelectedConnectionId(connectionId);
-        setSelectedSchema('');
         setNodes([]);
         setEdges([]);
-    }, [setNodes, setEdges]);
+        setConnection(connectionId);
+    }, [setNodes, setEdges, setConnection]);
+
+    // Handle schema change - update shared store
+    const handleSchemaChange = useCallback((schema: string) => {
+        setSchema(schema);
+    }, [setSchema]);
 
     const isLoading = loadingConnections || loadingTables || loadingDetails;
 
     // Count relationships
     const relationshipCount = useMemo(() => {
-        let count = 0;
-        tableDetails.forEach((details) => {
-            count += details.foreignKeys.length;
-        });
-        return count;
+        if (!tableDetails) return 0;
+        return Object.values(tableDetails).reduce((count, details) => count + details.foreignKeys.length, 0);
     }, [tableDetails]);
 
     return (
@@ -443,7 +414,7 @@ export function SchemaVisualizerPage() {
                     <Select
                         value={selectedSchema}
                         label="Schema"
-                        onChange={(e) => setSelectedSchema(e.target.value)}
+                        onChange={(e) => handleSchemaChange(e.target.value)}
                     >
                         {schemas.map((schema) => (
                             <MenuItem key={schema} value={schema}>
@@ -522,11 +493,7 @@ export function SchemaVisualizerPage() {
                         )}
                         <Controls showInteractive={false} />
                         <MiniMap
-                            nodeColor={(node) =>
-                                node.selected
-                                    ? theme.palette.primary.main
-                                    : alpha(theme.palette.primary.main, 0.3)
-                            }
+                            nodeColor={() => alpha(theme.palette.primary.main, 0.5)}
                             maskColor={alpha(theme.palette.background.default, 0.8)}
                             style={{
                                 backgroundColor: theme.palette.background.paper,
@@ -551,7 +518,7 @@ export function SchemaVisualizerPage() {
                                     size="small"
                                 >
                                     <ToggleButton value="tree">
-                                        <Tooltip title="Tree layout">
+                                        <Tooltip title="Grid layout">
                                             <TreeIcon fontSize="small" />
                                         </Tooltip>
                                     </ToggleButton>

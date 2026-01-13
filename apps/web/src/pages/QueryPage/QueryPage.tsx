@@ -50,6 +50,7 @@ import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
+import { useConnectionStore } from '../../stores/connectionStore';
 import { TableListItem } from './TableListItem';
 import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
@@ -74,20 +75,29 @@ export function QueryPage() {
     const { lastState, saveState } = useQueryPageStore();
     const toast = useToastStore();
 
+    // Shared connection store (for syncing with other pages like Schema Visualizer)
+    const {
+        selectedConnectionId: sharedConnectionId,
+        selectedSchema: sharedSchema,
+        setConnectionAndSchema: syncConnectionStore
+    } = useConnectionStore();
+
     // Get state from URL params, falling back to persisted state
     const urlSchema = searchParams.get('schema');
     const urlTable = searchParams.get('table');
     const urlTab = searchParams.get('tab');
 
-    // Determine initial values - URL params take priority, then persisted state
+    // Determine initial values - URL params take priority, then shared store, then persisted state
     const getInitialConnectionId = () => {
         if (routeConnectionId) return routeConnectionId;
+        if (sharedConnectionId) return sharedConnectionId;
         if (lastState?.connectionId) return lastState.connectionId;
         return '';
     };
 
     const getInitialSchema = () => {
         if (urlSchema) return urlSchema;
+        if (!routeConnectionId && sharedSchema) return sharedSchema;
         if (!routeConnectionId && lastState?.schema) return lastState.schema;
         return '';
     };
@@ -137,14 +147,20 @@ export function QueryPage() {
     const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
     const [rowsToSync, setRowsToSync] = useState<Record<string, unknown>[]>([]);
 
-    // Restore from persisted state on mount if no URL params
+    // Restore from shared store or persisted state on mount if no URL params
     useEffect(() => {
-        if (!routeConnectionId && lastState?.connectionId) {
-            const params = new URLSearchParams();
-            if (lastState.schema) params.set('schema', lastState.schema);
-            if (lastState.table) params.set('table', lastState.table);
-            if (lastState.tab) params.set('tab', lastState.tab);
-            navigate(`/query/${lastState.connectionId}?${params.toString()}`, { replace: true });
+        if (!routeConnectionId) {
+            // First check shared store, then persisted state
+            const connectionToUse = sharedConnectionId || lastState?.connectionId;
+            const schemaToUse = sharedSchema || lastState?.schema;
+
+            if (connectionToUse) {
+                const params = new URLSearchParams();
+                if (schemaToUse) params.set('schema', schemaToUse);
+                if (lastState?.table) params.set('table', lastState.table);
+                if (lastState?.tab) params.set('tab', lastState.tab);
+                navigate(`/query/${connectionToUse}?${params.toString()}`, { replace: true });
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -226,8 +242,10 @@ export function QueryPage() {
                 table: selectedTable?.name ?? '',
                 tab: TAB_NAMES[activeTab] ?? 'data',
             });
+            // Sync with shared connection store (for other pages like Schema Visualizer)
+            syncConnectionStore(selectedConnectionId, selectedSchema);
         }
-    }, [selectedConnectionId, selectedSchema, selectedTable?.name, activeTab, saveState]);
+    }, [selectedConnectionId, selectedSchema, selectedTable?.name, activeTab, saveState, syncConnectionStore]);
 
     // Connections query
     const { data: connections = [] } = useQuery({

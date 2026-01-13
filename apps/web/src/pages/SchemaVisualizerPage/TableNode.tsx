@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Box, Typography, Chip, alpha, useTheme } from '@mui/material';
 import {
     Key as KeyIcon,
@@ -18,16 +18,16 @@ export interface TableColumn {
     };
 }
 
-export interface TableNodeData {
+export interface TableNodeData extends Record<string, unknown> {
     label: string;
     columns: TableColumn[];
     schema: string;
     rowCount?: number;
 }
 
-function TableNodeComponent({ data, selected }: NodeProps<TableNodeData>) {
+function TableNodeComponent({ data, selected }: NodeProps) {
     const theme = useTheme();
-    const { label, columns, schema, rowCount } = data;
+    const { label, columns, schema, rowCount } = data as TableNodeData;
 
     return (
         <Box
