@@ -285,7 +285,11 @@ export function MigrationHistoryTab() {
                     disableRowSelectionOnClick
                     sx={{
                         border: 'none',
-                        '& .MuiDataGrid-cell': { fontSize: 12 },
+                        '& .MuiDataGrid-cell': {
+                            fontSize: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                        },
                     }}
                 />
             </Box>
