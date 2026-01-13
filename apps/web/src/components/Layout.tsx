@@ -15,6 +15,7 @@ import {
     CircularProgress,
     Menu,
     MenuItem,
+    useTheme,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -31,6 +32,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi } from '../lib/api';
+import { themeColors } from '../theme';
 import type { DatabaseGroup } from '@dbnexus/shared';
 
 const DRAWER_WIDTH = 260;
@@ -67,8 +69,10 @@ const navItems = [
 export function Layout() {
     const location = useLocation();
     const navigate = useNavigate();
+    const theme = useTheme();
     const { collapsed, syncExpanded, toggle, toggleSync } = useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
+    const colors = themeColors[theme.palette.mode];
 
     const [groups, setGroups] = useState<DatabaseGroup[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(true);
@@ -107,7 +111,7 @@ export function Layout() {
                 <Box
                     sx={{
                         px: collapsed ? 1 : 1,
-                        py: 1.5,
+                        py: 1,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1,
@@ -116,35 +120,35 @@ export function Layout() {
                 >
                     <Box
                         component="img"
-                        src="/logo.svg"
+                        src={theme.palette.mode === 'dark' ? '/logo-dark.svg' : '/logo-light.svg'}
                         alt="DB Nexus"
                         sx={{
-                            width: collapsed ? 40 : 48,
-                            height: collapsed ? 40 : 48,
+                            width: collapsed ? 40 : 66,
+                            height: collapsed ? 40 : 66,
                             transition: 'all 0.2s ease',
                         }}
                     />
                     {!collapsed && (
-                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Typography
-                                variant="h6"
                                 sx={{
+                                    fontFamily: "'JetBrains Mono', monospace",
                                     fontWeight: 700,
-                                    letterSpacing: '-0.02em',
-                                background:
-                                    'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%)',
-                                    backgroundClip: 'text',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
+                                    fontSize: '1.2rem',
+                                    color: colors.primary,
+                                    bgcolor: `rgba(${colors.primaryRgb}, 0.1)`,
+                                    paddingX: 0.75,
+                                    py: 0.25,
+                                    borderRadius: 0.5,
                                 }}
                             >
                                 DB
                             </Typography>
                             <Typography
-                                variant="h6"
                                 sx={{
-                                    fontWeight: 300,
-                                    letterSpacing: '0.05em',
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    fontWeight: 600,
+                                    fontSize: '1.2rem',
                                     color: 'text.primary',
                                 }}
                             >

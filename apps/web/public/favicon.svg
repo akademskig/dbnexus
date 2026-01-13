@@ -1,17 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#a78bfa"/>
-      <stop offset="100%" style="stop-color:#7c3aed"/>
+      <stop offset="0%" style="stop-color:#818cf8"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
     </linearGradient>
   </defs>
   
-  <!-- Database shape -->
-  <ellipse cx="16" cy="9" rx="10" ry="4" fill="url(#grad)"/>
-  <path d="M6 9 L6 23 C6 25.5 10.5 27 16 27 C21.5 27 26 25.5 26 23 L26 9" fill="url(#grad)" opacity="0.85"/>
-  <ellipse cx="16" cy="23" rx="10" ry="4" fill="url(#grad)" opacity="0.7"/>
+  <!-- D shape simplified -->
+  <path d="M7 6 L7 26 L14 26 C20 26 23 21 23 16 C23 11 20 6 14 6 Z" fill="none" stroke="url(#grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   
-  <!-- Nexus center -->
-  <circle cx="16" cy="16" r="3" fill="#ffffff"/>
-  <circle cx="16" cy="16" r="1.5" fill="url(#grad)"/>
+  <!-- Circuit line -->
+  <line x1="23" y1="16" x2="28" y2="16" stroke="url(#grad)" stroke-width="1.5"/>
+  <circle cx="28" cy="16" r="1.5" fill="url(#grad)"/>
+  
+  <!-- Inner dot -->
+  <circle cx="14" cy="16" r="2" fill="url(#grad)"/>
 </svg>
