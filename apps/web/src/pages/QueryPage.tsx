@@ -1668,22 +1668,29 @@ function DataTab({
 
     const columns: GridColDef[] = dataColumns;
 
+    // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
     const rows = result
         ? result.rows.map((row, index) => ({
-            id: index,
+            __rowIndex: index,
             ...row,
         }))
         : [];
 
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
-        return selectedRowIds.map((id) => {
-            const row = rows.find((r) => r.id === id);
-            if (!row) return {};
-            // Remove the internal 'id' field we added
-            const { id: _, ...rowData } = row;
-            return rowData;
-        });
+        return selectedRowIds
+            .map((id) => {
+                // Find row by __rowIndex
+                const row = rows.find((r) => r.__rowIndex === id || String(r.__rowIndex) === String(id));
+                if (!row) {
+                    console.warn('Row not found for __rowIndex:', id, 'Available indices:', rows.map(r => r.__rowIndex));
+                    return null;
+                }
+                // Remove the internal '__rowIndex' field we added, keep everything else (including 'id' from DB)
+                const { __rowIndex: _, ...rowData } = row;
+                return rowData;
+            })
+            .filter((row): row is Record<string, unknown> => row !== null && Object.keys(row).length > 0);
     };
 
     // Handle toolbar actions
@@ -1696,16 +1703,20 @@ function DataTab({
 
     const handleDeleteSelected = () => {
         if (selectedRowIds.length === 1) {
-            const row = rows.find((r) => r.id === selectedRowIds[0]);
+            const row = rows.find((r) => r.__rowIndex === selectedRowIds[0]);
             if (row) {
-                const { id: _, ...rowData } = row;
+                const { __rowIndex: _, ...rowData } = row;
                 setDeleteConfirmRow(rowData);
             }
         }
     };
 
     const handleSyncSelected = () => {
+        console.log('handleSyncSelected - selectedRowIds:', selectedRowIds);
+        console.log('handleSyncSelected - rows count:', rows.length);
+        console.log('handleSyncSelected - first few rows:', rows.slice(0, 3));
         const selectedRows = getSelectedRows();
+        console.log('handleSyncSelected - selectedRows:', selectedRows);
         if (selectedRows.length > 0 && onSyncRow) {
             onSyncRow(selectedRows);
         }
@@ -1756,7 +1767,7 @@ function DataTab({
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 2,
+                            gap: 1,
                             px: 2,
                             minHeight: 48,
                             bgcolor: 'background.paper',
@@ -1764,47 +1775,123 @@ function DataTab({
                             borderColor: 'divider',
                         }}
                     >
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                                color: 'success.main',
-                            }}
-                        >
-                            <CheckCircleIcon fontSize="small" />
-                            <Typography variant="body2">
-                                {totalRowCount !== null
-                                    ? `${totalRowCount.toLocaleString()} rows`
-                                    : `${result.rowCount} rows`}
-                            </Typography>
-                        </Box>
-                        {totalRowCount !== null && totalRowCount > paginationModel.pageSize && (
-                            <Typography variant="body2" color="text.secondary">
-                                {paginationModel.page * paginationModel.pageSize + 1}-
-                                {Math.min(
-                                    (paginationModel.page + 1) * paginationModel.pageSize,
-                                    totalRowCount
+                        {/* Left side: Stats or Selection info */}
+                        {editingRowId ? (
+                            <>
+                                <Typography variant="body2" color="warning.main" sx={{ fontWeight: 500 }}>
+                                    Editing row...
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<SaveIcon />}
+                                    onClick={handleSaveClick(editingRowId)}
+                                    sx={{ minWidth: 'auto', px: 1.5 }}
+                                >
+                                    Save
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<CancelIcon />}
+                                    onClick={handleCancelClick(editingRowId)}
+                                    sx={{ minWidth: 'auto', px: 1.5 }}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : hasSelectedRows ? (
+                            <>
+                                <Chip
+                                    label={`${selectedRowIds.length} selected`}
+                                    size="small"
+                                    color="primary"
+                                    onDelete={() => setSelectedRowIds([])}
+                                />
+                                <Tooltip title={!canEditRows ? 'No primary key' : selectedRowIds.length > 1 ? 'Select 1 row' : 'Edit'}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            onClick={handleEditSelected}
+                                            disabled={!canEditRows || selectedRowIds.length !== 1 || !onUpdateRow}
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title={!canEditRows ? 'No primary key' : selectedRowIds.length > 1 ? 'Select 1 row' : 'Delete'}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={handleDeleteSelected}
+                                            disabled={!canEditRows || selectedRowIds.length !== 1 || !onDeleteRow}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title={!canEditRows ? 'No primary key' : `Sync ${selectedRowIds.length} row${selectedRowIds.length > 1 ? 's' : ''}`}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={handleSyncSelected}
+                                            disabled={!canEditRows || !onSyncRow}
+                                        >
+                                            <SyncIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </>
+                        ) : (
+                            <>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        color: 'success.main',
+                                    }}
+                                >
+                                    <CheckCircleIcon fontSize="small" />
+                                    <Typography variant="body2">
+                                        {totalRowCount !== null
+                                            ? `${totalRowCount.toLocaleString()} rows`
+                                            : `${result.rowCount} rows`}
+                                    </Typography>
+                                </Box>
+                                {totalRowCount !== null && totalRowCount > paginationModel.pageSize && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        {paginationModel.page * paginationModel.pageSize + 1}-
+                                        {Math.min(
+                                            (paginationModel.page + 1) * paginationModel.pageSize,
+                                            totalRowCount
+                                        )}
+                                    </Typography>
                                 )}
-                            </Typography>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        color: 'text.secondary',
+                                    }}
+                                >
+                                    <AccessTimeIcon fontSize="small" />
+                                    <Typography variant="body2">{result.executionTimeMs}ms</Typography>
+                                </Box>
+                            </>
                         )}
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                                color: 'text.secondary',
-                            }}
-                        >
-                            <AccessTimeIcon fontSize="small" />
-                            <Typography variant="body2">{result.executionTimeMs}ms</Typography>
-                        </Box>
 
-                        {/* Search */}
+                        {/* Spacer */}
                         <Box sx={{ flex: 1 }} />
+
+                        {/* Right side: Search (always visible) */}
                         <TextField
                             size="small"
-                            placeholder="Search in data... (press Enter)"
+                            placeholder="Search..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
                             onKeyDown={(e) => {
@@ -1833,7 +1920,7 @@ function DataTab({
                                 ),
                             }}
                             sx={{
-                                width: 200,
+                                width: 180,
                                 '& .MuiOutlinedInput-root': {
                                     bgcolor: 'background.default',
                                     height: 32,
@@ -1845,7 +1932,7 @@ function DataTab({
                         />
                         {searchQuery && (
                             <Chip
-                                label={`Filtered: "${searchQuery}"`}
+                                label={`"${searchQuery}"`}
                                 size="small"
                                 onDelete={() => {
                                     setLocalSearch('');
@@ -1857,107 +1944,13 @@ function DataTab({
                         )}
                     </Box>
 
-                    {/* Selection Toolbar */}
-                    {(hasSelectedRows || editingRowId) && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                px: 2,
-                                py: 1,
-                                bgcolor: 'action.selected',
-                                borderBottom: 1,
-                                borderColor: 'divider',
-                            }}
-                        >
-                            {editingRowId ? (
-                                <>
-                                    <Typography variant="body2" sx={{ mr: 1 }}>
-                                        Editing row...
-                                    </Typography>
-                                    <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="success"
-                                        startIcon={<SaveIcon />}
-                                        onClick={handleSaveClick(editingRowId)}
-                                    >
-                                        Save
-                                    </Button>
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        startIcon={<CancelIcon />}
-                                        onClick={handleCancelClick(editingRowId)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Typography variant="body2" sx={{ mr: 1 }}>
-                                        {selectedRowIds.length} row{selectedRowIds.length > 1 ? 's' : ''} selected
-                                    </Typography>
-                                    <Tooltip title={!canEditRows ? 'No primary key - cannot edit' : selectedRowIds.length > 1 ? 'Select single row to edit' : 'Edit row'}>
-                                        <span>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<EditIcon />}
-                                                onClick={handleEditSelected}
-                                                disabled={!canEditRows || selectedRowIds.length !== 1 || !onUpdateRow}
-                                            >
-                                                Edit
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    <Tooltip title={!canEditRows ? 'No primary key - cannot delete' : selectedRowIds.length > 1 ? 'Select single row to delete' : 'Delete row'}>
-                                        <span>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="error"
-                                                startIcon={<DeleteIcon />}
-                                                onClick={handleDeleteSelected}
-                                                disabled={!canEditRows || selectedRowIds.length !== 1 || !onDeleteRow}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    <Tooltip title={!canEditRows ? 'No primary key - cannot sync' : 'Sync selected rows to another database'}>
-                                        <span>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                color="primary"
-                                                startIcon={<SyncIcon />}
-                                                onClick={handleSyncSelected}
-                                                disabled={!canEditRows || !onSyncRow}
-                                            >
-                                                Sync to...
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    <Box sx={{ flex: 1 }} />
-                                    <Button
-                                        size="small"
-                                        onClick={() => setSelectedRowIds([])}
-                                    >
-                                        Clear Selection
-                                    </Button>
-                                </>
-                            )}
-                        </Box>
-                    )}
-
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {result.rows.length > 0 ? (
                             <DataGrid
                                 rows={rows}
                                 columns={columns}
+                                getRowId={(row) => row.__rowIndex}
                                 density="compact"
                                 checkboxSelection
                                 rowSelectionModel={selectedRowIds}
@@ -3257,12 +3250,22 @@ function SyncRowDialog({
         setResult(null);
 
         try {
+            // Extract only primary key values from rows (don't send full row data)
+            const rowIds = rows.map((row) => {
+                const pkValues: Record<string, unknown> = {};
+                for (const pk of primaryKeys) {
+                    pkValues[pk] = row[pk];
+                }
+                return pkValues;
+            });
+
             const syncResult = await syncApi.syncRows(
                 sourceConnectionId,
                 targetConnectionId,
+                schema, // source schema
                 targetSchema,
                 table,
-                rows,
+                rowIds,
                 primaryKeys,
                 mode
             );
@@ -3291,14 +3294,33 @@ function SyncRowDialog({
                             <strong>Source:</strong> {sourceConnection?.name || 'Unknown'} → {schema}.{table}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Primary keys: {primaryKeys.join(', ')}
+                            Primary keys: {primaryKeys.length > 0 ? primaryKeys.join(', ') : '(none detected)'}
                         </Typography>
                         {sourceConnection?.groupName && (
                             <Typography variant="body2" color="text.secondary">
                                 Instance Group: {sourceConnection.groupName}
                             </Typography>
                         )}
+                        {rows.length > 0 && rows[0] && (
+                            <Typography variant="body2" color="text.secondary">
+                                Row IDs to sync: {primaryKeys.length > 0
+                                    ? rows.map(r => primaryKeys.map(pk => `${pk}=${r[pk]}`).join(',')).join(' | ')
+                                    : `(row keys: ${Object.keys(rows[0] as object).join(', ')})`}
+                            </Typography>
+                        )}
                     </Alert>
+
+                    {/* Warning if no primary keys */}
+                    {primaryKeys.length === 0 && (
+                        <Alert severity="error">
+                            <Typography variant="body2">
+                                No primary keys detected for this table.
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Cannot sync rows without primary keys to identify them.
+                            </Typography>
+                        </Alert>
+                    )}
 
                     {/* Warning if not in a group */}
                     {!isInGroup && (
@@ -3426,7 +3448,7 @@ function SyncRowDialog({
                     <Button
                         variant="contained"
                         onClick={handleSync}
-                        disabled={!targetConnectionId || !targetSchema || syncing}
+                        disabled={!targetConnectionId || !targetSchema || syncing || primaryKeys.length === 0}
                         startIcon={syncing ? <CircularProgress size={16} /> : <SyncIcon />}
                     >
                         {syncing ? 'Syncing...' : 'Sync'}

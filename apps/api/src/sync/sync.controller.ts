@@ -89,17 +89,18 @@ export class SyncController {
     }
 
     /**
-     * Sync specific rows to a target connection
+     * Sync specific rows to a target connection by primary key values
      */
-    @Post('rows/:targetConnectionId/:schema/:table')
+    @Post('rows/:targetConnectionId/:targetSchema/:table')
     async syncRows(
         @Param('targetConnectionId') targetConnectionId: string,
-        @Param('schema') schema: string,
+        @Param('targetSchema') targetSchema: string,
         @Param('table') table: string,
         @Body()
         body: {
             sourceConnectionId: string;
-            rows: Record<string, unknown>[];
+            sourceSchema: string;
+            rowIds: Record<string, unknown>[]; // Array of primary key value objects
             primaryKeys: string[];
             mode?: 'insert' | 'upsert';
         }
@@ -107,9 +108,10 @@ export class SyncController {
         return this.syncService.syncRows(
             body.sourceConnectionId,
             targetConnectionId,
-            schema,
+            body.sourceSchema,
+            targetSchema,
             table,
-            body.rows,
+            body.rowIds,
             body.primaryKeys,
             body.mode ?? 'upsert'
         );

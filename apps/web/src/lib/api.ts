@@ -394,23 +394,25 @@ export const syncApi = {
             }
         ),
 
-    // Sync specific rows to a target connection
+    // Sync specific rows to a target connection by primary key values
     syncRows: (
         sourceConnectionId: string,
         targetConnectionId: string,
-        schema: string,
+        sourceSchema: string,
+        targetSchema: string,
         table: string,
-        rows: Record<string, unknown>[],
+        rowIds: Record<string, unknown>[], // Array of primary key value objects
         primaryKeys: string[],
         mode: 'insert' | 'upsert' = 'upsert'
     ) =>
         fetchApi<{ inserted: number; updated: number; errors: string[] }>(
-            `/sync/rows/${targetConnectionId}/${schema}/${table}`,
+            `/sync/rows/${targetConnectionId}/${encodeURIComponent(targetSchema)}/${encodeURIComponent(table)}`,
             {
                 method: 'POST',
                 body: JSON.stringify({
                     sourceConnectionId,
-                    rows,
+                    sourceSchema,
+                    rowIds,
                     primaryKeys,
                     mode,
                 }),

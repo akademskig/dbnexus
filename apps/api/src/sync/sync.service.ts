@@ -426,42 +426,65 @@ export class SyncService {
     }
 
     /**
-     * Sync specific rows from source to target
+     * Sync specific rows from source to target by primary key values
      */
     async syncRows(
-        _sourceConnectionId: string, // Kept for API consistency, rows are passed directly
+        sourceConnectionId: string,
         targetConnectionId: string,
-        schema: string,
+        sourceSchema: string,
+        targetSchema: string,
         table: string,
-        rows: Record<string, unknown>[],
+        rowIds: Record<string, unknown>[], // Array of primary key value objects
         primaryKeyColumns: string[],
         mode: 'insert' | 'upsert' = 'upsert'
     ): Promise<{ inserted: number; updated: number; errors: string[] }> {
         const result = { inserted: 0, updated: 0, errors: [] as string[] };
 
-        if (rows.length === 0 || primaryKeyColumns.length === 0) {
+        if (rowIds.length === 0 || primaryKeyColumns.length === 0) {
             return result;
         }
 
+        const sourceConnection = this.connectionsService.findById(sourceConnectionId);
         const targetConnection = this.connectionsService.findById(targetConnectionId);
+        const sourceConnector = await this.connectionsService.getConnector(sourceConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
-        const engine = targetConnection.engine;
-        const tableRef = quoteTableRef(schema, table, engine);
+        
+        const sourceEngine = sourceConnection.engine;
+        const targetEngine = targetConnection.engine;
+        const sourceTableRef = quoteTableRef(sourceSchema, table, sourceEngine);
+        const targetTableRef = quoteTableRef(targetSchema, table, targetEngine);
 
         // Get column info from target
-        const tableSchema = await targetConnector.getTableSchema(schema, table);
+        const tableSchema = await targetConnector.getTableSchema(targetSchema, table);
         const columns = tableSchema.columns.map((c) => c.name);
 
-        for (const row of rows) {
+        for (const rowId of rowIds) {
             try {
-                // Check if row exists in target
-                const whereClause = primaryKeyColumns
-                    .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
+                // Fetch the full row from source
+                const sourceWhereClause = primaryKeyColumns
+                    .map((c, i) => `${quoteIdentifier(c, sourceEngine)} = ${getPlaceholder(i + 1, sourceEngine)}`)
                     .join(' AND ');
-                const pkValues = primaryKeyColumns.map((c) => row[c]);
+                const pkValues = primaryKeyColumns.map((c) => rowId[c]);
+
+                const sourceResult = await sourceConnector.query(
+                    `SELECT * FROM ${sourceTableRef} WHERE ${sourceWhereClause} LIMIT 1`,
+                    pkValues
+                );
+
+                if (sourceResult.rows.length === 0) {
+                    result.errors.push(`Row not found in source: ${JSON.stringify(rowId)}`);
+                    continue;
+                }
+
+                const row = sourceResult.rows[0] as Record<string, unknown>;
+
+                // Check if row exists in target
+                const targetWhereClause = primaryKeyColumns
+                    .map((c, i) => `${quoteIdentifier(c, targetEngine)} = ${getPlaceholder(i + 1, targetEngine)}`)
+                    .join(' AND ');
 
                 const existsResult = await targetConnector.query(
-                    `SELECT 1 FROM ${tableRef} WHERE ${whereClause} LIMIT 1`,
+                    `SELECT 1 FROM ${targetTableRef} WHERE ${targetWhereClause} LIMIT 1`,
                     pkValues
                 );
                 const exists = existsResult.rows.length > 0;
@@ -471,10 +494,10 @@ export class SyncService {
                     const nonPkColumns = columns.filter((c) => !primaryKeyColumns.includes(c));
                     if (nonPkColumns.length > 0) {
                         const setClause = nonPkColumns
-                            .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`)
+                            .map((c, i) => `${quoteIdentifier(c, targetEngine)} = ${getPlaceholder(i + 1, targetEngine)}`)
                             .join(', ');
                         const updateWhereClause = primaryKeyColumns
-                            .map((c, i) => `${quoteIdentifier(c, engine)} = ${getPlaceholder(nonPkColumns.length + i + 1, engine)}`)
+                            .map((c, i) => `${quoteIdentifier(c, targetEngine)} = ${getPlaceholder(nonPkColumns.length + i + 1, targetEngine)}`)
                             .join(' AND ');
                         const updateValues = [
                             ...nonPkColumns.map((c) => row[c]),
@@ -482,7 +505,7 @@ export class SyncService {
                         ];
 
                         await targetConnector.execute(
-                            `UPDATE ${tableRef} SET ${setClause} WHERE ${updateWhereClause}`,
+                            `UPDATE ${targetTableRef} SET ${setClause} WHERE ${updateWhereClause}`,
                             updateValues
                         );
                         result.updated++;
@@ -491,18 +514,18 @@ export class SyncService {
                     // Insert new row
                     const rowColumns = columns.filter((c) => row[c] !== undefined);
                     const values = rowColumns.map((c) => row[c]);
-                    const placeholders = rowColumns.map((_, i) => getPlaceholder(i + 1, engine)).join(', ');
-                    const quotedColumns = rowColumns.map((c) => quoteIdentifier(c, engine)).join(', ');
+                    const placeholders = rowColumns.map((_, i) => getPlaceholder(i + 1, targetEngine)).join(', ');
+                    const quotedColumns = rowColumns.map((c) => quoteIdentifier(c, targetEngine)).join(', ');
 
                     await targetConnector.execute(
-                        `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`,
+                        `INSERT INTO ${targetTableRef} (${quotedColumns}) VALUES (${placeholders})`,
                         values
                     );
                     result.inserted++;
                 }
             } catch (error) {
                 result.errors.push(
-                    `Row sync failed: ${error instanceof Error ? error.message : String(error)}`
+                    `Row sync failed for ${JSON.stringify(rowId)}: ${error instanceof Error ? error.message : String(error)}`
                 );
             }
         }
