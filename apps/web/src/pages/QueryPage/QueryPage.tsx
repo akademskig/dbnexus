@@ -1187,115 +1187,117 @@ export function QueryPage() {
 
                 {/* Main Panel */}
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    {selectedTable ? (
+                    {selectedConnectionId ? (
                         <>
-                            {/* Table Header */}
-                            <Box
-                                sx={{
-                                    px: 2,
-                                    py: 1.5,
-                                    borderBottom: 1,
-                                    borderColor: 'divider',
-                                    bgcolor: 'background.paper',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {selectedTable.type === 'view' ? (
-                                        <VisibilityIcon color="secondary" />
-                                    ) : (
-                                        <TableChartIcon color="primary" />
-                                    )}
-                                    <Typography variant="h6" fontWeight={600}>
-                                        {selectedTable.name}
-                                    </Typography>
-                                    <Chip
-                                        label={selectedTable.type}
-                                        size="small"
-                                        color={
-                                            selectedTable.type === 'view' ? 'secondary' : 'default'
-                                        }
-                                        sx={{ textTransform: 'uppercase', fontSize: 10 }}
-                                    />
-                                </Box>
-
-                                {selectedTable.rowCount !== undefined && (
-                                    <Typography variant="body2" color="text.secondary">
-                                        ~{selectedTable.rowCount.toLocaleString()} rows
-                                    </Typography>
-                                )}
-
-                                {selectedTable.sizeBytes !== undefined && (
-                                    <Typography variant="body2" color="text.secondary">
-                                        {formatBytes(selectedTable.sizeBytes)}
-                                    </Typography>
-                                )}
-
-                                <Box sx={{ flex: 1 }} />
-
-                                {/* Table Actions */}
-                                {selectedTable.type !== 'view' && (
-                                    <>
-                                        <Tooltip title="Add Row">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => setAddRowOpen(true)}
-                                                disabled={!tableSchema}
-                                            >
-                                                <AddIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Table Actions">
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) =>
-                                                    setTableActionsAnchor(e.currentTarget)
-                                                }
-                                            >
-                                                <MoreVertIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Menu
-                                            anchorEl={tableActionsAnchor}
-                                            open={Boolean(tableActionsAnchor)}
-                                            onClose={() => setTableActionsAnchor(null)}
-                                        >
-                                            <MenuItem
-                                                onClick={() => {
-                                                    setTableActionsAnchor(null);
-                                                    setDropTableConfirmOpen(true);
-                                                }}
-                                                sx={{ color: 'error.main' }}
-                                            >
-                                                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-                                                Drop Table
-                                            </MenuItem>
-                                        </Menu>
-                                    </>
-                                )}
-
-                                <Tooltip title="Run Query (⌘+Enter)">
-                                    <span>
-                                        <Button
-                                            variant="contained"
+                            {/* Table Header - only show when table is selected */}
+                            {selectedTable && (
+                                <Box
+                                    sx={{
+                                        px: 2,
+                                        py: 1.5,
+                                        borderBottom: 1,
+                                        borderColor: 'divider',
+                                        bgcolor: 'background.paper',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 2,
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        {selectedTable.type === 'view' ? (
+                                            <VisibilityIcon color="secondary" />
+                                        ) : (
+                                            <TableChartIcon color="primary" />
+                                        )}
+                                        <Typography variant="h6" fontWeight={600}>
+                                            {selectedTable.name}
+                                        </Typography>
+                                        <Chip
+                                            label={selectedTable.type}
                                             size="small"
-                                            startIcon={
-                                                executeMutation.isPending ? (
-                                                    <CircularProgress size={16} color="inherit" />
-                                                ) : (
-                                                    <PlayArrowIcon />
-                                                )
+                                            color={
+                                                selectedTable.type === 'view' ? 'secondary' : 'default'
                                             }
-                                            onClick={handleExecute}
-                                            disabled={!sql.trim() || executeMutation.isPending}
-                                        >
-                                            Run
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                            </Box>
+                                            sx={{ textTransform: 'uppercase', fontSize: 10 }}
+                                        />
+                                    </Box>
+
+                                    {selectedTable.rowCount !== undefined && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            ~{selectedTable.rowCount.toLocaleString()} rows
+                                        </Typography>
+                                    )}
+
+                                    {selectedTable.sizeBytes !== undefined && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            {formatBytes(selectedTable.sizeBytes)}
+                                        </Typography>
+                                    )}
+
+                                    <Box sx={{ flex: 1 }} />
+
+                                    {/* Table Actions */}
+                                    {selectedTable.type !== 'view' && (
+                                        <>
+                                            <Tooltip title="Add Row">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => setAddRowOpen(true)}
+                                                    disabled={!tableSchema}
+                                                >
+                                                    <AddIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Table Actions">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) =>
+                                                        setTableActionsAnchor(e.currentTarget)
+                                                    }
+                                                >
+                                                    <MoreVertIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Menu
+                                                anchorEl={tableActionsAnchor}
+                                                open={Boolean(tableActionsAnchor)}
+                                                onClose={() => setTableActionsAnchor(null)}
+                                            >
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        setTableActionsAnchor(null);
+                                                        setDropTableConfirmOpen(true);
+                                                    }}
+                                                    sx={{ color: 'error.main' }}
+                                                >
+                                                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                                                    Drop Table
+                                                </MenuItem>
+                                            </Menu>
+                                        </>
+                                    )}
+
+                                    <Tooltip title="Run Query (⌘+Enter)">
+                                        <span>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                startIcon={
+                                                    executeMutation.isPending ? (
+                                                        <CircularProgress size={16} color="inherit" />
+                                                    ) : (
+                                                        <PlayArrowIcon />
+                                                    )
+                                                }
+                                                onClick={handleExecute}
+                                                disabled={!sql.trim() || executeMutation.isPending}
+                                            >
+                                                Run
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                </Box>
+                            )}
 
                             {/* Tabs */}
                             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -1443,18 +1445,39 @@ export function QueryPage() {
                                 )}
 
                                 {activeTab === 1 && (
-                                    <StructureTab schema={tableSchema} loading={tableSchemaLoading} />
+                                    selectedTable ? (
+                                        <StructureTab schema={tableSchema} loading={tableSchemaLoading} />
+                                    ) : (
+                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                                            <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                                            <Typography variant="body2">Select a table to view its structure</Typography>
+                                        </Box>
+                                    )
                                 )}
 
                                 {activeTab === 2 && (
-                                    <IndexesTab schema={tableSchema} loading={tableSchemaLoading} />
+                                    selectedTable ? (
+                                        <IndexesTab schema={tableSchema} loading={tableSchemaLoading} />
+                                    ) : (
+                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                                            <KeyIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                                            <Typography variant="body2">Select a table to view its indexes</Typography>
+                                        </Box>
+                                    )
                                 )}
 
                                 {activeTab === 3 && (
-                                    <ForeignKeysTab
-                                        schema={tableSchema}
-                                        loading={tableSchemaLoading}
-                                    />
+                                    selectedTable ? (
+                                        <ForeignKeysTab
+                                            schema={tableSchema}
+                                            loading={tableSchemaLoading}
+                                        />
+                                    ) : (
+                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                                            <LinkIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                                            <Typography variant="body2">Select a table to view its foreign keys</Typography>
+                                        </Box>
+                                    )
                                 )}
 
                                 {activeTab === 4 && (
