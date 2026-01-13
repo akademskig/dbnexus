@@ -83,6 +83,14 @@ export interface InstanceGroupSyncStatus {
     lastChecked?: Date;
 }
 
+export interface TableDataDiff {
+    table: string;
+    sourceCount: number;
+    targetCount: number;
+    missingInTarget: number;
+    missingInSource: number;
+}
+
 export interface InstanceGroupTargetStatus {
     connectionId: string;
     connectionName: string;
@@ -92,7 +100,7 @@ export interface InstanceGroupTargetStatus {
     migrationSql?: string[]; // Migration SQL statements
     dataStatus: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked';
     dataDiffSummary?: string;
-    dataDiff?: { table: string; sourceCount: number; targetCount: number; missingInTarget: number; missingInSource: number }[]; // Full data diff
+    dataDiff?: TableDataDiff[]; // Full data diff
     error?: string;
 }
 
