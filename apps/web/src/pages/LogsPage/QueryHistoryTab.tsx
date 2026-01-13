@@ -104,11 +104,11 @@ export function QueryHistoryTab() {
     const getConnectionInfo = (connectionId: string) => {
         const conn = connections.find((c) => c.id === connectionId);
         if (!conn) return { name: 'Unknown', color: undefined };
-        
+
         const project = projects.find((p) => p.id === conn.projectId);
         const colorIndex = project ? projects.indexOf(project) % PROJECT_COLORS.length : -1;
         const color = colorIndex >= 0 ? PROJECT_COLORS[colorIndex] : undefined;
-        
+
         return { name: conn.name, color };
     };
 
@@ -151,7 +151,7 @@ export function QueryHistoryTab() {
                             ...(color && {
                                 bgcolor: `${color}15`,
                                 color: color,
-                                borderLeft: `3px solid ${color}`,
+                                border: `1px solid ${color}`,
                             }),
                         }}
                     />
