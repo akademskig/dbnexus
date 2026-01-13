@@ -8,10 +8,15 @@ import { GroupSyncPage } from './pages/GroupSyncPage';
 import { ComparePage } from './pages/ComparePage';
 import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LandingPage } from './pages/LandingPage';
 
 function App() {
     return (
         <Routes>
+            {/* Landing page without layout */}
+            <Route path="/welcome" element={<LandingPage />} />
+            
+            {/* Main app with layout */}
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
