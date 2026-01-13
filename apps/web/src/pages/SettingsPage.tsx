@@ -571,16 +571,15 @@ export function SettingsPage() {
                     value={tab}
                     onChange={(_, v) => setTab(v)}
                     sx={{
-                        mb: 3,
                         '& .MuiTabs-indicator': {
-                            bgcolor: 'text.primary',
+                            bgcolor: 'primary.main',
                         },
                         '& .MuiTab-root': {
                             color: 'text.secondary',
                             textTransform: 'none',
                             fontWeight: 500,
                             '&.Mui-selected': {
-                                color: 'text.primary',
+                                color: 'primary.main',
                             },
                         },
                     }}
