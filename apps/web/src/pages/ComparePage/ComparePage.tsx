@@ -19,6 +19,7 @@ import { connectionsApi, schemaApi } from '../../lib/api';
 import { ConnectionSelector } from './ConnectionSelector';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import { getDefaultSchema } from './utils';
+import { EmptyState } from '../../components/EmptyState';
 
 export function ComparePage() {
     const queryClient = useQueryClient();
@@ -295,15 +296,13 @@ export function ComparePage() {
 
             {/* Empty state */}
             {!comparing && (
-                <Paper sx={{ p: 6, textAlign: 'center' }}>
-                    <CompareIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                        Select connections to compare
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Choose a source and target database connection above, then click Compare
-                        to see schema differences.
-                    </Typography>
+                <Paper sx={{ p: 3 }}>
+                    <EmptyState
+                        icon={<CompareIcon />}
+                        title="Select connections to compare"
+                        description="Choose a source and target database connection above, then click Compare to see schema differences and generate migration scripts."
+                        size="large"
+                    />
                 </Paper>
             )}
         </Box>

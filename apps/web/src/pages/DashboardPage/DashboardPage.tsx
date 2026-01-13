@@ -9,6 +9,8 @@ import {
     Speed as SpeedIcon,
     Warning as WarningIcon,
     Sync as SyncIcon,
+    Storage as StorageIcon,
+    History as HistoryIcon,
 } from '@mui/icons-material';
 import { useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, syncApi } from '../../lib/api';
@@ -23,6 +25,7 @@ import { StatCard } from './StatCard';
 import { ConnectionRow } from './ConnectionRow';
 import { ActivityItem } from './ActivityItem';
 import { SyncGroupRow } from './SyncGroupRow';
+import { EmptyState } from '../../components/EmptyState';
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -288,22 +291,17 @@ export function DashboardPage() {
                                 <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
                             </Box>
                         ) : connections.length === 0 ? (
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                    No connections yet
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    onClick={() => navigate('/connections')}
-                                    sx={{
-                                        mt: 1,
-                                        color: 'text.primary',
-                                        textTransform: 'none',
-                                    }}
-                                >
-                                    Add your first connection
-                                </Button>
-                            </Box>
+                            <EmptyState
+                                icon={<StorageIcon />}
+                                title="No connections yet"
+                                description="Add your first database connection to get started."
+                                action={{
+                                    label: 'Add Connection',
+                                    onClick: () => navigate('/connections'),
+                                    variant: 'text',
+                                }}
+                                size="small"
+                            />
                         ) : (
                             connections.map((conn, i) => (
                                 <ConnectionRow
@@ -346,11 +344,12 @@ export function DashboardPage() {
                                 <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
                             </Box>
                         ) : history.length === 0 ? (
-                            <Box sx={{ py: 4, textAlign: 'center' }}>
-                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                    No recent activity
-                                </Typography>
-                            </Box>
+                            <EmptyState
+                                icon={<HistoryIcon />}
+                                title="No recent activity"
+                                description="Queries you run will appear here."
+                                size="small"
+                            />
                         ) : (
                             <Box
                                 sx={{

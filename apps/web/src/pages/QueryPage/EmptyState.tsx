@@ -1,12 +1,13 @@
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import StorageIcon from '@mui/icons-material/Storage';
+import { EmptyState as BaseEmptyState } from '../../components/EmptyState';
 
-interface EmptyStateProps {
+interface QueryEmptyStateProps {
     readonly connectionSelected: boolean;
 }
 
-export function EmptyState({ connectionSelected }: EmptyStateProps) {
+export function EmptyState({ connectionSelected }: QueryEmptyStateProps) {
     return (
         <Box
             sx={{
@@ -14,34 +15,23 @@ export function EmptyState({ connectionSelected }: EmptyStateProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'text.secondary',
             }}
         >
-            <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-                {connectionSelected ? (
-                    <>
-                        <TableChartIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
-                        <Typography variant="h6" gutterBottom>
-                            Select a table
-                        </Typography>
-                        <Typography variant="body2">
-                            Choose a table from the sidebar to view its data, structure, indexes,
-                            and foreign keys.
-                        </Typography>
-                    </>
-                ) : (
-                    <>
-                        <StorageIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
-                        <Typography variant="h6" gutterBottom>
-                            No connection selected
-                        </Typography>
-                        <Typography variant="body2">
-                            Select a database connection from the dropdown above to browse tables
-                            and run queries.
-                        </Typography>
-                    </>
-                )}
-            </Box>
+            {connectionSelected ? (
+                <BaseEmptyState
+                    icon={<TableChartIcon />}
+                    title="Select a table"
+                    description="Choose a table from the sidebar to view its data, structure, indexes, and foreign keys. Or write a custom SQL query above."
+                    size="medium"
+                />
+            ) : (
+                <BaseEmptyState
+                    icon={<StorageIcon />}
+                    title="No connection selected"
+                    description="Select a database connection from the dropdown above to browse tables and run queries."
+                    size="medium"
+                />
+            )}
         </Box>
     );
 }

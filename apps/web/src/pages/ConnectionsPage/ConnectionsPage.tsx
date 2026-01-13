@@ -14,6 +14,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
+import { EmptyState } from '../../components/EmptyState';
 import { useToastStore } from '../../stores/toastStore';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
@@ -197,23 +198,20 @@ export function ConnectionsPage() {
                 </Box>
             ) : connections.length === 0 && projects.length === 0 ? (
                 <GlassCard>
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                        <StorageIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                        <Typography variant="h6" gutterBottom>
-                            No connections yet
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Add your first database connection to get started
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                            <Button variant="outlined" onClick={() => setProjectFormOpen(true)}>
-                                Create Project
-                            </Button>
-                            <Button variant="contained" onClick={() => setFormOpen(true)}>
-                                Add Connection
-                            </Button>
-                        </Box>
-                    </Box>
+                    <EmptyState
+                        icon={<StorageIcon />}
+                        title="No connections yet"
+                        description="Add your first database connection to start exploring your data. Organize connections into projects and instance groups for better management."
+                        action={{
+                            label: 'Add Connection',
+                            onClick: () => setFormOpen(true),
+                        }}
+                        secondaryAction={{
+                            label: 'Create Project',
+                            onClick: () => setProjectFormOpen(true),
+                        }}
+                        size="large"
+                    />
                 </GlassCard>
             ) : (
                 <Stack spacing={3}>

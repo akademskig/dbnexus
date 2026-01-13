@@ -1008,18 +1008,28 @@ export function QueryPage() {
                         {(schemasLoading || tablesLoading) && <LinearProgress />}
 
                         {!selectedConnectionId && (
-                            <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-                                <StorageIcon sx={{ fontSize: 40, opacity: 0.3, mb: 1 }} />
-                                <Typography variant="body2">Select a connection</Typography>
+                            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                                <StorageIcon sx={{ fontSize: 36, opacity: 0.3, mb: 1 }} />
+                                <Typography variant="body2" fontWeight={500}>
+                                    Select a connection
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled">
+                                    Choose from the dropdown above
+                                </Typography>
                             </Box>
                         )}
 
                         {selectedConnectionId &&
                             Object.keys(tablesBySchema).length === 0 &&
                             !tablesLoading && (
-                                <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-                                    <TableChartIcon sx={{ fontSize: 40, opacity: 0.3, mb: 1 }} />
-                                    <Typography variant="body2">No tables found</Typography>
+                                <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                                    <TableChartIcon sx={{ fontSize: 36, opacity: 0.3, mb: 1 }} />
+                                    <Typography variant="body2" fontWeight={500}>
+                                        No tables found
+                                    </Typography>
+                                    <Typography variant="caption" color="text.disabled">
+                                        This schema is empty
+                                    </Typography>
                                 </Box>
                             )}
 
