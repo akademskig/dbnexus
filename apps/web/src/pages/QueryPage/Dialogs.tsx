@@ -99,7 +99,7 @@ export function ConfirmDialog({
                     )}
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} disabled={loading}>
                     Cancel
                 </Button>
