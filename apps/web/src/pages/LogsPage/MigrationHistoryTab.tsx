@@ -99,11 +99,11 @@ export function MigrationHistoryTab() {
             valueGetter: (_value, row) =>
                 `${row.sourceConnectionName || 'Unknown'}.${row.sourceSchema}`,
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
-                <Box>
-                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500 }}>
+                <Box sx={{ lineHeight: 1.3 }}>
+                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}>
                         {params.row.sourceConnectionName || 'Unknown'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
                         {params.row.sourceSchema}
                     </Typography>
                 </Box>
@@ -123,11 +123,11 @@ export function MigrationHistoryTab() {
             valueGetter: (_value, row) =>
                 `${row.targetConnectionName || 'Unknown'}.${row.targetSchema}`,
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
-                <Box>
-                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500 }}>
+                <Box sx={{ lineHeight: 1.3 }}>
+                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}>
                         {params.row.targetConnectionName || 'Unknown'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
                         {params.row.targetSchema}
                     </Typography>
                 </Box>
