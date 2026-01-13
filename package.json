@@ -18,7 +18,15 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "check": "pnpm lint && pnpm format:check && pnpm build",
-        "clean": "pnpm -r clean && rm -rf node_modules"
+        "clean": "pnpm -r clean && rm -rf node_modules",
+        "docker:build": "docker build -t dbnexus:latest .",
+        "docker:run": "docker run -p 3001:3001 -v dbnexus-data:/app/data dbnexus:latest",
+        "docker:compose": "docker-compose -f docker-compose.prod.yml up -d",
+        "desktop:dev": "pnpm --filter @dbnexus/desktop dev",
+        "desktop:build": "pnpm build && pnpm --filter @dbnexus/desktop dist",
+        "desktop:build:win": "pnpm build && pnpm --filter @dbnexus/desktop dist:win",
+        "desktop:build:mac": "pnpm build && pnpm --filter @dbnexus/desktop dist:mac",
+        "desktop:build:linux": "pnpm build && pnpm --filter @dbnexus/desktop dist:linux"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.19.0",

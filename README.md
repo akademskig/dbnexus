@@ -83,6 +83,65 @@ dbnexus query --conn <name> --file ./query.sql
 | `pnpm format` | Format code with Prettier       |
 | `pnpm check`  | Run lint + format check + build |
 
+## 📦 Distribution
+
+### Docker
+
+Build and run DB Nexus as a Docker container:
+
+```bash
+# Build the Docker image
+pnpm docker:build
+
+# Run with Docker
+pnpm docker:run
+
+# Or use Docker Compose for production
+pnpm docker:compose
+```
+
+The application will be available at `http://localhost:3001`.
+
+### Desktop Application (Electron)
+
+Build standalone desktop applications for Windows, macOS, and Linux:
+
+```bash
+# Build for all platforms
+pnpm desktop:build
+
+# Build for specific platforms
+pnpm desktop:build:win    # Windows (.exe, portable)
+pnpm desktop:build:mac    # macOS (.dmg, .zip)
+pnpm desktop:build:linux  # Linux (.AppImage, .deb, .rpm)
+```
+
+Built applications will be in `apps/desktop/out/`.
+
+### Manual Installation
+
+For manual deployment:
+
+```bash
+# Build all packages
+pnpm build
+
+# Start in production mode
+NODE_ENV=production node apps/api/dist/main.js
+```
+
+## 🐳 Docker Compose (Development)
+
+For testing with multiple database instances:
+
+```bash
+# Start test databases (PostgreSQL, MySQL, MariaDB)
+docker-compose up -d
+
+# Stop test databases
+docker-compose down
+```
+
 ## 📖 Documentation
 
 For detailed architecture and design decisions, see [DESIGN.md](./DESIGN.md).
