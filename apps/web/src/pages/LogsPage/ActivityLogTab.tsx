@@ -10,14 +10,8 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Paper,
+    Tooltip,
     Avatar,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    Divider,
-    CircularProgress,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -31,6 +25,7 @@ import {
     Delete as DeleteIcon,
     CompareArrows as CompareIcon,
 } from '@mui/icons-material';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 
@@ -57,33 +52,32 @@ interface ActivityItem {
     details?: ActivityDetails;
 }
 
-function formatTimeAgo(date: Date): string {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+function formatDate(date: Date): string {
+    return date.toLocaleString();
+}
+
+function formatDuration(ms: number | undefined): string {
+    if (ms === undefined) return '-';
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
+    return `${(ms / 60000).toFixed(2)}m`;
 }
 
 function getActivityIcon(type: string, action: string) {
     switch (type) {
         case 'query':
-            return <CodeIcon />;
+            return <CodeIcon sx={{ fontSize: 18 }} />;
         case 'migration':
-            return <CompareIcon />;
+            return <CompareIcon sx={{ fontSize: 18 }} />;
         case 'sync':
-            return <SyncIcon />;
+            return <SyncIcon sx={{ fontSize: 18 }} />;
         case 'connection':
-            if (action.includes('create')) return <AddIcon />;
-            if (action.includes('delete')) return <DeleteIcon />;
-            if (action.includes('update')) return <EditIcon />;
-            return <StorageIcon />;
+            if (action.includes('create')) return <AddIcon sx={{ fontSize: 18 }} />;
+            if (action.includes('delete')) return <DeleteIcon sx={{ fontSize: 18 }} />;
+            if (action.includes('update')) return <EditIcon sx={{ fontSize: 18 }} />;
+            return <StorageIcon sx={{ fontSize: 18 }} />;
         default:
-            return <SettingsIcon />;
+            return <SettingsIcon sx={{ fontSize: 18 }} />;
     }
 }
 
@@ -110,12 +104,12 @@ export function ActivityLogTab() {
     // Fetch data from multiple sources
     const { data: queryHistory = [], isLoading: loadingQueries } = useQuery({
         queryKey: ['queryHistory'],
-        queryFn: () => queriesApi.getHistory(undefined, 100),
+        queryFn: () => queriesApi.getHistory(undefined, 500),
     });
 
     const { data: migrations = [], isLoading: loadingMigrations } = useQuery({
         queryKey: ['migrationHistory'],
-        queryFn: () => schemaApi.getMigrationHistory({ limit: 100 }),
+        queryFn: () => schemaApi.getMigrationHistory({ limit: 500 }),
     });
 
     const { data: connections = [] } = useQuery({
@@ -132,7 +126,7 @@ export function ActivityLogTab() {
             id: `query-${q.id}`,
             type: 'query',
             action: 'execute',
-            description: q.sql.substring(0, 100) + (q.sql.length > 100 ? '...' : ''),
+            description: q.sql,
             timestamp: new Date(q.executedAt),
             status: q.success ? 'success' : 'error',
             details: {
@@ -173,36 +167,154 @@ export function ActivityLogTab() {
             return (
                 activity.description.toLowerCase().includes(search) ||
                 activity.action.toLowerCase().includes(search) ||
-                activity.type.toLowerCase().includes(search)
+                activity.type.toLowerCase().includes(search) ||
+                activity.details?.connectionName?.toLowerCase().includes(search) ||
+                activity.details?.sourceConnection?.toLowerCase().includes(search) ||
+                activity.details?.targetConnection?.toLowerCase().includes(search)
             );
         }
         return true;
     });
 
-    // Group activities by date
-    const groupedActivities: Record<string, ActivityItem[]> = {};
-    filteredActivities.forEach((activity) => {
-        const dateKey = activity.timestamp.toDateString();
-        if (!groupedActivities[dateKey]) {
-            groupedActivities[dateKey] = [];
-        }
-        groupedActivities[dateKey].push(activity);
-    });
-
-    const formatDateHeader = (dateStr: string) => {
-        const date = new Date(dateStr);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (date.toDateString() === today.toDateString()) return 'Today';
-        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-        return date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'short',
-            day: 'numeric',
-        });
-    };
+    const columns: GridColDef[] = [
+        {
+            field: 'timestamp',
+            headerName: 'Time',
+            width: 170,
+            renderCell: (params: GridRenderCellParams) => (
+                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                    {formatDate(params.value)}
+                </Typography>
+            ),
+        },
+        {
+            field: 'type',
+            headerName: 'Type',
+            width: 120,
+            renderCell: (params: GridRenderCellParams<ActivityItem>) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar
+                        sx={{
+                            width: 24,
+                            height: 24,
+                            bgcolor: `${getActivityColor(params.row.type, params.row.status)}20`,
+                            color: getActivityColor(params.row.type, params.row.status),
+                        }}
+                    >
+                        {getActivityIcon(params.row.type, params.row.action)}
+                    </Avatar>
+                    <Chip
+                        label={params.value}
+                        size="small"
+                        sx={{
+                            fontSize: 10,
+                            height: 20,
+                            textTransform: 'capitalize',
+                            bgcolor: `${getActivityColor(params.row.type, params.row.status)}15`,
+                            color: getActivityColor(params.row.type, params.row.status),
+                        }}
+                    />
+                </Box>
+            ),
+        },
+        {
+            field: 'description',
+            headerName: 'Description',
+            flex: 1,
+            minWidth: 300,
+            renderCell: (params: GridRenderCellParams<ActivityItem>) => (
+                <Tooltip title={params.value} placement="top-start">
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontFamily: params.row.type === 'query' ? 'monospace' : 'inherit',
+                            fontSize: 12,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {params.value}
+                    </Typography>
+                </Tooltip>
+            ),
+        },
+        {
+            field: 'connection',
+            headerName: 'Connection',
+            width: 150,
+            valueGetter: (_value, row) => {
+                if (row.details?.connectionName) return row.details.connectionName;
+                if (row.details?.sourceConnection && row.details?.targetConnection) {
+                    return `${row.details.sourceConnection} → ${row.details.targetConnection}`;
+                }
+                return '-';
+            },
+            renderCell: (params: GridRenderCellParams) => (
+                <Tooltip title={params.value}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontSize: 12,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {params.value}
+                    </Typography>
+                </Tooltip>
+            ),
+        },
+        {
+            field: 'duration',
+            headerName: 'Duration',
+            width: 90,
+            valueGetter: (_value, row) => row.details?.executionTimeMs,
+            renderCell: (params: GridRenderCellParams) => (
+                <Typography
+                    variant="body2"
+                    sx={{
+                        fontSize: 12,
+                        color: params.value && params.value > 1000 ? 'warning.main' : 'text.secondary',
+                    }}
+                >
+                    {formatDuration(params.value)}
+                </Typography>
+            ),
+        },
+        {
+            field: 'rows',
+            headerName: 'Rows',
+            width: 80,
+            valueGetter: (_value, row) => row.details?.rowCount,
+            renderCell: (params: GridRenderCellParams) => (
+                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                    {params.value !== undefined ? params.value.toLocaleString() : '-'}
+                </Typography>
+            ),
+        },
+        {
+            field: 'status',
+            headerName: 'Status',
+            width: 90,
+            renderCell: (params: GridRenderCellParams<ActivityItem>) => (
+                <Chip
+                    label={params.value === 'error' ? 'Error' : 'Success'}
+                    size="small"
+                    sx={{
+                        fontSize: 10,
+                        height: 20,
+                        bgcolor:
+                            params.value === 'error'
+                                ? 'rgba(239, 68, 68, 0.1)'
+                                : 'rgba(34, 197, 94, 0.1)',
+                        color: params.value === 'error' ? '#ef4444' : '#22c55e',
+                    }}
+                />
+            ),
+        },
+    ];
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -260,170 +372,23 @@ export function ActivityLogTab() {
                 </Typography>
             </Box>
 
-            {/* Activity List */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
-                {isLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <CircularProgress />
-                    </Box>
-                ) : filteredActivities.length === 0 ? (
-                    <Paper sx={{ p: 4, textAlign: 'center' }}>
-                        <Typography color="text.secondary">No activity found</Typography>
-                    </Paper>
-                ) : (
-                    Object.entries(groupedActivities).map(([dateKey, items]) => (
-                        <Box key={dateKey} sx={{ mb: 3 }}>
-                            <Typography
-                                variant="subtitle2"
-                                sx={{
-                                    color: 'text.secondary',
-                                    mb: 1,
-                                    px: 1,
-                                    fontWeight: 600,
-                                }}
-                            >
-                                {formatDateHeader(dateKey)}
-                            </Typography>
-                            <Paper>
-                                <List disablePadding>
-                                    {items.map((activity, idx) => (
-                                        <Box key={activity.id}>
-                                            {idx > 0 && <Divider />}
-                                            <ListItem
-                                                sx={{
-                                                    py: 1.5,
-                                                    '&:hover': { bgcolor: 'action.hover' },
-                                                }}
-                                            >
-                                                <ListItemAvatar>
-                                                    <Avatar
-                                                        sx={{
-                                                            bgcolor: `${getActivityColor(activity.type, activity.status)}20`,
-                                                            color: getActivityColor(
-                                                                activity.type,
-                                                                activity.status
-                                                            ),
-                                                            width: 36,
-                                                            height: 36,
-                                                        }}
-                                                    >
-                                                        {getActivityIcon(
-                                                            activity.type,
-                                                            activity.action
-                                                        )}
-                                                    </Avatar>
-                                                </ListItemAvatar>
-                                                <ListItemText
-                                                    primary={
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 1,
-                                                            }}
-                                                        >
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    fontFamily:
-                                                                        activity.type === 'query'
-                                                                            ? 'monospace'
-                                                                            : 'inherit',
-                                                                    fontSize: 13,
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    maxWidth: 500,
-                                                                }}
-                                                            >
-                                                                {activity.description}
-                                                            </Typography>
-                                                            <Chip
-                                                                label={activity.type}
-                                                                size="small"
-                                                                sx={{
-                                                                    fontSize: 10,
-                                                                    height: 18,
-                                                                    bgcolor: `${getActivityColor(activity.type, activity.status)}15`,
-                                                                    color: getActivityColor(
-                                                                        activity.type,
-                                                                        activity.status
-                                                                    ),
-                                                                }}
-                                                            />
-                                                            {activity.status === 'error' && (
-                                                                <Chip
-                                                                    label="Error"
-                                                                    size="small"
-                                                                    sx={{
-                                                                        fontSize: 10,
-                                                                        height: 18,
-                                                                        bgcolor:
-                                                                            'rgba(239, 68, 68, 0.1)',
-                                                                        color: '#ef4444',
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </Box>
-                                                    }
-                                                    secondary={
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                gap: 2,
-                                                                mt: 0.5,
-                                                            }}
-                                                        >
-                                                            {activity.details?.connectionName && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {activity.details.connectionName}
-                                                                </Typography>
-                                                            )}
-                                                            {activity.details?.executionTimeMs !== undefined && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {activity.details.executionTimeMs}ms
-                                                                </Typography>
-                                                            )}
-                                                            {activity.details?.rowCount !== undefined && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {activity.details.rowCount} rows
-                                                                </Typography>
-                                                            )}
-                                                            {activity.details?.statementCount !== undefined && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {activity.details.statementCount} statements
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    }
-                                                />
-                                                <Typography
-                                                    variant="caption"
-                                                    color="text.secondary"
-                                                    sx={{ flexShrink: 0 }}
-                                                >
-                                                    {formatTimeAgo(activity.timestamp)}
-                                                </Typography>
-                                            </ListItem>
-                                        </Box>
-                                    ))}
-                                </List>
-                            </Paper>
-                        </Box>
-                    ))
-                )}
+            {/* Data Grid */}
+            <Box sx={{ flex: 1, minHeight: 400 }}>
+                <DataGrid
+                    rows={filteredActivities}
+                    columns={columns}
+                    loading={isLoading}
+                    pageSizeOptions={[25, 50, 100]}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
+                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                    disableRowSelectionOnClick
+                    sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-cell': { fontSize: 12 },
+                    }}
+                />
             </Box>
         </Box>
     );
