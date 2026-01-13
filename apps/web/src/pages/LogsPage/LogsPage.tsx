@@ -87,7 +87,7 @@ export function LogsPage() {
                     />
                 </Tabs>
 
-                <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flex: 1, pt: 2.5, px: 2, pb: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     <TabPanel value={activeTab} index={0}>
                         <QueryHistoryTab />
                     </TabPanel>
