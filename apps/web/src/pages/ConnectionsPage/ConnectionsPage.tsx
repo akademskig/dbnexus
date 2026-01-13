@@ -14,6 +14,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
+import { useToastStore } from '../../stores/toastStore';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
 import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
@@ -21,6 +22,7 @@ import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dial
 export function ConnectionsPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const toast = useToastStore();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
     const [projectFormOpen, setProjectFormOpen] = useState(false);
@@ -89,6 +91,7 @@ export function ConnectionsPage() {
         mutationFn: connectionsApi.delete,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Connection deleted');
         },
     });
 

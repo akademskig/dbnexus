@@ -24,6 +24,7 @@ import {
 import ScienceIcon from '@mui/icons-material/Science';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, projectsApi } from '../../lib/api';
+import { useToastStore } from '../../stores/toastStore';
 import type {
     ConnectionConfig,
     ConnectionCreateInput,
@@ -42,6 +43,7 @@ interface ProjectFormDialogProps {
 
 export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogProps) {
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState(PROJECT_COLORS[0]);
@@ -62,6 +64,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
         mutationFn: projectsApi.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
+            toast.success('Project created');
             onClose();
         },
     });
@@ -76,6 +79,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
         }) => projectsApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
+            toast.success('Project updated');
             onClose();
         },
     });
@@ -168,6 +172,7 @@ interface GroupFormDialogProps {
 
 export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDialogProps) {
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
@@ -185,6 +190,7 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
         mutationFn: () => projectsApi.createGroup(projectId!, { name, description }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
+            toast.success('Instance group created');
             onClose();
         },
     });
@@ -193,6 +199,7 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
         mutationFn: () => projectsApi.updateGroup(projectId!, group!.id, { name, description }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
+            toast.success('Instance group updated');
             onClose();
         },
     });
@@ -270,6 +277,7 @@ export function ConnectionFormDialog({
     onClose,
 }: ConnectionFormDialogProps) {
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const { tags: availableTags } = useTagsStore();
     const [formData, setFormData] = useState<ConnectionCreateInput>({
         name: '',
@@ -350,6 +358,7 @@ export function ConnectionFormDialog({
         mutationFn: connectionsApi.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Connection created');
             onClose();
         },
     });
@@ -364,6 +373,7 @@ export function ConnectionFormDialog({
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Connection updated');
             onClose();
         },
     });

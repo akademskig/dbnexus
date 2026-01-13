@@ -27,6 +27,7 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schemaApi } from '../../lib/api';
 import type { MigrationHistoryEntry } from '@dbnexus/shared';
+import { useToastStore } from '../../stores/toastStore';
 
 function formatDate(date: string): string {
     const d = new Date(date);
@@ -35,6 +36,7 @@ function formatDate(date: string): string {
 
 export function MigrationHistoryTab() {
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [selectedMigration, setSelectedMigration] = useState<MigrationHistoryEntry | null>(
@@ -54,12 +56,14 @@ export function MigrationHistoryTab() {
             queryClient.invalidateQueries({ queryKey: ['migrationHistory'] });
             setDeleteDialogOpen(false);
             setMigrationToDelete(null);
+            toast.success('Migration record deleted');
         },
     });
 
     const handleCopy = (sql: string[], id: string) => {
         navigator.clipboard.writeText(sql.join('\n\n'));
         setCopiedId(id);
+        toast.success('SQL copied to clipboard');
         setTimeout(() => setCopiedId(null), 2000);
     };
 

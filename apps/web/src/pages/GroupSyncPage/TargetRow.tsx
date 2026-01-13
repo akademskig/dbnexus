@@ -26,6 +26,7 @@ import { syncApi, schemaApi } from '../../lib/api';
 import { StatusIcon, StatusChip } from './StatusComponents';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import type { InstanceGroupTargetStatus, TableDataDiff } from '@dbnexus/shared';
+import { useToastStore } from '../../stores/toastStore';
 
 interface TargetRowProps {
     target: InstanceGroupTargetStatus;
@@ -50,6 +51,7 @@ export function TargetRow({
         { table: string; inserted: number; updated: number; deleted: number; errors: string[] }[]
     >([]);
     const queryClient = useQueryClient();
+    const toast = useToastStore();
 
     // Use diff data from the status response (no separate API call needed!)
     const schemaDiff = target.schemaDiff;
@@ -67,10 +69,12 @@ export function TargetRow({
                 'Applied from Instance Group Sync'
             );
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+            toast.success('Migration applied successfully');
             // Collapse after successful migration
             setExpanded(false);
         } catch (error) {
             console.error('Failed to apply migration:', error);
+            toast.error('Failed to apply migration');
         } finally {
             setApplying(false);
         }
@@ -93,8 +97,10 @@ export function TargetRow({
             );
             setSyncResults((prev) => [...prev.filter((r) => r.table !== tableName), result]);
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+            toast.success(`Table "${tableName}" synced`);
         } catch (error) {
             console.error('Failed to sync table:', error);
+            toast.error(`Failed to sync table "${tableName}"`);
         } finally {
             setSyncing(false);
         }

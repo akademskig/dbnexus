@@ -27,6 +27,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { schemaApi, syncApi } from '../../lib/api';
 import { COMMON_TYPES, type ColumnDefinition } from './utils';
 import type { ConnectionConfig } from '@dbnexus/shared';
+import { useToastStore } from '../../stores/toastStore';
 
 // ============ Create Table Dialog ============
 
@@ -330,6 +331,7 @@ export function SyncRowDialog({
         updated: number;
         errors: string[];
     } | null>(null);
+    const toast = useToastStore();
 
     // Only allow syncing within the same instance group
     const sourceGroupId = sourceConnection?.groupId;
@@ -397,12 +399,18 @@ export function SyncRowDialog({
                 mode
             );
             setResult(syncResult);
+            if (syncResult.errors.length === 0) {
+                toast.success(`Synced ${syncResult.inserted + syncResult.updated} row(s)`);
+            } else {
+                toast.warning(`Sync completed with ${syncResult.errors.length} error(s)`);
+            }
         } catch (error) {
             setResult({
                 inserted: 0,
                 updated: 0,
                 errors: [error instanceof Error ? error.message : 'Sync failed'],
             });
+            toast.error('Row sync failed');
         } finally {
             setSyncing(false);
         }

@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createAppTheme } from './theme';
 import { useThemeModeStore } from './stores/themeModeStore';
+import { ToastProvider } from './components/ToastProvider';
 import App from './App';
 import './index.css';
 
@@ -28,6 +29,7 @@ function ThemedApp() {
             <BrowserRouter>
                 <App />
             </BrowserRouter>
+            <ToastProvider />
         </ThemeProvider>
     );
 }

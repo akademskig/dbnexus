@@ -49,6 +49,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
+import { useToastStore } from '../../stores/toastStore';
 import { TableListItem } from './TableListItem';
 import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
@@ -71,6 +72,7 @@ export function QueryPage() {
 
     // Persisted state store
     const { lastState, saveState } = useQueryPageStore();
+    const toast = useToastStore();
 
     // Get state from URL params, falling back to persisted state
     const urlSchema = searchParams.get('schema');
@@ -279,7 +281,10 @@ export function QueryPage() {
     // Clear history mutation
     const clearHistoryMutation = useMutation({
         mutationFn: () => queriesApi.clearHistory(selectedConnectionId || undefined),
-        onSuccess: () => refetchHistory(),
+        onSuccess: () => {
+            refetchHistory();
+            toast.success('Query history cleared');
+        },
     });
 
     // Set default schema when schemas load
@@ -301,7 +306,7 @@ export function QueryPage() {
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -356,6 +361,7 @@ export function QueryPage() {
             setError(err.message);
             setResult(null);
             setConfirmDangerous(null);
+            toast.error('Query failed');
         },
     });
 
@@ -571,6 +577,7 @@ export function QueryPage() {
                     setResult(null);
                     refetchTables();
                     setDropTableConfirmOpen(false);
+                    toast.success(`Table "${selectedTable.name}" dropped`);
                 },
             }
         );
@@ -580,6 +587,7 @@ export function QueryPage() {
         selectedConnection?.engine,
         executeMutation,
         refetchTables,
+        toast,
     ]);
 
     // Handle add row
@@ -614,6 +622,7 @@ export function QueryPage() {
                 {
                     onSuccess: () => {
                         setAddRowOpen(false);
+                        toast.success('Row added successfully');
                         if (selectedTable) {
                             fetchTableData(
                                 selectedTable,
@@ -636,6 +645,7 @@ export function QueryPage() {
             fetchTableData,
             paginationModel,
             searchQuery,
+            toast,
         ]
     );
 
@@ -666,11 +676,12 @@ export function QueryPage() {
                     onSuccess: () => {
                         setCreateTableOpen(false);
                         refetchTables();
+                        toast.success(`Table "${tableName}" created`);
                     },
                 }
             );
         },
-        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables]
+        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables, toast]
     );
 
     // Helper function to format value for SQL
@@ -765,9 +776,11 @@ export function QueryPage() {
                                     tableSchema
                                 );
                             }
+                            toast.success('Row updated');
                             resolve();
                         },
                         onError: (err) => {
+                            toast.error('Failed to update row');
                             reject(err);
                         },
                     }
@@ -784,6 +797,7 @@ export function QueryPage() {
             paginationModel,
             searchQuery,
             formatSqlValue,
+            toast,
         ]
     );
 
@@ -823,6 +837,7 @@ export function QueryPage() {
                         if (totalRowCount !== null) {
                             setTotalRowCount(totalRowCount - 1);
                         }
+                        toast.success('Row deleted');
                     },
                 }
             );
@@ -838,6 +853,7 @@ export function QueryPage() {
             searchQuery,
             formatSqlValue,
             totalRowCount,
+            toast,
         ]
     );
 

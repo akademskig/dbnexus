@@ -32,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
+import { useToastStore } from '../../stores/toastStore';
 
 const PROJECT_COLORS = [
     '#ef4444', // red
@@ -59,6 +60,7 @@ function formatDuration(ms: number): string {
 export function QueryHistoryTab() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [selectedConnection, setSelectedConnection] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
@@ -86,12 +88,14 @@ export function QueryHistoryTab() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['queryHistory'] });
             setClearDialogOpen(false);
+            toast.success('Query history cleared');
         },
     });
 
     const handleCopy = (sql: string, id: string) => {
         navigator.clipboard.writeText(sql);
         setCopiedId(id);
+        toast.success('SQL copied to clipboard');
         setTimeout(() => setCopiedId(null), 2000);
     };
 

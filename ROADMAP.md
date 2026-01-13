@@ -12,76 +12,92 @@ Core functionality is working:
 - ✅ Data sync with conflict resolution
 - ✅ Instance groups for organizing related databases
 - ✅ Connection tagging and project organization
-- ✅ Query history tracking
+- ✅ Query history and migration logs
 - ✅ Docker and Electron packaging
+- ✅ Theme-aware branding (teal/indigo)
 
 ---
 
-## 📦 Distribution & Packaging
+## 🚀 Pre-Release Essentials (v1.0)
 
-### Completed
-- [x] Docker multi-stage build
-- [x] Docker Compose for production
-- [x] Electron desktop app structure
-- [x] Health check endpoints
-- [x] Static file serving in production
+These features are required before the first public release:
 
-### Next Steps
-- [ ] **App Icons** - Create and add icons for all platforms
-  - `apps/desktop/resources/icon.png` (512x512 for Linux)
-  - `apps/desktop/resources/icon.icns` (macOS)
-  - `apps/desktop/resources/icon.ico` (Windows)
-- [ ] **Code Signing** - Sign builds for macOS and Windows distribution
-  - macOS: Apple Developer certificate
-  - Windows: EV code signing certificate
-- [ ] **Auto-Updates** - Implement electron-updater for automatic updates
-  - GitHub Releases integration
-  - Update notifications in app
-- [ ] **npm Package** - Publish as global CLI tool
-  - `npm install -g dbnexus`
-  - `npx dbnexus` for one-time use
-- [ ] **Homebrew Formula** - For macOS users
-- [ ] **Snap/Flatpak** - For Linux distribution stores
+### Core Functionality
+- [ ] **Export query results** - CSV/JSON export buttons on data grid
+- [ ] **Saved queries** - Save, organize, and quickly access favorite queries
+- [ ] **Keyboard shortcuts** - Essential shortcuts for power users
+  - `Ctrl+Enter` - Run query
+  - `Ctrl+S` - Save query
+  - `Ctrl+/` - Toggle comment
+  - `Ctrl+Shift+F` - Format SQL
+- [ ] **Query templates** - Pre-built queries for common operations
+  - Show table sizes
+  - List indexes
+  - Active connections
+  - Slow queries
+- [ ] **Toast notifications** - Feedback for sync completion, errors, copy actions
+
+### User Experience
+- [ ] **Onboarding tour** - First-time user walkthrough highlighting key features
+- [ ] **Empty states** - Helpful illustrations and guidance when no data exists
+- [ ] **Dark/light toggle in header** - Quick access theme switcher
+- [ ] **Keyboard shortcuts guide** - Modal showing all available shortcuts (`?` key)
+
+### Polish & Stability
+- [ ] **Error handling** - Improve error messages with actionable guidance
+- [ ] **Loading states** - Consistent loading indicators across all pages
+- [ ] **Confirmation dialogs** - Confirm destructive actions (delete, drop, sync)
+- [ ] **Form validation** - Better validation feedback on all forms
+
+### Distribution
+- [ ] **App icons** - Create icons for all platforms (Windows, macOS, Linux)
+- [ ] **Code signing** - Sign builds for trusted distribution
+- [ ] **Auto-updates** - Implement electron-updater for seamless updates
+- [ ] **Landing page** - Public website with features and download links
 
 ---
 
-## 🚀 Feature Roadmap
+## 📦 Post-Release Updates
 
-### v0.2.0 - Enhanced Query Experience
-- [ ] Query autocomplete with table/column suggestions
-- [ ] Query formatting/beautification
-- [ ] Multiple query tabs
-- [ ] Query snippets/templates
-- [ ] Export results to CSV/JSON/Excel
-- [ ] Query execution plan visualization
+Features to ship in subsequent versions after v1.0:
 
-### v0.3.0 - Advanced Schema Management
-- [ ] Visual schema designer (drag & drop)
-- [ ] Migration history tracking
-- [ ] Rollback support for migrations
-- [ ] Schema versioning
-- [ ] Generate TypeScript/Prisma types from schema
+### v1.1 - Enhanced Query Experience
+- [ ] **Multi-tab queries** - Multiple query tabs per connection
+- [ ] **Query autocomplete** - Table/column suggestions as you type
+- [ ] **Query formatting** - Auto-format/beautify SQL
+- [ ] **Query explain/analyze** - Show execution plans with visual breakdown
+- [ ] **Query snippets** - Reusable code snippets with variables
 
-### v0.4.0 - Data Management
-- [ ] Bulk data import (CSV, JSON, SQL)
-- [ ] Data export with filters
-- [ ] Data masking for sensitive columns
-- [ ] Row-level sync with preview
-- [ ] Scheduled sync jobs
+### v1.2 - Advanced Data Management
+- [ ] **Data import** - Import CSV/JSON/SQL into tables
+- [ ] **Table data diff** - Compare actual row data between instances (not just counts)
+- [ ] **Data masking** - Hide sensitive columns in preview
+- [ ] **Bulk operations** - Multi-row edit/delete with preview
 
-### v0.5.0 - Collaboration Features
-- [ ] Shared connections (team mode)
-- [ ] Query sharing and bookmarks
-- [ ] Audit logging
-- [ ] Role-based access control
-- [ ] Comments on queries/schemas
+### v1.3 - Schema Visualization
+- [ ] **ER diagram** - Visual entity relationship diagram showing foreign keys
+- [ ] **Schema designer** - Drag & drop table/column creation
+- [ ] **Rollback migrations** - Generate reverse migration SQL
+- [ ] **Schema versioning** - Track schema changes over time
 
-### v1.0.0 - Production Ready
-- [ ] Comprehensive test coverage
-- [ ] Performance optimization
-- [ ] Security audit
-- [ ] Documentation website
-- [ ] Plugin/extension system
+### v1.4 - Automation & Scheduling
+- [ ] **Scheduled sync** - Auto-sync instance groups on a schedule
+- [ ] **Connection health monitoring** - Dashboard widget with status/latency history
+- [ ] **Backup scheduling** - Automated database backups
+- [ ] **Webhook notifications** - Notify external services on events
+
+### v1.5 - Collaboration
+- [ ] **Shared connections** - Team mode with shared connection configs
+- [ ] **Query sharing** - Share queries with team members
+- [ ] **Audit logging** - Track who did what and when
+- [ ] **Role-based access** - Admin/viewer/editor roles
+
+### Future Considerations
+- [ ] **AI Integration** - Natural language to SQL
+- [ ] **Cloud sync** - Sync settings across devices
+- [ ] **Plugin system** - Extensible architecture for custom features
+- [ ] **API mode** - REST/GraphQL API for programmatic access
+- [ ] **Performance monitoring** - Query performance tracking over time
 
 ---
 
@@ -93,7 +109,7 @@ Core functionality is working:
 - [x] MariaDB (full support)
 - [x] SQLite (full support)
 
-### Planned
+### Planned (Post-Release)
 - [ ] Microsoft SQL Server
 - [ ] Oracle Database
 - [ ] MongoDB (document view)
@@ -104,35 +120,29 @@ Core functionality is working:
 
 ---
 
-## 🎨 UI/UX Improvements
-
-- [ ] Keyboard shortcuts guide
-- [ ] Customizable keyboard bindings
-- [ ] Multiple color themes (light mode)
-- [ ] Resizable panels
-- [ ] Table relationship diagram
-- [ ] Dark/light mode toggle
-- [ ] Compact view mode
-- [ ] Mobile-responsive design
-
----
-
 ## 🔧 Technical Debt
 
-- [ ] Add comprehensive unit tests
-- [ ] Add E2E tests with Playwright
+### Pre-Release
 - [ ] Improve error handling and messages
 - [ ] Add request rate limiting
 - [ ] Implement connection pooling
+
+### Post-Release
+- [ ] Add comprehensive unit tests
+- [ ] Add E2E tests with Playwright
 - [ ] Add telemetry (opt-in)
 - [ ] Performance profiling and optimization
 
 ---
 
-## 🌐 Landing Page & Marketing
+## 🌐 Marketing & Community
 
+### Pre-Release
 - [ ] Create public landing page
 - [ ] Feature showcase with screenshots
+- [ ] README with clear installation instructions
+
+### Post-Release
 - [ ] Video tutorials
 - [ ] Blog with tips and updates
 - [ ] Discord/Slack community
@@ -140,17 +150,17 @@ Core functionality is working:
 
 ---
 
-## 💡 Ideas & Considerations
+## 📅 Release Timeline
 
-These are ideas that need more exploration:
-
-- **AI Integration** - Natural language to SQL
-- **Cloud Sync** - Sync connections/settings across devices
-- **Backup Scheduling** - Automated database backups
-- **Performance Monitoring** - Query performance tracking over time
-- **Data Diff** - Visual diff between table snapshots
-- **ERD Generation** - Auto-generate entity relationship diagrams
-- **API Mode** - REST/GraphQL API for programmatic access
+| Version | Focus | Target |
+|---------|-------|--------|
+| v0.9 | Feature freeze, bug fixes | - |
+| v1.0 | First public release | - |
+| v1.1 | Query enhancements | +1 month |
+| v1.2 | Data management | +2 months |
+| v1.3 | Schema visualization | +3 months |
+| v1.4 | Automation | +4 months |
+| v1.5 | Collaboration | +5 months |
 
 ---
 
@@ -163,16 +173,6 @@ We welcome contributions! If you'd like to work on any of these features:
 3. Fork the repository
 4. Create a feature branch
 5. Submit a pull request
-
----
-
-## 📅 Release Schedule
-
-We aim for monthly releases with the following cadence:
-
-- **Patch releases** (0.x.1, 0.x.2): Bug fixes, as needed
-- **Minor releases** (0.2, 0.3): New features, monthly
-- **Major release** (1.0): When feature-complete and stable
 
 ---
 
