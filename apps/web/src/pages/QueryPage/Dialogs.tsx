@@ -27,10 +27,95 @@ import KeyIcon from '@mui/icons-material/Key';
 import StorageIcon from '@mui/icons-material/Storage';
 import SyncIcon from '@mui/icons-material/Sync';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import WarningIcon from '@mui/icons-material/Warning';
 import { schemaApi, syncApi } from '../../lib/api';
 import { COMMON_TYPES, type ColumnDefinition } from './utils';
 import type { ConnectionConfig, SavedQuery } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
+
+// ============ Confirmation Dialog ============
+
+interface ConfirmDialogProps {
+    readonly open: boolean;
+    readonly onClose: () => void;
+    readonly onConfirm: () => void;
+    readonly title: string;
+    readonly message: React.ReactNode;
+    readonly confirmText?: string;
+    readonly confirmColor?: 'error' | 'warning' | 'primary';
+    readonly requireTyping?: string;
+    readonly loading?: boolean;
+}
+
+export function ConfirmDialog({
+    open,
+    onClose,
+    onConfirm,
+    title,
+    message,
+    confirmText = 'Confirm',
+    confirmColor = 'error',
+    requireTyping,
+    loading = false,
+}: ConfirmDialogProps) {
+    const [typedValue, setTypedValue] = useState('');
+
+    useEffect(() => {
+        if (!open) {
+            setTypedValue('');
+        }
+    }, [open]);
+
+    const canConfirm = requireTyping ? typedValue === requireTyping : true;
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <WarningIcon color={confirmColor} />
+                {title}
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {typeof message === 'string' ? (
+                        <Typography>{message}</Typography>
+                    ) : (
+                        message
+                    )}
+                    {requireTyping && (
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label={`Type "${requireTyping}" to confirm`}
+                            value={typedValue}
+                            onChange={(e) => setTypedValue(e.target.value)}
+                            autoFocus
+                            error={typedValue.length > 0 && typedValue !== requireTyping}
+                            helperText={
+                                typedValue.length > 0 && typedValue !== requireTyping
+                                    ? 'Text does not match'
+                                    : undefined
+                            }
+                        />
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button
+                    variant="contained"
+                    color={confirmColor}
+                    onClick={onConfirm}
+                    disabled={!canConfirm || loading}
+                    startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+                >
+                    {confirmText}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
 
 // ============ Create Table Dialog ============
 

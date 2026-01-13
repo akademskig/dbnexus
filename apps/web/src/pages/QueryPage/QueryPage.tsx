@@ -20,12 +20,9 @@ import {
     Tab,
     Badge,
     Drawer,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Menu,
     CircularProgress,
+    Alert,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -44,7 +41,6 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddBoxIcon from '@mui/icons-material/AddBox';
-import WarningIcon from '@mui/icons-material/Warning';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
@@ -57,7 +53,7 @@ import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
-import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
+import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import {
     SIDEBAR_WIDTH,
@@ -154,6 +150,10 @@ export function QueryPage() {
     const [savedQueriesOpen, setSavedQueriesOpen] = useState(false);
     const [saveQueryOpen, setSaveQueryOpen] = useState(false);
     const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
+    const [queryToDelete, setQueryToDelete] = useState<SavedQuery | null>(null);
+
+    // Row deletion state
+    const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
 
     // Track last executed query for table selection
     const lastExecutedQueryRef = useRef<string>('');
@@ -409,7 +409,7 @@ export function QueryPage() {
             // Switch to Data tab to show results
             setActiveTab(0);
             updateUrl({ tab: 0 });
-            
+
             // Try to select the table from the query
             const tableInfo = extractTableFromQuery(lastExecutedQueryRef.current);
             if (tableInfo && tables.length > 0) {
@@ -428,7 +428,7 @@ export function QueryPage() {
                     updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
                 }
             }
-            
+
             if (historyOpen) {
                 refetchHistory();
             }
@@ -895,10 +895,18 @@ export function QueryPage() {
         ]
     );
 
-    // Handle delete row
+    // Handle delete row - show confirmation
     const handleDeleteRow = useCallback(
         (row: Record<string, unknown>) => {
-            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
+            setRowToDelete(row);
+        },
+        []
+    );
+
+    // Actually perform row deletion
+    const confirmDeleteRow = useCallback(
+        () => {
+            if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
 
             const engine = selectedConnection?.engine;
             const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
@@ -906,11 +914,12 @@ export function QueryPage() {
             const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
             if (pkColumns.length === 0) {
                 setError('Cannot delete row: no primary key defined');
+                setRowToDelete(null);
                 return;
             }
 
             const whereConditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(row[pk], pk)}`
+                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(rowToDelete[pk], pk)}`
             );
 
             const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
@@ -932,6 +941,7 @@ export function QueryPage() {
                             setTotalRowCount(totalRowCount - 1);
                         }
                         toast.success('Row deleted');
+                        setRowToDelete(null);
                     },
                 }
             );
@@ -941,6 +951,7 @@ export function QueryPage() {
             selectedConnectionId,
             selectedConnection?.engine,
             tableSchema,
+            rowToDelete,
             executeMutation,
             fetchTableData,
             paginationModel,
@@ -1574,30 +1585,68 @@ export function QueryPage() {
             />
 
             {/* Drop Table Confirmation Dialog */}
-            <Dialog open={dropTableConfirmOpen} onClose={() => setDropTableConfirmOpen(false)}>
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningIcon color="error" />
-                    Drop Table
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Are you sure you want to drop the table{' '}
-                        <strong>{selectedTable?.name}</strong>? This action cannot be undone and all
-                        data will be permanently deleted.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDropTableConfirmOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleDropTable}
-                        disabled={executeMutation.isPending}
-                    >
-                        Drop Table
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <ConfirmDialog
+                open={dropTableConfirmOpen}
+                onClose={() => setDropTableConfirmOpen(false)}
+                onConfirm={handleDropTable}
+                title="Drop Table"
+                message={
+                    <Box>
+                        <Typography gutterBottom>
+                            Are you sure you want to drop the table{' '}
+                            <strong>{selectedTable?.name}</strong>?
+                        </Typography>
+                        <Alert severity="error" sx={{ mt: 1 }}>
+                            This action cannot be undone. All data in this table will be permanently deleted.
+                        </Alert>
+                    </Box>
+                }
+                confirmText="Drop Table"
+                confirmColor="error"
+                requireTyping={selectedTable?.name}
+                loading={executeMutation.isPending}
+            />
+
+            {/* Delete Row Confirmation Dialog */}
+            <ConfirmDialog
+                open={!!rowToDelete}
+                onClose={() => setRowToDelete(null)}
+                onConfirm={confirmDeleteRow}
+                title="Delete Row"
+                message={
+                    <Box>
+                        <Typography gutterBottom>
+                            Are you sure you want to delete this row from{' '}
+                            <strong>{selectedTable?.name}</strong>?
+                        </Typography>
+                        {rowToDelete && tableSchema && (
+                            <Box
+                                sx={{
+                                    mt: 1,
+                                    p: 1.5,
+                                    bgcolor: 'action.hover',
+                                    borderRadius: 1,
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    maxHeight: 150,
+                                    overflow: 'auto',
+                                }}
+                            >
+                                {tableSchema.columns
+                                    .filter((c) => c.isPrimaryKey)
+                                    .map((c) => (
+                                        <Box key={c.name}>
+                                            <strong>{c.name}:</strong> {String(rowToDelete[c.name])}
+                                        </Box>
+                                    ))}
+                            </Box>
+                        )}
+                    </Box>
+                }
+                confirmText="Delete Row"
+                confirmColor="error"
+                loading={executeMutation.isPending}
+            />
 
             {/* Add Row Dialog */}
             <AddRowDialog
@@ -1663,7 +1712,7 @@ export function QueryPage() {
                         setSaveQueryOpen(true);
                     }}
                     onDelete={(query) => {
-                        deleteQueryMutation.mutate(query.id);
+                        setQueryToDelete(query);
                     }}
                     onClose={() => setSavedQueriesOpen(false)}
                     onRefresh={() => refetchSavedQueries()}
@@ -1682,6 +1731,33 @@ export function QueryPage() {
                 connectionId={selectedConnectionId}
                 connections={connections}
                 editingQuery={editingQuery}
+            />
+
+            {/* Delete Saved Query Confirmation Dialog */}
+            <ConfirmDialog
+                open={!!queryToDelete}
+                onClose={() => setQueryToDelete(null)}
+                onConfirm={() => {
+                    if (queryToDelete) {
+                        deleteQueryMutation.mutate(queryToDelete.id);
+                        setQueryToDelete(null);
+                    }
+                }}
+                title="Delete Saved Query"
+                message={
+                    <Box>
+                        <Typography gutterBottom>
+                            Are you sure you want to delete the saved query{' '}
+                            <strong>&ldquo;{queryToDelete?.name}&rdquo;</strong>?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            This action cannot be undone.
+                        </Typography>
+                    </Box>
+                }
+                confirmText="Delete"
+                confirmColor="error"
+                loading={deleteQueryMutation.isPending}
             />
         </Box>
     );
