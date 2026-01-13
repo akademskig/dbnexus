@@ -31,6 +31,8 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
@@ -48,6 +50,8 @@ import {
     Remove as RemoveIcon,
     Edit as EditIcon,
     ContentCopy as CopyIcon,
+    Schema as SchemaIcon,
+    TableChart as DataIcon,
     Check as CheckIcon,
 } from '@mui/icons-material';
 import { groupsApi, syncApi, projectsApi, schemaApi } from '../lib/api';
@@ -176,7 +180,7 @@ function SchemaDiffDisplay({
 
     if (diff.items.length === 0) {
         return (
-            <Alert severity="success" sx={{ mt: 2 }}>
+            <Alert severity="success">
                 Schemas are in sync! No differences found.
             </Alert>
         );
@@ -205,8 +209,17 @@ function SchemaDiffDisplay({
 
             {/* Grouped diff items */}
             {Object.entries(groupedItems).map(([tableName, items]) => (
-                <Accordion key={tableName} defaultExpanded sx={{ mb: 1 }}>
-                    <AccordionSummary expandIcon={<ExpandIcon />}>
+                <Accordion key={tableName} defaultExpanded sx={{ mb: 1, '&:before': { display: 'none' } }}>
+                    <AccordionSummary
+                        expandIcon={<ExpandIcon />}
+                        sx={{
+                            px: 1,
+                            minHeight: 40,
+                            '&.Mui-expanded': { minHeight: 40 },
+                            '& .MuiAccordionSummary-content': { my: 0.5 },
+                            '& .MuiAccordionSummary-content.Mui-expanded': { my: 0.5 },
+                        }}
+                    >
                         <Typography fontWeight={500}>{tableName}</Typography>
                         <Box sx={{ ml: 2, display: 'flex', gap: 0.5 }}>
                             {items.map((item, idx) => (
@@ -214,19 +227,19 @@ function SchemaDiffDisplay({
                             ))}
                         </Box>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={{ px: 1, py: 0.5 }}>
                         {items.map((item, idx) => (
                             <Box
                                 key={idx}
                                 sx={{
-                                    p: 1.5,
-                                    mb: 1,
+                                    p: 1,
+                                    mb: 0.5,
                                     bgcolor: 'background.default',
                                     border: '1px solid',
                                     borderColor: 'divider',
                                 }}
                             >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <DiffTypeBadge type={item.type} />
                                     <Typography variant="body2" fontWeight={500}>
                                         {item.type.replace(/_/g, ' ')}: {item.name || item.table}
@@ -237,7 +250,7 @@ function SchemaDiffDisplay({
                                         variant="caption"
                                         color="text.secondary"
                                         component="pre"
-                                        sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
+                                        sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', m: 0 }}
                                     >
                                         {item.migrationSql.join('\n')}
                                     </Typography>
@@ -313,25 +326,24 @@ function TargetRow({
     sourceConnectionId,
     sourceSchema,
     targetSchema,
-    onSyncData,
 }: {
     target: InstanceGroupTargetStatus;
     group: { id: string; projectId: string; syncSchema: boolean; syncData: boolean };
     sourceConnectionId: string;
     sourceSchema: string;
     targetSchema: string;
-    onSyncData: (targetId: string) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
+    const [activeTab, setActiveTab] = useState(0); // 0 = Schema, 1 = Data
     const [applying, setApplying] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [syncResults, setSyncResults] = useState<{ table: string; inserted: number; updated: number; deleted: number; errors: string[] }[]>([]);
     const queryClient = useQueryClient();
 
-    // Show diff when expanded and schema sync is enabled
-    const showDiff = expanded && group.syncSchema;
-
-    // Use schema diff data from the status response (no separate API call needed!)
+    // Use diff data from the status response (no separate API call needed!)
     const schemaDiff = target.schemaDiff;
     const migrationSql = target.migrationSql || [];
+    const dataDiff = target.dataDiff || [];
 
     const handleApplyMigration = async () => {
         setApplying(true);
@@ -344,13 +356,36 @@ function TargetRow({
                 'Applied from Instance Group Sync'
             );
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
-            queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
             // Collapse after successful migration
             setExpanded(false);
         } catch (error) {
             console.error('Failed to apply migration:', error);
         } finally {
             setApplying(false);
+        }
+    };
+
+    const handleSyncTable = async (tableName: string) => {
+        setSyncing(true);
+        try {
+            const result = await syncApi.syncTableData(
+                sourceConnectionId,
+                target.connectionId,
+                sourceSchema,
+                tableName,
+                {
+                    primaryKeys: ['id'], // Default PK - should be improved
+                    insertMissing: true,
+                    updateDifferent: true,
+                    deleteExtra: false,
+                }
+            );
+            setSyncResults((prev) => [...prev.filter((r) => r.table !== tableName), result]);
+            queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+        } catch (error) {
+            console.error('Failed to sync table:', error);
+        } finally {
+            setSyncing(false);
         }
     };
 
@@ -395,53 +430,60 @@ function TargetRow({
                 </TableCell>
                 <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        {group.syncSchema && target.schemaStatus === 'out_of_sync' && (
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<RefreshIcon />}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Invalidate the status cache to force refetch (includes diff data)
-                                    queryClient.invalidateQueries({
-                                        queryKey: ['groupSyncStatus'],
-                                    });
-                                    // Expand if not already
-                                    if (!expanded) setExpanded(true);
-                                }}
-                            >
-                                Recheck
-                            </Button>
-                        )}
-                        {group.syncData && target.dataStatus === 'out_of_sync' && (
-                            <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<SyncIcon />}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSyncData(target.connectionId);
-                                }}
-                            >
-                                Sync Data
-                            </Button>
-                        )}
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<RefreshIcon />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                // Invalidate the status cache to force refetch (includes diff data)
+                                queryClient.invalidateQueries({
+                                    queryKey: ['groupSyncStatus'],
+                                });
+                                // Expand if not already
+                                if (!expanded) setExpanded(true);
+                            }}
+                        >
+                            Recheck
+                        </Button>
                     </Box>
                 </TableCell>
             </TableRow>
             <TableRow>
                 <TableCell colSpan={5} sx={{ py: 0, borderBottom: expanded ? undefined : 'none' }}>
                     <Collapse in={expanded}>
-                        <Box sx={{ py: 2, px: 1 }}>
+                        <Box sx={{ py: 1 }}>
                             {target.error && (
-                                <Alert severity="error" sx={{ mb: 2 }}>
+                                <Alert severity="error" sx={{ mb: 1 }}>
                                     {target.error}
                                 </Alert>
                             )}
 
-                            {/* Inline Schema Diff - data comes from status response */}
-                            {showDiff && (
-                                <Box sx={{ mb: 2 }}>
+                            {/* Tabs for Schema and Data */}
+                            <Tabs
+                                value={activeTab}
+                                onChange={(_, v) => setActiveTab(v)}
+                                sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 48 }}
+                            >
+                                <Tab
+                                    icon={<SchemaIcon fontSize="small" />}
+                                    iconPosition="start"
+                                    label={`Schema ${target.schemaDiffCount ? `(${target.schemaDiffCount})` : ''}`}
+                                    sx={{ minHeight: 48 }}
+                                    disabled={!group.syncSchema}
+                                />
+                                <Tab
+                                    icon={<DataIcon fontSize="small" />}
+                                    iconPosition="start"
+                                    label={`Data ${dataDiff.length > 0 ? `(${dataDiff.filter(d => d.sourceCount !== d.targetCount || d.missingInTarget > 0).length} tables)` : ''}`}
+                                    sx={{ minHeight: 48 }}
+                                    disabled={!group.syncData}
+                                />
+                            </Tabs>
+
+                            {/* Schema Tab */}
+                            {activeTab === 0 && group.syncSchema && (
+                                <Box sx={{ pt: 1 }}>
                                     {schemaDiff ? (
                                         <SchemaDiffDisplay
                                             diff={schemaDiff}
@@ -449,18 +491,94 @@ function TargetRow({
                                             onApplyMigration={handleApplyMigration}
                                             applying={applying}
                                         />
+                                    ) : target.schemaStatus === 'in_sync' ? (
+                                        <Alert severity="success">
+                                            Schema is in sync
+                                        </Alert>
                                     ) : (
                                         <Alert severity="info">
-                                            Schema is in sync or diff data not available. Click "Recheck" to refresh.
+                                            Click "Recheck" to load schema diff
                                         </Alert>
                                     )}
                                 </Box>
                             )}
 
-                            {!showDiff && (
-                                <Typography variant="body2" color="text.secondary">
-                                    Connection ID: {target.connectionId}
-                                </Typography>
+                            {/* Data Tab */}
+                            {activeTab === 1 && group.syncData && (
+                                <Box sx={{ py: 1 }}>
+                                    {dataDiff.length > 0 ? (
+                                        <Table size="small">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Table</TableCell>
+                                                    <TableCell align="right">Source</TableCell>
+                                                    <TableCell align="right">Target</TableCell>
+                                                    <TableCell align="right">Missing</TableCell>
+                                                    <TableCell align="right">Extra</TableCell>
+                                                    <TableCell>Actions</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {dataDiff.map((table) => {
+                                                    const isOutOfSync = table.sourceCount !== table.targetCount || table.missingInTarget > 0;
+                                                    const result = syncResults.find((r) => r.table === table.table);
+                                                    return (
+                                                        <TableRow key={table.table}>
+                                                            <TableCell>
+                                                                <Typography variant="body2" fontFamily="monospace">
+                                                                    {table.table}
+                                                                </Typography>
+                                                            </TableCell>
+                                                            <TableCell align="right">{table.sourceCount}</TableCell>
+                                                            <TableCell align="right">{table.targetCount}</TableCell>
+                                                            <TableCell align="right">
+                                                                {table.missingInTarget > 0 ? (
+                                                                    <Chip label={table.missingInTarget} size="small" color="warning" />
+                                                                ) : (
+                                                                    '-'
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell align="right">
+                                                                {table.missingInSource > 0 ? (
+                                                                    <Chip label={table.missingInSource} size="small" color="info" />
+                                                                ) : (
+                                                                    '-'
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {result ? (
+                                                                    <Typography variant="caption" color={result.errors.length > 0 ? 'error' : 'success.main'}>
+                                                                        +{result.inserted} ~{result.updated}
+                                                                        {result.errors.length > 0 && ` (${result.errors.length} errors)`}
+                                                                    </Typography>
+                                                                ) : isOutOfSync ? (
+                                                                    <Button
+                                                                        size="small"
+                                                                        variant="outlined"
+                                                                        onClick={() => handleSyncTable(table.table)}
+                                                                        disabled={syncing}
+                                                                    >
+                                                                        Sync
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Chip label="In sync" size="small" color="success" variant="outlined" />
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    ) : target.dataStatus === 'in_sync' ? (
+                                        <Alert severity="success" sx={{ mt: 1 }}>
+                                            All tables are in sync
+                                        </Alert>
+                                    ) : (
+                                        <Alert severity="info" sx={{ mt: 1 }}>
+                                            Click "Recheck" to load data diff
+                                        </Alert>
+                                    )}
+                                </Box>
                             )}
                         </Box>
                     </Collapse>
@@ -988,13 +1106,6 @@ export function GroupSyncPage() {
         refetchStatus();
     };
 
-    const handleSyncData = (targetConnectionId: string) => {
-        const target = connections.find((c) => c.id === targetConnectionId);
-        if (target) {
-            setDataSyncTarget({ connectionId: targetConnectionId, connectionName: target.name });
-        }
-    };
-
     // Get source connection and its default schema
     const sourceConnection = connections.find((c) => c.id === group?.sourceConnectionId);
 
@@ -1139,7 +1250,6 @@ export function GroupSyncPage() {
                                             sourceConnectionId={group.sourceConnectionId!}
                                             sourceSchema={sourceSchema}
                                             targetSchema={getTargetSchema(target.connectionId)}
-                                            onSyncData={handleSyncData}
                                         />
                                     ))}
                                 </TableBody>
