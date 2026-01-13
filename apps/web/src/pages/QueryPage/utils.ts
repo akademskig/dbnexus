@@ -93,3 +93,33 @@ export type ColumnDefinition = {
     nullable: boolean;
     primaryKey: boolean;
 };
+
+/**
+ * Extract table name from a SQL query
+ * Handles: SELECT ... FROM table, INSERT INTO table, UPDATE table, DELETE FROM table
+ * Returns { schema, table } or null if not found
+ */
+export function extractTableFromQuery(sql: string): { schema?: string; table: string } | null {
+    const normalized = sql.replace(/\s+/g, ' ').trim();
+    
+    // Match patterns like: FROM schema.table, FROM "schema"."table", FROM `schema`.`table`, FROM table
+    // Also handles: INSERT INTO, UPDATE, DELETE FROM
+    const patterns = [
+        /\bFROM\s+(?:["'`]?(\w+)["'`]?\.)?["'`]?(\w+)["'`]?/i,
+        /\bINTO\s+(?:["'`]?(\w+)["'`]?\.)?["'`]?(\w+)["'`]?/i,
+        /\bUPDATE\s+(?:["'`]?(\w+)["'`]?\.)?["'`]?(\w+)["'`]?/i,
+    ];
+    
+    for (const pattern of patterns) {
+        const match = normalized.match(pattern);
+        if (match) {
+            const schema = match[1];
+            const table = match[2];
+            if (table) {
+                return schema ? { schema, table } : { table };
+            }
+        }
+    }
+    
+    return null;
+}

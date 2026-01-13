@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -66,6 +66,7 @@ import {
     formatBytes,
     quoteIdentifier,
     buildTableName,
+    extractTableFromQuery,
 } from './utils';
 
 export function QueryPage() {
@@ -153,6 +154,9 @@ export function QueryPage() {
     const [savedQueriesOpen, setSavedQueriesOpen] = useState(false);
     const [saveQueryOpen, setSaveQueryOpen] = useState(false);
     const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
+
+    // Track last executed query for table selection
+    const lastExecutedQueryRef = useRef<string>('');
 
     // Restore from shared store or persisted state on mount if no URL params
     useEffect(() => {
@@ -395,12 +399,36 @@ export function QueryPage() {
     const executeMutation = useMutation({
         mutationFn: async ({ query, confirmed }: { query: string; confirmed?: boolean }) => {
             if (!selectedConnectionId) throw new Error('No connection selected');
+            lastExecutedQueryRef.current = query;
             return queriesApi.execute(selectedConnectionId, query, confirmed);
         },
         onSuccess: (data) => {
             setResult(data);
             setError(null);
             setConfirmDangerous(null);
+            // Switch to Data tab to show results
+            setActiveTab(0);
+            updateUrl({ tab: 0 });
+            
+            // Try to select the table from the query
+            const tableInfo = extractTableFromQuery(lastExecutedQueryRef.current);
+            if (tableInfo && tables.length > 0) {
+                const matchingTable = tables.find(t => {
+                    const tableMatch = t.name.toLowerCase() === tableInfo.table.toLowerCase();
+                    if (tableInfo.schema) {
+                        return tableMatch && t.schema.toLowerCase() === tableInfo.schema.toLowerCase();
+                    }
+                    // If no schema in query, match any table with that name (prefer current schema)
+                    return tableMatch;
+                });
+                if (matchingTable && matchingTable.name !== selectedTable?.name) {
+                    setSelectedTable(matchingTable);
+                    setSelectedSchema(matchingTable.schema);
+                    setSchemasExpanded(prev => ({ ...prev, [matchingTable.schema]: true }));
+                    updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
+                }
+            }
+            
             if (historyOpen) {
                 refetchHistory();
             }
