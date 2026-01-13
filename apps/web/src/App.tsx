@@ -6,6 +6,7 @@ import { QueryPage } from './pages/QueryPage';
 import { SchemaPage } from './pages/SchemaPage';
 import { GroupSyncPage } from './pages/GroupSyncPage';
 import { ComparePage } from './pages/ComparePage';
+import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
                 <Route path="schema/:connectionId" element={<SchemaPage />} />
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="compare" element={<ComparePage />} />
+                <Route path="logs" element={<LogsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>
         </Routes>

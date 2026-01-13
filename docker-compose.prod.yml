@@ -2,43 +2,42 @@
 # Usage: docker-compose -f docker-compose.prod.yml up -d
 
 services:
-    dbnexus:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        image: dbnexus:latest
-        container_name: dbnexus
-        restart: unless-stopped
-        ports:
-            - '3001:3001'
-        volumes:
-            # Persist connection configs and metadata
-            - dbnexus-data:/app/data
-        environment:
-            - NODE_ENV=production
-            - PORT=3001
-            - DBNEXUS_DATA_DIR=/app/data
-        healthcheck:
-            test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/api/health']
-            interval: 30s
-            timeout: 10s
-            start-period: 10s
-            retries: 3
-
-    # Optional: Nginx reverse proxy with SSL
-    # nginx:
-    #   image: nginx:alpine
-    #   container_name: dbnexus-nginx
-    #   restart: unless-stopped
-    #   ports:
-    #     - "80:80"
-    #     - "443:443"
-    #   volumes:
-    #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    #     - ./certs:/etc/nginx/certs:ro
-    #   depends_on:
-    #     - dbnexus
+  dbnexus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dbnexus:latest
+    container_name: dbnexus
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    volumes:
+      # Persist connection configs and metadata
+      - dbnexus-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DBNEXUS_DATA_DIR=/app/data
+    healthcheck:
+      test: [ 'CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/api/health' ]
+      interval: 30s
+      timeout: 10s
+      start-period: 10s
+      retries: 3
+  # Optional: Nginx reverse proxy with SSL
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: dbnexus-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - dbnexus
 
 volumes:
-    dbnexus-data:
-        driver: local
+  dbnexus-data:
+    driver: local

@@ -27,6 +27,7 @@ import LayersIcon from '@mui/icons-material/Layers';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import HistoryIcon from '@mui/icons-material/History';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi } from '../lib/api';
@@ -60,6 +61,7 @@ const navItems = [
     { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
     { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },
+    { to: '/logs', icon: <HistoryIcon />, label: 'Logs' },
 ];
 
 export function Layout() {
