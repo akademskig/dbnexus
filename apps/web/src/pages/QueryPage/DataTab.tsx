@@ -14,6 +14,10 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
 } from '@mui/material';
 import {
     DataGrid,
@@ -35,8 +39,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
+import DownloadIcon from '@mui/icons-material/Download';
 import type { QueryResult, TableSchema } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
+import { useToastStore } from '../../stores/toastStore';
 
 interface DataTabProps {
     readonly result: QueryResult | null;
@@ -80,6 +86,8 @@ export function DataTab({
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [deleteConfirmRow, setDeleteConfirmRow] = useState<Record<string, unknown> | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
+    const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+    const toast = useToastStore();
 
     // Get primary key columns for identifying rows
     const primaryKeyColumns =
@@ -248,6 +256,55 @@ export function DataTab({
         if (selectedRows.length > 0 && onSyncRow) {
             onSyncRow(selectedRows);
         }
+    };
+
+    // Export functions
+    const exportToCSV = () => {
+        if (!result || result.rows.length === 0) return;
+
+        const headers = result.columns.map((c) => c.name);
+        const csvRows = [
+            headers.join(','),
+            ...result.rows.map((row) =>
+                headers
+                    .map((h) => {
+                        const val = row[h];
+                        if (val === null || val === undefined) return '';
+                        if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+                        const str = String(val);
+                        // Escape quotes and wrap in quotes if contains comma, newline, or quote
+                        if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+                            return `"${str.replace(/"/g, '""')}"`;
+                        }
+                        return str;
+                    })
+                    .join(',')
+            ),
+        ];
+
+        const csvContent = csvRows.join('\n');
+        downloadFile(csvContent, 'query-results.csv', 'text/csv');
+        toast.success('Exported to CSV');
+    };
+
+    const exportToJSON = () => {
+        if (!result || result.rows.length === 0) return;
+
+        const jsonContent = JSON.stringify(result.rows, null, 2);
+        downloadFile(jsonContent, 'query-results.json', 'application/json');
+        toast.success('Exported to JSON');
+    };
+
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -453,6 +510,48 @@ export function DataTab({
 
                         {/* Spacer */}
                         <Box sx={{ flex: 1 }} />
+
+                        {/* Export button */}
+                        {result.rows.length > 0 && (
+                            <>
+                                <Tooltip title="Export data">
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                                    >
+                                        <DownloadIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                                <Menu
+                                    anchorEl={exportMenuAnchor}
+                                    open={Boolean(exportMenuAnchor)}
+                                    onClose={() => setExportMenuAnchor(null)}
+                                >
+                                    <MenuItem
+                                        onClick={() => {
+                                            exportToCSV();
+                                            setExportMenuAnchor(null);
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <DownloadIcon fontSize="small" />
+                                        </ListItemIcon>
+                                        <ListItemText>Export as CSV</ListItemText>
+                                    </MenuItem>
+                                    <MenuItem
+                                        onClick={() => {
+                                            exportToJSON();
+                                            setExportMenuAnchor(null);
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <DownloadIcon fontSize="small" />
+                                        </ListItemIcon>
+                                        <ListItemText>Export as JSON</ListItemText>
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        )}
 
                         {/* Right side: Search (always visible) */}
                         <TextField
