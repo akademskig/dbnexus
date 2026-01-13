@@ -21,6 +21,7 @@ import {
     Search as SearchIcon,
     Clear as ClearIcon,
     ArrowForward as ArrowIcon,
+    Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -209,7 +210,7 @@ export function MigrationHistoryTab() {
                             size="small"
                             onClick={() => setSelectedMigration(params.row)}
                         >
-                            <SearchIcon sx={{ fontSize: 16 }} />
+                            <ViewIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">

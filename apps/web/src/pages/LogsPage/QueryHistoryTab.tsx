@@ -25,6 +25,7 @@ import {
     PlayArrow as PlayIcon,
     Search as SearchIcon,
     Clear as ClearIcon,
+    Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -251,7 +252,7 @@ export function QueryHistoryTab() {
                     </Tooltip>
                     <Tooltip title="View Details">
                         <IconButton size="small" onClick={() => setSelectedEntry(params.row)}>
-                            <SearchIcon sx={{ fontSize: 16 }} />
+                            <ViewIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                     </Tooltip>
                 </Box>
