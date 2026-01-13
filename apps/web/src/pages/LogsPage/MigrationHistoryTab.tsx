@@ -387,7 +387,33 @@ export function MigrationHistoryTab() {
                             )}
 
                             {!selectedMigration.success && selectedMigration.error && (
-                                <Alert severity="error">{selectedMigration.error}</Alert>
+                                <Alert 
+                                    severity="error"
+                                    sx={{
+                                        '& .MuiAlert-message': {
+                                            width: '100%',
+                                        },
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                        Error Details
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            fontFamily: 'monospace',
+                                            fontSize: 12,
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            maxHeight: 200,
+                                            overflow: 'auto',
+                                            bgcolor: 'rgba(0,0,0,0.1)',
+                                            p: 1.5,
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {selectedMigration.error}
+                                    </Box>
+                                </Alert>
                             )}
 
                             <Box>
