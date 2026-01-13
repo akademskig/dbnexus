@@ -5,7 +5,6 @@ import {
     Box,
     Typography,
     Button,
-    CircularProgress,
     Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,6 +14,7 @@ import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
@@ -193,9 +193,7 @@ export function ConnectionsPage() {
 
             {/* Content */}
             {isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                    <CircularProgress />
-                </Box>
+                <LoadingState message="Loading connections..." size="large" />
             ) : connections.length === 0 && projects.length === 0 ? (
                 <GlassCard>
                     <EmptyState

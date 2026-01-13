@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Button, IconButton } from '@mui/material';
 import {
     Add as AddIcon,
     Refresh as RefreshIcon,
@@ -26,6 +26,7 @@ import { ConnectionRow } from './ConnectionRow';
 import { ActivityItem } from './ActivityItem';
 import { SyncGroupRow } from './SyncGroupRow';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -287,9 +288,7 @@ export function DashboardPage() {
                             <Box />
                         </Box>
                         {loading ? (
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
-                            </Box>
+                            <LoadingState size="small" />
                         ) : connections.length === 0 ? (
                             <EmptyState
                                 icon={<StorageIcon />}
@@ -340,9 +339,7 @@ export function DashboardPage() {
                             )}
                         </Box>
                         {loading ? (
-                            <Box sx={{ py: 4, textAlign: 'center' }}>
-                                <CircularProgress size={24} sx={{ color: 'text.disabled' }} />
-                            </Box>
+                            <LoadingState size="small" />
                         ) : history.length === 0 ? (
                             <EmptyState
                                 icon={<HistoryIcon />}

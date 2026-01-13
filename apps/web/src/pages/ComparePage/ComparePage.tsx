@@ -20,6 +20,7 @@ import { ConnectionSelector } from './ConnectionSelector';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import { getDefaultSchema } from './utils';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 
 export function ComparePage() {
     const queryClient = useQueryClient();
@@ -272,12 +273,7 @@ export function ComparePage() {
                     </Box>
 
                     {loadingDiff ? (
-                        <Box sx={{ py: 4, textAlign: 'center' }}>
-                            <CircularProgress size={32} />
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                                Comparing schemas...
-                            </Typography>
-                        </Box>
+                        <LoadingState message="Comparing schemas..." size="medium" />
                     ) : schemaDiff ? (
                         <SchemaDiffDisplay
                             diff={schemaDiff}
