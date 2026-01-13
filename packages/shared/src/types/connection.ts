@@ -88,8 +88,11 @@ export interface InstanceGroupTargetStatus {
     connectionName: string;
     schemaStatus: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked';
     schemaDiffCount?: number;
+    schemaDiff?: import('./schema.js').SchemaDiff; // Full schema diff data
+    migrationSql?: string[]; // Migration SQL statements
     dataStatus: 'in_sync' | 'out_of_sync' | 'error' | 'unchecked';
     dataDiffSummary?: string;
+    dataDiff?: { table: string; sourceCount: number; targetCount: number; missingInTarget: number; missingInSource: number }[]; // Full data diff
     error?: string;
 }
 

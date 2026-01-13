@@ -329,48 +329,9 @@ function TargetRow({
     // Show diff when expanded and schema sync is enabled
     const showDiff = expanded && group.syncSchema;
 
-    // Fetch schema diff when expanded and diff is requested
-    // Cache for 5 minutes to avoid repeated API calls
-    const { data: schemaDiff, isLoading: loadingDiff } = useQuery({
-        queryKey: [
-            'schemaDiff',
-            sourceConnectionId,
-            target.connectionId,
-            sourceSchema,
-            targetSchema,
-        ],
-        queryFn: () =>
-            schemaApi.compareSchemasApi(
-                sourceConnectionId,
-                target.connectionId,
-                sourceSchema,
-                targetSchema
-            ),
-        enabled: showDiff && !!sourceConnectionId,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    });
-
-    // Fetch migration SQL
-    const { data: migrationSqlData } = useQuery({
-        queryKey: [
-            'migrationSql',
-            sourceConnectionId,
-            target.connectionId,
-            sourceSchema,
-            targetSchema,
-        ],
-        queryFn: () =>
-            schemaApi.getMigrationSql(
-                sourceConnectionId,
-                target.connectionId,
-                sourceSchema,
-                targetSchema
-            ),
-        enabled: showDiff && !!sourceConnectionId && !!schemaDiff,
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
-    });
+    // Use schema diff data from the status response (no separate API call needed!)
+    const schemaDiff = target.schemaDiff;
+    const migrationSql = target.migrationSql || [];
 
     const handleApplyMigration = async () => {
         setApplying(true);
@@ -441,12 +402,9 @@ function TargetRow({
                                 startIcon={<RefreshIcon />}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    // Invalidate the cache to force refetch
+                                    // Invalidate the status cache to force refetch (includes diff data)
                                     queryClient.invalidateQueries({
-                                        queryKey: ['schemaDiff', sourceConnectionId, target.connectionId],
-                                    });
-                                    queryClient.invalidateQueries({
-                                        queryKey: ['migrationSql', sourceConnectionId, target.connectionId],
+                                        queryKey: ['groupSyncStatus'],
                                     });
                                     // Expand if not already
                                     if (!expanded) setExpanded(true);
@@ -481,29 +439,20 @@ function TargetRow({
                                 </Alert>
                             )}
 
-                            {/* Inline Schema Diff */}
+                            {/* Inline Schema Diff - data comes from status response */}
                             {showDiff && (
                                 <Box sx={{ mb: 2 }}>
-                                    {loadingDiff ? (
-                                        <Box sx={{ py: 4, textAlign: 'center' }}>
-                                            <CircularProgress size={24} />
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                                sx={{ mt: 1 }}
-                                            >
-                                                Loading schema diff...
-                                            </Typography>
-                                        </Box>
-                                    ) : schemaDiff ? (
+                                    {schemaDiff ? (
                                         <SchemaDiffDisplay
                                             diff={schemaDiff}
-                                            migrationSql={migrationSqlData?.sql || []}
+                                            migrationSql={migrationSql}
                                             onApplyMigration={handleApplyMigration}
                                             applying={applying}
                                         />
                                     ) : (
-                                        <Alert severity="info">Unable to load schema diff</Alert>
+                                        <Alert severity="info">
+                                            Schema is in sync or diff data not available. Click "Recheck" to refresh.
+                                        </Alert>
                                     )}
                                 </Box>
                             )}
@@ -1013,12 +962,16 @@ export function GroupSyncPage() {
             return result;
         },
         enabled: !!groupId && !!group?.sourceConnectionId,
-        // Auto-refresh every 10 minutes
+        // Auto-refresh every 10 minutes in background
         refetchInterval: 10 * 60 * 1000, // 10 minutes
-        refetchOnMount: true,
+        refetchIntervalInBackground: true, // Keep refreshing even when tab is not focused
+        // Don't refetch on mount or window focus - use cached data
+        refetchOnMount: false,
         refetchOnWindowFocus: false,
-        staleTime: 5 * 60 * 1000, // Consider stale after 5 minutes
-        gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+        refetchOnReconnect: false,
+        // Keep data fresh for a long time - only background interval updates it
+        staleTime: Infinity, // Never consider stale (only manual refresh or interval)
+        gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
     });
 
     // Update lastCheckedAt when data is updated

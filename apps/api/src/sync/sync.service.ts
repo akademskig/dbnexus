@@ -145,7 +145,7 @@ export class SyncService {
     }
 
     /**
-     * Check sync status for a single target
+     * Check sync status for a single target - includes full diff data
      */
     private async checkTargetStatus(
         group: InstanceGroup,
@@ -186,6 +186,15 @@ export class SyncService {
                 } else {
                     status.schemaStatus = 'out_of_sync';
                     status.schemaDiffCount = schemaDiff.items.length;
+                    // Include full schema diff data
+                    status.schemaDiff = schemaDiff;
+                    // Generate migration SQL from the diff
+                    try {
+                        const migrationSql = this.schemaDiffService.getMigrationSql(schemaDiff);
+                        status.migrationSql = migrationSql;
+                    } catch (sqlError) {
+                        this.logger.warn(`Failed to generate migration SQL: ${sqlError}`);
+                    }
                 }
             } catch (error) {
                 status.schemaStatus = 'error';
@@ -208,6 +217,14 @@ export class SyncService {
                     status.dataStatus = 'out_of_sync';
                     status.dataDiffSummary = `${outOfSync.length} table(s) out of sync`;
                 }
+                // Include full data diff
+                status.dataDiff = dataDiff.map((d) => ({
+                    table: d.table,
+                    sourceCount: d.sourceCount,
+                    targetCount: d.targetCount,
+                    missingInTarget: d.missingInTarget,
+                    missingInSource: d.missingInSource,
+                }));
             } catch (error) {
                 status.dataStatus = 'error';
                 status.error =
