@@ -10,6 +10,12 @@ import {
     TextField,
     IconButton,
     Chip,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
 } from '@mui/material';
 import {
     RestartAlt as ResetIcon,
@@ -20,10 +26,12 @@ import {
     Close as CloseIcon,
     LightMode as LightModeIcon,
     DarkMode as DarkModeIcon,
+    Keyboard as KeyboardIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
 import { useThemeModeStore } from '../stores/themeModeStore';
+import { KEYBOARD_SHORTCUTS, formatShortcut } from '../hooks/useKeyboardShortcuts';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -440,6 +448,99 @@ function TagsTab() {
     );
 }
 
+// Keyboard Shortcuts Tab Content
+function KeyboardShortcutsTab() {
+    const queryShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'query');
+    const navigationShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'navigation');
+    const generalShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'general');
+
+    const ShortcutTable = ({
+        title,
+        shortcuts,
+    }: {
+        title: string;
+        shortcuts: typeof KEYBOARD_SHORTCUTS;
+    }) => (
+        <Box sx={{ mb: 4 }}>
+            <Typography
+                variant="subtitle2"
+                sx={{ color: 'text.secondary', mb: 1.5, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}
+            >
+                {title}
+            </Typography>
+            <TableContainer>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 600, width: 150 }}>Shortcut</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Action</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {shortcuts.map((shortcut, index) => (
+                            <TableRow key={index} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                                <TableCell>
+                                    <Box
+                                        sx={{
+                                            display: 'inline-flex',
+                                            gap: 0.5,
+                                            fontFamily: 'monospace',
+                                            fontSize: 12,
+                                        }}
+                                    >
+                                        {formatShortcut(shortcut).split('+').map((part, i) => (
+                                            <Box
+                                                key={i}
+                                                component="kbd"
+                                                sx={{
+                                                    px: 1,
+                                                    py: 0.25,
+                                                    bgcolor: 'action.hover',
+                                                    border: 1,
+                                                    borderColor: 'divider',
+                                                    borderRadius: 0.5,
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                    minWidth: 24,
+                                                    textAlign: 'center',
+                                                }}
+                                            >
+                                                {part}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2">{shortcut.description}</Typography>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
+    );
+
+    return (
+        <GlassCard>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                <KeyboardIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    Keyboard Shortcuts
+                </Typography>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
+                Use these keyboard shortcuts to navigate and work faster. On Mac, use ⌘ (Command) instead of Ctrl.
+            </Typography>
+
+            <ShortcutTable title="Query Editor" shortcuts={queryShortcuts} />
+            <ShortcutTable title="Navigation" shortcuts={navigationShortcuts} />
+            <ShortcutTable title="General" shortcuts={generalShortcuts} />
+        </GlassCard>
+    );
+}
+
 // Main Settings Page
 export function SettingsPage() {
     const [tab, setTab] = useState(0);
@@ -486,11 +587,13 @@ export function SettingsPage() {
                 >
                     <Tab label="Appearance" />
                     <Tab label="Tags" />
+                    <Tab label="Keyboard Shortcuts" />
                 </Tabs>
 
                 {/* Tab Content */}
                 {tab === 0 && <AppearanceTab />}
                 {tab === 1 && <TagsTab />}
+                {tab === 2 && <KeyboardShortcutsTab />}
             </Box>
         </Box>
     );

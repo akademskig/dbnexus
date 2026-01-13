@@ -313,7 +313,7 @@ export function DataTab({
 
         const csvContent = csvRows.join('\n');
         downloadFile(csvContent, getExportFilename('csv'), 'text/csv');
-        const msg = selectedRowIds.length > 0 
+        const msg = selectedRowIds.length > 0
             ? `Exported ${rowsToExport.length} selected row(s) to CSV`
             : 'Exported to CSV';
         toast.success(msg);
@@ -327,7 +327,7 @@ export function DataTab({
 
         const jsonContent = JSON.stringify(rowsToExport, null, 2);
         downloadFile(jsonContent, getExportFilename('json'), 'application/json');
-        const msg = selectedRowIds.length > 0 
+        const msg = selectedRowIds.length > 0
             ? `Exported ${rowsToExport.length} selected row(s) to JSON`
             : 'Exported to JSON';
         toast.success(msg);

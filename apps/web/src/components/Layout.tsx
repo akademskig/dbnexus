@@ -34,6 +34,7 @@ import { persist } from 'zustand/middleware';
 import { groupsApi } from '../lib/api';
 import { themeColors } from '../theme';
 import type { DatabaseGroup } from '@dbnexus/shared';
+import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -77,6 +78,9 @@ export function Layout() {
     const [groups, setGroups] = useState<DatabaseGroup[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(true);
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
+
+    // Register global navigation shortcuts
+    useNavigationShortcuts(navigate);
 
     useEffect(() => {
         groupsApi
