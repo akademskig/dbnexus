@@ -46,7 +46,8 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import WarningIcon from '@mui/icons-material/Warning';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
@@ -55,7 +56,8 @@ import { TableListItem } from './TableListItem';
 import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
-import { CreateTableDialog, AddRowDialog, SyncRowDialog } from './Dialogs';
+import { SavedQueriesPanel } from './SavedQueriesPanel';
+import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import {
     SIDEBAR_WIDTH,
@@ -146,6 +148,11 @@ export function QueryPage() {
     // Row sync state
     const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
     const [rowsToSync, setRowsToSync] = useState<Record<string, unknown>[]>([]);
+
+    // Saved queries state
+    const [savedQueriesOpen, setSavedQueriesOpen] = useState(false);
+    const [saveQueryOpen, setSaveQueryOpen] = useState(false);
+    const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
 
     // Restore from shared store or persisted state on mount if no URL params
     useEffect(() => {
@@ -305,6 +312,41 @@ export function QueryPage() {
         },
     });
 
+    // Saved queries
+    const { data: savedQueries = [], refetch: refetchSavedQueries } = useQuery({
+        queryKey: ['savedQueries'],
+        queryFn: () => queriesApi.getSaved(),
+        enabled: savedQueriesOpen,
+    });
+
+    // Save query mutation
+    const saveQueryMutation = useMutation({
+        mutationFn: (input: { name: string; sql: string; connectionId?: string }) =>
+            editingQuery
+                ? queriesApi.updateSaved(editingQuery.id, input)
+                : queriesApi.createSaved(input),
+        onSuccess: () => {
+            refetchSavedQueries();
+            toast.success(editingQuery ? 'Query updated' : 'Query saved');
+            setEditingQuery(null);
+        },
+        onError: () => {
+            toast.error('Failed to save query');
+        },
+    });
+
+    // Delete saved query mutation
+    const deleteQueryMutation = useMutation({
+        mutationFn: (id: string) => queriesApi.deleteSaved(id),
+        onSuccess: () => {
+            refetchSavedQueries();
+            toast.success('Query deleted');
+        },
+        onError: () => {
+            toast.error('Failed to delete query');
+        },
+    });
+
     // Set default schema when schemas load
     useEffect(() => {
         if (schemas.length > 0 && !selectedSchema) {
@@ -419,8 +461,14 @@ export function QueryPage() {
                 e.preventDefault();
                 handleExecute();
             }
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                if (sql.trim()) {
+                    setSaveQueryOpen(true);
+                }
+            }
         },
-        [handleExecute]
+        [handleExecute, sql]
     );
 
     // Fetch data with pagination and optional search
@@ -930,6 +978,16 @@ export function QueryPage() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <Tooltip title="Saved Queries">
+                    <IconButton
+                        size="small"
+                        onClick={() => setSavedQueriesOpen(true)}
+                        color={savedQueriesOpen ? 'primary' : 'default'}
+                    >
+                        <BookmarkIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+
                 <Tooltip title="Query History">
                     <IconButton
                         size="small"
@@ -1404,6 +1462,7 @@ export function QueryPage() {
                                         sql={sql}
                                         onSqlChange={setSql}
                                         onExecute={handleExecute}
+                                        onSave={() => setSaveQueryOpen(true)}
                                         onKeyDown={handleKeyDown}
                                         loading={executeMutation.isPending}
                                     />
@@ -1513,6 +1572,63 @@ export function QueryPage() {
                     tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || []
                 }
                 connections={connections}
+            />
+
+            {/* Saved Queries Drawer */}
+            <Drawer
+                anchor="right"
+                open={savedQueriesOpen}
+                onClose={() => setSavedQueriesOpen(false)}
+                PaperProps={{
+                    sx: { width: 420, bgcolor: 'background.default' },
+                }}
+            >
+                <SavedQueriesPanel
+                    queries={savedQueries}
+                    connections={connections}
+                    onSelect={(query) => {
+                        setSql(query.sql);
+                        if (query.connectionId && query.connectionId !== selectedConnectionId) {
+                            handleConnectionChange(query.connectionId);
+                        }
+                        handleTabChange(4);
+                        setSavedQueriesOpen(false);
+                    }}
+                    onRun={(query) => {
+                        setSql(query.sql);
+                        if (query.connectionId && query.connectionId !== selectedConnectionId) {
+                            handleConnectionChange(query.connectionId);
+                        }
+                        handleTabChange(4);
+                        setSavedQueriesOpen(false);
+                        setTimeout(() => {
+                            executeMutation.mutate({ query: query.sql });
+                        }, 100);
+                    }}
+                    onEdit={(query) => {
+                        setEditingQuery(query);
+                        setSaveQueryOpen(true);
+                    }}
+                    onDelete={(query) => {
+                        deleteQueryMutation.mutate(query.id);
+                    }}
+                    onClose={() => setSavedQueriesOpen(false)}
+                    onRefresh={() => refetchSavedQueries()}
+                />
+            </Drawer>
+
+            {/* Save Query Dialog */}
+            <SaveQueryDialog
+                open={saveQueryOpen}
+                onClose={() => {
+                    setSaveQueryOpen(false);
+                    setEditingQuery(null);
+                }}
+                onSave={(input) => saveQueryMutation.mutate(input)}
+                sql={editingQuery?.sql || sql}
+                connectionId={selectedConnectionId}
+                connections={connections}
+                editingQuery={editingQuery}
             />
         </Box>
     );

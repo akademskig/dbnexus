@@ -18,15 +18,18 @@ import {
     IconButton,
     Alert,
     CircularProgress,
+    FormControlLabel,
+    Checkbox,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyIcon from '@mui/icons-material/Key';
 import StorageIcon from '@mui/icons-material/Storage';
 import SyncIcon from '@mui/icons-material/Sync';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import { schemaApi, syncApi } from '../../lib/api';
 import { COMMON_TYPES, type ColumnDefinition } from './utils';
-import type { ConnectionConfig } from '@dbnexus/shared';
+import type { ConnectionConfig, SavedQuery } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 
 // ============ Create Table Dialog ============
@@ -606,6 +609,165 @@ export function SyncRowDialog({
                         {syncing ? 'Syncing...' : 'Sync'}
                     </Button>
                 )}
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// ============ Save Query Dialog ============
+
+interface SaveQueryDialogProps {
+    readonly open: boolean;
+    readonly onClose: () => void;
+    readonly onSave: (input: { name: string; sql: string; connectionId?: string }) => void;
+    readonly sql: string;
+    readonly connectionId?: string;
+    readonly connections: ConnectionConfig[];
+    readonly editingQuery?: SavedQuery | null;
+}
+
+export function SaveQueryDialog({
+    open,
+    onClose,
+    onSave,
+    sql,
+    connectionId,
+    connections,
+    editingQuery,
+}: SaveQueryDialogProps) {
+    const [name, setName] = useState('');
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
+    const [bindToConnection, setBindToConnection] = useState(false);
+
+    // Initialize form when dialog opens or editing query changes
+    useEffect(() => {
+        if (open) {
+            if (editingQuery) {
+                setName(editingQuery.name);
+                setSelectedConnectionId(editingQuery.connectionId || '');
+                setBindToConnection(!!editingQuery.connectionId);
+            } else {
+                setName('');
+                setSelectedConnectionId(connectionId || '');
+                setBindToConnection(false);
+            }
+        }
+    }, [open, editingQuery, connectionId]);
+
+    const handleClose = () => {
+        setName('');
+        setSelectedConnectionId('');
+        setBindToConnection(false);
+        onClose();
+    };
+
+    const handleSave = () => {
+        if (!name.trim()) return;
+        onSave({
+            name: name.trim(),
+            sql,
+            connectionId: bindToConnection ? selectedConnectionId : undefined,
+        });
+        handleClose();
+    };
+
+    const isEditing = !!editingQuery;
+
+    return (
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BookmarkIcon color="primary" />
+                {isEditing ? 'Edit Saved Query' : 'Save Query'}
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    <TextField
+                        label="Query Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        fullWidth
+                        size="small"
+                        autoFocus
+                        placeholder="e.g., Get active users, Monthly report"
+                        helperText="Give your query a descriptive name"
+                    />
+
+                    {/* SQL Preview */}
+                    <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                            SQL Query
+                        </Typography>
+                        <Box
+                            sx={{
+                                bgcolor: 'action.hover',
+                                p: 1.5,
+                                borderRadius: 1,
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                maxHeight: 150,
+                                overflow: 'auto',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-all',
+                            }}
+                        >
+                            {sql || '(empty query)'}
+                        </Box>
+                    </Box>
+
+                    {/* Connection binding */}
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={bindToConnection}
+                                onChange={(e) => setBindToConnection(e.target.checked)}
+                            />
+                        }
+                        label="Bind to specific connection"
+                    />
+
+                    {bindToConnection && (
+                        <FormControl fullWidth size="small">
+                            <InputLabel>Connection</InputLabel>
+                            <Select
+                                value={selectedConnectionId}
+                                onChange={(e) => setSelectedConnectionId(e.target.value)}
+                                label="Connection"
+                            >
+                                {connections.map((conn) => (
+                                    <MenuItem key={conn.id} value={conn.id}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
+                                            {conn.name}
+                                            <Chip
+                                                label={conn.engine}
+                                                size="small"
+                                                sx={{ ml: 'auto', height: 18, fontSize: 10 }}
+                                            />
+                                        </Box>
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {bindToConnection && (
+                        <Typography variant="caption" color="text.secondary">
+                            When bound to a connection, this query will automatically switch to that
+                            connection when loaded.
+                        </Typography>
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={!name.trim() || !sql.trim()}
+                    startIcon={<BookmarkIcon />}
+                >
+                    {isEditing ? 'Update' : 'Save'}
+                </Button>
             </DialogActions>
         </Dialog>
     );

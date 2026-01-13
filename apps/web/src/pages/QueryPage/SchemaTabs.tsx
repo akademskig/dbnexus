@@ -11,11 +11,13 @@ import {
     LinearProgress,
     CircularProgress,
     Button,
+    Tooltip,
 } from '@mui/material';
 import Editor from '@monaco-editor/react';
 import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import type { TableSchema } from '@dbnexus/shared';
 
 interface SchemaTabProps {
@@ -321,11 +323,12 @@ interface SqlTabProps {
     readonly sql: string;
     readonly onSqlChange: (sql: string) => void;
     readonly onExecute: () => void;
+    readonly onSave?: () => void;
     readonly onKeyDown: (e: React.KeyboardEvent) => void;
     readonly loading: boolean;
 }
 
-export function SqlTab({ sql, onSqlChange, onExecute, onKeyDown, loading }: SqlTabProps) {
+export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading }: SqlTabProps) {
     return (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1 }} onKeyDown={onKeyDown}>
@@ -360,19 +363,34 @@ export function SqlTab({ sql, onSqlChange, onExecute, onKeyDown, loading }: SqlT
                 }}
             >
                 <Typography variant="caption" color="text.secondary">
-                    Press ⌘+Enter to execute
+                    Press ⌘+Enter to execute • ⌘+S to save
                 </Typography>
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={
-                        loading ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />
-                    }
-                    onClick={onExecute}
-                    disabled={!sql.trim() || loading}
-                >
-                    Run Query
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    {onSave && (
+                        <Tooltip title="Save Query (⌘+S)">
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<BookmarkBorderIcon />}
+                                onClick={onSave}
+                                disabled={!sql.trim()}
+                            >
+                                Save
+                            </Button>
+                        </Tooltip>
+                    )}
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={
+                            loading ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />
+                        }
+                        onClick={onExecute}
+                        disabled={!sql.trim() || loading}
+                    >
+                        Run Query
+                    </Button>
+                </Box>
             </Box>
         </Box>
     );
