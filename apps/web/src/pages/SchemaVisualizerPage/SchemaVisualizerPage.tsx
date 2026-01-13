@@ -254,25 +254,14 @@ export function SchemaVisualizerPage() {
         setConnectionAndSchema,
     } = useConnectionStore();
 
-    // Get URL params
+    // Get URL params - these are the source of truth on page load
     const urlConnectionId = searchParams.get('connection') || '';
     const urlSchema = searchParams.get('schema') || '';
 
-    // Local state for connection and schema
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
-    const [selectedSchema, setSelectedSchema] = useState<string>('');
-
-    // Initialize from URL or store on mount and when URL changes
-    useEffect(() => {
-        const connId = urlConnectionId || storeConnectionId;
-        const schema = urlSchema || storeSchema;
-        if (connId) {
-            setSelectedConnectionId(connId);
-        }
-        if (schema) {
-            setSelectedSchema(schema);
-        }
-    }, [urlConnectionId, urlSchema, storeConnectionId, storeSchema]);
+    // Use URL params directly as the selected values (they're always current)
+    // Fall back to store values if URL params are empty
+    const selectedConnectionId = urlConnectionId || storeConnectionId;
+    const selectedSchema = urlSchema || storeSchema;
 
     // Fetch connections
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
@@ -289,30 +278,23 @@ export function SchemaVisualizerPage() {
         enabled: !!selectedConnectionId,
     });
 
-    // Update URL when local state changes
+    // Sync to shared store when selection changes
     useEffect(() => {
         if (selectedConnectionId) {
-            const params: Record<string, string> = { connection: selectedConnectionId };
-            if (selectedSchema) {
-                params.schema = selectedSchema;
-            }
-            setSearchParams(params, { replace: true });
-            // Sync to shared store
             setConnectionAndSchema(selectedConnectionId, selectedSchema);
-        } else {
-            setSearchParams({}, { replace: true });
         }
-    }, [selectedConnectionId, selectedSchema, setSearchParams, setConnectionAndSchema]);
+    }, [selectedConnectionId, selectedSchema, setConnectionAndSchema]);
 
     // Auto-select default schema when schemas load and no schema is selected
     useEffect(() => {
         if (selectedConnectionId && schemas.length > 0 && !selectedSchema) {
             const defaultSchema = getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
             if (defaultSchema) {
-                setSelectedSchema(defaultSchema);
+                // Update URL with default schema
+                setSearchParams({ connection: selectedConnectionId, schema: defaultSchema }, { replace: true });
             }
         }
-    }, [selectedConnectionId, schemas, selectedSchema, selectedConnection?.engine, selectedConnection?.database]);
+    }, [selectedConnectionId, schemas, selectedSchema, selectedConnection?.engine, selectedConnection?.database, setSearchParams]);
 
     // Fetch tables
     const {
@@ -371,18 +353,23 @@ export function SchemaVisualizerPage() {
         setEdges(graphData.edges);
     }, [graphData, setNodes, setEdges]);
 
-    // Handle connection change
+    // Handle connection change - update URL (which updates selectedConnectionId)
     const handleConnectionChange = useCallback((connectionId: string) => {
         setNodes([]);
         setEdges([]);
-        setSelectedConnectionId(connectionId);
-        setSelectedSchema(''); // Reset schema when connection changes
-    }, [setNodes, setEdges]);
+        if (connectionId) {
+            setSearchParams({ connection: connectionId }, { replace: true });
+        } else {
+            setSearchParams({}, { replace: true });
+        }
+    }, [setNodes, setEdges, setSearchParams]);
 
-    // Handle schema change
+    // Handle schema change - update URL (which updates selectedSchema)
     const handleSchemaChange = useCallback((schema: string) => {
-        setSelectedSchema(schema);
-    }, []);
+        if (selectedConnectionId && schema) {
+            setSearchParams({ connection: selectedConnectionId, schema }, { replace: true });
+        }
+    }, [selectedConnectionId, setSearchParams]);
 
     const isLoading = loadingConnections || loadingTables || loadingDetails;
 

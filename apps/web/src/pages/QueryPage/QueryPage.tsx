@@ -87,25 +87,26 @@ export function QueryPage() {
     const urlTable = searchParams.get('table');
     const urlTab = searchParams.get('tab');
 
-    // Local state - start empty, will be populated by effect
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
-    const [selectedSchema, setSelectedSchema] = useState<string>('');
+    // Local state - initialized from URL, store, or persisted state
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
+        () => routeConnectionId || sharedConnectionId || lastState?.connectionId || ''
+    );
+    const [selectedSchema, setSelectedSchema] = useState<string>(
+        () => urlSchema || sharedSchema || lastState?.schema || ''
+    );
 
-    // Initialize connection and schema from URL, store, or persisted state
+    // Sync state when URL params change (e.g., navigation)
     useEffect(() => {
-        // Connection: URL route param > shared store > persisted state
-        const connId = routeConnectionId || sharedConnectionId || lastState?.connectionId || '';
-        if (connId && connId !== selectedConnectionId) {
-            setSelectedConnectionId(connId);
+        if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
+            setSelectedConnectionId(routeConnectionId);
         }
+    }, [routeConnectionId, selectedConnectionId]);
 
-        // Schema: URL param > shared store > persisted state (only if matching connection)
-        const schema = urlSchema || sharedSchema || lastState?.schema || '';
-        if (schema && schema !== selectedSchema) {
-            setSelectedSchema(schema);
+    useEffect(() => {
+        if (urlSchema && urlSchema !== selectedSchema) {
+            setSelectedSchema(urlSchema);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [routeConnectionId, urlSchema, sharedConnectionId, sharedSchema]);
+    }, [urlSchema, selectedSchema]);
 
     const getInitialTab = () => {
         if (urlTab) return getTabIndex(urlTab);
