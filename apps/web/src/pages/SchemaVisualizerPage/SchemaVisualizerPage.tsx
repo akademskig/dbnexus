@@ -33,8 +33,6 @@ import {
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
-    GridOn as GridIcon,
-    GridOff as GridOffIcon,
     AccountTree as TreeIcon,
     Hub as HubIcon,
 } from '@mui/icons-material';
@@ -245,7 +243,6 @@ function getDefaultSchema(engine: string | undefined, database: string | undefin
 export function SchemaVisualizerPage() {
     const theme = useTheme();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [showGrid, setShowGrid] = useState(true);
     const [layoutType, setLayoutType] = useState<LayoutType>('tree');
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -275,7 +272,6 @@ export function SchemaVisualizerPage() {
         if (schema) {
             setSelectedSchema(schema);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [urlConnectionId, urlSchema, storeConnectionId, storeSchema]);
 
     // Fetch connections
@@ -511,14 +507,12 @@ export function SchemaVisualizerPage() {
                             style: { stroke: theme.palette.primary.main },
                         }}
                     >
-                        {showGrid && (
-                            <Background
-                                variant={BackgroundVariant.Dots}
-                                gap={20}
-                                size={1}
-                                color={alpha(theme.palette.text.primary, 0.1)}
-                            />
-                        )}
+                        <Background
+                            variant={BackgroundVariant.Dots}
+                            gap={20}
+                            size={1}
+                            color={alpha(theme.palette.text.primary, 0.1)}
+                        />
                         <Controls showInteractive={false} />
                         <MiniMap
                             nodeColor={() => alpha(theme.palette.primary.main, 0.5)}
@@ -556,15 +550,6 @@ export function SchemaVisualizerPage() {
                                         </Tooltip>
                                     </ToggleButton>
                                 </ToggleButtonGroup>
-
-                                <Tooltip title={showGrid ? 'Hide grid' : 'Show grid'}>
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => setShowGrid(!showGrid)}
-                                    >
-                                        {showGrid ? <GridOffIcon /> : <GridIcon />}
-                                    </IconButton>
-                                </Tooltip>
                             </Paper>
                         </Panel>
 
