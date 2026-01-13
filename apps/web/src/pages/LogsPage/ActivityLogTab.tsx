@@ -323,6 +323,7 @@ export function ActivityLogTab() {
                 sx={{
                     display: 'flex',
                     gap: 2,
+                    mt: 0.5,
                     mb: 2,
                     flexWrap: 'wrap',
                     alignItems: 'center',
