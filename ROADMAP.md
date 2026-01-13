@@ -5,6 +5,7 @@ This document outlines planned features, improvements, and future directions for
 ## 🎯 Current Status: v0.1.0 (Alpha)
 
 Core functionality is working:
+
 - ✅ Multi-database connections (PostgreSQL, MySQL, MariaDB, SQLite)
 - ✅ Query editor with syntax highlighting
 - ✅ Schema browser and table data viewer
@@ -23,6 +24,7 @@ Core functionality is working:
 These features are required before the first public release:
 
 ### Core Functionality
+
 - [x] **Export query results** - CSV/JSON export buttons on data grid ✅
 - [ ] **Saved queries** - Save, organize, and quickly access favorite queries
 - [x] **Keyboard shortcuts** - Essential shortcuts for power users ✅
@@ -37,18 +39,21 @@ These features are required before the first public release:
 - [x] **Toast notifications** - Feedback for sync completion, errors, copy actions ✅
 
 ### User Experience
+
 - [ ] **Onboarding tour** - First-time user walkthrough highlighting key features
 - [x] **Empty states** - Helpful illustrations and guidance when no data exists ✅
 - [ ] **Dark/light toggle in header** - Quick access theme switcher
 - [x] **Keyboard shortcuts guide** - Settings page tab showing all shortcuts ✅
 
 ### Polish & Stability
+
 - [ ] **Error handling** - Improve error messages with actionable guidance
 - [x] **Loading states** - Consistent loading indicators across all pages ✅
 - [x] **Confirmation dialogs** - Confirm destructive actions (delete, drop, sync) ✅
 - [ ] **Form validation** - Better validation feedback on all forms
 
 ### Distribution
+
 - [x] **App icons** - Create icons for all platforms (Windows, macOS, Linux) ✅
 - [ ] **Code signing** - Sign builds for trusted distribution
 - [ ] **Auto-updates** - Implement electron-updater for seamless updates
@@ -61,6 +66,7 @@ These features are required before the first public release:
 Features to ship in subsequent versions after v1.0:
 
 ### v1.1 - Enhanced Query Experience
+
 - [ ] **Multi-tab queries** - Multiple query tabs per connection
 - [ ] **Query autocomplete** - Table/column suggestions as you type
 - [ ] **Query formatting** - Auto-format/beautify SQL
@@ -68,30 +74,35 @@ Features to ship in subsequent versions after v1.0:
 - [ ] **Query snippets** - Reusable code snippets with variables
 
 ### v1.2 - Advanced Data Management
+
 - [ ] **Data import** - Import CSV/JSON/SQL into tables
 - [ ] **Table data diff** - Compare actual row data between instances (not just counts)
 - [ ] **Data masking** - Hide sensitive columns in preview
 - [ ] **Bulk operations** - Multi-row edit/delete with preview
 
 ### v1.3 - Schema Visualization
+
 - [ ] **ER diagram** - Visual entity relationship diagram showing foreign keys
 - [ ] **Schema designer** - Drag & drop table/column creation
 - [ ] **Rollback migrations** - Generate reverse migration SQL
 - [ ] **Schema versioning** - Track schema changes over time
 
 ### v1.4 - Automation & Scheduling
+
 - [ ] **Scheduled sync** - Auto-sync instance groups on a schedule
 - [ ] **Connection health monitoring** - Dashboard widget with status/latency history
 - [ ] **Backup scheduling** - Automated database backups
 - [ ] **Webhook notifications** - Notify external services on events
 
 ### v1.5 - Collaboration
+
 - [ ] **Shared connections** - Team mode with shared connection configs
 - [ ] **Query sharing** - Share queries with team members
 - [ ] **Audit logging** - Track who did what and when
 - [ ] **Role-based access** - Admin/viewer/editor roles
 
 ### Future Considerations
+
 - [ ] **AI Integration** - Natural language to SQL
 - [ ] **Cloud sync** - Sync settings across devices
 - [ ] **Plugin system** - Extensible architecture for custom features
@@ -103,12 +114,14 @@ Features to ship in subsequent versions after v1.0:
 ## 🗄️ Database Support
 
 ### Currently Supported
+
 - [x] PostgreSQL (full support)
 - [x] MySQL (full support)
 - [x] MariaDB (full support)
 - [x] SQLite (full support)
 
 ### Planned (Post-Release)
+
 - [ ] Microsoft SQL Server
 - [ ] Oracle Database
 - [ ] MongoDB (document view)
@@ -122,11 +135,13 @@ Features to ship in subsequent versions after v1.0:
 ## 🔧 Technical Debt
 
 ### Pre-Release
+
 - [ ] Improve error handling and messages
 - [ ] Add request rate limiting
 - [ ] Implement connection pooling
 
 ### Post-Release
+
 - [ ] Add comprehensive unit tests
 - [ ] Add E2E tests with Playwright
 - [ ] Add telemetry (opt-in)
@@ -137,11 +152,13 @@ Features to ship in subsequent versions after v1.0:
 ## 🌐 Marketing & Community
 
 ### Pre-Release
+
 - [ ] Create public landing page
 - [ ] Feature showcase with screenshots
 - [ ] README with clear installation instructions
 
 ### Post-Release
+
 - [ ] Video tutorials
 - [ ] Blog with tips and updates
 - [ ] Discord/Slack community

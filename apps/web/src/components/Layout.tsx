@@ -29,6 +29,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi } from '../lib/api';
@@ -63,6 +64,7 @@ const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
     { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
+    { to: '/visualizer', icon: <AccountTreeIcon />, label: 'Visualizer' },
     { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },
     { to: '/logs', icon: <HistoryIcon />, label: 'Logs' },
 ];

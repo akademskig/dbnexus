@@ -9,13 +9,14 @@ import { ComparePage } from './pages/ComparePage';
 import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
+import { SchemaVisualizerPage } from './pages/SchemaVisualizerPage';
 
 function App() {
     return (
         <Routes>
             {/* Landing page without layout */}
             <Route path="/welcome" element={<LandingPage />} />
-            
+
             {/* Main app with layout */}
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
@@ -27,6 +28,7 @@ function App() {
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="logs" element={<LogsPage />} />
+                <Route path="visualizer" element={<SchemaVisualizerPage />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>
         </Routes>

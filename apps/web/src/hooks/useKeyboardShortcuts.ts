@@ -60,17 +60,23 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     {
         key: '4',
         ctrl: true,
-        description: 'Go to Compare',
+        description: 'Go to Visualizer',
         category: 'navigation',
     },
     {
         key: '5',
         ctrl: true,
-        description: 'Go to Logs',
+        description: 'Go to Compare',
         category: 'navigation',
     },
     {
         key: '6',
+        ctrl: true,
+        description: 'Go to Logs',
+        category: 'navigation',
+    },
+    {
+        key: '7',
         ctrl: true,
         description: 'Go to Settings',
         category: 'navigation',
@@ -170,8 +176,9 @@ export function useNavigationShortcuts(navigate: (path: string) => void) {
         { key: '1', ctrl: true, handler: () => navigate('/') },
         { key: '2', ctrl: true, handler: () => navigate('/connections') },
         { key: '3', ctrl: true, handler: () => navigate('/query') },
-        { key: '4', ctrl: true, handler: () => navigate('/compare') },
-        { key: '5', ctrl: true, handler: () => navigate('/logs') },
-        { key: '6', ctrl: true, handler: () => navigate('/settings') },
+        { key: '4', ctrl: true, handler: () => navigate('/visualizer') },
+        { key: '5', ctrl: true, handler: () => navigate('/compare') },
+        { key: '6', ctrl: true, handler: () => navigate('/logs') },
+        { key: '7', ctrl: true, handler: () => navigate('/settings') },
     ]);
 }
