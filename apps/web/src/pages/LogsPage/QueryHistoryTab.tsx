@@ -437,7 +437,7 @@ export function QueryHistoryTab() {
                             </Box>
 
                             {!selectedEntry.success && selectedEntry.error && (
-                                <Alert 
+                                <Alert
                                     severity="error"
                                     sx={{
                                         '& .MuiAlert-message': {

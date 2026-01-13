@@ -13,9 +13,6 @@ import {
     Alert,
     TextField,
     InputAdornment,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
 } from '@mui/material';
 import {
     ContentCopy as CopyIcon,
@@ -23,7 +20,6 @@ import {
     Delete as DeleteIcon,
     Search as SearchIcon,
     Clear as ClearIcon,
-    ExpandMore as ExpandIcon,
     ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
@@ -387,7 +383,7 @@ export function MigrationHistoryTab() {
                             )}
 
                             {!selectedMigration.success && selectedMigration.error && (
-                                <Alert 
+                                <Alert
                                     severity="error"
                                     sx={{
                                         '& .MuiAlert-message': {
@@ -424,32 +420,21 @@ export function MigrationHistoryTab() {
                                 >
                                     SQL Statements ({selectedMigration.sqlStatements.length})
                                 </Typography>
-                                {selectedMigration.sqlStatements.map((sql, idx) => (
-                                    <Accordion key={idx} defaultExpanded={idx === 0}>
-                                        <AccordionSummary expandIcon={<ExpandIcon />}>
-                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                Statement {idx + 1}
-                                            </Typography>
-                                        </AccordionSummary>
-                                        <AccordionDetails>
-                                            <Box
-                                                sx={{
-                                                    p: 2,
-                                                    bgcolor: 'background.default',
-                                                    borderRadius: 1,
-                                                    fontFamily: 'monospace',
-                                                    fontSize: 12,
-                                                    whiteSpace: 'pre-wrap',
-                                                    wordBreak: 'break-all',
-                                                    maxHeight: 200,
-                                                    overflow: 'auto',
-                                                }}
-                                            >
-                                                {sql}
-                                            </Box>
-                                        </AccordionDetails>
-                                    </Accordion>
-                                ))}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'background.default',
+                                        borderRadius: 1,
+                                        fontFamily: 'monospace',
+                                        fontSize: 12,
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-all',
+                                        maxHeight: 400,
+                                        overflow: 'auto',
+                                    }}
+                                >
+                                    {selectedMigration.sqlStatements.join('\n\n')}
+                                </Box>
                             </Box>
                         </Box>
                     )}
