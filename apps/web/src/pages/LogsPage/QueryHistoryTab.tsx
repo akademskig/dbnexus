@@ -29,8 +29,20 @@ import {
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { queriesApi, connectionsApi } from '../../lib/api';
+import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
+
+const PROJECT_COLORS = [
+    '#ef4444', // red
+    '#f97316', // orange
+    '#eab308', // yellow
+    '#22c55e', // green
+    '#14b8a6', // teal
+    '#0ea5e9', // sky
+    '#6366f1', // indigo
+    '#a855f7', // purple
+    '#ec4899', // pink
+];
 
 function formatDate(date: Date | string): string {
     const d = new Date(date);
@@ -56,6 +68,11 @@ export function QueryHistoryTab() {
     const { data: connections = [] } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
+    });
+
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: projectsApi.getAll,
     });
 
     const { data: history = [], isLoading } = useQuery({
@@ -84,9 +101,19 @@ export function QueryHistoryTab() {
         });
     };
 
-    const getConnectionName = (connectionId: string) => {
+    const getConnectionInfo = (connectionId: string) => {
         const conn = connections.find((c) => c.id === connectionId);
-        return conn?.name || 'Unknown';
+        if (!conn) return { name: 'Unknown', color: undefined };
+        
+        const project = projects.find((p) => p.id === conn.projectId);
+        const colorIndex = project ? projects.indexOf(project) % PROJECT_COLORS.length : -1;
+        const color = colorIndex >= 0 ? PROJECT_COLORS[colorIndex] : undefined;
+        
+        return { name: conn.name, color };
+    };
+
+    const getConnectionName = (connectionId: string) => {
+        return getConnectionInfo(connectionId).name;
     };
 
     // Filter history
@@ -113,13 +140,23 @@ export function QueryHistoryTab() {
             field: 'connectionId',
             headerName: 'Connection',
             width: 150,
-            renderCell: (params: GridRenderCellParams) => (
-                <Chip
-                    label={getConnectionName(params.value)}
-                    size="small"
-                    sx={{ fontSize: 11 }}
-                />
-            ),
+            renderCell: (params: GridRenderCellParams) => {
+                const { name, color } = getConnectionInfo(params.value);
+                return (
+                    <Chip
+                        label={name}
+                        size="small"
+                        sx={{
+                            fontSize: 11,
+                            ...(color && {
+                                bgcolor: `${color}15`,
+                                color: color,
+                                borderLeft: `3px solid ${color}`,
+                            }),
+                        }}
+                    />
+                );
+            },
         },
         {
             field: 'sql',
