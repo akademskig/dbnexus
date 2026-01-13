@@ -13,6 +13,8 @@ import {
     Tooltip,
     Collapse,
     CircularProgress,
+    Menu,
+    MenuItem,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -68,6 +70,7 @@ export function Layout() {
 
     const [groups, setGroups] = useState<DatabaseGroup[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(true);
+    const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
 
     useEffect(() => {
         groupsApi
@@ -265,33 +268,77 @@ export function Layout() {
                         </>
                     )}
 
-                    {/* Collapsed sync icon */}
+                    {/* Collapsed sync icon with menu */}
                     {collapsed && groups.length > 0 && (
-                        <Tooltip title="Instance Sync" placement="right" arrow>
-                            <ListItemButton
-                                onClick={() => {
-                                    const firstGroup = groups[0];
-                                    if (firstGroup) {
-                                        navigate(`/groups/${firstGroup.id}/sync`);
-                                    }
-                                }}
-                                selected={isSyncActive}
-                                sx={{
-                                    mb: 0.5,
-                                    justifyContent: 'center',
-                                    px: 1.5,
-                                }}
-                            >
-                                <ListItemIcon
+                        <>
+                            <Tooltip title="Instance Sync" placement="right" arrow>
+                                <ListItemButton
+                                    onClick={(e) => setSyncMenuAnchor(e.currentTarget)}
+                                    selected={isSyncActive}
                                     sx={{
-                                        minWidth: 0,
-                                        color: isSyncActive ? 'primary.main' : 'text.secondary',
+                                        mb: 0.5,
+                                        justifyContent: 'center',
+                                        px: 1.5,
                                     }}
                                 >
-                                    <SyncIcon />
-                                </ListItemIcon>
-                            </ListItemButton>
-                        </Tooltip>
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 0,
+                                            color: isSyncActive ? 'primary.main' : 'text.secondary',
+                                        }}
+                                    >
+                                        <SyncIcon />
+                                    </ListItemIcon>
+                                </ListItemButton>
+                            </Tooltip>
+                            <Menu
+                                anchorEl={syncMenuAnchor}
+                                open={Boolean(syncMenuAnchor)}
+                                onClose={() => setSyncMenuAnchor(null)}
+                                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
+                                >
+                                    Instance Sync Groups
+                                </Typography>
+                                <Divider />
+                                {groups.map((group) => {
+                                    const groupPath = `/groups/${group.id}/sync`;
+                                    const isGroupActive = location.pathname === groupPath;
+                                    return (
+                                        <MenuItem
+                                            key={group.id}
+                                            onClick={() => {
+                                                navigate(groupPath);
+                                                setSyncMenuAnchor(null);
+                                            }}
+                                            selected={isGroupActive}
+                                            sx={{ minWidth: 180 }}
+                                        >
+                                            <ListItemIcon sx={{ minWidth: 32 }}>
+                                                <LayersIcon
+                                                    sx={{
+                                                        fontSize: 18,
+                                                        color: isGroupActive
+                                                            ? 'primary.main'
+                                                            : 'text.disabled',
+                                                    }}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={group.name}
+                                                secondary={group.projectName}
+                                                primaryTypographyProps={{ fontSize: 13 }}
+                                                secondaryTypographyProps={{ fontSize: 11 }}
+                                            />
+                                        </MenuItem>
+                                    );
+                                })}
+                            </Menu>
+                        </>
                     )}
                 </List>
 
