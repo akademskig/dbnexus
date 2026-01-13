@@ -63,6 +63,10 @@ interface DataTabProps {
     ) => Promise<void>;
     readonly onDeleteRow?: (row: Record<string, unknown>) => void;
     readonly onSyncRow?: (rows: Record<string, unknown>[]) => void;
+    // For export filename
+    readonly connectionHost?: string;
+    readonly connectionDatabase?: string;
+    readonly tableName?: string;
 }
 
 export function DataTab({
@@ -81,6 +85,9 @@ export function DataTab({
     onUpdateRow,
     onDeleteRow,
     onSyncRow,
+    connectionHost,
+    connectionDatabase,
+    tableName,
 }: DataTabProps) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
@@ -149,47 +156,47 @@ export function DataTab({
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col) => {
-              const isPrimaryKey = primaryKeyColumns.includes(col.name);
-              const isJson = isJsonColumn(col.dataType);
-              // JSON columns are edited via dialog, not inline; PK columns are not editable
-              const isEditable = canEditRows && !isPrimaryKey && !isJson;
-              // JSON columns can be edited via dialog if we have edit capability
-              const canEditJson = canEditRows && !isPrimaryKey && isJson;
+            const isPrimaryKey = primaryKeyColumns.includes(col.name);
+            const isJson = isJsonColumn(col.dataType);
+            // JSON columns are edited via dialog, not inline; PK columns are not editable
+            const isEditable = canEditRows && !isPrimaryKey && !isJson;
+            // JSON columns can be edited via dialog if we have edit capability
+            const canEditJson = canEditRows && !isPrimaryKey && isJson;
 
-              return {
-                  field: col.name,
-                  headerName: col.name,
-                  description: col.dataType,
-                  flex: 1,
-                  minWidth: 120,
-                  editable: isEditable,
-                  renderCell: (params: GridRenderCellParams) => (
-                      <CellValue
-                          value={params.value}
-                          onSaveJson={
-                              canEditJson
-                                  ? (newValue) =>
-                                        handleJsonCellSave(
-                                            params.row as Record<string, unknown>,
-                                            col.name,
-                                            newValue
-                                        )
-                                  : undefined
-                          }
-                      />
-                  ),
-                  renderHeader: () => (
-                      <Box>
-                          <Typography variant="body2" fontWeight={600}>
-                              {col.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                              {col.dataType}
-                          </Typography>
-                      </Box>
-                  ),
-              };
-          })
+            return {
+                field: col.name,
+                headerName: col.name,
+                description: col.dataType,
+                flex: 1,
+                minWidth: 120,
+                editable: isEditable,
+                renderCell: (params: GridRenderCellParams) => (
+                    <CellValue
+                        value={params.value}
+                        onSaveJson={
+                            canEditJson
+                                ? (newValue) =>
+                                    handleJsonCellSave(
+                                        params.row as Record<string, unknown>,
+                                        col.name,
+                                        newValue
+                                    )
+                                : undefined
+                        }
+                    />
+                ),
+                renderHeader: () => (
+                    <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                            {col.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {col.dataType}
+                        </Typography>
+                    </Box>
+                ),
+            };
+        })
         : [];
 
     // Get the currently editing row id (if any)
@@ -202,9 +209,9 @@ export function DataTab({
     // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
     const rows = result
         ? result.rows.map((row, index) => ({
-              __rowIndex: index,
-              ...row,
-          }))
+            __rowIndex: index,
+            ...row,
+        }))
         : [];
 
     // Get selected rows data
@@ -259,13 +266,35 @@ export function DataTab({
     };
 
     // Export functions
+    const getExportFilename = (extension: string): string => {
+        const parts = [
+            connectionHost || 'localhost',
+            connectionDatabase || 'db',
+            tableName || 'query',
+        ];
+        // Sanitize filename parts (remove special characters)
+        const sanitized = parts.map((p) => p.replace(/[^a-zA-Z0-9_-]/g, '_')).join('-');
+        return `${sanitized}.${extension}`;
+    };
+
+    const getRowsToExport = (): Record<string, unknown>[] => {
+        // If rows are selected, export only those; otherwise export all
+        if (selectedRowIds.length > 0) {
+            return getSelectedRows();
+        }
+        return result?.rows || [];
+    };
+
     const exportToCSV = () => {
         if (!result || result.rows.length === 0) return;
+
+        const rowsToExport = getRowsToExport();
+        if (rowsToExport.length === 0) return;
 
         const headers = result.columns.map((c) => c.name);
         const csvRows = [
             headers.join(','),
-            ...result.rows.map((row) =>
+            ...rowsToExport.map((row) =>
                 headers
                     .map((h) => {
                         const val = row[h];
@@ -283,16 +312,25 @@ export function DataTab({
         ];
 
         const csvContent = csvRows.join('\n');
-        downloadFile(csvContent, 'query-results.csv', 'text/csv');
-        toast.success('Exported to CSV');
+        downloadFile(csvContent, getExportFilename('csv'), 'text/csv');
+        const msg = selectedRowIds.length > 0 
+            ? `Exported ${rowsToExport.length} selected row(s) to CSV`
+            : 'Exported to CSV';
+        toast.success(msg);
     };
 
     const exportToJSON = () => {
         if (!result || result.rows.length === 0) return;
 
-        const jsonContent = JSON.stringify(result.rows, null, 2);
-        downloadFile(jsonContent, 'query-results.json', 'application/json');
-        toast.success('Exported to JSON');
+        const rowsToExport = getRowsToExport();
+        if (rowsToExport.length === 0) return;
+
+        const jsonContent = JSON.stringify(rowsToExport, null, 2);
+        downloadFile(jsonContent, getExportFilename('json'), 'application/json');
+        const msg = selectedRowIds.length > 0 
+            ? `Exported ${rowsToExport.length} selected row(s) to JSON`
+            : 'Exported to JSON';
+        toast.success(msg);
     };
 
     const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -403,8 +441,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                              ? 'Select 1 row'
-                                              : 'Edit'
+                                                ? 'Select 1 row'
+                                                : 'Edit'
                                     }
                                 >
                                     <span>
@@ -426,8 +464,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                              ? 'Select 1 row'
-                                              : 'Delete'
+                                                ? 'Select 1 row'
+                                                : 'Delete'
                                     }
                                 >
                                     <span>
@@ -487,7 +525,7 @@ export function DataTab({
                                             {paginationModel.page * paginationModel.pageSize + 1}-
                                             {Math.min(
                                                 (paginationModel.page + 1) *
-                                                    paginationModel.pageSize,
+                                                paginationModel.pageSize,
                                                 totalRowCount
                                             )}
                                         </Typography>
@@ -514,7 +552,7 @@ export function DataTab({
                         {/* Export button */}
                         {result.rows.length > 0 && (
                             <>
-                                <Tooltip title="Export data">
+                                <Tooltip title={selectedRowIds.length > 0 ? `Export ${selectedRowIds.length} selected row(s)` : 'Export all rows'}>
                                     <IconButton
                                         size="small"
                                         onClick={(e) => setExportMenuAnchor(e.currentTarget)}
@@ -536,7 +574,14 @@ export function DataTab({
                                         <ListItemIcon>
                                             <DownloadIcon fontSize="small" />
                                         </ListItemIcon>
-                                        <ListItemText>Export as CSV</ListItemText>
+                                        <ListItemText>
+                                            Export as CSV
+                                            {selectedRowIds.length > 0 && (
+                                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                                    ({selectedRowIds.length} rows)
+                                                </Typography>
+                                            )}
+                                        </ListItemText>
                                     </MenuItem>
                                     <MenuItem
                                         onClick={() => {
@@ -547,7 +592,14 @@ export function DataTab({
                                         <ListItemIcon>
                                             <DownloadIcon fontSize="small" />
                                         </ListItemIcon>
-                                        <ListItemText>Export as JSON</ListItemText>
+                                        <ListItemText>
+                                            Export as JSON
+                                            {selectedRowIds.length > 0 && (
+                                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                                    ({selectedRowIds.length} rows)
+                                                </Typography>
+                                            )}
+                                        </ListItemText>
                                     </MenuItem>
                                 </Menu>
                             </>

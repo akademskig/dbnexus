@@ -1350,6 +1350,9 @@ export function QueryPage() {
                                             setRowsToSync(rows);
                                             setSyncRowDialogOpen(true);
                                         }}
+                                        connectionHost={selectedConnection?.host}
+                                        connectionDatabase={selectedConnection?.database}
+                                        tableName={selectedTable?.name}
                                     />
                                 )}
 
