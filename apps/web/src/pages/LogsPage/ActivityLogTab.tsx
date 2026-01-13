@@ -12,6 +12,12 @@ import {
     MenuItem,
     Tooltip,
     Avatar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Alert,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -24,6 +30,7 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     CompareArrows as CompareIcon,
+    Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
@@ -100,6 +107,7 @@ function getActivityColor(type: string, status: string) {
 export function ActivityLogTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
 
     // Fetch data from multiple sources
     const { data: queryHistory = [], isLoading: loadingQueries } = useQuery({
@@ -314,6 +322,22 @@ export function ActivityLogTab() {
                 />
             ),
         },
+        {
+            field: 'actions',
+            headerName: '',
+            width: 60,
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<ActivityItem>) => (
+                <Tooltip title="View Details">
+                    <IconButton
+                        size="small"
+                        onClick={() => setSelectedActivity(params.row)}
+                    >
+                        <ViewIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                </Tooltip>
+            ),
+        },
     ];
 
     return (
@@ -395,6 +419,181 @@ export function ActivityLogTab() {
                     }}
                 />
             </Box>
+
+            {/* Activity Details Dialog */}
+            <Dialog
+                open={!!selectedActivity}
+                onClose={() => setSelectedActivity(null)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        {selectedActivity && (
+                            <Avatar
+                                sx={{
+                                    width: 32,
+                                    height: 32,
+                                    bgcolor: `${getActivityColor(selectedActivity.type, selectedActivity.status)}20`,
+                                    color: getActivityColor(selectedActivity.type, selectedActivity.status),
+                                }}
+                            >
+                                {getActivityIcon(selectedActivity.type, selectedActivity.action)}
+                            </Avatar>
+                        )}
+                        <Typography variant="h6" sx={{ textTransform: 'capitalize' }}>
+                            {selectedActivity?.type} Details
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedActivity && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                            {/* Metadata */}
+                            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Time
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        {formatDate(selectedActivity.timestamp)}
+                                    </Typography>
+                                </Box>
+                                {selectedActivity.details?.connectionName && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Connection
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {selectedActivity.details.connectionName}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {selectedActivity.details?.sourceConnection && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Source
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {selectedActivity.details.sourceConnection}
+                                            {selectedActivity.details.sourceSchema && `.${selectedActivity.details.sourceSchema}`}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {selectedActivity.details?.targetConnection && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Target
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {selectedActivity.details.targetConnection}
+                                            {selectedActivity.details.targetSchema && `.${selectedActivity.details.targetSchema}`}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {selectedActivity.details?.executionTimeMs !== undefined && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Duration
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {formatDuration(selectedActivity.details.executionTimeMs)}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {selectedActivity.details?.rowCount !== undefined && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Rows
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {selectedActivity.details.rowCount.toLocaleString()}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {selectedActivity.details?.statementCount !== undefined && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Statements
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            {selectedActivity.details.statementCount}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                <Chip
+                                    label={selectedActivity.status === 'error' ? 'Error' : 'Success'}
+                                    size="small"
+                                    sx={{
+                                        alignSelf: 'center',
+                                        bgcolor:
+                                            selectedActivity.status === 'error'
+                                                ? 'rgba(239, 68, 68, 0.1)'
+                                                : 'rgba(34, 197, 94, 0.1)',
+                                        color: selectedActivity.status === 'error' ? '#ef4444' : '#22c55e',
+                                    }}
+                                />
+                            </Box>
+
+                            {/* Error Details */}
+                            {selectedActivity.status === 'error' && selectedActivity.details?.error && (
+                                <Alert
+                                    severity="error"
+                                    sx={{
+                                        '& .MuiAlert-message': {
+                                            width: '100%',
+                                        },
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                        Error Details
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            fontFamily: 'monospace',
+                                            fontSize: 12,
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            maxHeight: 200,
+                                            overflow: 'auto',
+                                            bgcolor: 'rgba(0,0,0,0.1)',
+                                            p: 1.5,
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {selectedActivity.details.error}
+                                    </Box>
+                                </Alert>
+                            )}
+
+                            {/* Description / SQL */}
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                    {selectedActivity.type === 'query' ? 'SQL Query' : 'Description'}
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'background.default',
+                                        borderRadius: 1,
+                                        fontFamily: selectedActivity.type === 'query' ? 'monospace' : 'inherit',
+                                        fontSize: 13,
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-all',
+                                        maxHeight: 300,
+                                        overflow: 'auto',
+                                    }}
+                                >
+                                    {selectedActivity.description}
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSelectedActivity(null)}>Close</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
