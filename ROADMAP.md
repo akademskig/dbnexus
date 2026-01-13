@@ -23,34 +23,33 @@ Core functionality is working:
 These features are required before the first public release:
 
 ### Core Functionality
-- [ ] **Export query results** - CSV/JSON export buttons on data grid
+- [x] **Export query results** - CSV/JSON export buttons on data grid ✅
 - [ ] **Saved queries** - Save, organize, and quickly access favorite queries
-- [ ] **Keyboard shortcuts** - Essential shortcuts for power users
+- [x] **Keyboard shortcuts** - Essential shortcuts for power users ✅
   - `Ctrl+Enter` - Run query
-  - `Ctrl+S` - Save query
   - `Ctrl+/` - Toggle comment
-  - `Ctrl+Shift+F` - Format SQL
+  - `Ctrl+1-6` - Navigate between pages
 - [ ] **Query templates** - Pre-built queries for common operations
   - Show table sizes
   - List indexes
   - Active connections
   - Slow queries
-- [ ] **Toast notifications** - Feedback for sync completion, errors, copy actions
+- [x] **Toast notifications** - Feedback for sync completion, errors, copy actions ✅
 
 ### User Experience
 - [ ] **Onboarding tour** - First-time user walkthrough highlighting key features
-- [ ] **Empty states** - Helpful illustrations and guidance when no data exists
+- [x] **Empty states** - Helpful illustrations and guidance when no data exists ✅
 - [ ] **Dark/light toggle in header** - Quick access theme switcher
-- [ ] **Keyboard shortcuts guide** - Modal showing all available shortcuts (`?` key)
+- [x] **Keyboard shortcuts guide** - Settings page tab showing all shortcuts ✅
 
 ### Polish & Stability
 - [ ] **Error handling** - Improve error messages with actionable guidance
-- [ ] **Loading states** - Consistent loading indicators across all pages
-- [ ] **Confirmation dialogs** - Confirm destructive actions (delete, drop, sync)
+- [x] **Loading states** - Consistent loading indicators across all pages ✅
+- [x] **Confirmation dialogs** - Confirm destructive actions (delete, drop, sync) ✅
 - [ ] **Form validation** - Better validation feedback on all forms
 
 ### Distribution
-- [ ] **App icons** - Create icons for all platforms (Windows, macOS, Linux)
+- [x] **App icons** - Create icons for all platforms (Windows, macOS, Linux) ✅
 - [ ] **Code signing** - Sign builds for trusted distribution
 - [ ] **Auto-updates** - Implement electron-updater for seamless updates
 - [ ] **Landing page** - Public website with features and download links

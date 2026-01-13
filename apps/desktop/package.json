@@ -16,6 +16,7 @@
         "dist:win": "electron-builder --win",
         "dist:mac": "electron-builder --mac",
         "dist:linux": "electron-builder --linux",
+        "icons": "node scripts/generate-icons.js",
         "clean": "rm -rf dist out"
     },
     "dependencies": {
@@ -25,6 +26,7 @@
         "@types/node": "^22.10.2",
         "electron": "^33.2.0",
         "electron-builder": "^25.1.8",
+        "sharp": "^0.33.2",
         "typescript": "^5.3.3"
     },
     "build": {

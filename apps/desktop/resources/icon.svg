@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- App Icon: Abstract DB with circuit - Combined gradient for universal use -->
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#4f46e5"/>
+      <stop offset="100%" style="stop-color:#4338ca"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#818cf8"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle for better visibility on all backgrounds -->
+  <circle cx="512" cy="512" r="480" fill="#0f172a"/>
+  
+  <!-- D shape - scaled up from 64x64 to 1024x1024 (16x) -->
+  <path d="M224 192 L224 832 L448 832 C640 832 736 672 736 512 C736 352 640 192 448 192 Z" 
+        fill="none" 
+        stroke="url(#iconGrad)" 
+        stroke-width="48" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Circuit lines from D -->
+  <line x1="736" y1="512" x2="896" y2="512" stroke="url(#iconGrad)" stroke-width="32"/>
+  <line x1="896" y1="512" x2="896" y2="288" stroke="url(#iconGrad)" stroke-width="32"/>
+  <line x1="896" y1="512" x2="896" y2="736" stroke="url(#iconGrad)" stroke-width="32"/>
+  
+  <!-- Connection nodes -->
+  <circle cx="896" cy="288" r="48" fill="none" stroke="url(#iconGrad)" stroke-width="32"/>
+  <circle cx="896" cy="736" r="48" fill="none" stroke="url(#iconGrad)" stroke-width="32"/>
+  <circle cx="896" cy="512" r="32" fill="url(#iconGrad)"/>
+  
+  <!-- Inner accent -->
+  <circle cx="448" cy="512" r="96" fill="none" stroke="url(#accentGrad)" stroke-width="32" opacity="0.6"/>
+  <circle cx="448" cy="512" r="32" fill="url(#accentGrad)"/>
+</svg>
