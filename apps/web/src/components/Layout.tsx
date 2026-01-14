@@ -73,7 +73,7 @@ const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
     { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
-    { to: '/diagram-editor', icon: <AccountTreeIcon />, label: 'Schema Diagram' },
+    { to: '/schema-diagram', icon: <AccountTreeIcon />, label: 'Schema Diagram' },
     { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },
     { to: '/logs', icon: <HistoryIcon />, label: 'Logs' },
 ];

@@ -30,7 +30,8 @@ function App() {
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="logs" element={<LogsPage />} />
-                <Route path="diagram-editor" element={<DiagramEditorPage />} />
+                <Route path="schema-diagram" element={<DiagramEditorPage />} />
+                <Route path="diagram-editor" element={<Navigate to="/schema-diagram" replace />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>
         </Routes>

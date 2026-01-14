@@ -224,7 +224,7 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                         startIcon={<EditIcon />}
                         onClick={() =>
                             navigate(
-                                `/diagram-editor?connection=${connection?.id}${connection?.defaultSchema ? `&schema=${connection.defaultSchema}` : ''}`
+                                `/schema-diagram?connection=${connection?.id}${connection?.defaultSchema ? `&schema=${connection.defaultSchema}` : ''}`
                             )
                         }
                     >

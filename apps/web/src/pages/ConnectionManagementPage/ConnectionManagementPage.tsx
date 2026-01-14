@@ -355,7 +355,7 @@ export function ConnectionManagementPage() {
                         <IconButton
                             onClick={() =>
                                 navigate(
-                                    `/diagram-editor?connection=${connectionId}${selectedSchema ? `&schema=${selectedSchema}` : ''}`
+                                    `/schema-diagram?connection=${connectionId}${selectedSchema ? `&schema=${selectedSchema}` : ''}`
                                 )
                             }
                             sx={{
