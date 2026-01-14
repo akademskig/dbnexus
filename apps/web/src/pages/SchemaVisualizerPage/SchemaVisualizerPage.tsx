@@ -285,6 +285,17 @@ export function SchemaVisualizerPage() {
         }
     }, [selectedConnectionId, selectedSchema, setConnectionAndSchema]);
 
+    // Sync store values to URL on initial load (if URL is empty but store has values)
+    useEffect(() => {
+        if (!urlConnectionId && storeConnectionId) {
+            const params: Record<string, string> = { connection: storeConnectionId };
+            if (storeSchema) {
+                params.schema = storeSchema;
+            }
+            setSearchParams(params, { replace: true });
+        }
+    }, []); // Only run on mount
+
     // Auto-select default schema when schemas load and no schema is selected
     useEffect(() => {
         if (selectedConnectionId && schemas.length > 0 && !selectedSchema) {
