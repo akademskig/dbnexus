@@ -49,6 +49,26 @@ interface TableDetailsTabProps {
     isLoading: boolean;
 }
 
+/**
+ * Helper to parse column arrays that may come as PostgreSQL string format "{col1,col2}"
+ */
+function parseColumnArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        // Handle PostgreSQL array format: "{col1,col2}"
+        if (value.startsWith('{') && value.endsWith('}')) {
+            const inner = value.slice(1, -1);
+            if (!inner) return [];
+            return inner.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+        }
+        // Single column as string
+        return value ? [value] : [];
+    }
+    return [];
+}
+
 // Common data types for different database engines
 const DATA_TYPES = {
     postgres: [
@@ -603,22 +623,25 @@ export function TableDetailsTab({
             headerName: 'Columns',
             flex: 1,
             minWidth: 200,
-            renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {(params.value as string[]).map((col: string) => (
-                        <Chip
-                            key={col}
-                            label={col}
-                            size="small"
-                            sx={{
-                                height: 20,
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                            }}
-                        />
-                    ))}
-                </Box>
-            ),
+            renderCell: (params) => {
+                const columns = parseColumnArray(params.value);
+                return (
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {columns.map((col: string) => (
+                            <Chip
+                                key={col}
+                                label={col}
+                                size="small"
+                                sx={{
+                                    height: 20,
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                }}
+                            />
+                        ))}
+                    </Box>
+                );
+            },
         },
         {
             field: 'isUnique',
@@ -695,30 +718,35 @@ export function TableDetailsTab({
             field: 'columns',
             headerName: 'Columns',
             width: 150,
-            renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {(params.value as string[]).map((col: string) => (
-                        <Chip
-                            key={col}
-                            label={col}
-                            size="small"
-                            sx={{ height: 20, fontSize: 10, fontFamily: 'monospace' }}
-                        />
-                    ))}
-                </Box>
-            ),
+            renderCell: (params) => {
+                const columns = parseColumnArray(params.value);
+                return (
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {columns.map((col: string) => (
+                            <Chip
+                                key={col}
+                                label={col}
+                                size="small"
+                                sx={{ height: 20, fontSize: 10, fontFamily: 'monospace' }}
+                            />
+                        ))}
+                    </Box>
+                );
+            },
         },
         {
             field: 'referencedTable',
             headerName: 'References',
             flex: 1,
             minWidth: 200,
-            renderCell: (params) => (
-                <Typography fontFamily="monospace" fontSize={12}>
-                    {params.row.referencedSchema}.{params.value}(
-                    {(params.row.referencedColumns as string[]).join(', ')})
-                </Typography>
-            ),
+            renderCell: (params) => {
+                const refColumns = parseColumnArray(params.row.referencedColumns);
+                return (
+                    <Typography fontFamily="monospace" fontSize={12}>
+                        {params.row.referencedSchema}.{params.value}({refColumns.join(', ')})
+                    </Typography>
+                );
+            },
         },
         {
             field: 'onDelete',
