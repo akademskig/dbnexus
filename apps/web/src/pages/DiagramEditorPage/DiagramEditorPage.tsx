@@ -240,8 +240,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                      ? 'public'
-                      : schemas[0];
+                        ? 'public'
+                        : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
@@ -744,7 +744,7 @@ export function DiagramEditorPage() {
                                 size={1}
                                 color={alpha(theme.palette.text.primary, 0.1)}
                             />
-                            <Controls showInteractive={false} />
+                            <Controls />
                             <MiniMap
                                 nodeColor={(node) =>
                                     node.selected
