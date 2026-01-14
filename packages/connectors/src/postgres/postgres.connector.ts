@@ -171,10 +171,13 @@ export class PostgresConnector implements DatabaseConnector {
                         | undefined;
                     if (stats) {
                         sizeBytes = Number.parseInt(stats.size, 10);
-                        rowCount = Number.parseInt(stats.row_estimate, 10);
+                        const estimate = Number.parseInt(stats.row_estimate, 10);
+                        // reltuples can be -1 for tables that haven't been analyzed yet
+                        // Return 0 in that case instead of -1
+                        rowCount = estimate < 0 ? 0 : estimate;
                     }
                 } catch {
-                    // Ignore errors getting stats
+                    // Ignore errors getting stats - rowCount will be undefined
                 }
             }
 
