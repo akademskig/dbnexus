@@ -7,6 +7,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import EditIcon from '@mui/icons-material/Edit';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ConnectionConfig } from '@dbnexus/shared';
@@ -217,6 +218,17 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                         onClick={() => navigate(`/query/${connection?.id}`)}
                     >
                         Open Query Editor
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() =>
+                            navigate(
+                                `/diagram-editor?connection=${connection?.id}${connection?.defaultSchema ? `&schema=${connection.defaultSchema}` : ''}`
+                            )
+                        }
+                    >
+                        Open Diagram Editor
                     </Button>
                     <Button
                         variant="outlined"

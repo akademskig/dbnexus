@@ -22,14 +22,7 @@ interface ConnectionManagementState {
     reset: () => void;
 }
 
-const TAB_NAMES = [
-    'overview',
-    'schemas',
-    'tables',
-    'management',
-    'diagram',
-    'maintenance',
-] as const;
+const TAB_NAMES = ['overview', 'schemas', 'tables', 'management', 'maintenance'] as const;
 type TabName = (typeof TAB_NAMES)[number];
 
 function tabNameToIndex(name: string | null): number {

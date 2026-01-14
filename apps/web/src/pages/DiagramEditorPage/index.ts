@@ -1,0 +1,1 @@
+export { DiagramEditorPage } from './DiagramEditorPage';

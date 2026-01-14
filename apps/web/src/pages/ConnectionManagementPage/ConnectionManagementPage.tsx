@@ -19,7 +19,6 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import BuildIcon from '@mui/icons-material/Build';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -30,14 +29,12 @@ import { SchemasTab } from './SchemasTab';
 import { MaintenanceTab } from './MaintenanceTab';
 import { TablesTab } from './TablesTab';
 import { TableDetailsTab } from './TableDetailsTab';
-import { DiagramEditorTab } from './DiagramEditorTab';
 
 const TAB_ICONS = [
     <DashboardIcon key="overview" fontSize="small" />,
     <GridViewIcon key="schemas" fontSize="small" />,
     <TableChartIcon key="tables" fontSize="small" />,
     <SettingsIcon key="table-management" fontSize="small" />,
-    <AccountTreeIcon key="diagram" fontSize="small" />,
     <BuildIcon key="maintenance" fontSize="small" />,
 ];
 
@@ -346,8 +343,7 @@ export function ConnectionManagementPage() {
                     />
                     <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
                     <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Table Management" />
-                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Diagram Editor" />
-                    <Tab icon={TAB_ICONS[5]} iconPosition="start" label="Maintenance" />
+                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
                 </Tabs>
             </GlassCard>
 
@@ -393,15 +389,6 @@ export function ConnectionManagementPage() {
                 />
             )}
             {activeTab === 4 && (
-                <DiagramEditorTab
-                    connectionId={connectionId}
-                    connection={connection}
-                    schemas={schemas}
-                    isLoading={loadingSchemas}
-                    initialSchema={selectedSchema}
-                />
-            )}
-            {activeTab === 5 && (
                 <MaintenanceTab
                     connectionId={connectionId}
                     connection={connection}

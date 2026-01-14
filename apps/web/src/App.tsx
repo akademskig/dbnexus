@@ -11,6 +11,7 @@ import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
 import { SchemaVisualizerPage } from './pages/SchemaVisualizerPage';
+import { DiagramEditorPage } from './pages/DiagramEditorPage';
 
 function App() {
     return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="logs" element={<LogsPage />} />
                 <Route path="visualizer" element={<SchemaVisualizerPage />} />
+                <Route path="diagram-editor" element={<DiagramEditorPage />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>
         </Routes>
