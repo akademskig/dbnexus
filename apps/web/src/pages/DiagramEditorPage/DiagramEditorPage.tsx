@@ -839,7 +839,13 @@ export function DiagramEditorPage() {
 
             {/* Diagram Canvas */}
             <GlassCard
-                sx={{ flex: 1, p: 0, overflow: 'hidden', backgroundColor: 'background.default' }}
+                sx={{
+                    flex: 1,
+                    p: 0,
+                    overflow: 'hidden',
+                    backgroundColor: 'background.default',
+                    '&:hover': { borderColor: 'divider', boxShadow: 'none' },
+                }}
             >
                 {renderDiagramCanvas()}
             </GlassCard>
