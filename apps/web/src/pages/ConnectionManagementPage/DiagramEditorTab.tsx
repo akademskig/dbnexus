@@ -588,50 +588,81 @@ export function DiagramEditorTab({
                         }}
                     />
                 ) : (
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        minZoom={0.1}
-                        maxZoom={2}
-                        defaultEdgeOptions={{
-                            type: 'smoothstep',
-                            animated: true,
+                    <Box
+                        sx={{
+                            width: '100%',
+                            height: '100%',
+                            // Style React Flow controls
+                            '& .react-flow__controls': {
+                                bgcolor: 'background.paper',
+                                borderColor: 'divider',
+                                borderRadius: 2,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                            },
+                            '& .react-flow__controls-button': {
+                                bgcolor: 'background.paper',
+                                borderColor: 'divider',
+                                color: 'text.primary',
+                                '&:hover': {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                },
+                                '& svg': {
+                                    fill: theme.palette.text.primary,
+                                },
+                            },
                         }}
-                        proOptions={{ hideAttribution: true }}
                     >
-                        <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-                        <Controls />
-                        <MiniMap
-                            nodeColor={(node) =>
-                                node.selected ? theme.palette.primary.main : theme.palette.grey[600]
-                            }
-                            maskColor={alpha(theme.palette.background.default, 0.8)}
-                            style={{
-                                backgroundColor: theme.palette.background.paper,
-                                border: `1px solid ${theme.palette.divider}`,
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            nodeTypes={nodeTypes}
+                            fitView
+                            minZoom={0.1}
+                            maxZoom={2}
+                            defaultEdgeOptions={{
+                                type: 'smoothstep',
+                                animated: true,
                             }}
-                        />
-                        <Panel position="top-right">
-                            <Paper
-                                sx={{
-                                    p: 1,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 0.5,
-                                    bgcolor: 'background.paper',
+                            proOptions={{ hideAttribution: true }}
+                        >
+                            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+                            <Controls />
+                            <MiniMap
+                                nodeColor={(node) =>
+                                    node.selected
+                                        ? theme.palette.primary.main
+                                        : theme.palette.grey[600]
+                                }
+                                maskColor={alpha(theme.palette.background.default, 0.8)}
+                                style={{
+                                    backgroundColor: theme.palette.background.paper,
+                                    border: `1px solid ${theme.palette.divider}`,
                                 }}
-                            >
-                                <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                                    Drag between columns to create FK
-                                </Typography>
-                            </Paper>
-                        </Panel>
-                    </ReactFlow>
+                            />
+                            <Panel position="top-right">
+                                <Paper
+                                    sx={{
+                                        p: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 0.5,
+                                        bgcolor: 'background.paper',
+                                    }}
+                                >
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ px: 1 }}
+                                    >
+                                        Drag between columns to create FK
+                                    </Typography>
+                                </Paper>
+                            </Panel>
+                        </ReactFlow>
+                    </Box>
                 )}
             </GlassCard>
 
