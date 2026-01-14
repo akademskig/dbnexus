@@ -708,6 +708,8 @@ export function DiagramEditorPage() {
                                 borderColor: 'divider',
                                 borderRadius: 2,
                                 boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                bottom: 'auto',
+                                top: 0,
                             },
                             '& .react-flow__controls-button': {
                                 bgcolor: 'background.paper',
