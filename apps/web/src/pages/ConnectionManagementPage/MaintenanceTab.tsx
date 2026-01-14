@@ -43,7 +43,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
     {
         id: 'vacuum',
         name: 'VACUUM',
-        description: 'Reclaim storage occupied by dead tuples. Recommended after large DELETE operations.',
+        description:
+            'Reclaim storage occupied by dead tuples. Recommended after large DELETE operations.',
         icon: <CleaningServicesIcon />,
         engines: ['postgres', 'sqlite'],
         getCommand: () => 'VACUUM',
@@ -52,7 +53,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
     {
         id: 'vacuum_full',
         name: 'VACUUM FULL',
-        description: 'Aggressive vacuum that reclaims more space but requires exclusive lock. Use with caution.',
+        description:
+            'Aggressive vacuum that reclaims more space but requires exclusive lock. Use with caution.',
         icon: <CleaningServicesIcon />,
         engines: ['postgres'],
         getCommand: () => 'VACUUM FULL',
@@ -64,7 +66,7 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         description: 'Update statistics used by the query planner. Improves query performance.',
         icon: <SpeedIcon />,
         engines: ['postgres', 'sqlite'],
-        getCommand: (schema) => schema ? `ANALYZE "${schema}"` : 'ANALYZE',
+        getCommand: (schema) => (schema ? `ANALYZE "${schema}"` : 'ANALYZE'),
         requiresSchema: false,
         color: '#06b6d4',
     },
@@ -89,7 +91,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
     {
         id: 'optimize',
         name: 'OPTIMIZE TABLE',
-        description: 'Reorganize table storage and rebuild indexes. MySQL/MariaDB equivalent of VACUUM.',
+        description:
+            'Reorganize table storage and rebuild indexes. MySQL/MariaDB equivalent of VACUUM.',
         icon: <CleaningServicesIcon />,
         engines: ['mysql', 'mariadb'],
         getCommand: (schema) => `OPTIMIZE TABLE ${schema ? `\`${schema}\`.*` : '*'}`,
@@ -122,15 +125,21 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
     const [runningOperation, setRunningOperation] = useState<string | null>(null);
 
     const executeMutation = useMutation({
-        mutationFn: async ({ operation, schema }: { operation: MaintenanceOperation; schema?: string }) => {
+        mutationFn: async ({
+            operation,
+            schema,
+        }: {
+            operation: MaintenanceOperation;
+            schema?: string;
+        }) => {
             const startTime = Date.now();
             let command = operation.getCommand(schema);
-            
+
             // Handle special PostgreSQL commands
             if (operation.id === 'reindex' && connection?.engine === 'postgres') {
                 command = `REINDEX DATABASE "${connection.database}"`;
             }
-            
+
             await queriesApi.execute(connectionId, command);
             return { duration: Date.now() - startTime };
         },
@@ -177,8 +186,9 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
             {/* Info Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
-                    Maintenance operations help keep your database running efficiently. Some operations may temporarily
-                    lock tables or impact performance. Run during low-traffic periods when possible.
+                    Maintenance operations help keep your database running efficiently. Some
+                    operations may temporarily lock tables or impact performance. Run during
+                    low-traffic periods when possible.
                 </Typography>
             </Alert>
 
@@ -233,7 +243,14 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
                                     {operation.icon}
                                 </Box>
                                 <Box sx={{ flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            mb: 0.5,
+                                        }}
+                                    >
                                         <Typography variant="subtitle1" fontWeight={600}>
                                             {operation.name}
                                         </Typography>
@@ -250,7 +267,11 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
                                             />
                                         )}
                                     </Box>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ mb: 2 }}
+                                    >
                                         {operation.description}
                                     </Typography>
                                     <Button
@@ -277,7 +298,11 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
                                         {isRunning ? 'Running...' : `Run ${operation.name}`}
                                     </Button>
                                     {needsSchema && (
-                                        <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 1 }}>
+                                        <Typography
+                                            variant="caption"
+                                            color="warning.main"
+                                            sx={{ display: 'block', mt: 1 }}
+                                        >
                                             Select a schema first
                                         </Typography>
                                     )}
@@ -310,10 +335,14 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
                                     alignItems: 'center',
                                     gap: 2,
                                     p: 1.5,
-                                    bgcolor: result.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                                    bgcolor: result.success
+                                        ? 'rgba(34, 197, 94, 0.1)'
+                                        : 'rgba(220, 38, 38, 0.1)',
                                     borderRadius: 1,
                                     border: 1,
-                                    borderColor: result.success ? 'rgba(34, 197, 94, 0.3)' : 'rgba(220, 38, 38, 0.3)',
+                                    borderColor: result.success
+                                        ? 'rgba(34, 197, 94, 0.3)'
+                                        : 'rgba(220, 38, 38, 0.3)',
                                 }}
                             >
                                 {result.success ? (

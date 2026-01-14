@@ -29,7 +29,12 @@ interface TablesTabProps {
     isLoading: boolean;
 }
 
-export function TablesTab({ connectionId, connection: _connection, schemas, isLoading }: TablesTabProps) {
+export function TablesTab({
+    connectionId,
+    connection: _connection,
+    schemas,
+    isLoading,
+}: TablesTabProps) {
     const navigate = useNavigate();
     const [selectedSchema, setSelectedSchema] = useState<string>(() => {
         // Default to 'public' for postgres, first schema otherwise
@@ -86,7 +91,10 @@ export function TablesTab({ connectionId, connection: _connection, schemas, isLo
                     sx={{
                         height: 22,
                         fontSize: 11,
-                        bgcolor: params.value === 'table' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                        bgcolor:
+                            params.value === 'table'
+                                ? 'rgba(34, 197, 94, 0.15)'
+                                : 'rgba(99, 102, 241, 0.15)',
                         color: params.value === 'table' ? 'rgb(34, 197, 94)' : 'rgb(99, 102, 241)',
                     }}
                 />
@@ -139,7 +147,15 @@ export function TablesTab({ connectionId, connection: _connection, schemas, isLo
     return (
         <Box>
             {/* Toolbar */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                    gap: 2,
+                }}
+            >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Schema</InputLabel>
@@ -178,7 +194,8 @@ export function TablesTab({ connectionId, connection: _connection, schemas, isLo
                         description={`Schema "${selectedSchema}" has no tables yet.`}
                         action={{
                             label: 'Open Query Editor',
-                            onClick: () => navigate(`/query/${connectionId}?schema=${selectedSchema}`),
+                            onClick: () =>
+                                navigate(`/query/${connectionId}?schema=${selectedSchema}`),
                         }}
                     />
                 </GlassCard>

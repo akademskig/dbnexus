@@ -23,7 +23,7 @@ export function GlassCard({
                     borderColor: 'primary.main',
                     boxShadow: '0 0 10px 0 rgba(129, 140, 248, 0.1)',
                 },
-                ...sx as object,
+                ...(sx as object),
             }}
         >
             {children}

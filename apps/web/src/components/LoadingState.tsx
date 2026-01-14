@@ -62,11 +62,7 @@ export function LoadingState({
         >
             <CircularProgress size={config.spinner} sx={{ color: 'text.disabled' }} />
             {message && (
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 2 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                     {message}
                 </Typography>
             )}

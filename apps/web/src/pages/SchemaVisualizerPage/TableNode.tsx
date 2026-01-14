@@ -1,10 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Box, Typography, Chip, alpha, useTheme } from '@mui/material';
-import {
-    Key as KeyIcon,
-    Link as ForeignKeyIcon,
-} from '@mui/icons-material';
+import { Key as KeyIcon, Link as ForeignKeyIcon } from '@mui/icons-material';
 
 export interface TableColumn {
     name: string;
@@ -86,7 +83,9 @@ function TableNodeComponent({ data, selected }: NodeProps) {
                         sx={{
                             height: 20,
                             fontSize: 10,
-                            bgcolor: selected ? alpha('#fff', 0.2) : alpha(theme.palette.primary.main, 0.1),
+                            bgcolor: selected
+                                ? alpha('#fff', 0.2)
+                                : alpha(theme.palette.primary.main, 0.1),
                             color: selected ? '#fff' : 'text.secondary',
                         }}
                     />

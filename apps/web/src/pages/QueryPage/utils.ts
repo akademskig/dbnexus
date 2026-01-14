@@ -101,7 +101,7 @@ export type ColumnDefinition = {
  */
 export function extractTableFromQuery(sql: string): { schema?: string; table: string } | null {
     const normalized = sql.replace(/\s+/g, ' ').trim();
-    
+
     // Match patterns like: FROM schema.table, FROM "schema"."table", FROM `schema`.`table`, FROM table
     // Also handles: INSERT INTO, UPDATE, DELETE FROM
     const patterns = [
@@ -109,7 +109,7 @@ export function extractTableFromQuery(sql: string): { schema?: string; table: st
         /\bINTO\s+(?:["'`]?(\w+)["'`]?\.)?["'`]?(\w+)["'`]?/i,
         /\bUPDATE\s+(?:["'`]?(\w+)["'`]?\.)?["'`]?(\w+)["'`]?/i,
     ];
-    
+
     for (const pattern of patterns) {
         const match = normalized.match(pattern);
         if (match) {
@@ -120,6 +120,6 @@ export function extractTableFromQuery(sql: string): { schema?: string; table: st
             }
         }
     }
-    
+
     return null;
 }

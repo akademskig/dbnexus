@@ -1,12 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-    Box,
-    Typography,
-    Skeleton,
-    Button,
-    Alert,
-    CircularProgress,
-} from '@mui/material';
+import { Box, Typography, Skeleton, Button, Alert, CircularProgress } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -52,7 +45,11 @@ function StatCard({ icon, label, value, isLoading, color = 'primary.main' }: Sta
                 {icon}
             </Box>
             <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                >
                     {label}
                 </Typography>
                 {isLoading ? (
@@ -77,7 +74,9 @@ interface OverviewTabProps {
 export function OverviewTab({ connection, schemas, serverVersion, isLoading }: OverviewTabProps) {
     const navigate = useNavigate();
     const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
+        null
+    );
 
     // Fetch total table count across all schemas
     const { data: totalTables = 0, isLoading: loadingTables } = useQuery({
@@ -170,13 +169,22 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                         <DetailItem label="Database File" value={connection.database} />
                     ) : (
                         <>
-                            <DetailItem label="Host" value={`${connection?.host}:${connection?.port}`} />
+                            <DetailItem
+                                label="Host"
+                                value={`${connection?.host}:${connection?.port}`}
+                            />
                             <DetailItem label="Database" value={connection?.database} />
                             <DetailItem label="Username" value={connection?.username} />
                             {connection?.defaultSchema && (
-                                <DetailItem label="Default Schema" value={connection.defaultSchema} />
+                                <DetailItem
+                                    label="Default Schema"
+                                    value={connection.defaultSchema}
+                                />
                             )}
-                            <DetailItem label="SSL" value={connection?.ssl ? 'Enabled' : 'Disabled'} />
+                            <DetailItem
+                                label="SSL"
+                                value={connection?.ssl ? 'Enabled' : 'Disabled'}
+                            />
                             {serverVersion && (
                                 <DetailItem label="Server Version" value={serverVersion} />
                             )}
@@ -227,7 +235,11 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
 function DetailItem({ label, value }: { label: string; value: string | undefined }) {
     return (
         <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            >
                 {label}
             </Typography>
             <Typography variant="body1" fontFamily="monospace" sx={{ mt: 0.5 }}>

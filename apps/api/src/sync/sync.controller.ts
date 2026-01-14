@@ -4,7 +4,7 @@ import type { InstanceGroupSyncStatus } from '@dbnexus/shared';
 
 @Controller('sync')
 export class SyncController {
-    constructor(private readonly syncService: SyncService) { }
+    constructor(private readonly syncService: SyncService) {}
 
     /**
      * Get sync status for an instance group
@@ -201,14 +201,9 @@ export class SyncController {
         errors: string[];
         tableResults: { table: string; rows: number; error?: string }[];
     }> {
-        return this.syncService.dumpAndRestore(
-            sourceConnectionId,
-            targetConnectionId,
-            schema,
-            {
-                truncateTarget: body?.truncateTarget ?? true,
-                tables: body?.tables,
-            }
-        );
+        return this.syncService.dumpAndRestore(sourceConnectionId, targetConnectionId, schema, {
+            truncateTarget: body?.truncateTarget ?? true,
+            tables: body?.tables,
+        });
     }
 }

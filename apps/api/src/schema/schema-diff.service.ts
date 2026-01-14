@@ -32,7 +32,7 @@ export class SchemaDiffService {
     constructor(
         private readonly schemaService: SchemaService,
         private readonly metadataService: MetadataService
-    ) { }
+    ) {}
 
     /**
      * Compare schemas between two connections
@@ -343,7 +343,9 @@ export class SchemaDiffService {
                     table: target.name,
                     name,
                     target: fk,
-                    migrationSql: [generateDropForeignKeySql(targetSchema, target.name, name, engine)],
+                    migrationSql: [
+                        generateDropForeignKeySql(targetSchema, target.name, name, engine),
+                    ],
                 });
             }
         }
@@ -402,8 +404,12 @@ export class SchemaDiffService {
     private foreignKeysEqual(a: ForeignKeyInfo, b: ForeignKeyInfo): boolean {
         const aColumns = [...parseColumnArray(a.columns)].sort((x, y) => x.localeCompare(y));
         const bColumns = [...parseColumnArray(b.columns)].sort((x, y) => x.localeCompare(y));
-        const aRefColumns = [...parseColumnArray(a.referencedColumns)].sort((x, y) => x.localeCompare(y));
-        const bRefColumns = [...parseColumnArray(b.referencedColumns)].sort((x, y) => x.localeCompare(y));
+        const aRefColumns = [...parseColumnArray(a.referencedColumns)].sort((x, y) =>
+            x.localeCompare(y)
+        );
+        const bRefColumns = [...parseColumnArray(b.referencedColumns)].sort((x, y) =>
+            x.localeCompare(y)
+        );
         return (
             JSON.stringify(aColumns) === JSON.stringify(bColumns) &&
             a.referencedTable === b.referencedTable &&

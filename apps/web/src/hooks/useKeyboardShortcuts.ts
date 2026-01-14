@@ -98,8 +98,9 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
 // Format shortcut for display
 export function formatShortcut(shortcut: KeyboardShortcut): string {
     const parts: string[] = [];
-    const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    
+    const isMac =
+        typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
     if (shortcut.ctrl) {
         parts.push(isMac ? '⌘' : 'Ctrl');
     }
@@ -109,16 +110,16 @@ export function formatShortcut(shortcut: KeyboardShortcut): string {
     if (shortcut.alt) {
         parts.push(isMac ? '⌥' : 'Alt');
     }
-    
+
     // Format key name
     let keyName = shortcut.key;
     if (keyName === 'Enter') keyName = '↵';
     else if (keyName === 'Escape') keyName = 'Esc';
     else if (keyName === '/') keyName = '/';
     else keyName = keyName.toUpperCase();
-    
+
     parts.push(keyName);
-    
+
     return parts.join(isMac ? '' : '+');
 }
 
@@ -137,14 +138,17 @@ export function useKeyboardShortcuts(
         (event: KeyboardEvent) => {
             // Don't trigger shortcuts when typing in inputs (unless it's a special combo)
             const target = event.target as HTMLElement;
-            const isInput = target.tagName === 'INPUT' || 
-                           target.tagName === 'TEXTAREA' || 
-                           target.isContentEditable;
+            const isInput =
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.isContentEditable;
 
             for (const shortcut of shortcuts) {
                 if (shortcut.enabled === false) continue;
 
-                const ctrlMatch = shortcut.ctrl ? (event.ctrlKey || event.metaKey) : (!event.ctrlKey && !event.metaKey);
+                const ctrlMatch = shortcut.ctrl
+                    ? event.ctrlKey || event.metaKey
+                    : !event.ctrlKey && !event.metaKey;
                 const shiftMatch = shortcut.shift ? event.shiftKey : !event.shiftKey;
                 const altMatch = shortcut.alt ? event.altKey : !event.altKey;
                 const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase();
@@ -154,7 +158,7 @@ export function useKeyboardShortcuts(
                     if (isInput && !(shortcut.ctrl && shortcut.key.toLowerCase() === 'enter')) {
                         continue;
                     }
-                    
+
                     event.preventDefault();
                     shortcut.handler();
                     return;

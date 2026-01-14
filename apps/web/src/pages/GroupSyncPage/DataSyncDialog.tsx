@@ -139,7 +139,9 @@ export function DataSyncDialog({
                 return (
                     <Typography
                         variant="body2"
-                        color={diff > 0 ? 'success.main' : diff < 0 ? 'error.main' : 'text.secondary'}
+                        color={
+                            diff > 0 ? 'success.main' : diff < 0 ? 'error.main' : 'text.secondary'
+                        }
                     >
                         {diff > 0 ? '+' : ''}
                         {diff}
@@ -168,7 +170,8 @@ export function DataSyncDialog({
                                 sx={{
                                     p: 2,
                                     mb: 1,
-                                    bgcolor: result.errors.length > 0 ? 'error.dark' : 'success.dark',
+                                    bgcolor:
+                                        result.errors.length > 0 ? 'error.dark' : 'success.dark',
                                     borderRadius: 1,
                                     opacity: 0.9,
                                 }}

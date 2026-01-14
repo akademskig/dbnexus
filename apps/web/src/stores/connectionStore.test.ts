@@ -18,13 +18,13 @@ describe('connectionStore', () => {
 
     it('should set connection and reset schema', () => {
         const { setConnection } = useConnectionStore.getState();
-        
+
         // First set both
         useConnectionStore.setState({
             selectedConnectionId: 'conn-1',
             selectedSchema: 'public',
         });
-        
+
         // Then change connection
         setConnection('conn-2');
 
@@ -53,7 +53,7 @@ describe('connectionStore', () => {
     it('should clear all state', () => {
         const { setConnectionAndSchema, clear } = useConnectionStore.getState();
         setConnectionAndSchema('conn-1', 'public');
-        
+
         clear();
 
         const state = useConnectionStore.getState();

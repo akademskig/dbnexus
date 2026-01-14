@@ -53,7 +53,14 @@ import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
-import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog, CreateSchemaDialog } from './Dialogs';
+import {
+    CreateTableDialog,
+    AddRowDialog,
+    SyncRowDialog,
+    SaveQueryDialog,
+    ConfirmDialog,
+    CreateSchemaDialog,
+} from './Dialogs';
 import { EmptyState } from './EmptyState';
 import {
     SIDEBAR_WIDTH,
@@ -78,7 +85,7 @@ export function QueryPage() {
     const {
         selectedConnectionId: sharedConnectionId,
         selectedSchema: sharedSchema,
-        setConnectionAndSchema: syncConnectionStore
+        setConnectionAndSchema: syncConnectionStore,
     } = useConnectionStore();
 
     // Get state from URL params, falling back to persisted state
@@ -258,7 +265,14 @@ export function QueryPage() {
             // Sync with shared connection store (for other pages like Schema Visualizer)
             syncConnectionStore(selectedConnectionId, selectedSchema);
         }
-    }, [selectedConnectionId, selectedSchema, selectedTable?.name, activeTab, saveState, syncConnectionStore]);
+    }, [
+        selectedConnectionId,
+        selectedSchema,
+        selectedTable?.name,
+        activeTab,
+        saveState,
+        syncConnectionStore,
+    ]);
 
     // Connections query
     const { data: connections = [] } = useQuery({
@@ -366,13 +380,14 @@ export function QueryPage() {
 
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
-                        selectedConnection?.database && schemas.includes(selectedConnection.database)
+                        selectedConnection?.database &&
+                        schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                            schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -415,10 +430,12 @@ export function QueryPage() {
             // Try to select the table from the query
             const tableInfo = extractTableFromQuery(lastExecutedQueryRef.current);
             if (tableInfo && tables.length > 0) {
-                const matchingTable = tables.find(t => {
+                const matchingTable = tables.find((t) => {
                     const tableMatch = t.name.toLowerCase() === tableInfo.table.toLowerCase();
                     if (tableInfo.schema) {
-                        return tableMatch && t.schema.toLowerCase() === tableInfo.schema.toLowerCase();
+                        return (
+                            tableMatch && t.schema.toLowerCase() === tableInfo.schema.toLowerCase()
+                        );
                     }
                     // If no schema in query, match any table with that name (prefer current schema)
                     return tableMatch;
@@ -426,7 +443,7 @@ export function QueryPage() {
                 if (matchingTable && matchingTable.name !== selectedTable?.name) {
                     setSelectedTable(matchingTable);
                     setSelectedSchema(matchingTable.schema);
-                    setSchemasExpanded(prev => ({ ...prev, [matchingTable.schema]: true }));
+                    setSchemasExpanded((prev) => ({ ...prev, [matchingTable.schema]: true }));
                     updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
                 }
             }
@@ -623,13 +640,7 @@ export function QueryPage() {
                 fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema);
             }
         },
-        [
-            selectedTable,
-            selectedConnectionId,
-            fetchTableData,
-            paginationModel.pageSize,
-            tableSchema,
-        ]
+        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema]
     );
 
     // Filter tables by search
@@ -777,7 +788,14 @@ export function QueryPage() {
                 }
             );
         },
-        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables, toast]
+        [
+            selectedConnectionId,
+            selectedConnection?.engine,
+            selectedSchema,
+            executeMutation,
+            refetchTables,
+            toast,
+        ]
     );
 
     // Handle create schema
@@ -920,71 +938,65 @@ export function QueryPage() {
     );
 
     // Handle delete row - show confirmation
-    const handleDeleteRow = useCallback(
-        (row: Record<string, unknown>) => {
-            setRowToDelete(row);
-        },
-        []
-    );
+    const handleDeleteRow = useCallback((row: Record<string, unknown>) => {
+        setRowToDelete(row);
+    }, []);
 
     // Actually perform row deletion
-    const confirmDeleteRow = useCallback(
-        () => {
-            if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
+    const confirmDeleteRow = useCallback(() => {
+        if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
 
-            const engine = selectedConnection?.engine;
-            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
+        const engine = selectedConnection?.engine;
+        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
-            const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-            if (pkColumns.length === 0) {
-                setError('Cannot delete row: no primary key defined');
-                setRowToDelete(null);
-                return;
+        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
+        if (pkColumns.length === 0) {
+            setError('Cannot delete row: no primary key defined');
+            setRowToDelete(null);
+            return;
+        }
+
+        const whereConditions = pkColumns.map(
+            (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(rowToDelete[pk], pk)}`
+        );
+
+        const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
+        setSql(query);
+        executeMutation.mutate(
+            { query, confirmed: true },
+            {
+                onSuccess: () => {
+                    if (selectedTable) {
+                        fetchTableData(
+                            selectedTable,
+                            paginationModel.page,
+                            paginationModel.pageSize,
+                            searchQuery,
+                            tableSchema
+                        );
+                    }
+                    if (totalRowCount !== null) {
+                        setTotalRowCount(totalRowCount - 1);
+                    }
+                    toast.success('Row deleted');
+                    setRowToDelete(null);
+                },
             }
-
-            const whereConditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(rowToDelete[pk], pk)}`
-            );
-
-            const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
-            setSql(query);
-            executeMutation.mutate(
-                { query, confirmed: true },
-                {
-                    onSuccess: () => {
-                        if (selectedTable) {
-                            fetchTableData(
-                                selectedTable,
-                                paginationModel.page,
-                                paginationModel.pageSize,
-                                searchQuery,
-                                tableSchema
-                            );
-                        }
-                        if (totalRowCount !== null) {
-                            setTotalRowCount(totalRowCount - 1);
-                        }
-                        toast.success('Row deleted');
-                        setRowToDelete(null);
-                    },
-                }
-            );
-        },
-        [
-            selectedTable,
-            selectedConnectionId,
-            selectedConnection?.engine,
-            tableSchema,
-            rowToDelete,
-            executeMutation,
-            fetchTableData,
-            paginationModel,
-            searchQuery,
-            formatSqlValue,
-            totalRowCount,
-            toast,
-        ]
-    );
+        );
+    }, [
+        selectedTable,
+        selectedConnectionId,
+        selectedConnection?.engine,
+        tableSchema,
+        rowToDelete,
+        executeMutation,
+        fetchTableData,
+        paginationModel,
+        searchQuery,
+        formatSqlValue,
+        totalRowCount,
+        toast,
+    ]);
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -1083,7 +1095,15 @@ export function QueryPage() {
                 >
                     {/* Schema Selector */}
                     {selectedConnectionId && schemas.length > 0 && (
-                        <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider', display: 'flex', gap: 1 }}>
+                        <Box
+                            sx={{
+                                p: 1.5,
+                                borderBottom: 1,
+                                borderColor: 'divider',
+                                display: 'flex',
+                                gap: 1,
+                            }}
+                        >
                             <FormControl size="small" sx={{ flex: 1 }}>
                                 <InputLabel>Schema</InputLabel>
                                 <Select
@@ -1292,7 +1312,9 @@ export function QueryPage() {
                                             label={selectedTable.type}
                                             size="small"
                                             color={
-                                                selectedTable.type === 'view' ? 'secondary' : 'default'
+                                                selectedTable.type === 'view'
+                                                    ? 'secondary'
+                                                    : 'default'
                                             }
                                             sx={{ textTransform: 'uppercase', fontSize: 10 }}
                                         />
@@ -1360,7 +1382,10 @@ export function QueryPage() {
                                                 size="small"
                                                 startIcon={
                                                     executeMutation.isPending ? (
-                                                        <CircularProgress size={16} color="inherit" />
+                                                        <CircularProgress
+                                                            size={16}
+                                                            color="inherit"
+                                                        />
                                                     ) : (
                                                         <PlayArrowIcon />
                                                     )
@@ -1520,41 +1545,70 @@ export function QueryPage() {
                                     />
                                 )}
 
-                                {activeTab === 1 && (
-                                    selectedTable ? (
-                                        <StructureTab schema={tableSchema} loading={tableSchemaLoading} />
+                                {activeTab === 1 &&
+                                    (selectedTable ? (
+                                        <StructureTab
+                                            schema={tableSchema}
+                                            loading={tableSchemaLoading}
+                                        />
                                     ) : (
-                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-                                            <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                            <Typography variant="body2">Select a table to view its structure</Typography>
+                                        <Box
+                                            sx={{
+                                                p: 4,
+                                                textAlign: 'center',
+                                                color: 'text.secondary',
+                                            }}
+                                        >
+                                            <TableChartIcon
+                                                sx={{ fontSize: 48, opacity: 0.3, mb: 1 }}
+                                            />
+                                            <Typography variant="body2">
+                                                Select a table to view its structure
+                                            </Typography>
                                         </Box>
-                                    )
-                                )}
+                                    ))}
 
-                                {activeTab === 2 && (
-                                    selectedTable ? (
-                                        <IndexesTab schema={tableSchema} loading={tableSchemaLoading} />
+                                {activeTab === 2 &&
+                                    (selectedTable ? (
+                                        <IndexesTab
+                                            schema={tableSchema}
+                                            loading={tableSchemaLoading}
+                                        />
                                     ) : (
-                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                                        <Box
+                                            sx={{
+                                                p: 4,
+                                                textAlign: 'center',
+                                                color: 'text.secondary',
+                                            }}
+                                        >
                                             <KeyIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                            <Typography variant="body2">Select a table to view its indexes</Typography>
+                                            <Typography variant="body2">
+                                                Select a table to view its indexes
+                                            </Typography>
                                         </Box>
-                                    )
-                                )}
+                                    ))}
 
-                                {activeTab === 3 && (
-                                    selectedTable ? (
+                                {activeTab === 3 &&
+                                    (selectedTable ? (
                                         <ForeignKeysTab
                                             schema={tableSchema}
                                             loading={tableSchemaLoading}
                                         />
                                     ) : (
-                                        <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                                        <Box
+                                            sx={{
+                                                p: 4,
+                                                textAlign: 'center',
+                                                color: 'text.secondary',
+                                            }}
+                                        >
                                             <LinkIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                            <Typography variant="body2">Select a table to view its foreign keys</Typography>
+                                            <Typography variant="body2">
+                                                Select a table to view its foreign keys
+                                            </Typography>
                                         </Box>
-                                    )
-                                )}
+                                    ))}
 
                                 {activeTab === 4 && (
                                     <SqlTab
@@ -1643,7 +1697,8 @@ export function QueryPage() {
                             <strong>{selectedTable?.name}</strong>?
                         </Typography>
                         <Alert severity="error" sx={{ mt: 1 }}>
-                            This action cannot be undone. All data in this table will be permanently deleted.
+                            This action cannot be undone. All data in this table will be permanently
+                            deleted.
                         </Alert>
                     </Box>
                 }

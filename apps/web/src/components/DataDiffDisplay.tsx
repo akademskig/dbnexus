@@ -81,7 +81,8 @@ export function DataDiffDisplay({
     } | null>(null);
 
     // Only fetch data if not provided via props
-    const shouldFetch = !providedDataDiff && !!sourceConnectionId && !!targetConnectionId && !!sourceSchema;
+    const shouldFetch =
+        !providedDataDiff && !!sourceConnectionId && !!targetConnectionId && !!sourceSchema;
 
     // Cache data comparison results for 10 minutes
     const CACHE_TIME = 10 * 60 * 1000;
@@ -93,7 +94,8 @@ export function DataDiffDisplay({
         refetch,
     } = useQuery({
         queryKey: [queryKeyPrefix, sourceConnectionId, targetConnectionId, sourceSchema],
-        queryFn: () => syncApi.getTableRowCounts(sourceConnectionId, targetConnectionId, sourceSchema),
+        queryFn: () =>
+            syncApi.getTableRowCounts(sourceConnectionId, targetConnectionId, sourceSchema),
         enabled: shouldFetch,
         staleTime: CACHE_TIME,
         gcTime: CACHE_TIME,
@@ -184,7 +186,9 @@ export function DataDiffDisplay({
             // Only refresh if no errors - otherwise keep results visible
             handleRefresh();
         } else if (successCount > 0) {
-            toast.warning(`Synced ${successCount} table(s), ${errorCount} failed. See details below.`);
+            toast.warning(
+                `Synced ${successCount} table(s), ${errorCount} failed. See details below.`
+            );
         } else {
             toast.error(`Failed to sync ${errorCount} table(s). See details below.`);
         }
@@ -211,7 +215,9 @@ export function DataDiffDisplay({
             if (result.errors && result.errors.length > 0) {
                 toast.error(`Table "${tableName}" sync had errors: ${result.errors[0]}`);
             } else {
-                toast.success(`Table "${tableName}" synced: +${result.inserted} ~${result.updated}`);
+                toast.success(
+                    `Table "${tableName}" synced: +${result.inserted} ~${result.updated}`
+                );
             }
             onSyncComplete?.();
         } catch (error) {
@@ -248,7 +254,9 @@ export function DataDiffDisplay({
             setDumpRestoreResult(result);
 
             if (result.success) {
-                toast.success(`Copied ${result.rowsCopied} rows across ${result.tablesProcessed} tables`);
+                toast.success(
+                    `Copied ${result.rowsCopied} rows across ${result.tablesProcessed} tables`
+                );
             } else {
                 toast.warning(`Completed with ${result.errors.length} error(s)`);
             }
@@ -256,7 +264,9 @@ export function DataDiffDisplay({
             // Refresh the data after dump & restore
             handleRefresh();
         } catch (error) {
-            toast.error(`Dump & Restore failed: ${error instanceof Error ? error.message : String(error)}`);
+            toast.error(
+                `Dump & Restore failed: ${error instanceof Error ? error.message : String(error)}`
+            );
         } finally {
             setDumpRestoring(false);
         }
@@ -304,11 +314,7 @@ export function DataDiffDisplay({
             align: 'right',
             headerAlign: 'right',
             renderCell: (params) =>
-                params.value > 0 ? (
-                    <Chip label={params.value} size="small" color="warning" />
-                ) : (
-                    '-'
-                ),
+                params.value > 0 ? <Chip label={params.value} size="small" color="warning" /> : '-',
         },
         {
             field: 'missingInSource',
@@ -317,91 +323,95 @@ export function DataDiffDisplay({
             align: 'right',
             headerAlign: 'right',
             renderCell: (params) =>
-                params.value > 0 ? (
-                    <Chip label={params.value} size="small" color="info" />
-                ) : (
-                    '-'
-                ),
+                params.value > 0 ? <Chip label={params.value} size="small" color="info" /> : '-',
         },
         ...(compact
             ? [
-                {
-                    field: 'actions',
-                    headerName: 'Actions',
-                    width: 120,
-                    sortable: false,
-                    renderCell: (params: { row: TableDataDiff }) => {
-                        const row = params.row;
-                        const isOutOfSync =
-                            row.sourceCount !== row.targetCount || row.missingInTarget > 0;
-                        const result = results.find((r) => r.table === row.table);
+                  {
+                      field: 'actions',
+                      headerName: 'Actions',
+                      width: 120,
+                      sortable: false,
+                      renderCell: (params: { row: TableDataDiff }) => {
+                          const row = params.row;
+                          const isOutOfSync =
+                              row.sourceCount !== row.targetCount || row.missingInTarget > 0;
+                          const result = results.find((r) => r.table === row.table);
 
-                        if (result) {
-                            return (
-                                <Typography
-                                    variant="caption"
-                                    color={result.errors.length > 0 ? 'error' : 'success.main'}
-                                >
-                                    +{result.inserted} ~{result.updated}
-                                </Typography>
-                            );
-                        }
+                          if (result) {
+                              return (
+                                  <Typography
+                                      variant="caption"
+                                      color={result.errors.length > 0 ? 'error' : 'success.main'}
+                                  >
+                                      +{result.inserted} ~{result.updated}
+                                  </Typography>
+                              );
+                          }
 
-                        if (isOutOfSync) {
-                            return (
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSyncSingleTable(row.table);
-                                    }}
-                                    disabled={syncing}
-                                >
-                                    Sync
-                                </Button>
-                            );
-                        }
+                          if (isOutOfSync) {
+                              return (
+                                  <Button
+                                      size="small"
+                                      variant="outlined"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSyncSingleTable(row.table);
+                                      }}
+                                      disabled={syncing}
+                                  >
+                                      Sync
+                                  </Button>
+                              );
+                          }
 
-                        return <Chip label="In sync" size="small" color="success" variant="outlined" />;
-                    },
-                } as GridColDef<TableDataDiff>,
-            ]
+                          return (
+                              <Chip
+                                  label="In sync"
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                              />
+                          );
+                      },
+                  } as GridColDef<TableDataDiff>,
+              ]
             : [
-                {
-                    field: 'difference',
-                    headerName: 'Status',
-                    width: 120,
-                    align: 'center',
-                    headerAlign: 'center',
-                    valueGetter: (_: unknown, row: TableDataDiff) => row.sourceCount - row.targetCount,
-                    renderCell: (params: { value: unknown }) => {
-                        const diff = params.value as number;
-                        if (diff === 0) {
-                            return (
-                                <Chip
-                                    icon={<CheckIcon />}
-                                    label="In Sync"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                    sx={{ height: 24 }}
-                                />
-                            );
-                        }
-                        return (
-                            <Typography
-                                variant="body2"
-                                fontWeight={500}
-                                color={diff > 0 ? 'warning.main' : 'error.main'}
-                            >
-                                {diff > 0 ? '+' : ''}
-                                {diff}
-                            </Typography>
-                        );
-                    },
-                } as GridColDef<TableDataDiff>,
-            ]),
+                  {
+                      field: 'difference',
+                      headerName: 'Status',
+                      width: 120,
+                      align: 'center',
+                      headerAlign: 'center',
+                      valueGetter: (_: unknown, row: TableDataDiff) =>
+                          row.sourceCount - row.targetCount,
+                      renderCell: (params: { value: unknown }) => {
+                          const diff = params.value as number;
+                          if (diff === 0) {
+                              return (
+                                  <Chip
+                                      icon={<CheckIcon />}
+                                      label="In Sync"
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                      sx={{ height: 24 }}
+                                  />
+                              );
+                          }
+                          return (
+                              <Typography
+                                  variant="body2"
+                                  fontWeight={500}
+                                  color={diff > 0 ? 'warning.main' : 'error.main'}
+                              >
+                                  {diff > 0 ? '+' : ''}
+                                  {diff}
+                              </Typography>
+                          );
+                      },
+                  } as GridColDef<TableDataDiff>,
+              ]),
     ];
 
     // Loading state (only when fetching own data)
@@ -413,7 +423,14 @@ export function DataDiffDisplay({
     if (!compact && dumpRestoreResult) {
         return (
             <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 2,
+                    }}
+                >
                     <Typography variant="subtitle1" fontWeight={500}>
                         Dump & Restore Results
                     </Typography>
@@ -441,10 +458,7 @@ export function DataDiffDisplay({
                     </Box>
                 </Box>
 
-                <Alert
-                    severity={dumpRestoreResult.success ? 'success' : 'warning'}
-                    sx={{ mb: 2 }}
-                >
+                <Alert severity={dumpRestoreResult.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
                     {dumpRestoreResult.success
                         ? `Successfully copied all data from source to target.`
                         : `Completed with some errors. Check the details below.`}
@@ -486,9 +500,13 @@ export function DataDiffDisplay({
 
                 {dumpRestoreResult.errors.length > 0 && (
                     <Alert severity="error" sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>Errors:</Typography>
+                        <Typography variant="subtitle2" gutterBottom>
+                            Errors:
+                        </Typography>
                         {dumpRestoreResult.errors.map((err, idx) => (
-                            <Typography key={idx} variant="body2">• {err}</Typography>
+                            <Typography key={idx} variant="body2">
+                                • {err}
+                            </Typography>
                         ))}
                     </Alert>
                 )}
@@ -497,11 +515,7 @@ export function DataDiffDisplay({
                     <Button variant="outlined" onClick={handleClearDumpRestoreResult}>
                         Back to Comparison
                     </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRefresh}
-                    >
+                    <Button variant="contained" startIcon={<RefreshIcon />} onClick={handleRefresh}>
                         Refresh Data
                     </Button>
                 </Box>
@@ -518,7 +532,14 @@ export function DataDiffDisplay({
 
         return (
             <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 2,
+                    }}
+                >
                     <Typography variant="subtitle1" fontWeight={500}>
                         Sync Results
                     </Typography>
@@ -593,17 +614,35 @@ export function DataDiffDisplay({
                                 </Typography>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     {result.inserted > 0 && (
-                                        <Chip label={`+${result.inserted}`} size="small" color="success" />
+                                        <Chip
+                                            label={`+${result.inserted}`}
+                                            size="small"
+                                            color="success"
+                                        />
                                     )}
                                     {result.updated > 0 && (
-                                        <Chip label={`~${result.updated}`} size="small" color="info" />
+                                        <Chip
+                                            label={`~${result.updated}`}
+                                            size="small"
+                                            color="info"
+                                        />
                                     )}
                                     {result.deleted > 0 && (
-                                        <Chip label={`-${result.deleted}`} size="small" color="warning" />
+                                        <Chip
+                                            label={`-${result.deleted}`}
+                                            size="small"
+                                            color="warning"
+                                        />
                                     )}
-                                    {result.inserted === 0 && result.updated === 0 && result.deleted === 0 && (
-                                        <Chip label="No changes" size="small" variant="outlined" />
-                                    )}
+                                    {result.inserted === 0 &&
+                                        result.updated === 0 &&
+                                        result.deleted === 0 && (
+                                            <Chip
+                                                label="No changes"
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                        )}
                                 </Box>
                             </Box>
                         ))}
@@ -614,11 +653,7 @@ export function DataDiffDisplay({
                     <Button variant="outlined" onClick={handleClearResults}>
                         Back to Comparison
                     </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRefresh}
-                    >
+                    <Button variant="contained" startIcon={<RefreshIcon />} onClick={handleRefresh}>
                         Refresh Data
                     </Button>
                 </Box>
@@ -794,21 +829,35 @@ export function DataDiffDisplay({
                             color="warning"
                             onClick={handleSync}
                             disabled={syncing || dumpRestoring || outOfSyncTables.length === 0}
-                            startIcon={syncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
+                            startIcon={
+                                syncing ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                    <SyncIcon />
+                                )
+                            }
                         >
                             {syncing
                                 ? 'Syncing...'
                                 : `Sync ${selectedTables.length || outOfSyncTables.length} Table(s)`}
                         </Button>
 
-                        <Typography variant="body2" color="text.secondary">or</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            or
+                        </Typography>
 
                         <Button
                             variant="contained"
                             color="primary"
                             onClick={handleDumpAndRestore}
                             disabled={syncing || dumpRestoring || tableDiffs.length === 0}
-                            startIcon={dumpRestoring ? <CircularProgress size={16} color="inherit" /> : <CopyIcon />}
+                            startIcon={
+                                dumpRestoring ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                    <CopyIcon />
+                                )
+                            }
                         >
                             {dumpRestoring ? 'Copying...' : 'Dump & Restore All'}
                         </Button>
@@ -823,10 +872,12 @@ export function DataDiffDisplay({
 
                     <Alert severity="info" sx={{ mt: 2 }}>
                         <Typography variant="body2">
-                            <strong>Sync Tables:</strong> Incrementally sync selected tables (may fail with FK constraints).
+                            <strong>Sync Tables:</strong> Incrementally sync selected tables (may
+                            fail with FK constraints).
                         </Typography>
                         <Typography variant="body2">
-                            <strong>Dump & Restore:</strong> Truncates target and copies all data in dependency order (handles FK constraints properly).
+                            <strong>Dump & Restore:</strong> Truncates target and copies all data in
+                            dependency order (handles FK constraints properly).
                         </Typography>
                     </Alert>
 

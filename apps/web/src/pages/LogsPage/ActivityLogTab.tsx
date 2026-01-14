@@ -130,38 +130,44 @@ export function ActivityLogTab() {
     // Build unified activity list
     const activities: ActivityItem[] = [
         // Query activities
-        ...queryHistory.map((q): ActivityItem => ({
-            id: `query-${q.id}`,
-            type: 'query',
-            action: 'execute',
-            description: q.sql,
-            timestamp: new Date(q.executedAt),
-            status: q.success ? 'success' : 'error',
-            details: {
-                connectionId: q.connectionId,
-                connectionName: connections.find((c) => c.id === q.connectionId)?.name,
-                executionTimeMs: q.executionTimeMs,
-                rowCount: q.rowCount,
-                error: q.error,
-            },
-        })),
+        ...queryHistory.map(
+            (q): ActivityItem => ({
+                id: `query-${q.id}`,
+                type: 'query',
+                action: 'execute',
+                description: q.sql,
+                timestamp: new Date(q.executedAt),
+                status: q.success ? 'success' : 'error',
+                details: {
+                    connectionId: q.connectionId,
+                    connectionName: connections.find((c) => c.id === q.connectionId)?.name,
+                    executionTimeMs: q.executionTimeMs,
+                    rowCount: q.rowCount,
+                    error: q.error,
+                },
+            })
+        ),
         // Migration activities
-        ...migrations.map((m): ActivityItem => ({
-            id: `migration-${m.id}`,
-            type: 'migration',
-            action: 'apply',
-            description: m.description || `Migration from ${m.sourceConnectionName} to ${m.targetConnectionName}`,
-            timestamp: new Date(m.appliedAt),
-            status: m.success ? 'success' : 'error',
-            details: {
-                sourceConnection: m.sourceConnectionName,
-                targetConnection: m.targetConnectionName,
-                sourceSchema: m.sourceSchema,
-                targetSchema: m.targetSchema,
-                statementCount: m.sqlStatements.length,
-                error: m.error,
-            },
-        })),
+        ...migrations.map(
+            (m): ActivityItem => ({
+                id: `migration-${m.id}`,
+                type: 'migration',
+                action: 'apply',
+                description:
+                    m.description ||
+                    `Migration from ${m.sourceConnectionName} to ${m.targetConnectionName}`,
+                timestamp: new Date(m.appliedAt),
+                status: m.success ? 'success' : 'error',
+                details: {
+                    sourceConnection: m.sourceConnectionName,
+                    targetConnection: m.targetConnectionName,
+                    sourceSchema: m.sourceSchema,
+                    targetSchema: m.targetSchema,
+                    statementCount: m.sqlStatements.length,
+                    error: m.error,
+                },
+            })
+        ),
     ];
 
     // Sort by timestamp descending
@@ -284,7 +290,8 @@ export function ActivityLogTab() {
                     variant="body2"
                     sx={{
                         fontSize: 12,
-                        color: params.value && params.value > 1000 ? 'warning.main' : 'text.secondary',
+                        color:
+                            params.value && params.value > 1000 ? 'warning.main' : 'text.secondary',
                     }}
                 >
                     {formatDuration(params.value)}
@@ -329,10 +336,7 @@ export function ActivityLogTab() {
             sortable: false,
             renderCell: (params: GridRenderCellParams<ActivityItem>) => (
                 <Tooltip title="View Details">
-                    <IconButton
-                        size="small"
-                        onClick={() => setSelectedActivity(params.row)}
-                    >
+                    <IconButton size="small" onClick={() => setSelectedActivity(params.row)}>
                         <ViewIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                 </Tooltip>
@@ -435,7 +439,10 @@ export function ActivityLogTab() {
                                     width: 32,
                                     height: 32,
                                     bgcolor: `${getActivityColor(selectedActivity.type, selectedActivity.status)}20`,
-                                    color: getActivityColor(selectedActivity.type, selectedActivity.status),
+                                    color: getActivityColor(
+                                        selectedActivity.type,
+                                        selectedActivity.status
+                                    ),
                                 }}
                             >
                                 {getActivityIcon(selectedActivity.type, selectedActivity.action)}
@@ -476,7 +483,8 @@ export function ActivityLogTab() {
                                         </Typography>
                                         <Typography variant="body2">
                                             {selectedActivity.details.sourceConnection}
-                                            {selectedActivity.details.sourceSchema && `.${selectedActivity.details.sourceSchema}`}
+                                            {selectedActivity.details.sourceSchema &&
+                                                `.${selectedActivity.details.sourceSchema}`}
                                         </Typography>
                                     </Box>
                                 )}
@@ -487,7 +495,8 @@ export function ActivityLogTab() {
                                         </Typography>
                                         <Typography variant="body2">
                                             {selectedActivity.details.targetConnection}
-                                            {selectedActivity.details.targetSchema && `.${selectedActivity.details.targetSchema}`}
+                                            {selectedActivity.details.targetSchema &&
+                                                `.${selectedActivity.details.targetSchema}`}
                                         </Typography>
                                     </Box>
                                 )}
@@ -497,7 +506,9 @@ export function ActivityLogTab() {
                                             Duration
                                         </Typography>
                                         <Typography variant="body2">
-                                            {formatDuration(selectedActivity.details.executionTimeMs)}
+                                            {formatDuration(
+                                                selectedActivity.details.executionTimeMs
+                                            )}
                                         </Typography>
                                     </Box>
                                 )}
@@ -522,7 +533,9 @@ export function ActivityLogTab() {
                                     </Box>
                                 )}
                                 <Chip
-                                    label={selectedActivity.status === 'error' ? 'Error' : 'Success'}
+                                    label={
+                                        selectedActivity.status === 'error' ? 'Error' : 'Success'
+                                    }
                                     size="small"
                                     sx={{
                                         alignSelf: 'center',
@@ -530,53 +543,65 @@ export function ActivityLogTab() {
                                             selectedActivity.status === 'error'
                                                 ? 'rgba(239, 68, 68, 0.1)'
                                                 : 'rgba(34, 197, 94, 0.1)',
-                                        color: selectedActivity.status === 'error' ? '#ef4444' : '#22c55e',
+                                        color:
+                                            selectedActivity.status === 'error'
+                                                ? '#ef4444'
+                                                : '#22c55e',
                                     }}
                                 />
                             </Box>
 
                             {/* Error Details */}
-                            {selectedActivity.status === 'error' && selectedActivity.details?.error && (
-                                <Alert
-                                    severity="error"
-                                    sx={{
-                                        '& .MuiAlert-message': {
-                                            width: '100%',
-                                        },
-                                    }}
-                                >
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                                        Error Details
-                                    </Typography>
-                                    <Box
+                            {selectedActivity.status === 'error' &&
+                                selectedActivity.details?.error && (
+                                    <Alert
+                                        severity="error"
                                         sx={{
-                                            fontFamily: 'monospace',
-                                            fontSize: 12,
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-word',
-                                            maxHeight: 200,
-                                            overflow: 'auto',
-                                            bgcolor: 'rgba(0,0,0,0.1)',
-                                            p: 1.5,
-                                            borderRadius: 1,
+                                            '& .MuiAlert-message': {
+                                                width: '100%',
+                                            },
                                         }}
                                     >
-                                        {selectedActivity.details.error}
-                                    </Box>
-                                </Alert>
-                            )}
+                                        <Typography
+                                            variant="subtitle2"
+                                            sx={{ fontWeight: 600, mb: 1 }}
+                                        >
+                                            Error Details
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                                whiteSpace: 'pre-wrap',
+                                                wordBreak: 'break-word',
+                                                maxHeight: 200,
+                                                overflow: 'auto',
+                                                bgcolor: 'rgba(0,0,0,0.1)',
+                                                p: 1.5,
+                                                borderRadius: 1,
+                                            }}
+                                        >
+                                            {selectedActivity.details.error}
+                                        </Box>
+                                    </Alert>
+                                )}
 
                             {/* Description / SQL */}
                             <Box>
                                 <Typography variant="caption" color="text.secondary">
-                                    {selectedActivity.type === 'query' ? 'SQL Query' : 'Description'}
+                                    {selectedActivity.type === 'query'
+                                        ? 'SQL Query'
+                                        : 'Description'}
                                 </Typography>
                                 <Box
                                     sx={{
                                         p: 2,
                                         bgcolor: 'background.default',
                                         borderRadius: 1,
-                                        fontFamily: selectedActivity.type === 'query' ? 'monospace' : 'inherit',
+                                        fontFamily:
+                                            selectedActivity.type === 'query'
+                                                ? 'monospace'
+                                                : 'inherit',
                                         fontSize: 13,
                                         whiteSpace: 'pre-wrap',
                                         wordBreak: 'break-all',

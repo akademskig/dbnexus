@@ -124,10 +124,7 @@ export function DataTab({
 
     const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
         if (onUpdateRow) {
-            await onUpdateRow(
-                oldRow as Record<string, unknown>,
-                newRow as Record<string, unknown>
-            );
+            await onUpdateRow(oldRow as Record<string, unknown>, newRow as Record<string, unknown>);
         }
         return newRow;
     };
@@ -143,11 +140,7 @@ export function DataTab({
     };
 
     // Handle JSON save from cell viewer
-    const handleJsonCellSave = (
-        row: Record<string, unknown>,
-        field: string,
-        newValue: unknown
-    ) => {
+    const handleJsonCellSave = (row: Record<string, unknown>, field: string, newValue: unknown) => {
         if (!onUpdateRow) return;
         const newRow = { ...row, [field]: newValue };
         onUpdateRow(row, newRow);
@@ -156,47 +149,47 @@ export function DataTab({
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col) => {
-            const isPrimaryKey = primaryKeyColumns.includes(col.name);
-            const isJson = isJsonColumn(col.dataType);
-            // JSON columns are edited via dialog, not inline; PK columns are not editable
-            const isEditable = canEditRows && !isPrimaryKey && !isJson;
-            // JSON columns can be edited via dialog if we have edit capability
-            const canEditJson = canEditRows && !isPrimaryKey && isJson;
+              const isPrimaryKey = primaryKeyColumns.includes(col.name);
+              const isJson = isJsonColumn(col.dataType);
+              // JSON columns are edited via dialog, not inline; PK columns are not editable
+              const isEditable = canEditRows && !isPrimaryKey && !isJson;
+              // JSON columns can be edited via dialog if we have edit capability
+              const canEditJson = canEditRows && !isPrimaryKey && isJson;
 
-            return {
-                field: col.name,
-                headerName: col.name,
-                description: col.dataType,
-                flex: 1,
-                minWidth: 120,
-                editable: isEditable,
-                renderCell: (params: GridRenderCellParams) => (
-                    <CellValue
-                        value={params.value}
-                        onSaveJson={
-                            canEditJson
-                                ? (newValue) =>
-                                    handleJsonCellSave(
-                                        params.row as Record<string, unknown>,
-                                        col.name,
-                                        newValue
-                                    )
-                                : undefined
-                        }
-                    />
-                ),
-                renderHeader: () => (
-                    <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                            {col.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            {col.dataType}
-                        </Typography>
-                    </Box>
-                ),
-            };
-        })
+              return {
+                  field: col.name,
+                  headerName: col.name,
+                  description: col.dataType,
+                  flex: 1,
+                  minWidth: 120,
+                  editable: isEditable,
+                  renderCell: (params: GridRenderCellParams) => (
+                      <CellValue
+                          value={params.value}
+                          onSaveJson={
+                              canEditJson
+                                  ? (newValue) =>
+                                        handleJsonCellSave(
+                                            params.row as Record<string, unknown>,
+                                            col.name,
+                                            newValue
+                                        )
+                                  : undefined
+                          }
+                      />
+                  ),
+                  renderHeader: () => (
+                      <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                              {col.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                              {col.dataType}
+                          </Typography>
+                      </Box>
+                  ),
+              };
+          })
         : [];
 
     // Get the currently editing row id (if any)
@@ -209,9 +202,9 @@ export function DataTab({
     // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
     const rows = result
         ? result.rows.map((row, index) => ({
-            __rowIndex: index,
-            ...row,
-        }))
+              __rowIndex: index,
+              ...row,
+          }))
         : [];
 
     // Get selected rows data
@@ -299,7 +292,8 @@ export function DataTab({
                     .map((h) => {
                         const val = row[h];
                         if (val === null || val === undefined) return '';
-                        if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+                        if (typeof val === 'object')
+                            return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
                         const str = String(val);
                         // Escape quotes and wrap in quotes if contains comma, newline, or quote
                         if (str.includes(',') || str.includes('\n') || str.includes('"')) {
@@ -313,9 +307,10 @@ export function DataTab({
 
         const csvContent = csvRows.join('\n');
         downloadFile(csvContent, getExportFilename('csv'), 'text/csv');
-        const msg = selectedRowIds.length > 0
-            ? `Exported ${rowsToExport.length} selected row(s) to CSV`
-            : 'Exported to CSV';
+        const msg =
+            selectedRowIds.length > 0
+                ? `Exported ${rowsToExport.length} selected row(s) to CSV`
+                : 'Exported to CSV';
         toast.success(msg);
     };
 
@@ -327,9 +322,10 @@ export function DataTab({
 
         const jsonContent = JSON.stringify(rowsToExport, null, 2);
         downloadFile(jsonContent, getExportFilename('json'), 'application/json');
-        const msg = selectedRowIds.length > 0
-            ? `Exported ${rowsToExport.length} selected row(s) to JSON`
-            : 'Exported to JSON';
+        const msg =
+            selectedRowIds.length > 0
+                ? `Exported ${rowsToExport.length} selected row(s) to JSON`
+                : 'Exported to JSON';
         toast.success(msg);
     };
 
@@ -441,8 +437,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                                ? 'Select 1 row'
-                                                : 'Edit'
+                                              ? 'Select 1 row'
+                                              : 'Edit'
                                     }
                                 >
                                     <span>
@@ -464,8 +460,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                                ? 'Select 1 row'
-                                                : 'Delete'
+                                              ? 'Select 1 row'
+                                              : 'Delete'
                                     }
                                 >
                                     <span>
@@ -525,7 +521,7 @@ export function DataTab({
                                             {paginationModel.page * paginationModel.pageSize + 1}-
                                             {Math.min(
                                                 (paginationModel.page + 1) *
-                                                paginationModel.pageSize,
+                                                    paginationModel.pageSize,
                                                 totalRowCount
                                             )}
                                         </Typography>
@@ -552,7 +548,13 @@ export function DataTab({
                         {/* Export button */}
                         {result.rows.length > 0 && (
                             <>
-                                <Tooltip title={selectedRowIds.length > 0 ? `Export ${selectedRowIds.length} selected row(s)` : 'Export all rows'}>
+                                <Tooltip
+                                    title={
+                                        selectedRowIds.length > 0
+                                            ? `Export ${selectedRowIds.length} selected row(s)`
+                                            : 'Export all rows'
+                                    }
+                                >
                                     <IconButton
                                         size="small"
                                         onClick={(e) => setExportMenuAnchor(e.currentTarget)}
@@ -577,7 +579,11 @@ export function DataTab({
                                         <ListItemText>
                                             Export as CSV
                                             {selectedRowIds.length > 0 && (
-                                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{ ml: 1 }}
+                                                >
                                                     ({selectedRowIds.length} rows)
                                                 </Typography>
                                             )}
@@ -595,7 +601,11 @@ export function DataTab({
                                         <ListItemText>
                                             Export as JSON
                                             {selectedRowIds.length > 0 && (
-                                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{ ml: 1 }}
+                                                >
                                                     ({selectedRowIds.length} rows)
                                                 </Typography>
                                             )}

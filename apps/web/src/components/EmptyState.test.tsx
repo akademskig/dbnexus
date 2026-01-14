@@ -10,12 +10,7 @@ describe('EmptyState', () => {
     });
 
     it('should render description when provided', () => {
-        render(
-            <EmptyState
-                title="No data"
-                description="Add some data to get started"
-            />
-        );
+        render(<EmptyState title="No data" description="Add some data to get started" />);
         expect(screen.getByText('Add some data to get started')).toBeInTheDocument();
     });
 
@@ -26,12 +21,7 @@ describe('EmptyState', () => {
 
     it('should render primary action button', () => {
         const handleClick = vi.fn();
-        render(
-            <EmptyState
-                title="No data"
-                action={{ label: 'Add Item', onClick: handleClick }}
-            />
-        );
+        render(<EmptyState title="No data" action={{ label: 'Add Item', onClick: handleClick }} />);
 
         const button = screen.getByRole('button', { name: 'Add Item' });
         expect(button).toBeInTheDocument();

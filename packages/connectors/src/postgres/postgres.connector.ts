@@ -163,7 +163,10 @@ export class PostgresConnector implements DatabaseConnector {
                         [`${tableRow.schema}.${tableRow.name}`]
                     );
                     if (sizeResult.rows[0]) {
-                        sizeBytes = Number.parseInt((sizeResult.rows[0] as { size: string }).size, 10);
+                        sizeBytes = Number.parseInt(
+                            (sizeResult.rows[0] as { size: string }).size,
+                            10
+                        );
                     }
 
                     // Get actual row count (more accurate than reltuples estimate)
@@ -171,7 +174,10 @@ export class PostgresConnector implements DatabaseConnector {
                         `SELECT COUNT(*) as count FROM "${tableRow.schema}"."${tableRow.name}"`
                     );
                     if (countResult.rows[0]) {
-                        rowCount = Number.parseInt((countResult.rows[0] as { count: string }).count, 10);
+                        rowCount = Number.parseInt(
+                            (countResult.rows[0] as { count: string }).count,
+                            10
+                        );
                     }
                 } catch {
                     // Ignore errors getting stats - rowCount will be undefined
@@ -313,7 +319,8 @@ export class PostgresConnector implements DatabaseConnector {
             // For identity columns, include that info in the default value for detection
             let defaultValue = r.column_default;
             if (r.is_identity === 'YES') {
-                defaultValue = defaultValue || `GENERATED ${r.identity_generation || 'ALWAYS'} AS IDENTITY`;
+                defaultValue =
+                    defaultValue || `GENERATED ${r.identity_generation || 'ALWAYS'} AS IDENTITY`;
             }
 
             return {

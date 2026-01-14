@@ -1,8 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import {
-    CheckCircle as CheckCircleIcon,
-    Error as ErrorIcon,
-} from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
 import { getTimeAgo } from './utils';
 

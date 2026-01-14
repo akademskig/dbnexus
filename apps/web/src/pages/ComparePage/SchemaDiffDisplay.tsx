@@ -165,9 +165,7 @@ export function SchemaDiffDisplay({
                                 size="small"
                                 variant="contained"
                                 color="warning"
-                                startIcon={
-                                    applying ? <CircularProgress size={16} /> : <SyncIcon />
-                                }
+                                startIcon={applying ? <CircularProgress size={16} /> : <SyncIcon />}
                                 onClick={onApplyMigration}
                                 disabled={applying}
                             >

@@ -464,7 +464,13 @@ function KeyboardShortcutsTab() {
         <Box sx={{ mb: 4 }}>
             <Typography
                 variant="subtitle2"
-                sx={{ color: 'text.secondary', mb: 1.5, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}
+                sx={{
+                    color: 'text.secondary',
+                    mb: 1.5,
+                    textTransform: 'uppercase',
+                    fontSize: 11,
+                    letterSpacing: '0.05em',
+                }}
             >
                 {title}
             </Typography>
@@ -488,26 +494,28 @@ function KeyboardShortcutsTab() {
                                             fontSize: 12,
                                         }}
                                     >
-                                        {formatShortcut(shortcut).split('+').map((part, i) => (
-                                            <Box
-                                                key={i}
-                                                component="kbd"
-                                                sx={{
-                                                    px: 1,
-                                                    py: 0.25,
-                                                    bgcolor: 'action.hover',
-                                                    border: 1,
-                                                    borderColor: 'divider',
-                                                    borderRadius: 0.5,
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                    minWidth: 24,
-                                                    textAlign: 'center',
-                                                }}
-                                            >
-                                                {part}
-                                            </Box>
-                                        ))}
+                                        {formatShortcut(shortcut)
+                                            .split('+')
+                                            .map((part, i) => (
+                                                <Box
+                                                    key={i}
+                                                    component="kbd"
+                                                    sx={{
+                                                        px: 1,
+                                                        py: 0.25,
+                                                        bgcolor: 'action.hover',
+                                                        border: 1,
+                                                        borderColor: 'divider',
+                                                        borderRadius: 0.5,
+                                                        fontSize: 11,
+                                                        fontWeight: 600,
+                                                        minWidth: 24,
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    {part}
+                                                </Box>
+                                            ))}
                                     </Box>
                                 </TableCell>
                                 <TableCell>
@@ -531,7 +539,8 @@ function KeyboardShortcutsTab() {
             </Box>
 
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
-                Use these keyboard shortcuts to navigate and work faster. On Mac, use ⌘ (Command) instead of Ctrl.
+                Use these keyboard shortcuts to navigate and work faster. On Mac, use ⌘ (Command)
+                instead of Ctrl.
             </Typography>
 
             <ShortcutTable title="Query Editor" shortcuts={queryShortcuts} />

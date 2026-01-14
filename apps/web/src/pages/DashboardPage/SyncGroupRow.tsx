@@ -9,12 +9,7 @@ interface SyncGroupRowProps {
     onClick: () => void;
 }
 
-export function SyncGroupRow({
-    group,
-    syncStatus,
-    checking,
-    onClick,
-}: SyncGroupRowProps) {
+export function SyncGroupRow({ group, syncStatus, checking, onClick }: SyncGroupRowProps) {
     const hasSource = !!group.sourceConnectionId;
     const syncEnabled = group.syncSchema || group.syncData;
 

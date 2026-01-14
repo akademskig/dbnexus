@@ -76,11 +76,7 @@ export function ConfirmDialog({
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {typeof message === 'string' ? (
-                        <Typography>{message}</Typography>
-                    ) : (
-                        message
-                    )}
+                    {typeof message === 'string' ? <Typography>{message}</Typography> : message}
                     {requireTyping && (
                         <TextField
                             fullWidth
@@ -236,7 +232,9 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                                 <InputLabel>Type</InputLabel>
                                 <Select
                                     value={col.type}
-                                    onChange={(e) => handleColumnChange(index, 'type', e.target.value)}
+                                    onChange={(e) =>
+                                        handleColumnChange(index, 'type', e.target.value)
+                                    }
                                     label="Type"
                                 >
                                     {types.map((t) => (
@@ -293,7 +291,9 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                 <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={!tableName.trim() || columns.filter((c) => c.name.trim()).length === 0}
+                    disabled={
+                        !tableName.trim() || columns.filter((c) => c.name.trim()).length === 0
+                    }
                 >
                     Create Table
                 </Button>
@@ -370,7 +370,9 @@ export function AddRowDialog({ open, onClose, onSubmit, columns, tableName }: Ad
                             onChange={(e) => setValues({ ...values, [col.name]: e.target.value })}
                             size="small"
                             fullWidth
-                            placeholder={col.defaultValue ? `Default: ${col.defaultValue}` : undefined}
+                            placeholder={
+                                col.defaultValue ? `Default: ${col.defaultValue}` : undefined
+                            }
                         />
                     ))}
                 </Box>
@@ -779,7 +781,11 @@ export function SaveQueryDialog({
 
                     {/* SQL Preview */}
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mb: 0.5, display: 'block' }}
+                        >
                             SQL Query
                         </Typography>
                         <Box
@@ -893,7 +899,9 @@ export function CreateSchemaDialog({
         }
 
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schemaName)) {
-            setError('Invalid name. Use only letters, numbers, and underscores, starting with a letter or underscore.');
+            setError(
+                'Invalid name. Use only letters, numbers, and underscores, starting with a letter or underscore.'
+            );
             return;
         }
 

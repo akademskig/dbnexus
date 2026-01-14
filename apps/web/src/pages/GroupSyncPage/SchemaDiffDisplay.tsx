@@ -68,11 +68,7 @@ export function SchemaDiffDisplay({
         diff.summary.columnsModified + diff.summary.indexesModified + diff.summary.fksModified;
 
     if (diff.items.length === 0) {
-        return (
-            <Alert severity="success">
-                Schemas are in sync! No differences found.
-            </Alert>
-        );
+        return <Alert severity="success">Schemas are in sync! No differences found.</Alert>;
     }
 
     return (
@@ -98,7 +94,11 @@ export function SchemaDiffDisplay({
 
             {/* Grouped diff items */}
             {Object.entries(groupedItems).map(([tableName, items]) => (
-                <Accordion key={tableName} defaultExpanded sx={{ mb: 1, '&:before': { display: 'none' } }}>
+                <Accordion
+                    key={tableName}
+                    defaultExpanded
+                    sx={{ mb: 1, '&:before': { display: 'none' } }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandIcon />}
                         sx={{
@@ -128,7 +128,9 @@ export function SchemaDiffDisplay({
                                     borderColor: 'divider',
                                 }}
                             >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Box
+                                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+                                >
                                     <DiffTypeBadge type={item.type} />
                                     <Typography variant="body2" fontWeight={500}>
                                         {item.type.replaceAll('_', ' ')}: {item.name || item.table}
@@ -139,7 +141,11 @@ export function SchemaDiffDisplay({
                                         variant="caption"
                                         color="text.secondary"
                                         component="pre"
-                                        sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', m: 0 }}
+                                        sx={{
+                                            whiteSpace: 'pre-wrap',
+                                            fontFamily: 'monospace',
+                                            m: 0,
+                                        }}
                                     >
                                         {item.migrationSql.join('\n')}
                                     </Typography>

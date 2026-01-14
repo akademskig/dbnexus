@@ -28,14 +28,14 @@ These features are required before the first public release:
 - [x] **Export query results** - CSV/JSON export buttons on data grid ✅
 - [ ] **Saved queries** - Save, organize, and quickly access favorite queries
 - [x] **Keyboard shortcuts** - Essential shortcuts for power users ✅
-  - `Ctrl+Enter` - Run query
-  - `Ctrl+/` - Toggle comment
-  - `Ctrl+1-6` - Navigate between pages
+    - `Ctrl+Enter` - Run query
+    - `Ctrl+/` - Toggle comment
+    - `Ctrl+1-6` - Navigate between pages
 - [ ] **Query templates** - Pre-built queries for common operations
-  - Show table sizes
-  - List indexes
-  - Active connections
-  - Slow queries
+    - Show table sizes
+    - List indexes
+    - Active connections
+    - Slow queries
 - [x] **Toast notifications** - Feedback for sync completion, errors, copy actions ✅
 
 ### User Experience
@@ -168,15 +168,15 @@ Features to ship in subsequent versions after v1.0:
 
 ## 📅 Release Timeline
 
-| Version | Focus | Target |
-|---------|-------|--------|
-| v0.9 | Feature freeze, bug fixes | - |
-| v1.0 | First public release | - |
-| v1.1 | Query enhancements | +1 month |
-| v1.2 | Data management | +2 months |
-| v1.3 | Schema visualization | +3 months |
-| v1.4 | Automation | +4 months |
-| v1.5 | Collaboration | +5 months |
+| Version | Focus                     | Target    |
+| ------- | ------------------------- | --------- |
+| v0.9    | Feature freeze, bug fixes | -         |
+| v1.0    | First public release      | -         |
+| v1.1    | Query enhancements        | +1 month  |
+| v1.2    | Data management           | +2 months |
+| v1.3    | Schema visualization      | +3 months |
+| v1.4    | Automation                | +4 months |
+| v1.5    | Collaboration             | +5 months |
 
 ---
 
@@ -192,4 +192,4 @@ We welcome contributions! If you'd like to work on any of these features:
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

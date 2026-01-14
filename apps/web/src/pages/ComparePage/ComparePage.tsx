@@ -143,7 +143,11 @@ export function ComparePage() {
                 targetSchema
             ),
         enabled:
-            hasCompared && activeTab === 'schema' && !!schemaDiff && !!sourceConnectionId && !!targetConnectionId,
+            hasCompared &&
+            activeTab === 'schema' &&
+            !!schemaDiff &&
+            !!sourceConnectionId &&
+            !!targetConnectionId,
         staleTime: COMPARE_CACHE_TIME,
         gcTime: COMPARE_CACHE_TIME,
     });
@@ -176,8 +180,7 @@ export function ComparePage() {
     };
 
     const handleApplyMigration = async () => {
-        if (!sourceConnectionId || !targetConnectionId || !sourceSchema || !targetSchema)
-            return;
+        if (!sourceConnectionId || !targetConnectionId || !sourceSchema || !targetSchema) return;
 
         setApplying(true);
         try {
@@ -203,8 +206,7 @@ export function ComparePage() {
         setActiveTab(newValue);
     };
 
-    const canCompare =
-        sourceConnectionId && targetConnectionId && sourceSchema && targetSchema;
+    const canCompare = sourceConnectionId && targetConnectionId && sourceSchema && targetSchema;
 
     return (
         <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
@@ -360,9 +362,7 @@ export function ComparePage() {
                             />
                         )}
                         {activeTab === 'schema' && !isComparing && !schemaDiff && (
-                            <Alert severity="info">
-                                Click Compare to see schema differences.
-                            </Alert>
+                            <Alert severity="info">Click Compare to see schema differences.</Alert>
                         )}
 
                         {/* Data Tab */}

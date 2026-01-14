@@ -122,15 +122,17 @@ export const emptyStateConfigs = {
     },
     noTables: {
         title: 'No tables found',
-        description: 'This schema doesn\'t have any tables or views.',
+        description: "This schema doesn't have any tables or views.",
     },
     selectConnection: {
         title: 'Select a connection',
-        description: 'Choose a database connection from the dropdown to browse tables and run queries.',
+        description:
+            'Choose a database connection from the dropdown to browse tables and run queries.',
     },
     selectTable: {
         title: 'Select a table',
-        description: 'Choose a table from the sidebar to view its data, structure, indexes, and foreign keys.',
+        description:
+            'Choose a table from the sidebar to view its data, structure, indexes, and foreign keys.',
     },
     noResults: {
         title: 'No results',

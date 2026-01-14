@@ -39,9 +39,7 @@ export function MigrationHistoryTab() {
     const toast = useToastStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [selectedMigration, setSelectedMigration] = useState<MigrationHistoryEntry | null>(
-        null
-    );
+    const [selectedMigration, setSelectedMigration] = useState<MigrationHistoryEntry | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [migrationToDelete, setMigrationToDelete] = useState<string | null>(null);
 
@@ -105,7 +103,10 @@ export function MigrationHistoryTab() {
                 `${row.sourceConnectionName || 'Unknown'}.${row.sourceSchema}`,
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
                 <Box sx={{ lineHeight: 1.3 }}>
-                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}
+                    >
                         {params.row.sourceConnectionName || 'Unknown'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
@@ -129,7 +130,10 @@ export function MigrationHistoryTab() {
                 `${row.targetConnectionName || 'Unknown'}.${row.targetSchema}`,
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
                 <Box sx={{ lineHeight: 1.3 }}>
-                    <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3 }}
+                    >
                         {params.row.targetConnectionName || 'Unknown'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
@@ -180,9 +184,7 @@ export function MigrationHistoryTab() {
                     sx={{
                         fontSize: 10,
                         height: 20,
-                        bgcolor: params.value
-                            ? 'rgba(34, 197, 94, 0.1)'
-                            : 'rgba(239, 68, 68, 0.1)',
+                        bgcolor: params.value ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                         color: params.value ? '#22c55e' : '#ef4444',
                     }}
                 />
@@ -198,9 +200,7 @@ export function MigrationHistoryTab() {
                     <Tooltip title="Copy SQL">
                         <IconButton
                             size="small"
-                            onClick={() =>
-                                handleCopy(params.row.sqlStatements, params.row.id)
-                            }
+                            onClick={() => handleCopy(params.row.sqlStatements, params.row.id)}
                         >
                             {copiedId === params.row.id ? (
                                 <CheckIcon sx={{ fontSize: 16, color: 'success.main' }} />
@@ -210,10 +210,7 @@ export function MigrationHistoryTab() {
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="View Details">
-                        <IconButton
-                            size="small"
-                            onClick={() => setSelectedMigration(params.row)}
-                        >
+                        <IconButton size="small" onClick={() => setSelectedMigration(params.row)}>
                             <ViewIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                     </Tooltip>
@@ -301,8 +298,8 @@ export function MigrationHistoryTab() {
                 <DialogTitle>Delete Migration Record</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to delete this migration record? This only removes
-                        the history entry, not the actual database changes.
+                        Are you sure you want to delete this migration record? This only removes the
+                        history entry, not the actual database changes.
                     </Typography>
                 </DialogContent>
                 <DialogActions>
@@ -310,7 +307,9 @@ export function MigrationHistoryTab() {
                     <Button
                         color="error"
                         variant="contained"
-                        onClick={() => migrationToDelete && deleteMutation.mutate(migrationToDelete)}
+                        onClick={() =>
+                            migrationToDelete && deleteMutation.mutate(migrationToDelete)
+                        }
                         disabled={deleteMutation.isPending}
                     >
                         Delete

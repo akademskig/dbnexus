@@ -48,7 +48,12 @@ function parseColumnArray(cols: string[] | string | undefined | null): string[] 
     if (!cols) return [];
     if (Array.isArray(cols)) return cols;
     if (typeof cols === 'string') {
-        return cols.replaceAll('{', '').replaceAll('}', '').split(',').map(c => c.trim()).filter(Boolean);
+        return cols
+            .replaceAll('{', '')
+            .replaceAll('}', '')
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean);
     }
     return [];
 }
@@ -103,9 +108,10 @@ function calculateLayout(
                     nullable: col.nullable,
                     isPrimaryKey: col.isPrimaryKey,
                     isForeignKey: !!fk,
-                    references: fk && refColumn
-                        ? { table: fk.referencedTable, column: refColumn }
-                        : undefined,
+                    references:
+                        fk && refColumn
+                            ? { table: fk.referencedTable, column: refColumn }
+                            : undefined,
                 };
             });
 
@@ -143,9 +149,10 @@ function calculateLayout(
                     nullable: colInfo.nullable,
                     isPrimaryKey: colInfo.isPrimaryKey,
                     isForeignKey: !!fk,
-                    references: fk && refColumn
-                        ? { table: fk.referencedTable, column: refColumn }
-                        : undefined,
+                    references:
+                        fk && refColumn
+                            ? { table: fk.referencedTable, column: refColumn }
+                            : undefined,
                 };
             });
 
@@ -228,7 +235,11 @@ function calculateLayout(
 }
 
 // Helper to get default schema for a database engine
-function getDefaultSchema(engine: string | undefined, database: string | undefined, schemas: string[]): string {
+function getDefaultSchema(
+    engine: string | undefined,
+    database: string | undefined,
+    schemas: string[]
+): string {
     if (schemas.length === 0) return '';
     const firstSchema = schemas[0] ?? '';
     if (engine === 'postgres') {
@@ -299,13 +310,27 @@ export function SchemaVisualizerPage() {
     // Auto-select default schema when schemas load and no schema is selected
     useEffect(() => {
         if (selectedConnectionId && schemas.length > 0 && !selectedSchema) {
-            const defaultSchema = getDefaultSchema(selectedConnection?.engine, selectedConnection?.database, schemas);
+            const defaultSchema = getDefaultSchema(
+                selectedConnection?.engine,
+                selectedConnection?.database,
+                schemas
+            );
             if (defaultSchema) {
                 // Update URL with default schema
-                setSearchParams({ connection: selectedConnectionId, schema: defaultSchema }, { replace: true });
+                setSearchParams(
+                    { connection: selectedConnectionId, schema: defaultSchema },
+                    { replace: true }
+                );
             }
         }
-    }, [selectedConnectionId, schemas, selectedSchema, selectedConnection?.engine, selectedConnection?.database, setSearchParams]);
+    }, [
+        selectedConnectionId,
+        schemas,
+        selectedSchema,
+        selectedConnection?.engine,
+        selectedConnection?.database,
+        setSearchParams,
+    ]);
 
     // Fetch tables - pass schema to API for efficiency
     const {
@@ -362,29 +387,38 @@ export function SchemaVisualizerPage() {
     }, [graphData, setNodes, setEdges]);
 
     // Handle connection change - update URL (which updates selectedConnectionId)
-    const handleConnectionChange = useCallback((connectionId: string) => {
-        setNodes([]);
-        setEdges([]);
-        if (connectionId) {
-            setSearchParams({ connection: connectionId }, { replace: true });
-        } else {
-            setSearchParams({}, { replace: true });
-        }
-    }, [setNodes, setEdges, setSearchParams]);
+    const handleConnectionChange = useCallback(
+        (connectionId: string) => {
+            setNodes([]);
+            setEdges([]);
+            if (connectionId) {
+                setSearchParams({ connection: connectionId }, { replace: true });
+            } else {
+                setSearchParams({}, { replace: true });
+            }
+        },
+        [setNodes, setEdges, setSearchParams]
+    );
 
     // Handle schema change - update URL (which updates selectedSchema)
-    const handleSchemaChange = useCallback((schema: string) => {
-        if (selectedConnectionId && schema) {
-            setSearchParams({ connection: selectedConnectionId, schema }, { replace: true });
-        }
-    }, [selectedConnectionId, setSearchParams]);
+    const handleSchemaChange = useCallback(
+        (schema: string) => {
+            if (selectedConnectionId && schema) {
+                setSearchParams({ connection: selectedConnectionId, schema }, { replace: true });
+            }
+        },
+        [selectedConnectionId, setSearchParams]
+    );
 
     const isLoading = loadingConnections || loadingTables || loadingDetails;
 
     // Count relationships
     const relationshipCount = useMemo(() => {
         if (!tableDetails) return 0;
-        return Object.values(tableDetails).reduce((count, details) => count + details.foreignKeys.length, 0);
+        return Object.values(tableDetails).reduce(
+            (count, details) => count + details.foreignKeys.length,
+            0
+        );
     }, [tableDetails]);
 
     return (

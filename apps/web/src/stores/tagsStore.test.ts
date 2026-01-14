@@ -59,13 +59,13 @@ describe('tagsStore', () => {
     it('should reset tags to default', () => {
         const { addTag, resetTags } = useTagsStore.getState();
         addTag({ name: 'Custom', color: '50, 50, 50' });
-        
+
         resetTags();
-        
+
         const state = useTagsStore.getState();
         // Default tags include production, staging, development, read-only
         expect(state.tags).toHaveLength(4);
-        expect(state.tags.some(t => t.name === 'production')).toBe(true);
+        expect(state.tags.some((t) => t.name === 'production')).toBe(true);
     });
 
     it('should only update specified fields', () => {
@@ -90,10 +90,21 @@ describe('TAG_COLORS', () => {
 
     it('should have all expected color keys', () => {
         const expectedColors = [
-            'red', 'orange', 'amber', 'yellow', 'lime', 'green',
-            'teal', 'cyan', 'blue', 'indigo', 'purple', 'pink', 'gray'
+            'red',
+            'orange',
+            'amber',
+            'yellow',
+            'lime',
+            'green',
+            'teal',
+            'cyan',
+            'blue',
+            'indigo',
+            'purple',
+            'pink',
+            'gray',
         ];
-        expectedColors.forEach(color => {
+        expectedColors.forEach((color) => {
             expect(TAG_COLORS).toHaveProperty(color);
         });
     });

@@ -1,9 +1,5 @@
 import { Chip } from '@mui/material';
-import {
-    Add as AddIcon,
-    Remove as RemoveIcon,
-    Edit as EditIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, Remove as RemoveIcon, Edit as EditIcon } from '@mui/icons-material';
 
 interface DiffTypeBadgeProps {
     type: string;

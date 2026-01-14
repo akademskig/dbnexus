@@ -147,7 +147,11 @@ export function LandingPage() {
                         >
                             <Box
                                 component="img"
-                                src={theme.palette.mode === 'dark' ? '/logo-dark.svg' : '/logo-light.svg'}
+                                src={
+                                    theme.palette.mode === 'dark'
+                                        ? '/logo-dark.svg'
+                                        : '/logo-light.svg'
+                                }
                                 alt="DB Nexus"
                                 sx={{ width: 72, height: 72 }}
                             />
@@ -246,7 +250,14 @@ export function LandingPage() {
                         </Box>
 
                         {/* Database badges */}
-                        <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1.5,
+                                justifyContent: 'center',
+                                flexWrap: 'wrap',
+                            }}
+                        >
                             {databases.map((db) => (
                                 <Box
                                     key={db.name}
@@ -278,7 +289,11 @@ export function LandingPage() {
                     <Typography variant="h4" fontWeight={600} gutterBottom>
                         Everything you need to manage databases
                     </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+                    <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{ maxWidth: 600, mx: 'auto' }}
+                    >
                         A complete toolkit for database development, from schema design to data
                         synchronization.
                     </Typography>

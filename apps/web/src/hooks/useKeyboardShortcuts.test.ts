@@ -3,7 +3,12 @@ import { formatShortcut, KEYBOARD_SHORTCUTS } from './useKeyboardShortcuts';
 
 describe('formatShortcut', () => {
     it('should format Ctrl+Enter shortcut', () => {
-        const shortcut = { key: 'Enter', ctrl: true, description: 'Test', category: 'query' as const };
+        const shortcut = {
+            key: 'Enter',
+            ctrl: true,
+            description: 'Test',
+            category: 'query' as const,
+        };
         const formatted = formatShortcut(shortcut);
         // On non-Mac, should be Ctrl+↵
         expect(formatted).toContain('Ctrl');
@@ -11,7 +16,13 @@ describe('formatShortcut', () => {
     });
 
     it('should format Ctrl+Shift+F shortcut', () => {
-        const shortcut = { key: 'f', ctrl: true, shift: true, description: 'Test', category: 'query' as const };
+        const shortcut = {
+            key: 'f',
+            ctrl: true,
+            shift: true,
+            description: 'Test',
+            category: 'query' as const,
+        };
         const formatted = formatShortcut(shortcut);
         expect(formatted).toContain('Ctrl');
         expect(formatted).toContain('Shift');
@@ -25,7 +36,12 @@ describe('formatShortcut', () => {
     });
 
     it('should format number key shortcut', () => {
-        const shortcut = { key: '1', ctrl: true, description: 'Test', category: 'navigation' as const };
+        const shortcut = {
+            key: '1',
+            ctrl: true,
+            description: 'Test',
+            category: 'navigation' as const,
+        };
         const formatted = formatShortcut(shortcut);
         expect(formatted).toContain('1');
     });
@@ -48,9 +64,7 @@ describe('KEYBOARD_SHORTCUTS', () => {
     });
 
     it('should have Ctrl+Enter for running query', () => {
-        const runQuery = KEYBOARD_SHORTCUTS.find(
-            (s) => s.key === 'Enter' && s.ctrl && !s.shift
-        );
+        const runQuery = KEYBOARD_SHORTCUTS.find((s) => s.key === 'Enter' && s.ctrl && !s.shift);
         expect(runQuery).toBeDefined();
         expect(runQuery?.description).toContain('Run');
     });

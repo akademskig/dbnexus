@@ -32,9 +32,9 @@ import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { groupsApi } from '../lib/api';
+import { groupsApi, connectionsApi } from '../lib/api';
 import { themeColors } from '../theme';
-import type { DatabaseGroup } from '@dbnexus/shared';
+import type { DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const DRAWER_WIDTH = 260;
@@ -44,8 +44,10 @@ const DRAWER_WIDTH_COLLAPSED = 64;
 interface SidebarStore {
     collapsed: boolean;
     syncExpanded: boolean;
+    connectionsExpanded: boolean;
     toggle: () => void;
     toggleSync: () => void;
+    toggleConnections: () => void;
 }
 
 const useSidebarStore = create<SidebarStore>()(
@@ -53,8 +55,11 @@ const useSidebarStore = create<SidebarStore>()(
         (set) => ({
             collapsed: false,
             syncExpanded: true,
+            connectionsExpanded: true,
             toggle: () => set((state) => ({ collapsed: !state.collapsed })),
             toggleSync: () => set((state) => ({ syncExpanded: !state.syncExpanded })),
+            toggleConnections: () =>
+                set((state) => ({ connectionsExpanded: !state.connectionsExpanded })),
         }),
         { name: 'dbnexus-sidebar' }
     )
@@ -73,13 +78,17 @@ export function Layout() {
     const location = useLocation();
     const navigate = useNavigate();
     const theme = useTheme();
-    const { collapsed, syncExpanded, toggle, toggleSync } = useSidebarStore();
+    const { collapsed, syncExpanded, connectionsExpanded, toggle, toggleSync, toggleConnections } =
+        useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
     const colors = themeColors[theme.palette.mode];
 
     const [groups, setGroups] = useState<DatabaseGroup[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(true);
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
+    const [connections, setConnections] = useState<ConnectionConfig[]>([]);
+    const [loadingConnections, setLoadingConnections] = useState(true);
+    const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
 
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);
@@ -90,10 +99,19 @@ export function Layout() {
             .then(setGroups)
             .catch(() => setGroups([]))
             .finally(() => setLoadingGroups(false));
+
+        connectionsApi
+            .getAll()
+            .then(setConnections)
+            .catch(() => setConnections([]))
+            .finally(() => setLoadingConnections(false));
     }, []);
 
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
+
+    const isConnectionManagementActive =
+        location.pathname.startsWith('/connections/') && location.pathname !== '/connections';
 
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -343,6 +361,161 @@ export function Layout() {
                                             <ListItemText
                                                 primary={group.name}
                                                 secondary={group.projectName}
+                                                primaryTypographyProps={{ fontSize: 13 }}
+                                                secondaryTypographyProps={{ fontSize: 11 }}
+                                            />
+                                        </MenuItem>
+                                    );
+                                })}
+                            </Menu>
+                        </>
+                    )}
+
+                    {/* Connection Management Section */}
+                    {!collapsed && connections.length > 0 && (
+                        <>
+                            <Divider sx={{ my: 1.5 }} />
+                            <ListItemButton
+                                onClick={toggleConnections}
+                                sx={{ px: 2 }}
+                                selected={isConnectionManagementActive}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 40,
+                                        color: isConnectionManagementActive
+                                            ? 'primary.main'
+                                            : 'text.secondary',
+                                    }}
+                                >
+                                    <SettingsIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Manage"
+                                    primaryTypographyProps={{ fontSize: 14 }}
+                                />
+                                {connectionsExpanded ? (
+                                    <ExpandLessIcon fontSize="small" />
+                                ) : (
+                                    <ExpandMoreIcon fontSize="small" />
+                                )}
+                            </ListItemButton>
+                            <Collapse in={connectionsExpanded}>
+                                <List disablePadding>
+                                    {loadingConnections ? (
+                                        <Box sx={{ py: 2, textAlign: 'center' }}>
+                                            <CircularProgress size={16} />
+                                        </Box>
+                                    ) : (
+                                        connections.map((conn) => {
+                                            const connPath = `/connections/${conn.id}`;
+                                            const isConnActive = location.pathname === connPath;
+                                            return (
+                                                <ListItemButton
+                                                    key={conn.id}
+                                                    onClick={() => navigate(connPath)}
+                                                    selected={isConnActive}
+                                                    sx={{
+                                                        pl: 4,
+                                                        py: 0.75,
+                                                    }}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 32 }}>
+                                                        <StorageIcon
+                                                            sx={{
+                                                                fontSize: 18,
+                                                                color: isConnActive
+                                                                    ? 'primary.main'
+                                                                    : 'text.disabled',
+                                                            }}
+                                                        />
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={conn.name}
+                                                        primaryTypographyProps={{
+                                                            fontSize: 13,
+                                                            noWrap: true,
+                                                        }}
+                                                        secondary={conn.engine}
+                                                        secondaryTypographyProps={{
+                                                            fontSize: 11,
+                                                            noWrap: true,
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            );
+                                        })
+                                    )}
+                                </List>
+                            </Collapse>
+                        </>
+                    )}
+
+                    {/* Collapsed connection management icon with menu */}
+                    {collapsed && connections.length > 0 && (
+                        <>
+                            <Tooltip title="Manage Connections" placement="right" arrow>
+                                <ListItemButton
+                                    onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
+                                    selected={isConnectionManagementActive}
+                                    sx={{
+                                        mb: 0.5,
+                                        justifyContent: 'center',
+                                        px: 1.5,
+                                    }}
+                                >
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 0,
+                                            color: isConnectionManagementActive
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                        }}
+                                    >
+                                        <SettingsIcon />
+                                    </ListItemIcon>
+                                </ListItemButton>
+                            </Tooltip>
+                            <Menu
+                                anchorEl={connectionsMenuAnchor}
+                                open={Boolean(connectionsMenuAnchor)}
+                                onClose={() => setConnectionsMenuAnchor(null)}
+                                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
+                                >
+                                    Manage Connections
+                                </Typography>
+                                <Divider />
+                                {connections.map((conn) => {
+                                    const connPath = `/connections/${conn.id}`;
+                                    const isConnActive = location.pathname === connPath;
+                                    return (
+                                        <MenuItem
+                                            key={conn.id}
+                                            onClick={() => {
+                                                navigate(connPath);
+                                                setConnectionsMenuAnchor(null);
+                                            }}
+                                            selected={isConnActive}
+                                            sx={{ minWidth: 180 }}
+                                        >
+                                            <ListItemIcon sx={{ minWidth: 32 }}>
+                                                <StorageIcon
+                                                    sx={{
+                                                        fontSize: 18,
+                                                        color: isConnActive
+                                                            ? 'primary.main'
+                                                            : 'text.disabled',
+                                                    }}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={conn.name}
+                                                secondary={conn.engine}
                                                 primaryTypographyProps={{ fontSize: 13 }}
                                                 secondaryTypographyProps={{ fontSize: 11 }}
                                             />

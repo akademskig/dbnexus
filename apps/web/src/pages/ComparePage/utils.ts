@@ -1,10 +1,7 @@
 import type { ConnectionConfig } from '@dbnexus/shared';
 
 // Get default schema for a connection
-export function getDefaultSchema(
-    conn: ConnectionConfig | undefined,
-    schemas: string[]
-): string {
+export function getDefaultSchema(conn: ConnectionConfig | undefined, schemas: string[]): string {
     if (!conn) return '';
     // For MySQL/MariaDB, prefer the database name as the schema
     if (conn.engine === 'mysql' || conn.engine === 'mariadb') {

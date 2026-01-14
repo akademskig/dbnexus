@@ -86,9 +86,7 @@ function createWindow(): void {
     });
 
     // Load the app
-    const startUrl = isDev
-        ? 'http://localhost:5173'
-        : `http://localhost:${API_PORT}`;
+    const startUrl = isDev ? 'http://localhost:5173' : `http://localhost:${API_PORT}`;
 
     mainWindow.loadURL(startUrl);
 
@@ -153,11 +151,7 @@ function createMenu(): void {
         },
         {
             label: 'Window',
-            submenu: [
-                { role: 'minimize' },
-                { role: 'zoom' },
-                { role: 'close' },
-            ],
+            submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }],
         },
         {
             label: 'Help',

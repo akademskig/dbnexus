@@ -222,9 +222,7 @@ export function QueryHistoryTab() {
                     sx={{
                         fontSize: 10,
                         height: 20,
-                        bgcolor: params.value
-                            ? 'rgba(34, 197, 94, 0.1)'
-                            : 'rgba(239, 68, 68, 0.1)',
+                        bgcolor: params.value ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                         color: params.value ? '#22c55e' : '#ef4444',
                     }}
                 />

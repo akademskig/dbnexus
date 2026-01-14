@@ -76,8 +76,8 @@ export function StatCard({
                                                     changeType === 'up'
                                                         ? 'success.main'
                                                         : changeType === 'down'
-                                                            ? 'error.main'
-                                                            : 'text.secondary',
+                                                          ? 'error.main'
+                                                          : 'text.secondary',
                                                 fontWeight: 500,
                                             }}
                                         >

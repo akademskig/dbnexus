@@ -126,9 +126,13 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
             width: 100,
             sortable: false,
             renderCell: (params) => {
-                const isSystemSchema = ['information_schema', 'pg_catalog', 'pg_toast'].includes(params.row.name);
+                const isSystemSchema = ['information_schema', 'pg_catalog', 'pg_toast'].includes(
+                    params.row.name
+                );
                 return (
-                    <Tooltip title={isSystemSchema ? 'Cannot delete system schema' : 'Delete schema'}>
+                    <Tooltip
+                        title={isSystemSchema ? 'Cannot delete system schema' : 'Delete schema'}
+                    >
                         <span>
                             <IconButton
                                 size="small"
@@ -161,7 +165,14 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
     return (
         <Box>
             {/* Toolbar */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                }}
+            >
                 <Typography variant="h6" fontWeight={600}>
                     Schemas ({schemas.length})
                 </Typography>
@@ -189,7 +200,8 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
 
             {isSqlite && (
                 <Alert severity="info" sx={{ mb: 2 }}>
-                    SQLite does not support multiple schemas. The database file acts as a single schema.
+                    SQLite does not support multiple schemas. The database file acts as a single
+                    schema.
                 </Alert>
             )}
 
@@ -238,7 +250,12 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
             )}
 
             {/* Create Schema Dialog */}
-            <Dialog open={createDialogOpen} onClose={handleCloseCreateDialog} maxWidth="xs" fullWidth>
+            <Dialog
+                open={createDialogOpen}
+                onClose={handleCloseCreateDialog}
+                maxWidth="xs"
+                fullWidth
+            >
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <GridViewIcon color="primary" />
                     Create New Schema
@@ -278,7 +295,9 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
                         variant="contained"
                         onClick={handleCreateSchema}
                         disabled={!newSchemaName.trim() || createMutation.isPending}
-                        startIcon={createMutation.isPending ? <CircularProgress size={16} /> : <AddIcon />}
+                        startIcon={
+                            createMutation.isPending ? <CircularProgress size={16} /> : <AddIcon />
+                        }
                     >
                         {createMutation.isPending ? 'Creating...' : 'Create'}
                     </Button>
@@ -286,8 +305,15 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
             </Dialog>
 
             {/* Delete Schema Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={handleCloseDeleteDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}
+                >
                     <WarningIcon />
                     Delete Schema
                 </DialogTitle>
@@ -296,11 +322,10 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
                         <Alert severity="error" sx={{ mb: 2 }}>
                             <Typography variant="body2" gutterBottom>
                                 <strong>Warning:</strong> This will permanently delete the schema{' '}
-                                <strong>"{schemaToDelete}"</strong> and ALL tables, data, and objects within it.
+                                <strong>&quot;{schemaToDelete}&quot;</strong> and ALL tables, data,
+                                and objects within it.
                             </Typography>
-                            <Typography variant="body2">
-                                This action cannot be undone.
-                            </Typography>
+                            <Typography variant="body2">This action cannot be undone.</Typography>
                         </Alert>
                         <Typography variant="body2" sx={{ mb: 2 }}>
                             To confirm, type the schema name: <strong>{schemaToDelete}</strong>
@@ -311,7 +336,9 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
                             value={confirmDeleteText}
                             onChange={(e) => setConfirmDeleteText(e.target.value)}
                             placeholder={schemaToDelete || ''}
-                            error={confirmDeleteText.length > 0 && confirmDeleteText !== schemaToDelete}
+                            error={
+                                confirmDeleteText.length > 0 && confirmDeleteText !== schemaToDelete
+                            }
                             helperText={
                                 confirmDeleteText.length > 0 && confirmDeleteText !== schemaToDelete
                                     ? 'Schema name does not match'
@@ -330,7 +357,13 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
                         color="error"
                         onClick={handleDeleteSchema}
                         disabled={confirmDeleteText !== schemaToDelete || deleteMutation.isPending}
-                        startIcon={deleteMutation.isPending ? <CircularProgress size={16} /> : <DeleteIcon />}
+                        startIcon={
+                            deleteMutation.isPending ? (
+                                <CircularProgress size={16} />
+                            ) : (
+                                <DeleteIcon />
+                            )
+                        }
                     >
                         {deleteMutation.isPending ? 'Deleting...' : 'Delete Schema'}
                     </Button>

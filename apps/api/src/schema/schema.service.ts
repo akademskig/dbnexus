@@ -4,7 +4,7 @@ import type { TableInfo, TableSchema } from '@dbnexus/shared';
 
 @Injectable()
 export class SchemaService {
-    constructor(private readonly connectionsService: ConnectionsService) { }
+    constructor(private readonly connectionsService: ConnectionsService) {}
 
     /**
      * Get all schemas in a database
@@ -73,7 +73,9 @@ export class SchemaService {
 
         // Validate schema name (basic validation - alphanumeric and underscores)
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schemaName)) {
-            throw new Error('Invalid schema name. Use only letters, numbers, and underscores, starting with a letter or underscore.');
+            throw new Error(
+                'Invalid schema name. Use only letters, numbers, and underscores, starting with a letter or underscore.'
+            );
         }
 
         // Generate SQL based on database engine
@@ -103,7 +105,14 @@ export class SchemaService {
         }
 
         // Prevent deletion of system schemas
-        const systemSchemas = ['information_schema', 'pg_catalog', 'pg_toast', 'mysql', 'performance_schema', 'sys'];
+        const systemSchemas = [
+            'information_schema',
+            'pg_catalog',
+            'pg_toast',
+            'mysql',
+            'performance_schema',
+            'sys',
+        ];
         if (systemSchemas.includes(schemaName.toLowerCase())) {
             throw new Error('Cannot delete system schema');
         }

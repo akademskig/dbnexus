@@ -1,11 +1,4 @@
-import {
-    Box,
-    Typography,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-} from '@mui/material';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Storage as DatabaseIcon } from '@mui/icons-material';
 import type { ConnectionConfig } from '@dbnexus/shared';
 

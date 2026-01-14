@@ -153,13 +153,15 @@ export class MysqlConnector implements DatabaseConnector {
             [dbName]
         );
 
-        return (rows as {
-            schema: string;
-            name: string;
-            type: string;
-            row_count: number | null;
-            size_bytes: number | null;
-        }[]).map((row) => ({
+        return (
+            rows as {
+                schema: string;
+                name: string;
+                type: string;
+                row_count: number | null;
+                size_bytes: number | null;
+            }[]
+        ).map((row) => ({
             schema: row.schema,
             name: row.name,
             type: row.type === 'VIEW' ? 'view' : 'table',
@@ -201,13 +203,13 @@ export class MysqlConnector implements DatabaseConnector {
         `);
 
         const schemas = (rows as { SCHEMA_NAME: string }[]).map((row) => row.SCHEMA_NAME);
-        
+
         // Put the connected database first in the list
         const connectedDb = this.config.database;
         if (connectedDb && schemas.includes(connectedDb)) {
-            return [connectedDb, ...schemas.filter(s => s !== connectedDb)];
+            return [connectedDb, ...schemas.filter((s) => s !== connectedDb)];
         }
-        
+
         return schemas;
     }
 
@@ -257,20 +259,22 @@ export class MysqlConnector implements DatabaseConnector {
             (uniqueRows as { COLUMN_NAME: string }[]).map((r) => r.COLUMN_NAME)
         );
 
-        return (rows as {
-            column_name: string;
-            data_type: string;
-            column_type: string;
-            is_nullable: string;
-            column_default: string | null;
-            char_max_length: number | null;
-            numeric_precision: number | null;
-            numeric_scale: number | null;
-            column_key: string;
-            extra: string;
-            comment: string;
-        }[]).map((row) => {
-            let dataType = row.column_type;
+        return (
+            rows as {
+                column_name: string;
+                data_type: string;
+                column_type: string;
+                is_nullable: string;
+                column_default: string | null;
+                char_max_length: number | null;
+                numeric_precision: number | null;
+                numeric_scale: number | null;
+                column_key: string;
+                extra: string;
+                comment: string;
+            }[]
+        ).map((row) => {
+            const dataType = row.column_type;
 
             return {
                 name: row.column_name,
@@ -300,12 +304,14 @@ export class MysqlConnector implements DatabaseConnector {
             [schema, table]
         );
 
-        return (rows as {
-            index_name: string;
-            columns: string;
-            is_unique: number;
-            index_type: string;
-        }[]).map((row) => ({
+        return (
+            rows as {
+                index_name: string;
+                columns: string;
+                is_unique: number;
+                index_type: string;
+            }[]
+        ).map((row) => ({
             name: row.index_name,
             columns: row.columns.split(','),
             isUnique: row.is_unique === 1,
@@ -342,15 +348,17 @@ export class MysqlConnector implements DatabaseConnector {
             [schema, table]
         );
 
-        return (rows as {
-            constraint_name: string;
-            columns: string;
-            referenced_schema: string;
-            referenced_table: string;
-            referenced_columns: string;
-            on_delete: string;
-            on_update: string;
-        }[]).map((row) => ({
+        return (
+            rows as {
+                constraint_name: string;
+                columns: string;
+                referenced_schema: string;
+                referenced_table: string;
+                referenced_columns: string;
+                on_delete: string;
+                on_update: string;
+            }[]
+        ).map((row) => ({
             name: row.constraint_name,
             columns: row.columns.split(','),
             referencedSchema: row.referenced_schema,

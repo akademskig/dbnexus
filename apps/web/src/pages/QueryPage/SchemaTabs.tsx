@@ -305,7 +305,9 @@ export function ForeignKeysTab({ schema, loading }: SchemaTabProps) {
                                         <Chip
                                             label={fk.onUpdate || 'NO ACTION'}
                                             size="small"
-                                            color={fk.onUpdate === 'CASCADE' ? 'warning' : 'default'}
+                                            color={
+                                                fk.onUpdate === 'CASCADE' ? 'warning' : 'default'
+                                            }
                                             sx={{ fontSize: 10 }}
                                         />
                                     </TableCell>
@@ -383,7 +385,11 @@ export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading
                         variant="contained"
                         size="small"
                         startIcon={
-                            loading ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />
+                            loading ? (
+                                <CircularProgress size={16} color="inherit" />
+                            ) : (
+                                <PlayArrowIcon />
+                            )
                         }
                         onClick={onExecute}
                         disabled={!sql.trim() || loading}

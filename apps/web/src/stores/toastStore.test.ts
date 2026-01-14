@@ -67,7 +67,7 @@ describe('toastStore', () => {
     it('should remove toast by id', () => {
         const { success, removeToast } = useToastStore.getState();
         success('Test');
-        
+
         const toastId = useToastStore.getState().toasts[0].id;
         expect(useToastStore.getState().toasts).toHaveLength(1);
 

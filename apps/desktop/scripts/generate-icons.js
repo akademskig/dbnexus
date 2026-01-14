@@ -2,16 +2,16 @@
 
 /**
  * Icon Generation Script for DB Nexus
- * 
+ *
  * This script generates app icons in various sizes for different platforms.
- * 
+ *
  * Prerequisites:
  *   - Install sharp: npm install sharp
  *   - Install png-to-ico (for Windows): npm install png-to-ico
- * 
+ *
  * Usage:
  *   node scripts/generate-icons.js
- * 
+ *
  * Output:
  *   - resources/icon.png (1024x1024 - master)
  *   - resources/icons/icon-16.png
@@ -49,14 +49,12 @@ async function generateIcons() {
 
     // Generate PNGs for each size
     for (const size of SIZES) {
-        const outputPath = size === 1024 
-            ? path.join(RESOURCES_DIR, 'icon.png')
-            : path.join(ICONS_DIR, `icon-${size}.png`);
+        const outputPath =
+            size === 1024
+                ? path.join(RESOURCES_DIR, 'icon.png')
+                : path.join(ICONS_DIR, `icon-${size}.png`);
 
-        await sharp(svgBuffer)
-            .resize(size, size)
-            .png()
-            .toFile(outputPath);
+        await sharp(svgBuffer).resize(size, size).png().toFile(outputPath);
 
         console.log(`  ✓ Generated ${size}x${size} PNG`);
     }
