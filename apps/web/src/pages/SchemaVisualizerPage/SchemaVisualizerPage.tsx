@@ -307,17 +307,14 @@ export function SchemaVisualizerPage() {
         }
     }, [selectedConnectionId, schemas, selectedSchema, selectedConnection?.engine, selectedConnection?.database, setSearchParams]);
 
-    // Fetch tables
+    // Fetch tables - pass schema to API for efficiency
     const {
         data: tables = [],
         isLoading: loadingTables,
         refetch: refetchTables,
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
-        queryFn: async () => {
-            const allTables = await schemaApi.getTables(selectedConnectionId);
-            return allTables.filter((t) => t.schema === selectedSchema);
-        },
+        queryFn: () => schemaApi.getTables(selectedConnectionId, selectedSchema),
         enabled: !!selectedConnectionId && !!selectedSchema,
     });
 
