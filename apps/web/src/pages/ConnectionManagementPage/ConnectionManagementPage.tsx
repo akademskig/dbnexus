@@ -20,7 +20,7 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import BuildIcon from '@mui/icons-material/Build';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SettingsIcon from '@mui/icons-material/Settings';
-import EditIcon from '@mui/icons-material/Edit';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -370,7 +370,7 @@ export function ConnectionManagementPage() {
                                 },
                             }}
                         >
-                            <EditIcon fontSize="small" />
+                            <AccountTreeIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
                 </Box>
