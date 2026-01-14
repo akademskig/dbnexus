@@ -21,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GridViewIcon from '@mui/icons-material/GridView';
 import WarningIcon from '@mui/icons-material/Warning';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -32,9 +33,16 @@ interface SchemasTabProps {
     connection: ConnectionConfig | undefined;
     schemas: string[];
     isLoading: boolean;
+    onViewTables?: (schemaName: string) => void;
 }
 
-export function SchemasTab({ connectionId, connection, schemas, isLoading }: SchemasTabProps) {
+export function SchemasTab({
+    connectionId,
+    connection,
+    schemas,
+    isLoading,
+    onViewTables,
+}: SchemasTabProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -123,30 +131,42 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 100,
+            width: 120,
             sortable: false,
             renderCell: (params) => {
                 const isSystemSchema = ['information_schema', 'pg_catalog', 'pg_toast'].includes(
                     params.row.name
                 );
                 return (
-                    <Tooltip
-                        title={isSystemSchema ? 'Cannot delete system schema' : 'Delete schema'}
-                    >
-                        <span>
-                            <IconButton
-                                size="small"
-                                color="error"
-                                disabled={isSystemSchema || isSqlite}
-                                onClick={() => {
-                                    setSchemaToDelete(params.row.name);
-                                    setDeleteDialogOpen(true);
-                                }}
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        {onViewTables && (
+                            <Tooltip title="View Tables">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => onViewTables(params.row.name)}
+                                >
+                                    <TableChartIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                        <Tooltip
+                            title={isSystemSchema ? 'Cannot delete system schema' : 'Delete schema'}
+                        >
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    color="error"
+                                    disabled={isSystemSchema || isSqlite}
+                                    onClick={() => {
+                                        setSchemaToDelete(params.row.name);
+                                        setDeleteDialogOpen(true);
+                                    }}
+                                >
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Box>
                 );
             },
         },

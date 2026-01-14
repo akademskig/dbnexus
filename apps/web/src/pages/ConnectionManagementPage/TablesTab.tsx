@@ -40,13 +40,24 @@ interface TablesTabProps {
     connection: ConnectionConfig | undefined;
     schemas: string[];
     isLoading: boolean;
+    initialSchema?: string | null;
+    onSchemaViewed?: () => void;
 }
 
-export function TablesTab({ connectionId, connection, schemas, isLoading }: TablesTabProps) {
+export function TablesTab({
+    connectionId,
+    connection,
+    schemas,
+    isLoading,
+    initialSchema,
+    onSchemaViewed,
+}: TablesTabProps) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const [selectedSchema, setSelectedSchema] = useState<string>(() => {
+        // Use initialSchema if provided and valid
+        if (initialSchema && schemas.includes(initialSchema)) return initialSchema;
         // Default to 'public' for postgres, first schema otherwise
         if (schemas.includes('public')) return 'public';
         if (schemas.includes('main')) return 'main';
@@ -61,6 +72,15 @@ export function TablesTab({ connectionId, connection, schemas, isLoading }: Tabl
     const [confirmDeleteText, setConfirmDeleteText] = useState('');
     const [creating, setCreating] = useState(false);
     const [dropping, setDropping] = useState(false);
+
+    // Update selected schema when initialSchema changes (from Schemas tab navigation)
+    useMemo(() => {
+        if (initialSchema && schemas.includes(initialSchema)) {
+            setSelectedSchema(initialSchema);
+            // Clear the initialSchema after using it
+            onSchemaViewed?.();
+        }
+    }, [initialSchema, schemas, onSchemaViewed]);
 
     // Update selected schema when schemas load
     useMemo(() => {

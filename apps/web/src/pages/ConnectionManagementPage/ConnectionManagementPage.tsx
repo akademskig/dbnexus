@@ -37,6 +37,13 @@ export function ConnectionManagementPage() {
     const { connectionId } = useParams<{ connectionId: string }>();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState(0);
+    const [selectedSchemaForTables, setSelectedSchemaForTables] = useState<string | null>(null);
+
+    // Handler to navigate to Tables tab with a specific schema selected
+    const handleViewTablesForSchema = (schemaName: string) => {
+        setSelectedSchemaForTables(schemaName);
+        setActiveTab(2); // Tables tab index
+    };
 
     // Fetch connection details
     const {
@@ -225,6 +232,7 @@ export function ConnectionManagementPage() {
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
+                    onViewTables={handleViewTablesForSchema}
                 />
             )}
             {activeTab === 2 && (
@@ -233,6 +241,8 @@ export function ConnectionManagementPage() {
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
+                    initialSchema={selectedSchemaForTables}
+                    onSchemaViewed={() => setSelectedSchemaForTables(null)}
                 />
             )}
             {activeTab === 3 && (
