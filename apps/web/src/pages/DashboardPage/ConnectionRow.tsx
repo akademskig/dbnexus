@@ -1,4 +1,4 @@
-import { Box, Typography, IconButton, Chip, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Chip, CircularProgress, Tooltip } from '@mui/material';
 import {
     Storage as StorageIcon,
     MoreHoriz as MoreHorizIcon,
@@ -21,13 +21,22 @@ export function ConnectionRow({
 }: ConnectionRowProps) {
     const statusColors = {
         online: '#10b981',
-        offline: '#71717a',
+        offline: '#ef4444',
         checking: '#f59e0b',
     };
 
-    return (
+    const isOffline = status === 'offline';
+    const isClickable = !isOffline && status !== 'checking';
+
+    const handleClick = () => {
+        if (isClickable) {
+            onClick();
+        }
+    };
+
+    const rowContent = (
         <Box
-            onClick={onClick}
+            onClick={handleClick}
             sx={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 100px 40px',
@@ -36,9 +45,10 @@ export function ConnectionRow({
                 py: 1.5,
                 borderTop: isFirst ? 'none' : '1px solid',
                 borderColor: 'divider',
-                cursor: 'pointer',
+                cursor: isClickable ? 'pointer' : 'not-allowed',
+                opacity: isOffline ? 0.6 : 1,
                 '&:hover': {
-                    bgcolor: 'action.hover',
+                    bgcolor: isClickable ? 'action.hover' : 'transparent',
                 },
             }}
         >
@@ -97,4 +107,14 @@ export function ConnectionRow({
             </IconButton>
         </Box>
     );
+
+    if (isOffline) {
+        return (
+            <Tooltip title="Connection is offline. Test the connection to check status.">
+                {rowContent}
+            </Tooltip>
+        );
+    }
+
+    return rowContent;
 }

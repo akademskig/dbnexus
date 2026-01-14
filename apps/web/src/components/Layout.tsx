@@ -30,6 +30,9 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
@@ -92,7 +95,7 @@ export function Layout() {
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
 
     // Connection health store
-    const { checkAllConnections } = useConnectionHealthStore();
+    const { healthStatus, checkAllConnections } = useConnectionHealthStore();
 
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);
@@ -418,39 +421,73 @@ export function Layout() {
                                         connections.map((conn) => {
                                             const connPath = `/connections/${conn.id}`;
                                             const isConnActive = location.pathname === connPath;
+                                            const connHealth = healthStatus[conn.id];
+                                            const isOffline = connHealth
+                                                ? !connHealth.isOnline
+                                                : false;
+                                            const isOnline = connHealth?.isOnline ?? false;
+
                                             return (
-                                                <ListItemButton
+                                                <Tooltip
                                                     key={conn.id}
-                                                    onClick={() => navigate(connPath)}
-                                                    selected={isConnActive}
-                                                    sx={{
-                                                        pl: 4,
-                                                        py: 0.75,
-                                                    }}
+                                                    title={
+                                                        isOffline
+                                                            ? connHealth?.error ||
+                                                              'Connection is offline'
+                                                            : ''
+                                                    }
+                                                    placement="right"
                                                 >
-                                                    <ListItemIcon sx={{ minWidth: 32 }}>
-                                                        <StorageIcon
+                                                    <span>
+                                                        <ListItemButton
+                                                            onClick={() => navigate(connPath)}
+                                                            selected={isConnActive}
+                                                            disabled={isOffline}
                                                             sx={{
-                                                                fontSize: 18,
-                                                                color: isConnActive
-                                                                    ? 'primary.main'
-                                                                    : 'text.disabled',
+                                                                pl: 4,
+                                                                py: 0.75,
+                                                                opacity: isOffline ? 0.5 : 1,
                                                             }}
-                                                        />
-                                                    </ListItemIcon>
-                                                    <ListItemText
-                                                        primary={conn.name}
-                                                        primaryTypographyProps={{
-                                                            fontSize: 13,
-                                                            noWrap: true,
-                                                        }}
-                                                        secondary={conn.engine}
-                                                        secondaryTypographyProps={{
-                                                            fontSize: 11,
-                                                            noWrap: true,
-                                                        }}
-                                                    />
-                                                </ListItemButton>
+                                                        >
+                                                            <ListItemIcon sx={{ minWidth: 32 }}>
+                                                                {isOnline ? (
+                                                                    <CheckCircleIcon
+                                                                        sx={{
+                                                                            fontSize: 16,
+                                                                            color: 'success.main',
+                                                                        }}
+                                                                    />
+                                                                ) : isOffline ? (
+                                                                    <ErrorIcon
+                                                                        sx={{
+                                                                            fontSize: 16,
+                                                                            color: 'error.main',
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <HelpOutlineIcon
+                                                                        sx={{
+                                                                            fontSize: 16,
+                                                                            color: 'text.disabled',
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </ListItemIcon>
+                                                            <ListItemText
+                                                                primary={conn.name}
+                                                                primaryTypographyProps={{
+                                                                    fontSize: 13,
+                                                                    noWrap: true,
+                                                                }}
+                                                                secondary={conn.engine}
+                                                                secondaryTypographyProps={{
+                                                                    fontSize: 11,
+                                                                    noWrap: true,
+                                                                }}
+                                                            />
+                                                        </ListItemButton>
+                                                    </span>
+                                                </Tooltip>
                                             );
                                         })
                                     )}
@@ -501,33 +538,68 @@ export function Layout() {
                                 {connections.map((conn) => {
                                     const connPath = `/connections/${conn.id}`;
                                     const isConnActive = location.pathname === connPath;
+                                    const connHealth = healthStatus[conn.id];
+                                    const isOffline = connHealth ? !connHealth.isOnline : false;
+                                    const isOnline = connHealth?.isOnline ?? false;
+
                                     return (
-                                        <MenuItem
+                                        <Tooltip
                                             key={conn.id}
-                                            onClick={() => {
-                                                navigate(connPath);
-                                                setConnectionsMenuAnchor(null);
-                                            }}
-                                            selected={isConnActive}
-                                            sx={{ minWidth: 180 }}
+                                            title={
+                                                isOffline
+                                                    ? connHealth?.error || 'Connection is offline'
+                                                    : ''
+                                            }
+                                            placement="right"
                                         >
-                                            <ListItemIcon sx={{ minWidth: 32 }}>
-                                                <StorageIcon
-                                                    sx={{
-                                                        fontSize: 18,
-                                                        color: isConnActive
-                                                            ? 'primary.main'
-                                                            : 'text.disabled',
+                                            <span>
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        if (!isOffline) {
+                                                            navigate(connPath);
+                                                            setConnectionsMenuAnchor(null);
+                                                        }
                                                     }}
-                                                />
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={conn.name}
-                                                secondary={conn.engine}
-                                                primaryTypographyProps={{ fontSize: 13 }}
-                                                secondaryTypographyProps={{ fontSize: 11 }}
-                                            />
-                                        </MenuItem>
+                                                    selected={isConnActive}
+                                                    disabled={isOffline}
+                                                    sx={{
+                                                        minWidth: 180,
+                                                        opacity: isOffline ? 0.5 : 1,
+                                                    }}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 32 }}>
+                                                        {isOnline ? (
+                                                            <CheckCircleIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: 'success.main',
+                                                                }}
+                                                            />
+                                                        ) : isOffline ? (
+                                                            <ErrorIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: 'error.main',
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <HelpOutlineIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: 'text.disabled',
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={conn.name}
+                                                        secondary={conn.engine}
+                                                        primaryTypographyProps={{ fontSize: 13 }}
+                                                        secondaryTypographyProps={{ fontSize: 11 }}
+                                                    />
+                                                </MenuItem>
+                                            </span>
+                                        </Tooltip>
                                     );
                                 })}
                             </Menu>

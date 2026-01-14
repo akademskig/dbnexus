@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -9,6 +9,7 @@ import {
     Alert,
     CircularProgress,
     Collapse,
+    Tooltip,
 } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,9 +19,13 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { connectionsApi } from '../../lib/api';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
+import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { DetailRow } from './DetailRow';
 
 interface ConnectionCardProps {
@@ -45,6 +50,18 @@ export function ConnectionCard({
         null
     );
     const { tags: availableTags } = useTagsStore();
+    const { healthStatus, checkConnection } = useConnectionHealthStore();
+
+    // Check health on mount
+    useEffect(() => {
+        if (!healthStatus[connection.id]) {
+            checkConnection(connection.id);
+        }
+    }, [connection.id, healthStatus, checkConnection]);
+
+    const connectionHealth = healthStatus[connection.id];
+    const isOffline = connectionHealth ? !connectionHealth.isOnline : false;
+    const isOnline = connectionHealth?.isOnline ?? false;
 
     const handleTest = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -53,11 +70,15 @@ export function ConnectionCard({
         try {
             const result = await connectionsApi.test(connection.id);
             setTestResult(result);
+            // Update the health store with the test result
+            checkConnection(connection.id);
         } catch (error) {
             setTestResult({
                 success: false,
                 message: error instanceof Error ? error.message : 'Test failed',
             });
+            // Force re-check
+            checkConnection(connection.id);
         } finally {
             setTesting(false);
         }
@@ -200,6 +221,24 @@ export function ConnectionCard({
                     </Box>
                 )}
 
+                {/* Connection Status Indicator */}
+                <Tooltip
+                    title={
+                        connectionHealth?.error ||
+                        `Connection is ${connectionHealth?.isOnline ? 'online' : connectionHealth ? 'offline' : 'unknown'}`
+                    }
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        {isOnline ? (
+                            <CheckCircleIcon fontSize="small" color="success" />
+                        ) : isOffline ? (
+                            <ErrorIcon fontSize="small" color="error" />
+                        ) : (
+                            <HelpOutlineIcon fontSize="small" color="disabled" />
+                        )}
+                    </Box>
+                </Tooltip>
+
                 <IconButton
                     size="small"
                     onClick={(e) => {
@@ -215,18 +254,23 @@ export function ConnectionCard({
                     )}
                 </IconButton>
 
-                <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onQuery();
-                    }}
-                    sx={{ flexShrink: 0 }}
-                >
-                    Query
-                </Button>
+                <Tooltip title={isOffline ? 'Connection is offline' : ''}>
+                    <span>
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onQuery();
+                            }}
+                            disabled={isOffline}
+                            sx={{ flexShrink: 0 }}
+                        >
+                            Query
+                        </Button>
+                    </span>
+                </Tooltip>
             </Box>
 
             {/* Expanded content */}
@@ -297,14 +341,19 @@ export function ConnectionCard({
                         >
                             Edit
                         </Button>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<SettingsIcon />}
-                            onClick={() => navigate(`/connections/${connection.id}`)}
-                        >
-                            Manage
-                        </Button>
+                        <Tooltip title={isOffline ? 'Connection is offline' : ''}>
+                            <span>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<SettingsIcon />}
+                                    onClick={() => navigate(`/connections/${connection.id}`)}
+                                    disabled={isOffline}
+                                >
+                                    Manage
+                                </Button>
+                            </span>
+                        </Tooltip>
                         <Box sx={{ flex: 1 }} />
                         <Button
                             size="small"
