@@ -32,6 +32,100 @@ import { schemaApi, syncApi } from '../../lib/api';
 import { COMMON_TYPES, type ColumnDefinition } from './utils';
 import type { ConnectionConfig, SavedQuery } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
+import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+
+// ============ Helper: Target Connection Select with Health Status ============
+
+function TargetConnectionSelect({
+    targetConnections,
+    targetConnectionId,
+    onConnectionChange,
+}: {
+    targetConnections: ConnectionConfig[];
+    targetConnectionId: string;
+    onConnectionChange: (id: string) => void;
+}) {
+    const { healthStatus, checkConnection } = useConnectionHealthStore();
+
+    const getStatusIcon = (conn: ConnectionConfig) => {
+        const health = healthStatus[conn.id];
+        if (!health) {
+            return (
+                <Tooltip title="Status unknown">
+                    <HelpOutlineIcon sx={{ fontSize: 14, color: 'text.disabled', ml: 'auto' }} />
+                </Tooltip>
+            );
+        }
+        if (health.isOnline) {
+            return (
+                <Tooltip title="Connected">
+                    <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main', ml: 'auto' }} />
+                </Tooltip>
+            );
+        }
+        return (
+            <Tooltip title={health.error || 'Connection failed'}>
+                <ErrorIcon sx={{ fontSize: 14, color: 'error.main', ml: 'auto' }} />
+            </Tooltip>
+        );
+    };
+
+    const isConnectionDisabled = (conn: ConnectionConfig) => {
+        const health = healthStatus[conn.id];
+        return health && !health.isOnline;
+    };
+
+    const handleChange = async (newId: string) => {
+        const health = healthStatus[newId];
+        if (!health) {
+            const isOnline = await checkConnection(newId);
+            if (!isOnline) return;
+        } else if (!health.isOnline) {
+            return;
+        }
+        onConnectionChange(newId);
+    };
+
+    return (
+        <FormControl fullWidth>
+            <InputLabel>Target Connection</InputLabel>
+            <Select
+                value={targetConnectionId}
+                onChange={(e) => handleChange(e.target.value)}
+                label="Target Connection"
+            >
+                {targetConnections.map((conn) => {
+                    const isDisabled = isConnectionDisabled(conn);
+                    return (
+                        <MenuItem
+                            key={conn.id}
+                            value={conn.id}
+                            disabled={isDisabled}
+                            sx={{ opacity: isDisabled ? 0.5 : 1 }}
+                        >
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    width: '100%',
+                                }}
+                            >
+                                <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
+                                <span>{conn.name}</span>
+                                <Chip label={conn.engine} size="small" sx={{ ml: 'auto', mr: 1 }} />
+                                {getStatusIcon(conn)}
+                            </Box>
+                        </MenuItem>
+                    );
+                })}
+            </Select>
+        </FormControl>
+    );
+}
 
 // ============ Confirmation Dialog ============
 
@@ -583,31 +677,14 @@ export function SyncRowDialog({
 
                     {/* Target connection */}
                     {isInGroup && targetConnections.length > 0 && (
-                        <FormControl fullWidth>
-                            <InputLabel>Target Connection</InputLabel>
-                            <Select
-                                value={targetConnectionId}
-                                onChange={(e) => {
-                                    setTargetConnectionId(e.target.value);
-                                    setTargetSchema('');
-                                }}
-                                label="Target Connection"
-                            >
-                                {targetConnections.map((conn) => (
-                                    <MenuItem key={conn.id} value={conn.id}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
-                                            {conn.name}
-                                            <Chip
-                                                label={conn.engine}
-                                                size="small"
-                                                sx={{ ml: 'auto' }}
-                                            />
-                                        </Box>
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <TargetConnectionSelect
+                            targetConnections={targetConnections}
+                            targetConnectionId={targetConnectionId}
+                            onConnectionChange={(id) => {
+                                setTargetConnectionId(id);
+                                setTargetSchema('');
+                            }}
+                        />
                     )}
 
                     {/* Target schema */}

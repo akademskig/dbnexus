@@ -50,6 +50,7 @@ import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
 import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
+import { ConnectionSelector } from '../../components/ConnectionSelector';
 import {
     SIDEBAR_WIDTH,
     TAB_NAMES,
@@ -899,23 +900,12 @@ export function QueryPage() {
                     bgcolor: 'background.paper',
                 }}
             >
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel>Connection</InputLabel>
-                    <Select
-                        value={selectedConnectionId}
-                        onChange={(e) => handleConnectionChange(e.target.value)}
-                        label="Connection"
-                    >
-                        {connections.map((conn) => (
-                            <MenuItem key={conn.id} value={conn.id}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <StorageIcon fontSize="small" sx={{ opacity: 0.6 }} />
-                                    {conn.name}
-                                </Box>
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                <ConnectionSelector
+                    value={selectedConnectionId}
+                    onChange={handleConnectionChange}
+                    disableOffline={true}
+                    showStatusIcon={true}
+                />
 
                 {selectedConnection && (
                     <>
