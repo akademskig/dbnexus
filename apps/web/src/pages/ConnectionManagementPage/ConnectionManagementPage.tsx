@@ -11,6 +11,7 @@ import {
     Breadcrumbs,
     Link,
     Skeleton,
+    Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -19,6 +20,7 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import BuildIcon from '@mui/icons-material/Build';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -315,36 +317,63 @@ export function ConnectionManagementPage() {
 
             {/* Tabs */}
             <GlassCard sx={{ mb: 3, p: 0 }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={handleTabChange}
-                    sx={{
-                        px: 2,
-                        '& .MuiTabs-indicator': {
-                            bgcolor: 'primary.main',
-                        },
-                        '& .MuiTab-root': {
-                            color: 'text.secondary',
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            minHeight: 56,
-                            gap: 1,
-                            '&.Mui-selected': {
-                                color: 'primary.main',
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        sx={{
+                            flex: 1,
+                            px: 2,
+                            '& .MuiTabs-indicator': {
+                                bgcolor: 'primary.main',
                             },
-                        },
-                    }}
-                >
-                    <Tab icon={TAB_ICONS[0]} iconPosition="start" label="Overview" />
-                    <Tab
-                        icon={TAB_ICONS[1]}
-                        iconPosition="start"
-                        label={`Schemas${schemas.length > 0 ? ` (${schemas.length})` : ''}`}
-                    />
-                    <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
-                    <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Table Management" />
-                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
-                </Tabs>
+                            '& .MuiTab-root': {
+                                color: 'text.secondary',
+                                textTransform: 'none',
+                                fontWeight: 500,
+                                minHeight: 56,
+                                gap: 1,
+                                '&.Mui-selected': {
+                                    color: 'primary.main',
+                                },
+                            },
+                        }}
+                    >
+                        <Tab icon={TAB_ICONS[0]} iconPosition="start" label="Overview" />
+                        <Tab
+                            icon={TAB_ICONS[1]}
+                            iconPosition="start"
+                            label={`Schemas${schemas.length > 0 ? ` (${schemas.length})` : ''}`}
+                        />
+                        <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
+                        <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Table Management" />
+                        <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
+                    </Tabs>
+
+                    {/* Diagram Editor shortcut */}
+                    <Tooltip title="Open Diagram Editor">
+                        <IconButton
+                            onClick={() =>
+                                navigate(
+                                    `/diagram-editor?connection=${connectionId}${selectedSchema ? `&schema=${selectedSchema}` : ''}`
+                                )
+                            }
+                            sx={{
+                                mr: 2,
+                                color: 'text.secondary',
+                                border: 1,
+                                borderColor: 'divider',
+                                borderRadius: 1,
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    borderColor: 'primary.main',
+                                },
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </GlassCard>
 
             {/* Tab Content */}
