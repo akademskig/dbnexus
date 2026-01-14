@@ -225,6 +225,8 @@ export function SchemasTab({ connectionId, connection, schemas, isLoading }: Sch
                             border: 'none',
                             '& .MuiDataGrid-cell': {
                                 borderColor: 'divider',
+                                display: 'flex',
+                                alignItems: 'center',
                             },
                             '& .MuiDataGrid-columnHeaders': {
                                 bgcolor: 'background.default',

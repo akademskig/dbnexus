@@ -199,6 +199,8 @@ export function TablesTab({ connectionId, connection: _connection, schemas, isLo
                             border: 'none',
                             '& .MuiDataGrid-cell': {
                                 borderColor: 'divider',
+                                display: 'flex',
+                                alignItems: 'center',
                             },
                             '& .MuiDataGrid-columnHeaders': {
                                 bgcolor: 'background.default',
