@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -22,6 +22,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
+import { useConnectionManagementStore } from '../../stores/connectionManagementStore';
 import { OverviewTab } from './OverviewTab';
 import { SchemasTab } from './SchemasTab';
 import { MaintenanceTab } from './MaintenanceTab';
@@ -41,58 +42,85 @@ export function ConnectionManagementPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Get tab, schema, and table from URL
-    const urlTab = searchParams.get('tab');
-    const urlSchema = searchParams.get('schema');
-    const urlTable = searchParams.get('table');
+    // Use the store for state management
+    const {
+        activeTab,
+        selectedSchema,
+        selectedTable,
+        setActiveTab,
+        setSelectedSchema,
+        setSelection,
+        initFromUrl,
+    } = useConnectionManagementStore();
 
-    const [activeTab, setActiveTab] = useState(() => {
-        if (urlTab === 'schemas') return 1;
-        if (urlTab === 'tables') return 2;
-        if (urlTab === 'management') return 3;
-        if (urlTab === 'maintenance') return 4;
-        return 0;
-    });
-    const [selectedSchemaForTables, setSelectedSchemaForTables] = useState<string | null>(null);
+    // Initialize store from URL on mount
+    useEffect(() => {
+        initFromUrl(searchParams);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
+
+    // Handler for tab change
+    const handleTabChange = useCallback(
+        (_: unknown, newTab: number) => {
+            setActiveTab(newTab);
+            // Sync URL after state update
+            setTimeout(() => {
+                const params = useConnectionManagementStore.getState().getUrlParams();
+                setSearchParams(params, { replace: true });
+            }, 0);
+        },
+        [setActiveTab, setSearchParams]
+    );
 
     // Handler to navigate to Tables tab with a specific schema selected
-    const handleViewTablesForSchema = (schemaName: string) => {
-        setSelectedSchemaForTables(schemaName);
-        setActiveTab(2); // Tables tab index
-        setSearchParams({ tab: 'tables', schema: schemaName });
-    };
+    const handleViewTablesForSchema = useCallback(
+        (schemaName: string) => {
+            setActiveTab(2);
+            setSelection(schemaName, null);
+            setTimeout(() => {
+                const params = useConnectionManagementStore.getState().getUrlParams();
+                setSearchParams(params, { replace: true });
+            }, 0);
+        },
+        [setActiveTab, setSelection, setSearchParams]
+    );
 
     // Handler to navigate to Table Management tab with a specific table selected
-    const handleManageTable = (schemaName: string, tableName: string) => {
-        setActiveTab(3); // Table Management tab index
-        setSearchParams({ tab: 'management', schema: schemaName, table: tableName });
-    };
+    const handleManageTable = useCallback(
+        (schemaName: string, tableName: string) => {
+            setActiveTab(3);
+            setSelection(schemaName, tableName);
+            setTimeout(() => {
+                const params = useConnectionManagementStore.getState().getUrlParams();
+                setSearchParams(params, { replace: true });
+            }, 0);
+        },
+        [setActiveTab, setSelection, setSearchParams]
+    );
 
-    // Handler for schema change in Tables tab
-    const handleTablesSchemaChange = (schemaName: string) => {
-        const params: Record<string, string> = { tab: 'tables', schema: schemaName };
-        // Preserve table if it was set
-        if (urlTable) params.table = urlTable;
-        setSearchParams(params);
-    };
+    // Handler for schema change
+    const handleSchemaChange = useCallback(
+        (schemaName: string) => {
+            setSelectedSchema(schemaName);
+            setTimeout(() => {
+                const params = useConnectionManagementStore.getState().getUrlParams();
+                setSearchParams(params, { replace: true });
+            }, 0);
+        },
+        [setSelectedSchema, setSearchParams]
+    );
 
-    // Handler for schema/table change in Table Management tab
-    const handleManagementSelectionChange = (schemaName: string, tableName?: string) => {
-        const params: Record<string, string> = { tab: 'management', schema: schemaName };
-        if (tableName) params.table = tableName;
-        setSearchParams(params);
-    };
-
-    // Update URL when tab changes - always preserve schema and table
-    const handleTabChange = (_: unknown, newTab: number) => {
-        setActiveTab(newTab);
-        const tabNames = ['overview', 'schemas', 'tables', 'management', 'maintenance'] as const;
-        const params: Record<string, string> = { tab: tabNames[newTab] || 'overview' };
-        // Always preserve schema and table params across all tabs
-        if (urlSchema) params.schema = urlSchema;
-        if (urlTable) params.table = urlTable;
-        setSearchParams(params);
-    };
+    // Handler for schema/table change together
+    const handleSelectionChange = useCallback(
+        (schemaName: string, tableName?: string) => {
+            setSelection(schemaName, tableName ?? null);
+            setTimeout(() => {
+                const params = useConnectionManagementStore.getState().getUrlParams();
+                setSearchParams(params, { replace: true });
+            }, 0);
+        },
+        [setSelection, setSearchParams]
+    );
 
     // Fetch connection details
     const {
@@ -291,10 +319,10 @@ export function ConnectionManagementPage() {
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
-                    initialSchema={selectedSchemaForTables || urlSchema}
-                    onSchemaViewed={() => setSelectedSchemaForTables(null)}
+                    initialSchema={selectedSchema}
+                    onSchemaViewed={() => {}}
                     onManageTable={handleManageTable}
-                    onSchemaChange={handleTablesSchemaChange}
+                    onSchemaChange={handleSchemaChange}
                 />
             )}
             {activeTab === 3 && (
@@ -303,9 +331,9 @@ export function ConnectionManagementPage() {
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
-                    initialSchema={urlSchema}
-                    initialTable={urlTable}
-                    onSelectionChange={handleManagementSelectionChange}
+                    initialSchema={selectedSchema}
+                    initialTable={selectedTable}
+                    onSelectionChange={handleSelectionChange}
                 />
             )}
             {activeTab === 4 && (
@@ -313,6 +341,8 @@ export function ConnectionManagementPage() {
                     connectionId={connectionId}
                     connection={connection}
                     schemas={schemas}
+                    selectedSchema={selectedSchema}
+                    onSchemaChange={handleSchemaChange}
                 />
             )}
         </Box>

@@ -26,6 +26,8 @@ interface MaintenanceTabProps {
     connectionId: string;
     connection: ConnectionConfig | undefined;
     schemas: string[];
+    selectedSchema?: string | null;
+    onSchemaChange?: (schema: string) => void;
 }
 
 interface MaintenanceOperation {
@@ -118,11 +120,24 @@ interface OperationResult {
     duration?: number;
 }
 
-export function MaintenanceTab({ connectionId, connection, schemas }: MaintenanceTabProps) {
+export function MaintenanceTab({
+    connectionId,
+    connection,
+    schemas,
+    selectedSchema: externalSchema,
+    onSchemaChange,
+}: MaintenanceTabProps) {
     const toast = useToastStore();
-    const [selectedSchema, setSelectedSchema] = useState<string>('');
+    // Use external schema if provided, otherwise use local state
+    const [localSchema, setLocalSchema] = useState<string>(externalSchema || '');
+    const selectedSchema = externalSchema ?? localSchema;
     const [results, setResults] = useState<OperationResult[]>([]);
     const [runningOperation, setRunningOperation] = useState<string | null>(null);
+
+    const handleSchemaChange = (schema: string) => {
+        setLocalSchema(schema);
+        onSchemaChange?.(schema);
+    };
 
     const executeMutation = useMutation({
         mutationFn: async ({
@@ -196,11 +211,11 @@ export function MaintenanceTab({ connectionId, connection, schemas }: Maintenanc
             {!isSqlite && schemas.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Target Schema (optional)</InputLabel>
+                        <InputLabel>Target Schema</InputLabel>
                         <Select
-                            value={selectedSchema}
-                            onChange={(e) => setSelectedSchema(e.target.value)}
-                            label="Target Schema (optional)"
+                            value={selectedSchema || ''}
+                            onChange={(e) => handleSchemaChange(e.target.value)}
+                            label="Target Schema"
                         >
                             <MenuItem value="">All schemas</MenuItem>
                             {schemas.map((schema) => (
