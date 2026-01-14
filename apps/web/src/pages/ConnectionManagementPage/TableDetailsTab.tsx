@@ -7,7 +7,6 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Skeleton,
     Chip,
     IconButton,
     Tooltip,
@@ -39,6 +38,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import type { ConnectionConfig, ColumnInfo, IndexInfo, ForeignKeyInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 
@@ -814,7 +814,7 @@ export function TableDetailsTab({
     if (isLoading) {
         return (
             <GlassCard>
-                <Skeleton height={400} />
+                <LoadingState message="Loading schemas..." size="large" />
             </GlassCard>
         );
     }
@@ -855,6 +855,9 @@ export function TableDetailsTab({
                             }}
                             label="Table"
                             disabled={loadingTables}
+                            endAdornment={
+                                loadingTables ? <CircularProgress size={20} sx={{ mr: 3 }} /> : null
+                            }
                         >
                             {tables.map((table) => (
                                 <MenuItem key={table.name} value={table.name}>
@@ -888,7 +891,7 @@ export function TableDetailsTab({
                 </GlassCard>
             ) : loadingSchema ? (
                 <GlassCard>
-                    <Skeleton height={300} />
+                    <LoadingState message="Loading table structure..." size="large" />
                 </GlassCard>
             ) : tableSchema ? (
                 <GlassCard sx={{ p: 0 }}>
