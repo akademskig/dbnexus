@@ -20,9 +20,7 @@ import {
     Tab,
     Badge,
     Drawer,
-    Menu,
     CircularProgress,
-    Alert,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -38,9 +36,6 @@ import CodeIcon from '@mui/icons-material/Code';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import AddBoxIcon from '@mui/icons-material/AddBox';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
@@ -53,14 +48,7 @@ import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
-import {
-    CreateTableDialog,
-    AddRowDialog,
-    SyncRowDialog,
-    SaveQueryDialog,
-    ConfirmDialog,
-    CreateSchemaDialog,
-} from './Dialogs';
+import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import {
     SIDEBAR_WIDTH,
@@ -144,12 +132,7 @@ export function QueryPage() {
     const [historyOpen, setHistoryOpen] = useState(false);
 
     // Edit dialogs state
-    const [createTableOpen, setCreateTableOpen] = useState(false);
-    const [createSchemaDialogOpen, setCreateSchemaDialogOpen] = useState(false);
-    const [creatingSchema, setCreatingSchema] = useState(false);
-    const [dropTableConfirmOpen, setDropTableConfirmOpen] = useState(false);
     const [addRowOpen, setAddRowOpen] = useState(false);
-    const [tableActionsAnchor, setTableActionsAnchor] = useState<null | HTMLElement>(null);
 
     // Row sync state
     const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
@@ -664,39 +647,6 @@ export function QueryPage() {
         refetchTables();
     };
 
-    // Handle drop table
-    const handleDropTable = useCallback(() => {
-        if (!selectedTable || !selectedConnectionId) return;
-
-        const tableName = buildTableName(
-            selectedTable.schema,
-            selectedTable.name,
-            selectedConnection?.engine
-        );
-
-        const query = `DROP TABLE ${tableName};`;
-        setSql(query);
-        executeMutation.mutate(
-            { query, confirmed: true },
-            {
-                onSuccess: () => {
-                    setSelectedTable(null);
-                    setResult(null);
-                    refetchTables();
-                    setDropTableConfirmOpen(false);
-                    toast.success(`Table "${selectedTable.name}" dropped`);
-                },
-            }
-        );
-    }, [
-        selectedTable,
-        selectedConnectionId,
-        selectedConnection?.engine,
-        executeMutation,
-        refetchTables,
-        toast,
-    ]);
-
     // Handle add row
     const handleAddRow = useCallback(
         (values: Record<string, string>) => {
@@ -754,70 +704,6 @@ export function QueryPage() {
             searchQuery,
             toast,
         ]
-    );
-
-    // Handle create table
-    const handleCreateTable = useCallback(
-        (
-            tableName: string,
-            columns: Array<{ name: string; type: string; nullable: boolean; primaryKey: boolean }>
-        ) => {
-            if (!selectedConnectionId) return;
-
-            const engine = selectedConnection?.engine;
-            const schema = selectedSchema || 'public';
-            const fullTableName = buildTableName(schema, tableName, engine);
-
-            const columnDefs = columns.map((col) => {
-                let def = `${quoteIdentifier(col.name, engine)} ${col.type}`;
-                if (col.primaryKey) def += ' PRIMARY KEY';
-                if (!col.nullable && !col.primaryKey) def += ' NOT NULL';
-                return def;
-            });
-
-            const query = `CREATE TABLE ${fullTableName} (\n  ${columnDefs.join(',\n  ')}\n);`;
-            setSql(query);
-            executeMutation.mutate(
-                { query },
-                {
-                    onSuccess: () => {
-                        setCreateTableOpen(false);
-                        refetchTables();
-                        toast.success(`Table "${tableName}" created`);
-                    },
-                }
-            );
-        },
-        [
-            selectedConnectionId,
-            selectedConnection?.engine,
-            selectedSchema,
-            executeMutation,
-            refetchTables,
-            toast,
-        ]
-    );
-
-    // Handle create schema
-    const handleCreateSchema = useCallback(
-        async (schemaName: string) => {
-            if (!selectedConnectionId) return;
-
-            setCreatingSchema(true);
-            try {
-                await schemaApi.createSchema(selectedConnectionId, schemaName);
-                setCreateSchemaDialogOpen(false);
-                await refetchSchemas();
-                // Select the newly created schema
-                handleSchemaChange(schemaName);
-                toast.success(`Schema "${schemaName}" created`);
-            } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Failed to create schema');
-            } finally {
-                setCreatingSchema(false);
-            }
-        },
-        [selectedConnectionId, refetchSchemas, handleSchemaChange, toast]
     );
 
     // Helper function to format value for SQL
@@ -1095,16 +981,8 @@ export function QueryPage() {
                 >
                     {/* Schema Selector */}
                     {selectedConnectionId && schemas.length > 0 && (
-                        <Box
-                            sx={{
-                                p: 1.5,
-                                borderBottom: 1,
-                                borderColor: 'divider',
-                                display: 'flex',
-                                gap: 1,
-                            }}
-                        >
-                            <FormControl size="small" sx={{ flex: 1 }}>
+                        <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+                            <FormControl size="small" fullWidth>
                                 <InputLabel>Schema</InputLabel>
                                 <Select
                                     value={selectedSchema}
@@ -1126,24 +1004,11 @@ export function QueryPage() {
                                     ))}
                                 </Select>
                             </FormControl>
-                            <Tooltip title="Create new schema">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setCreateSchemaDialogOpen(true)}
-                                    sx={{
-                                        border: 1,
-                                        borderColor: 'divider',
-                                        borderRadius: 1,
-                                    }}
-                                >
-                                    <AddIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
                         </Box>
                     )}
 
-                    {/* Search and Create Table */}
-                    <Box sx={{ p: 1.5, display: 'flex', gap: 1 }}>
+                    {/* Search Tables */}
+                    <Box sx={{ p: 1.5 }}>
                         <TextField
                             size="small"
                             placeholder="Search tables..."
@@ -1163,16 +1028,6 @@ export function QueryPage() {
                                 },
                             }}
                         />
-                        <Tooltip title="Create Table">
-                            <IconButton
-                                size="small"
-                                onClick={() => setCreateTableOpen(true)}
-                                disabled={!selectedConnectionId}
-                                sx={{ bgcolor: 'background.paper' }}
-                            >
-                                <AddBoxIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
                     </Box>
 
                     {/* Tables List */}
@@ -1336,43 +1191,15 @@ export function QueryPage() {
 
                                     {/* Table Actions */}
                                     {selectedTable.type !== 'view' && (
-                                        <>
-                                            <Tooltip title="Add Row">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => setAddRowOpen(true)}
-                                                    disabled={!tableSchema}
-                                                >
-                                                    <AddIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Table Actions">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={(e) =>
-                                                        setTableActionsAnchor(e.currentTarget)
-                                                    }
-                                                >
-                                                    <MoreVertIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Menu
-                                                anchorEl={tableActionsAnchor}
-                                                open={Boolean(tableActionsAnchor)}
-                                                onClose={() => setTableActionsAnchor(null)}
+                                        <Tooltip title="Add Row">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setAddRowOpen(true)}
+                                                disabled={!tableSchema}
                                             >
-                                                <MenuItem
-                                                    onClick={() => {
-                                                        setTableActionsAnchor(null);
-                                                        setDropTableConfirmOpen(true);
-                                                    }}
-                                                    sx={{ color: 'error.main' }}
-                                                >
-                                                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-                                                    Drop Table
-                                                </MenuItem>
-                                            </Menu>
-                                        </>
+                                                <AddIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                     )}
 
                                     <Tooltip title="Run Query (⌘+Enter)">
@@ -1668,46 +1495,6 @@ export function QueryPage() {
             </Drawer>
 
             {/* Create Table Dialog */}
-            <CreateTableDialog
-                open={createTableOpen}
-                onClose={() => setCreateTableOpen(false)}
-                onSubmit={handleCreateTable}
-                engine={selectedConnection?.engine || 'postgres'}
-            />
-
-            {/* Create Schema Dialog */}
-            <CreateSchemaDialog
-                open={createSchemaDialogOpen}
-                onClose={() => setCreateSchemaDialogOpen(false)}
-                onCreated={handleCreateSchema}
-                connectionId={selectedConnectionId}
-                loading={creatingSchema}
-            />
-
-            {/* Drop Table Confirmation Dialog */}
-            <ConfirmDialog
-                open={dropTableConfirmOpen}
-                onClose={() => setDropTableConfirmOpen(false)}
-                onConfirm={handleDropTable}
-                title="Drop Table"
-                message={
-                    <Box>
-                        <Typography gutterBottom>
-                            Are you sure you want to drop the table{' '}
-                            <strong>{selectedTable?.name}</strong>?
-                        </Typography>
-                        <Alert severity="error" sx={{ mt: 1 }}>
-                            This action cannot be undone. All data in this table will be permanently
-                            deleted.
-                        </Alert>
-                    </Box>
-                }
-                confirmText="Drop Table"
-                confirmColor="error"
-                requireTyping={selectedTable?.name}
-                loading={executeMutation.isPending}
-            />
-
             {/* Delete Row Confirmation Dialog */}
             <ConfirmDialog
                 open={!!rowToDelete}

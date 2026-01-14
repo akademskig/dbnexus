@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -11,16 +11,29 @@ import {
     MenuItem,
     Skeleton,
     Chip,
+    IconButton,
+    Tooltip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Alert,
+    CircularProgress,
 } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import WarningIcon from '@mui/icons-material/Warning';
 import type { ConnectionConfig, TableInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
-import { schemaApi } from '../../lib/api';
+import { schemaApi, queriesApi } from '../../lib/api';
+import { useToastStore } from '../../stores/toastStore';
 
 interface TablesTabProps {
     connectionId: string;
@@ -29,19 +42,25 @@ interface TablesTabProps {
     isLoading: boolean;
 }
 
-export function TablesTab({
-    connectionId,
-    connection: _connection,
-    schemas,
-    isLoading,
-}: TablesTabProps) {
+export function TablesTab({ connectionId, connection, schemas, isLoading }: TablesTabProps) {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [selectedSchema, setSelectedSchema] = useState<string>(() => {
         // Default to 'public' for postgres, first schema otherwise
         if (schemas.includes('public')) return 'public';
         if (schemas.includes('main')) return 'main';
         return schemas[0] || '';
     });
+
+    // Dialog states
+    const [createTableOpen, setCreateTableOpen] = useState(false);
+    const [dropTableOpen, setDropTableOpen] = useState(false);
+    const [tableToDelete, setTableToDelete] = useState<TableInfo | null>(null);
+    const [newTableName, setNewTableName] = useState('');
+    const [confirmDeleteText, setConfirmDeleteText] = useState('');
+    const [creating, setCreating] = useState(false);
+    const [dropping, setDropping] = useState(false);
 
     // Update selected schema when schemas load
     useMemo(() => {
@@ -65,6 +84,77 @@ export function TablesTab({
 
     const handleOpenInQuery = (table: TableInfo) => {
         navigate(`/query/${connectionId}?schema=${table.schema}&table=${table.name}`);
+    };
+
+    // Quote identifier based on engine
+    const quoteIdentifier = (name: string) => {
+        if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+            return `\`${name}\``;
+        }
+        return `"${name}"`;
+    };
+
+    // Build full table name
+    const buildTableName = (schema: string, table: string) => {
+        const quotedSchema = quoteIdentifier(schema);
+        const quotedTable = quoteIdentifier(table);
+        if (connection?.engine === 'sqlite') {
+            return quotedTable;
+        }
+        return `${quotedSchema}.${quotedTable}`;
+    };
+
+    const handleCreateTable = async () => {
+        if (!newTableName.trim()) return;
+
+        setCreating(true);
+        try {
+            const fullTableName = buildTableName(selectedSchema, newTableName.trim());
+            // Create a simple table with an id column
+            const sql = `CREATE TABLE ${fullTableName} (id SERIAL PRIMARY KEY);`;
+            await queriesApi.execute(connectionId, sql);
+            await refetchTables();
+            queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
+            toast.success(`Table "${newTableName}" created`);
+            setCreateTableOpen(false);
+            setNewTableName('');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Failed to create table');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDropTable = async () => {
+        if (!tableToDelete || confirmDeleteText !== tableToDelete.name) return;
+
+        setDropping(true);
+        try {
+            const fullTableName = buildTableName(tableToDelete.schema, tableToDelete.name);
+            const sql = `DROP TABLE ${fullTableName};`;
+            await queriesApi.execute(connectionId, sql);
+            await refetchTables();
+            queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
+            toast.success(`Table "${tableToDelete.name}" dropped`);
+            setDropTableOpen(false);
+            setTableToDelete(null);
+            setConfirmDeleteText('');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Failed to drop table');
+        } finally {
+            setDropping(false);
+        }
+    };
+
+    const handleCloseCreateDialog = () => {
+        setCreateTableOpen(false);
+        setNewTableName('');
+    };
+
+    const handleCloseDropDialog = () => {
+        setDropTableOpen(false);
+        setTableToDelete(null);
+        setConfirmDeleteText('');
     };
 
     const columns: GridColDef[] = [
@@ -115,18 +205,33 @@ export function TablesTab({
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 120,
+            width: 180,
             sortable: false,
             renderCell: (params) => (
-                <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
-                    onClick={() => handleOpenInQuery(params.row)}
-                    sx={{ textTransform: 'none' }}
-                >
-                    Query
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
+                        onClick={() => handleOpenInQuery(params.row)}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Query
+                    </Button>
+                    <Tooltip title="Drop Table">
+                        <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => {
+                                setTableToDelete(params.row);
+                                setDropTableOpen(true);
+                            }}
+                            disabled={connection?.readOnly}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             ),
         },
     ];
@@ -175,14 +280,25 @@ export function TablesTab({
                         {tables.length} table{tables.length !== 1 ? 's' : ''}
                     </Typography>
                 </Box>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<RefreshIcon />}
-                    onClick={() => refetchTables()}
-                >
-                    Refresh
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => refetchTables()}
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setCreateTableOpen(true)}
+                        disabled={connection?.readOnly}
+                    >
+                        Create Table
+                    </Button>
+                </Box>
             </Box>
 
             {/* Tables Grid */}
@@ -227,6 +343,112 @@ export function TablesTab({
                     />
                 </GlassCard>
             )}
+
+            {/* Create Table Dialog */}
+            <Dialog
+                open={createTableOpen}
+                onClose={handleCloseCreateDialog}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TableChartIcon color="primary" />
+                    Create New Table
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 1 }}>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                            Creates a simple table with an auto-increment ID column. You can add
+                            more columns using the Query Editor.
+                        </Alert>
+                        <TextField
+                            autoFocus
+                            fullWidth
+                            label="Table Name"
+                            value={newTableName}
+                            onChange={(e) => setNewTableName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newTableName.trim()) {
+                                    handleCreateTable();
+                                }
+                            }}
+                            placeholder="my_table"
+                            helperText={`Will be created in schema: ${selectedSchema}`}
+                            disabled={creating}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseCreateDialog} disabled={creating}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateTable}
+                        disabled={!newTableName.trim() || creating}
+                        startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+                    >
+                        {creating ? 'Creating...' : 'Create'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Drop Table Dialog */}
+            <Dialog open={dropTableOpen} onClose={handleCloseDropDialog} maxWidth="sm" fullWidth>
+                <DialogTitle
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}
+                >
+                    <WarningIcon />
+                    Drop Table
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 1 }}>
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            <Typography variant="body2" gutterBottom>
+                                <strong>Warning:</strong> This will permanently delete the table{' '}
+                                <strong>&quot;{tableToDelete?.name}&quot;</strong> and ALL data
+                                within it.
+                            </Typography>
+                            <Typography variant="body2">This action cannot be undone.</Typography>
+                        </Alert>
+                        <Typography variant="body2" sx={{ mb: 2 }}>
+                            To confirm, type the table name: <strong>{tableToDelete?.name}</strong>
+                        </Typography>
+                        <TextField
+                            autoFocus
+                            fullWidth
+                            value={confirmDeleteText}
+                            onChange={(e) => setConfirmDeleteText(e.target.value)}
+                            placeholder={tableToDelete?.name || ''}
+                            error={
+                                confirmDeleteText.length > 0 &&
+                                confirmDeleteText !== tableToDelete?.name
+                            }
+                            helperText={
+                                confirmDeleteText.length > 0 &&
+                                confirmDeleteText !== tableToDelete?.name
+                                    ? 'Table name does not match'
+                                    : ''
+                            }
+                            disabled={dropping}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDropDialog} disabled={dropping}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDropTable}
+                        disabled={confirmDeleteText !== tableToDelete?.name || dropping}
+                        startIcon={dropping ? <CircularProgress size={16} /> : <DeleteIcon />}
+                    >
+                        {dropping ? 'Dropping...' : 'Drop Table'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
