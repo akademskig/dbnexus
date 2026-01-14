@@ -70,7 +70,10 @@ export function ConnectionManagementPage() {
 
     // Handler for schema change in Tables tab
     const handleTablesSchemaChange = (schemaName: string) => {
-        setSearchParams({ tab: 'tables', schema: schemaName });
+        const params: Record<string, string> = { tab: 'tables', schema: schemaName };
+        // Preserve table if it was set
+        if (urlTable) params.table = urlTable;
+        setSearchParams(params);
     };
 
     // Handler for schema/table change in Table Management tab
@@ -80,16 +83,14 @@ export function ConnectionManagementPage() {
         setSearchParams(params);
     };
 
-    // Update URL when tab changes
+    // Update URL when tab changes - always preserve schema and table
     const handleTabChange = (_: unknown, newTab: number) => {
         setActiveTab(newTab);
         const tabNames = ['overview', 'schemas', 'tables', 'management', 'maintenance'] as const;
         const params: Record<string, string> = { tab: tabNames[newTab] || 'overview' };
-        // Preserve schema/table params for tables and management tabs
-        if ((newTab === 2 || newTab === 3) && urlSchema) {
-            params.schema = urlSchema;
-            if (newTab === 3 && urlTable) params.table = urlTable;
-        }
+        // Always preserve schema and table params across all tabs
+        if (urlSchema) params.schema = urlSchema;
+        if (urlTable) params.table = urlTable;
         setSearchParams(params);
     };
 
