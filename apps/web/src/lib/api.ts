@@ -418,4 +418,28 @@ export const syncApi = {
                 }),
             }
         ),
+
+    // Dump and restore all data from source to target (handles FK constraints)
+    dumpAndRestore: (
+        sourceConnectionId: string,
+        targetConnectionId: string,
+        schema: string = 'public',
+        options?: {
+            truncateTarget?: boolean;
+            tables?: string[];
+        }
+    ) =>
+        fetchApi<{
+            success: boolean;
+            tablesProcessed: number;
+            rowsCopied: number;
+            errors: string[];
+            tableResults: { table: string; rows: number; error?: string }[];
+        }>(
+            `/sync/dump-restore/${sourceConnectionId}/${targetConnectionId}?schema=${encodeURIComponent(schema)}`,
+            {
+                method: 'POST',
+                body: JSON.stringify(options || {}),
+            }
+        ),
 };

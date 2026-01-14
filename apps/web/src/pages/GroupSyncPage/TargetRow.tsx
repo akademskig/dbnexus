@@ -4,7 +4,6 @@ import {
     Box,
     Typography,
     Button,
-    Chip,
     Alert,
     TableRow,
     TableCell,
@@ -13,7 +12,6 @@ import {
     Tabs,
     Tab,
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
     ExpandMore as ExpandIcon,
     ExpandLess as CollapseIcon,
@@ -22,10 +20,11 @@ import {
     Schema as SchemaIcon,
     TableChart as DataIcon,
 } from '@mui/icons-material';
-import { syncApi, schemaApi } from '../../lib/api';
+import { schemaApi } from '../../lib/api';
 import { StatusIcon, StatusChip } from './StatusComponents';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
-import type { InstanceGroupTargetStatus, TableDataDiff } from '@dbnexus/shared';
+import { DataDiffDisplay } from '../../components/DataDiffDisplay';
+import type { InstanceGroupTargetStatus } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 
 interface TargetRowProps {
@@ -46,10 +45,6 @@ export function TargetRow({
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState(0); // 0 = Schema, 1 = Data
     const [applying, setApplying] = useState(false);
-    const [syncing, setSyncing] = useState(false);
-    const [syncResults, setSyncResults] = useState<
-        { table: string; inserted: number; updated: number; deleted: number; errors: string[] }[]
-    >([]);
     const queryClient = useQueryClient();
     const toast = useToastStore();
 
@@ -80,128 +75,9 @@ export function TargetRow({
         }
     };
 
-    const handleSyncTable = async (tableName: string) => {
-        setSyncing(true);
-        try {
-            const result = await syncApi.syncTableData(
-                sourceConnectionId,
-                target.connectionId,
-                sourceSchema,
-                tableName,
-                {
-                    primaryKeys: ['id'], // Default PK - should be improved
-                    insertMissing: true,
-                    updateDifferent: true,
-                    deleteExtra: false,
-                }
-            );
-            setSyncResults((prev) => [...prev.filter((r) => r.table !== tableName), result]);
-            queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
-            toast.success(`Table "${tableName}" synced`);
-        } catch (error) {
-            console.error('Failed to sync table:', error);
-            toast.error(`Failed to sync table "${tableName}"`);
-        } finally {
-            setSyncing(false);
-        }
+    const handleDataSyncComplete = () => {
+        queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
     };
-
-    // DataGrid columns for data diff
-    const dataColumns: GridColDef<TableDataDiff>[] = [
-        {
-            field: 'table',
-            headerName: 'Table',
-            flex: 1,
-            minWidth: 150,
-            renderCell: (params) => (
-                <Typography variant="body2" fontFamily="monospace">
-                    {params.value}
-                </Typography>
-            ),
-        },
-        {
-            field: 'sourceCount',
-            headerName: 'Source',
-            width: 100,
-            align: 'right',
-            headerAlign: 'right',
-        },
-        {
-            field: 'targetCount',
-            headerName: 'Target',
-            width: 100,
-            align: 'right',
-            headerAlign: 'right',
-        },
-        {
-            field: 'missingInTarget',
-            headerName: 'Missing',
-            width: 100,
-            align: 'right',
-            headerAlign: 'right',
-            renderCell: (params) =>
-                params.value > 0 ? (
-                    <Chip label={params.value} size="small" color="warning" />
-                ) : (
-                    '-'
-                ),
-        },
-        {
-            field: 'missingInSource',
-            headerName: 'Extra',
-            width: 100,
-            align: 'right',
-            headerAlign: 'right',
-            renderCell: (params) =>
-                params.value > 0 ? (
-                    <Chip label={params.value} size="small" color="info" />
-                ) : (
-                    '-'
-                ),
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 150,
-            sortable: false,
-            renderCell: (params) => {
-                const row = params.row;
-                const isOutOfSync =
-                    row.sourceCount !== row.targetCount || row.missingInTarget > 0;
-                const result = syncResults.find((r) => r.table === row.table);
-
-                if (result) {
-                    return (
-                        <Typography
-                            variant="caption"
-                            color={result.errors.length > 0 ? 'error' : 'success.main'}
-                        >
-                            +{result.inserted} ~{result.updated}
-                            {result.errors.length > 0 && ` (${result.errors.length} errors)`}
-                        </Typography>
-                    );
-                }
-
-                if (isOutOfSync) {
-                    return (
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleSyncTable(row.table);
-                            }}
-                            disabled={syncing}
-                        >
-                            Sync
-                        </Button>
-                    );
-                }
-
-                return <Chip label="In sync" size="small" color="success" variant="outlined" />;
-            },
-        },
-    ];
 
     return (
         <>
@@ -315,30 +191,18 @@ export function TargetRow({
                                 </Box>
                             )}
 
-                            {/* Data Tab with DataGrid */}
+                            {/* Data Tab with shared DataDiffDisplay */}
                             {activeTab === 1 && group.syncData && (
                                 <Box sx={{ py: 1 }}>
                                     {dataDiff.length > 0 ? (
-                                        <DataGrid
-                                            rows={dataDiff}
-                                            columns={dataColumns}
-                                            getRowId={(row) => row.table}
-                                            autoHeight
-                                            disableRowSelectionOnClick
-                                            pageSizeOptions={[10, 25, 50]}
-                                            initialState={{
-                                                pagination: { paginationModel: { pageSize: 10 } },
-                                            }}
-                                            sx={{
-                                                border: 'none',
-                                                '& .MuiDataGrid-cell': {
-                                                    borderColor: 'divider',
-                                                },
-                                                '& .MuiDataGrid-columnHeaders': {
-                                                    bgcolor: 'background.default',
-                                                    borderColor: 'divider',
-                                                },
-                                            }}
+                                        <DataDiffDisplay
+                                            sourceConnectionId={sourceConnectionId}
+                                            targetConnectionId={target.connectionId}
+                                            sourceSchema={sourceSchema}
+                                            targetSchema={targetSchema}
+                                            dataDiff={dataDiff}
+                                            onSyncComplete={handleDataSyncComplete}
+                                            compact
                                         />
                                     ) : target.dataStatus === 'in_sync' ? (
                                         <Alert severity="success" sx={{ mt: 1 }}>

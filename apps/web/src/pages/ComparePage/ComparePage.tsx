@@ -10,17 +10,24 @@ import {
     Paper,
     IconButton,
     Tooltip,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     CompareArrows as CompareIcon,
     SwapHoriz as SwapIcon,
+    Schema as SchemaIcon,
+    Storage as DataIcon,
 } from '@mui/icons-material';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { ConnectionSelector } from './ConnectionSelector';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
+import { DataDiffDisplay } from './DataDiffDisplay';
 import { getDefaultSchema } from './utils';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
+
+type CompareTab = 'schema' | 'data';
 
 export function ComparePage() {
     const queryClient = useQueryClient();
@@ -30,6 +37,7 @@ export function ComparePage() {
     const [targetSchema, setTargetSchema] = useState<string>('');
     const [comparing, setComparing] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [activeTab, setActiveTab] = useState<CompareTab>('schema');
 
     // Fetch connections
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
@@ -71,6 +79,7 @@ export function ComparePage() {
     const {
         data: schemaDiff,
         isLoading: loadingDiff,
+        isFetching: fetchingDiff,
         refetch: refetchDiff,
     } = useQuery({
         queryKey: [
@@ -89,12 +98,16 @@ export function ComparePage() {
             ),
         enabled:
             comparing &&
+            activeTab === 'schema' &&
             !!sourceConnectionId &&
             !!targetConnectionId &&
             !!sourceSchema &&
             !!targetSchema,
         staleTime: 0, // Always refetch when comparing
     });
+
+    // Use isFetching instead of isLoading to show loader on refetches too
+    const isComparing = loadingDiff || fetchingDiff;
 
     // Fetch migration SQL
     const { data: migrationSqlData } = useQuery({
@@ -113,7 +126,7 @@ export function ComparePage() {
                 targetSchema
             ),
         enabled:
-            comparing && !!schemaDiff && !!sourceConnectionId && !!targetConnectionId,
+            comparing && activeTab === 'schema' && !!schemaDiff && !!sourceConnectionId && !!targetConnectionId,
         staleTime: 0,
     });
 
@@ -126,7 +139,12 @@ export function ComparePage() {
         queryClient.invalidateQueries({
             queryKey: ['migrationSql', sourceConnectionId, targetConnectionId],
         });
-        refetchDiff();
+        queryClient.invalidateQueries({
+            queryKey: ['tableDiffs', sourceConnectionId, targetConnectionId],
+        });
+        if (activeTab === 'schema') {
+            refetchDiff();
+        }
     };
 
     const handleSwap = () => {
@@ -163,6 +181,10 @@ export function ComparePage() {
         }
     };
 
+    const handleTabChange = (_: React.SyntheticEvent, newValue: CompareTab) => {
+        setActiveTab(newValue);
+    };
+
     const canCompare =
         sourceConnectionId && targetConnectionId && sourceSchema && targetSchema;
 
@@ -171,11 +193,10 @@ export function ComparePage() {
             {/* Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" fontWeight={600} gutterBottom>
-                    Compare Schemas
+                    Compare Databases
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Compare schemas between any two database connections and generate migration
-                    scripts.
+                    Compare schemas and data between any two database connections.
                 </Typography>
             </Box>
 
@@ -237,56 +258,110 @@ export function ComparePage() {
                     <Button
                         variant="contained"
                         startIcon={
-                            comparing && loadingDiff ? (
-                                <CircularProgress size={16} />
+                            isComparing ? (
+                                <CircularProgress size={16} color="inherit" />
                             ) : (
                                 <CompareIcon />
                             )
                         }
                         onClick={handleCompare}
-                        disabled={!canCompare || loadingDiff}
+                        disabled={!canCompare || isComparing}
                         sx={{ mt: 2 }}
                     >
-                        {comparing ? 'Refresh' : 'Compare'}
+                        {isComparing && 'Comparing...'}
+                        {!isComparing && comparing && 'Refresh'}
+                        {!isComparing && !comparing && 'Compare'}
                     </Button>
                 </Box>
             </Paper>
 
             {/* Results */}
             {comparing && (
-                <Paper sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Typography variant="h6">Schema Differences</Typography>
-                        <Chip
-                            label={`${sourceConnection?.name || 'Source'}.${sourceSchema}`}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                        />
-                        <Typography color="text.secondary">→</Typography>
-                        <Chip
-                            label={`${targetConnection?.name || 'Target'}.${targetSchema}`}
-                            size="small"
-                            color="secondary"
-                            variant="outlined"
-                        />
+                <Paper sx={{ p: 0 }}>
+                    {/* Tabs */}
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <Tabs value={activeTab} onChange={handleTabChange}>
+                            <Tab
+                                value="schema"
+                                label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <SchemaIcon fontSize="small" />
+                                        Schema
+                                        {schemaDiff && schemaDiff.items.length > 0 && (
+                                            <Chip
+                                                label={schemaDiff.items.length}
+                                                size="small"
+                                                color="warning"
+                                                sx={{ height: 20, fontSize: 11 }}
+                                            />
+                                        )}
+                                    </Box>
+                                }
+                            />
+                            <Tab
+                                value="data"
+                                label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <DataIcon fontSize="small" />
+                                        Data
+                                    </Box>
+                                }
+                            />
+                        </Tabs>
                     </Box>
 
-                    {loadingDiff ? (
-                        <LoadingState message="Comparing schemas..." size="medium" />
-                    ) : schemaDiff ? (
-                        <SchemaDiffDisplay
-                            diff={schemaDiff}
-                            migrationSql={migrationSqlData?.sql || []}
-                            onApplyMigration={handleApplyMigration}
-                            applying={applying}
-                        />
-                    ) : (
-                        <Alert severity="info">
-                            Select source and target connections, then click Compare to see
-                            differences.
-                        </Alert>
-                    )}
+                    {/* Tab Content */}
+                    <Box sx={{ p: 3 }}>
+                        {/* Header with connection info */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Typography variant="h6">
+                                {activeTab === 'schema' ? 'Schema Differences' : 'Data Differences'}
+                            </Typography>
+                            <Chip
+                                label={`${sourceConnection?.name || 'Source'}.${sourceSchema}`}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                            />
+                            <Typography color="text.secondary">→</Typography>
+                            <Chip
+                                label={`${targetConnection?.name || 'Target'}.${targetSchema}`}
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                            />
+                        </Box>
+
+                        {/* Schema Tab */}
+                        {activeTab === 'schema' && isComparing && (
+                            <LoadingState message="Comparing schemas..." size="medium" />
+                        )}
+                        {activeTab === 'schema' && !isComparing && schemaDiff && (
+                            <SchemaDiffDisplay
+                                diff={schemaDiff}
+                                migrationSql={migrationSqlData?.sql || []}
+                                onApplyMigration={handleApplyMigration}
+                                applying={applying}
+                            />
+                        )}
+                        {activeTab === 'schema' && !isComparing && !schemaDiff && (
+                            <Alert severity="info">
+                                Click Compare to see schema differences.
+                            </Alert>
+                        )}
+
+                        {/* Data Tab */}
+                        {activeTab === 'data' && (
+                            <DataDiffDisplay
+                                sourceConnectionId={sourceConnectionId}
+                                targetConnectionId={targetConnectionId}
+                                sourceSchema={sourceSchema}
+                                targetSchema={targetSchema}
+                                sourceConnectionName={sourceConnection?.name || 'Source'}
+                                targetConnectionName={targetConnection?.name || 'Target'}
+                            />
+                        )}
+                    </Box>
                 </Paper>
             )}
 
@@ -296,7 +371,7 @@ export function ComparePage() {
                     <EmptyState
                         icon={<CompareIcon />}
                         title="Select connections to compare"
-                        description="Choose a source and target database connection above, then click Compare to see schema differences and generate migration scripts."
+                        description="Choose a source and target database connection above, then click Compare to see schema and data differences."
                         size="large"
                     />
                 </Paper>

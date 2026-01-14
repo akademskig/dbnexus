@@ -4,7 +4,7 @@ import type { InstanceGroupSyncStatus } from '@dbnexus/shared';
 
 @Controller('sync')
 export class SyncController {
-    constructor(private readonly syncService: SyncService) {}
+    constructor(private readonly syncService: SyncService) { }
 
     /**
      * Get sync status for an instance group
@@ -178,5 +178,37 @@ export class SyncController {
         }
 
         return results;
+    }
+
+    /**
+     * Dump and restore all data from source to target
+     * This is a complete data copy that handles foreign key constraints properly
+     */
+    @Post('dump-restore/:sourceConnectionId/:targetConnectionId')
+    async dumpAndRestore(
+        @Param('sourceConnectionId') sourceConnectionId: string,
+        @Param('targetConnectionId') targetConnectionId: string,
+        @Query('schema') schema: string = 'public',
+        @Body()
+        body?: {
+            truncateTarget?: boolean;
+            tables?: string[];
+        }
+    ): Promise<{
+        success: boolean;
+        tablesProcessed: number;
+        rowsCopied: number;
+        errors: string[];
+        tableResults: { table: string; rows: number; error?: string }[];
+    }> {
+        return this.syncService.dumpAndRestore(
+            sourceConnectionId,
+            targetConnectionId,
+            schema,
+            {
+                truncateTarget: body?.truncateTarget ?? true,
+                tables: body?.tables,
+            }
+        );
     }
 }
