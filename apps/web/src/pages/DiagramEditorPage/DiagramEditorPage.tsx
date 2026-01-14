@@ -51,6 +51,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
@@ -59,6 +60,7 @@ import { useConnectionStore } from '../../stores/connectionStore';
 import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
+import { ConnectionSelector } from '../../components/ConnectionSelector';
 import {
     EditableTableNode,
     type EditableColumn,
@@ -186,22 +188,33 @@ export function DiagramEditorPage() {
     const connection = connections.find((c) => c.id === selectedConnectionId);
 
     // Fetch schemas for selected connection
-    const { data: schemas = [], isLoading: loadingSchemas } = useQuery({
+    const {
+        data: schemas = [],
+        isLoading: loadingSchemas,
+        error: schemasError,
+        refetch: refetchSchemas,
+    } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
+        retry: 1,
     });
 
     // Fetch tables for selected schema
     const {
         data: tables = [],
         isLoading: loadingTables,
+        error: tablesError,
         refetch: refetchTables,
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
         queryFn: () => schemaApi.getTables(selectedConnectionId, selectedSchema),
         enabled: !!selectedConnectionId && !!selectedSchema,
+        retry: 1,
     });
+
+    // Connection error state
+    const connectionError = schemasError || tablesError;
 
     // Sync URL params to store on initial load
     useEffect(() => {
@@ -582,6 +595,36 @@ export function DiagramEditorPage() {
             );
         }
 
+        // Show connection error state
+        if (connectionError) {
+            const errorMessage =
+                connectionError instanceof Error ? connectionError.message : 'Unknown error';
+            const isConnectionRefused =
+                errorMessage.includes('ECONNREFUSED') ||
+                errorMessage.includes('connect') ||
+                errorMessage.includes('Connection') ||
+                errorMessage.includes('timeout');
+
+            return (
+                <EmptyState
+                    icon={<ErrorOutlineIcon sx={{ color: 'error.main' }} />}
+                    title={isConnectionRefused ? 'Database Unavailable' : 'Connection Error'}
+                    description={
+                        isConnectionRefused
+                            ? `Unable to connect to the database. Please ensure the database server is running and accessible.`
+                            : `Failed to load schema data: ${errorMessage}`
+                    }
+                    action={{
+                        label: 'Retry Connection',
+                        onClick: () => {
+                            refetchSchemas();
+                            if (selectedSchema) refetchTables();
+                        },
+                    }}
+                />
+            );
+        }
+
         if (!selectedSchema) {
             return (
                 <EmptyState
@@ -756,26 +799,13 @@ export function DiagramEditorPage() {
             <GlassCard sx={{ mb: 2, p: 1.5 }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                     {/* Connection Selector */}
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Connection</InputLabel>
-                        <Select
-                            value={selectedConnectionId}
-                            onChange={(e) => handleConnectionChange(e.target.value)}
-                            label="Connection"
-                            disabled={loadingConnections}
-                            startAdornment={
-                                <InputAdornment position="start">
-                                    <StorageIcon fontSize="small" sx={{ color: 'primary.main' }} />
-                                </InputAdornment>
-                            }
-                        >
-                            {connections.map((conn) => (
-                                <MenuItem key={conn.id} value={conn.id}>
-                                    {conn.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <ConnectionSelector
+                        value={selectedConnectionId}
+                        onChange={handleConnectionChange}
+                        disabled={loadingConnections}
+                        disableOffline={true}
+                        showStatusIcon={true}
+                    />
 
                     {/* Schema Selector */}
                     <FormControl size="small" sx={{ minWidth: 150 }}>

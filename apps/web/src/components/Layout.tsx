@@ -36,6 +36,7 @@ import { groupsApi, connectionsApi } from '../lib/api';
 import { themeColors } from '../theme';
 import type { DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -90,6 +91,9 @@ export function Layout() {
     const [loadingConnections, setLoadingConnections] = useState(true);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
 
+    // Connection health store
+    const { checkAllConnections } = useConnectionHealthStore();
+
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);
 
@@ -102,10 +106,14 @@ export function Layout() {
 
         connectionsApi
             .getAll()
-            .then(setConnections)
+            .then((conns) => {
+                setConnections(conns);
+                // Check health of all connections in background
+                checkAllConnections(conns.map((c) => c.id));
+            })
             .catch(() => setConnections([]))
             .finally(() => setLoadingConnections(false));
-    }, []);
+    }, [checkAllConnections]);
 
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
