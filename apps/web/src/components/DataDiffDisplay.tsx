@@ -82,7 +82,7 @@ export function DataDiffDisplay({
 
     // Only fetch data if not provided via props
     const shouldFetch = !providedDataDiff && !!sourceConnectionId && !!targetConnectionId && !!sourceSchema;
-    
+
     const {
         data: fetchedTableDiffs = [],
         isLoading,
@@ -170,21 +170,21 @@ export function DataDiffDisplay({
         }
 
         setSyncing(false);
-        
+
         // Show toast summary
         const successCount = syncResults.filter((r) => r.errors.length === 0).length;
         const errorCount = syncResults.filter((r) => r.errors.length > 0).length;
-        
+
         if (errorCount === 0) {
             toast.success(`Successfully synced ${successCount} table(s)`);
+            // Only refresh if no errors - otherwise keep results visible
+            handleRefresh();
         } else if (successCount > 0) {
-            toast.warning(`Synced ${successCount} table(s), ${errorCount} failed`);
+            toast.warning(`Synced ${successCount} table(s), ${errorCount} failed. See details below.`);
         } else {
-            toast.error(`Failed to sync ${errorCount} table(s)`);
+            toast.error(`Failed to sync ${errorCount} table(s). See details below.`);
         }
-
-        // Refresh the data after sync
-        handleRefresh();
+        // Don't call handleRefresh() on error - keep results visible so user can see errors
     };
 
     const handleSyncSingleTable = async (tableName: string) => {
@@ -203,10 +203,27 @@ export function DataDiffDisplay({
                 }
             );
             setResults((prev) => [...prev.filter((r) => r.table !== tableName), result]);
-            toast.success(`Table "${tableName}" synced`);
+            
+            if (result.errors && result.errors.length > 0) {
+                toast.error(`Table "${tableName}" sync had errors: ${result.errors[0]}`);
+            } else {
+                toast.success(`Table "${tableName}" synced: +${result.inserted} ~${result.updated}`);
+            }
             onSyncComplete?.();
         } catch (error) {
-            toast.error(`Failed to sync table "${tableName}"`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            toast.error(`Failed to sync "${tableName}": ${errorMsg}`);
+            // Add to results so user can see the error
+            setResults((prev) => [
+                ...prev.filter((r) => r.table !== tableName),
+                {
+                    table: tableName,
+                    inserted: 0,
+                    updated: 0,
+                    deleted: 0,
+                    errors: [errorMsg],
+                },
+            ]);
         } finally {
             setSyncing(false);
         }
@@ -225,13 +242,13 @@ export function DataDiffDisplay({
                 { truncateTarget: true }
             );
             setDumpRestoreResult(result);
-            
+
             if (result.success) {
                 toast.success(`Copied ${result.rowsCopied} rows across ${result.tablesProcessed} tables`);
             } else {
                 toast.warning(`Completed with ${result.errors.length} error(s)`);
             }
-            
+
             // Refresh the data after dump & restore
             handleRefresh();
         } catch (error) {
@@ -304,83 +321,83 @@ export function DataDiffDisplay({
         },
         ...(compact
             ? [
-                  {
-                      field: 'actions',
-                      headerName: 'Actions',
-                      width: 120,
-                      sortable: false,
-                      renderCell: (params: { row: TableDataDiff }) => {
-                          const row = params.row;
-                          const isOutOfSync =
-                              row.sourceCount !== row.targetCount || row.missingInTarget > 0;
-                          const result = results.find((r) => r.table === row.table);
+                {
+                    field: 'actions',
+                    headerName: 'Actions',
+                    width: 120,
+                    sortable: false,
+                    renderCell: (params: { row: TableDataDiff }) => {
+                        const row = params.row;
+                        const isOutOfSync =
+                            row.sourceCount !== row.targetCount || row.missingInTarget > 0;
+                        const result = results.find((r) => r.table === row.table);
 
-                          if (result) {
-                              return (
-                                  <Typography
-                                      variant="caption"
-                                      color={result.errors.length > 0 ? 'error' : 'success.main'}
-                                  >
-                                      +{result.inserted} ~{result.updated}
-                                  </Typography>
-                              );
-                          }
+                        if (result) {
+                            return (
+                                <Typography
+                                    variant="caption"
+                                    color={result.errors.length > 0 ? 'error' : 'success.main'}
+                                >
+                                    +{result.inserted} ~{result.updated}
+                                </Typography>
+                            );
+                        }
 
-                          if (isOutOfSync) {
-                              return (
-                                  <Button
-                                      size="small"
-                                      variant="outlined"
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleSyncSingleTable(row.table);
-                                      }}
-                                      disabled={syncing}
-                                  >
-                                      Sync
-                                  </Button>
-                              );
-                          }
+                        if (isOutOfSync) {
+                            return (
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSyncSingleTable(row.table);
+                                    }}
+                                    disabled={syncing}
+                                >
+                                    Sync
+                                </Button>
+                            );
+                        }
 
-                          return <Chip label="In sync" size="small" color="success" variant="outlined" />;
-                      },
-                  } as GridColDef<TableDataDiff>,
-              ]
+                        return <Chip label="In sync" size="small" color="success" variant="outlined" />;
+                    },
+                } as GridColDef<TableDataDiff>,
+            ]
             : [
-                  {
-                      field: 'difference',
-                      headerName: 'Status',
-                      width: 120,
-                      align: 'center',
-                      headerAlign: 'center',
-                      valueGetter: (_: unknown, row: TableDataDiff) => row.sourceCount - row.targetCount,
-                      renderCell: (params: { value: unknown }) => {
-                          const diff = params.value as number;
-                          if (diff === 0) {
-                              return (
-                                  <Chip
-                                      icon={<CheckIcon />}
-                                      label="In Sync"
-                                      size="small"
-                                      color="success"
-                                      variant="outlined"
-                                      sx={{ height: 24 }}
-                                  />
-                              );
-                          }
-                          return (
-                              <Typography
-                                  variant="body2"
-                                  fontWeight={500}
-                                  color={diff > 0 ? 'warning.main' : 'error.main'}
-                              >
-                                  {diff > 0 ? '+' : ''}
-                                  {diff}
-                              </Typography>
-                          );
-                      },
-                  } as GridColDef<TableDataDiff>,
-              ]),
+                {
+                    field: 'difference',
+                    headerName: 'Status',
+                    width: 120,
+                    align: 'center',
+                    headerAlign: 'center',
+                    valueGetter: (_: unknown, row: TableDataDiff) => row.sourceCount - row.targetCount,
+                    renderCell: (params: { value: unknown }) => {
+                        const diff = params.value as number;
+                        if (diff === 0) {
+                            return (
+                                <Chip
+                                    icon={<CheckIcon />}
+                                    label="In Sync"
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    sx={{ height: 24 }}
+                                />
+                            );
+                        }
+                        return (
+                            <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                color={diff > 0 ? 'warning.main' : 'error.main'}
+                            >
+                                {diff > 0 ? '+' : ''}
+                                {diff}
+                            </Typography>
+                        );
+                    },
+                } as GridColDef<TableDataDiff>,
+            ]),
     ];
 
     // Loading state (only when fetching own data)
@@ -420,11 +437,11 @@ export function DataDiffDisplay({
                     </Box>
                 </Box>
 
-                <Alert 
-                    severity={dumpRestoreResult.success ? 'success' : 'warning'} 
+                <Alert
+                    severity={dumpRestoreResult.success ? 'success' : 'warning'}
                     sx={{ mb: 2 }}
                 >
-                    {dumpRestoreResult.success 
+                    {dumpRestoreResult.success
                         ? `Successfully copied all data from source to target.`
                         : `Completed with some errors. Check the details below.`}
                 </Alert>
@@ -448,9 +465,9 @@ export function DataDiffDisplay({
                             {result.table}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip 
-                                label={`${result.rows} rows`} 
-                                size="small" 
+                            <Chip
+                                label={`${result.rows} rows`}
+                                size="small"
                                 color={result.rows > 0 ? 'success' : 'default'}
                                 variant="outlined"
                             />
@@ -492,6 +509,8 @@ export function DataDiffDisplay({
     if (!compact && results.length > 0) {
         const successCount = results.filter((r) => r.errors.length === 0).length;
         const errorCount = results.filter((r) => r.errors.length > 0).length;
+        const failedResults = results.filter((r) => r.errors.length > 0);
+        const successResults = results.filter((r) => r.errors.length === 0);
 
         return (
             <Box>
@@ -517,29 +536,75 @@ export function DataDiffDisplay({
                     </Box>
                 </Box>
 
-                {results.map((result) => (
-                    <Box
-                        key={result.table}
-                        sx={{
-                            p: 2,
-                            mb: 1,
-                            bgcolor: result.errors.length > 0 ? 'error.dark' : 'success.dark',
-                            borderRadius: 1,
-                            opacity: 0.9,
-                        }}
-                    >
-                        <Typography fontWeight={600}>{result.table}</Typography>
-                        <Typography variant="body2">
-                            Inserted: {result.inserted}, Updated: {result.updated}, Deleted:{' '}
-                            {result.deleted}
+                {/* Show errors first and prominently */}
+                {failedResults.length > 0 && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                            {failedResults.length} table(s) failed to sync:
                         </Typography>
-                        {result.errors.map((err) => (
-                            <Typography key={err} variant="caption" color="error.light">
-                                {err}
-                            </Typography>
+                        {failedResults.map((result) => (
+                            <Box key={result.table} sx={{ mb: 1.5 }}>
+                                <Typography variant="body2" fontWeight={600} fontFamily="monospace">
+                                    {result.table}
+                                </Typography>
+                                {result.errors.map((err, idx) => (
+                                    <Typography 
+                                        key={idx} 
+                                        variant="body2" 
+                                        sx={{ 
+                                            pl: 2, 
+                                            wordBreak: 'break-word',
+                                            whiteSpace: 'pre-wrap',
+                                        }}
+                                    >
+                                        • {err}
+                                    </Typography>
+                                ))}
+                            </Box>
                         ))}
-                    </Box>
-                ))}
+                    </Alert>
+                )}
+
+                {/* Show successful syncs */}
+                {successResults.length > 0 && (
+                    <>
+                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            Successfully synced:
+                        </Typography>
+                        {successResults.map((result) => (
+                            <Box
+                                key={result.table}
+                                sx={{
+                                    p: 1.5,
+                                    mb: 0.5,
+                                    bgcolor: 'success.dark',
+                                    borderRadius: 1,
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {result.table}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    {result.inserted > 0 && (
+                                        <Chip label={`+${result.inserted}`} size="small" color="success" />
+                                    )}
+                                    {result.updated > 0 && (
+                                        <Chip label={`~${result.updated}`} size="small" color="info" />
+                                    )}
+                                    {result.deleted > 0 && (
+                                        <Chip label={`-${result.deleted}`} size="small" color="warning" />
+                                    )}
+                                    {result.inserted === 0 && result.updated === 0 && result.deleted === 0 && (
+                                        <Chip label="No changes" size="small" variant="outlined" />
+                                    )}
+                                </Box>
+                            </Box>
+                        ))}
+                    </>
+                )}
 
                 <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
                     <Button variant="outlined" onClick={handleClearResults}>
@@ -744,11 +809,11 @@ export function DataDiffDisplay({
                             {dumpRestoring ? 'Copying...' : 'Dump & Restore All'}
                         </Button>
 
-                        <Chip 
-                            label="Handles FK constraints" 
-                            size="small" 
-                            color="info" 
-                            variant="outlined" 
+                        <Chip
+                            label="Handles FK constraints"
+                            size="small"
+                            color="info"
+                            variant="outlined"
                         />
                     </Box>
 
