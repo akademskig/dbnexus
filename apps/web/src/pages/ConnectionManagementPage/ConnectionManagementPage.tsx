@@ -149,12 +149,12 @@ export function ConnectionManagementPage() {
 
     // Set default schema when schemas load and no schema is selected
     useEffect(() => {
-        if (schemas.length > 0 && !selectedSchema) {
-            const defaultSchema = schemas.includes('public')
-                ? 'public'
-                : schemas.includes('main')
-                  ? 'main'
-                  : schemas[0]!;
+        if (schemas.length > 0 && !selectedSchema && connection) {
+            // Use connection's default schema, or fall back to first available
+            const defaultSchema =
+                connection.defaultSchema && schemas.includes(connection.defaultSchema)
+                    ? connection.defaultSchema
+                    : schemas[0]!;
             setSelectedSchema(defaultSchema);
             // Update URL with default schema
             setTimeout(() => {
@@ -162,7 +162,7 @@ export function ConnectionManagementPage() {
                 setSearchParams(params, { replace: true });
             }, 0);
         }
-    }, [schemas, selectedSchema, setSelectedSchema, setSearchParams]);
+    }, [schemas, selectedSchema, connection, setSelectedSchema, setSearchParams]);
 
     // Handle missing connection
     useEffect(() => {
