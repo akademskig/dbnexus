@@ -416,7 +416,8 @@ export function DiagramEditorPage() {
         };
 
         loadTableDetails();
-    }, [tables, selectedConnectionId, selectedSchema, theme.palette]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tables, selectedConnectionId, selectedSchema]);
 
     // Handle connection (creating FK)
     const onConnect: OnConnect = useCallback((connection) => {
