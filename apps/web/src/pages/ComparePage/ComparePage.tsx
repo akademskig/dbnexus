@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -29,13 +29,16 @@ import { LoadingState } from '../../components/LoadingState';
 
 type CompareTab = 'schema' | 'data';
 
+// Cache results for 10 minutes - they only refresh on explicit Compare click
+const COMPARE_CACHE_TIME = 10 * 60 * 1000;
+
 export function ComparePage() {
     const queryClient = useQueryClient();
     const [sourceConnectionId, setSourceConnectionId] = useState<string>('');
     const [targetConnectionId, setTargetConnectionId] = useState<string>('');
     const [sourceSchema, setSourceSchema] = useState<string>('');
     const [targetSchema, setTargetSchema] = useState<string>('');
-    const [comparing, setComparing] = useState(false);
+    const [hasCompared, setHasCompared] = useState(false);
     const [applying, setApplying] = useState(false);
     const [activeTab, setActiveTab] = useState<CompareTab>('schema');
 
@@ -75,20 +78,33 @@ export function ComparePage() {
         if (defaultSchema) setTargetSchema(defaultSchema);
     }
 
-    // Fetch schema diff
+    // Build query key for comparison results
+    const compareQueryKey = [
+        'schemaDiff',
+        sourceConnectionId,
+        targetConnectionId,
+        sourceSchema,
+        targetSchema,
+    ];
+
+    // Check if we have cached results for the current selection
+    const hasCachedResults = !!queryClient.getQueryData(compareQueryKey);
+
+    // Auto-show results if we have cached data for this comparison
+    useEffect(() => {
+        if (hasCachedResults && !hasCompared) {
+            setHasCompared(true);
+        }
+    }, [hasCachedResults, hasCompared]);
+
+    // Fetch schema diff - enabled when we have valid selections AND have clicked compare
     const {
         data: schemaDiff,
         isLoading: loadingDiff,
         isFetching: fetchingDiff,
         refetch: refetchDiff,
     } = useQuery({
-        queryKey: [
-            'schemaDiff',
-            sourceConnectionId,
-            targetConnectionId,
-            sourceSchema,
-            targetSchema,
-        ],
+        queryKey: compareQueryKey,
         queryFn: () =>
             schemaApi.compareSchemasApi(
                 sourceConnectionId,
@@ -97,13 +113,14 @@ export function ComparePage() {
                 targetSchema
             ),
         enabled:
-            comparing &&
+            hasCompared &&
             activeTab === 'schema' &&
             !!sourceConnectionId &&
             !!targetConnectionId &&
             !!sourceSchema &&
             !!targetSchema,
-        staleTime: 0, // Always refetch when comparing
+        staleTime: COMPARE_CACHE_TIME,
+        gcTime: COMPARE_CACHE_TIME,
     });
 
     // Use isFetching instead of isLoading to show loader on refetches too
@@ -126,12 +143,13 @@ export function ComparePage() {
                 targetSchema
             ),
         enabled:
-            comparing && activeTab === 'schema' && !!schemaDiff && !!sourceConnectionId && !!targetConnectionId,
-        staleTime: 0,
+            hasCompared && activeTab === 'schema' && !!schemaDiff && !!sourceConnectionId && !!targetConnectionId,
+        staleTime: COMPARE_CACHE_TIME,
+        gcTime: COMPARE_CACHE_TIME,
     });
 
     const handleCompare = () => {
-        setComparing(true);
+        setHasCompared(true);
         // Invalidate cache to force fresh comparison
         queryClient.invalidateQueries({
             queryKey: ['schemaDiff', sourceConnectionId, targetConnectionId],
@@ -154,7 +172,7 @@ export function ComparePage() {
         setSourceSchema(targetSchema);
         setTargetConnectionId(tempConn);
         setTargetSchema(tempSchema);
-        setComparing(false);
+        // Don't reset hasCompared - let cached results show if available
     };
 
     const handleApplyMigration = async () => {
@@ -215,11 +233,10 @@ export function ComparePage() {
                         onConnectionChange={(id) => {
                             setSourceConnectionId(id);
                             setSourceSchema('');
-                            setComparing(false);
+                            // Check if we have cached results for new selection
                         }}
                         onSchemaChange={(s) => {
                             setSourceSchema(s);
-                            setComparing(false);
                         }}
                     />
 
@@ -246,11 +263,9 @@ export function ComparePage() {
                         onConnectionChange={(id) => {
                             setTargetConnectionId(id);
                             setTargetSchema('');
-                            setComparing(false);
                         }}
                         onSchemaChange={(s) => {
                             setTargetSchema(s);
-                            setComparing(false);
                         }}
                     />
 
@@ -269,14 +284,14 @@ export function ComparePage() {
                         sx={{ mt: 2 }}
                     >
                         {isComparing && 'Comparing...'}
-                        {!isComparing && comparing && 'Refresh'}
-                        {!isComparing && !comparing && 'Compare'}
+                        {!isComparing && (hasCachedResults || schemaDiff) && 'Refresh'}
+                        {!isComparing && !hasCachedResults && !schemaDiff && 'Compare'}
                     </Button>
                 </Box>
             </Paper>
 
             {/* Results */}
-            {comparing && (
+            {hasCompared && (
                 <Paper sx={{ p: 0 }}>
                     {/* Tabs */}
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -366,7 +381,7 @@ export function ComparePage() {
             )}
 
             {/* Empty state */}
-            {!comparing && (
+            {!hasCompared && (
                 <Paper sx={{ p: 3 }}>
                     <EmptyState
                         icon={<CompareIcon />}

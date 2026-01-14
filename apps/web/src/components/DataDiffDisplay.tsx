@@ -83,6 +83,9 @@ export function DataDiffDisplay({
     // Only fetch data if not provided via props
     const shouldFetch = !providedDataDiff && !!sourceConnectionId && !!targetConnectionId && !!sourceSchema;
 
+    // Cache data comparison results for 10 minutes
+    const CACHE_TIME = 10 * 60 * 1000;
+
     const {
         data: fetchedTableDiffs = [],
         isLoading,
@@ -92,7 +95,8 @@ export function DataDiffDisplay({
         queryKey: [queryKeyPrefix, sourceConnectionId, targetConnectionId, sourceSchema],
         queryFn: () => syncApi.getTableRowCounts(sourceConnectionId, targetConnectionId, sourceSchema),
         enabled: shouldFetch,
-        staleTime: 0,
+        staleTime: CACHE_TIME,
+        gcTime: CACHE_TIME,
     });
 
     // Use provided data or fetched data
@@ -203,7 +207,7 @@ export function DataDiffDisplay({
                 }
             );
             setResults((prev) => [...prev.filter((r) => r.table !== tableName), result]);
-            
+
             if (result.errors && result.errors.length > 0) {
                 toast.error(`Table "${tableName}" sync had errors: ${result.errors[0]}`);
             } else {
@@ -548,11 +552,11 @@ export function DataDiffDisplay({
                                     {result.table}
                                 </Typography>
                                 {result.errors.map((err, idx) => (
-                                    <Typography 
-                                        key={idx} 
-                                        variant="body2" 
-                                        sx={{ 
-                                            pl: 2, 
+                                    <Typography
+                                        key={idx}
+                                        variant="body2"
+                                        sx={{
+                                            pl: 2,
                                             wordBreak: 'break-word',
                                             whiteSpace: 'pre-wrap',
                                         }}
