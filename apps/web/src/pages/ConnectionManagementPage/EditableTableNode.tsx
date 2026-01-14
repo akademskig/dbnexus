@@ -353,16 +353,23 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                 position={Position.Right}
                                 id={`${column.id}-source`}
                                 style={{
-                                    width: 10,
-                                    height: 10,
+                                    width: 12,
+                                    height: 12,
                                     background: column.isForeignKey
                                         ? theme.palette.info.main
-                                        : theme.palette.grey[400],
+                                        : theme.palette.primary.main,
                                     border: `2px solid ${theme.palette.background.paper}`,
-                                    right: -6,
+                                    right: -7,
                                     opacity:
-                                        hoveredColumn === column.id || column.isForeignKey ? 1 : 0,
-                                    transition: 'opacity 0.2s',
+                                        hoveredColumn === column.id
+                                            ? 1
+                                            : column.isForeignKey
+                                              ? 0.8
+                                              : 0.3,
+                                    transition: 'opacity 0.2s, transform 0.2s',
+                                    cursor: 'crosshair',
+                                    transform:
+                                        hoveredColumn === column.id ? 'scale(1.2)' : 'scale(1)',
                                 }}
                             />
                             <Handle
@@ -370,16 +377,23 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                 position={Position.Left}
                                 id={`${column.id}-target`}
                                 style={{
-                                    width: 10,
-                                    height: 10,
+                                    width: 12,
+                                    height: 12,
                                     background: column.isPrimaryKey
                                         ? theme.palette.warning.main
-                                        : theme.palette.grey[400],
+                                        : theme.palette.success.main,
                                     border: `2px solid ${theme.palette.background.paper}`,
-                                    left: -6,
+                                    left: -7,
                                     opacity:
-                                        hoveredColumn === column.id || column.isPrimaryKey ? 1 : 0,
-                                    transition: 'opacity 0.2s',
+                                        hoveredColumn === column.id
+                                            ? 1
+                                            : column.isPrimaryKey
+                                              ? 0.8
+                                              : 0.3,
+                                    transition: 'opacity 0.2s, transform 0.2s',
+                                    cursor: 'crosshair',
+                                    transform:
+                                        hoveredColumn === column.id ? 'scale(1.2)' : 'scale(1)',
                                 }}
                             />
                         </Box>
