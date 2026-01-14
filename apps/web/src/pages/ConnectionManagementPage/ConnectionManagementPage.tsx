@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
     Box,
@@ -32,20 +32,53 @@ const TAB_ICONS = [
     <DashboardIcon key="overview" fontSize="small" />,
     <GridViewIcon key="schemas" fontSize="small" />,
     <TableChartIcon key="tables" fontSize="small" />,
+    <SettingsIcon key="table-management" fontSize="small" />,
     <BuildIcon key="maintenance" fontSize="small" />,
-    <SettingsIcon key="table-details" fontSize="small" />,
 ];
 
 export function ConnectionManagementPage() {
     const { connectionId } = useParams<{ connectionId: string }>();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Get tab, schema, and table from URL
+    const urlTab = searchParams.get('tab');
+    const urlSchema = searchParams.get('schema');
+    const urlTable = searchParams.get('table');
+
+    const [activeTab, setActiveTab] = useState(() => {
+        if (urlTab === 'schemas') return 1;
+        if (urlTab === 'tables') return 2;
+        if (urlTab === 'management') return 3;
+        if (urlTab === 'maintenance') return 4;
+        return 0;
+    });
     const [selectedSchemaForTables, setSelectedSchemaForTables] = useState<string | null>(null);
 
     // Handler to navigate to Tables tab with a specific schema selected
     const handleViewTablesForSchema = (schemaName: string) => {
         setSelectedSchemaForTables(schemaName);
         setActiveTab(2); // Tables tab index
+        setSearchParams({ tab: 'tables', schema: schemaName });
+    };
+
+    // Handler to navigate to Table Management tab with a specific table selected
+    const handleManageTable = (schemaName: string, tableName: string) => {
+        setActiveTab(3); // Table Management tab index
+        setSearchParams({ tab: 'management', schema: schemaName, table: tableName });
+    };
+
+    // Update URL when tab changes
+    const handleTabChange = (_: unknown, newTab: number) => {
+        setActiveTab(newTab);
+        const tabNames = ['overview', 'schemas', 'tables', 'management', 'maintenance'] as const;
+        const params: Record<string, string> = { tab: tabNames[newTab] || 'overview' };
+        // Preserve schema/table params for management tab
+        if (newTab === 3 && urlSchema) {
+            params.schema = urlSchema;
+            if (urlTable) params.table = urlTable;
+        }
+        setSearchParams(params);
     };
 
     // Fetch connection details
@@ -191,7 +224,7 @@ export function ConnectionManagementPage() {
             <GlassCard sx={{ mb: 3, p: 0 }}>
                 <Tabs
                     value={activeTab}
-                    onChange={(_, v) => setActiveTab(v)}
+                    onChange={handleTabChange}
                     sx={{
                         px: 2,
                         '& .MuiTabs-indicator': {
@@ -216,8 +249,8 @@ export function ConnectionManagementPage() {
                         label={`Schemas${schemas.length > 0 ? ` (${schemas.length})` : ''}`}
                     />
                     <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
-                    <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Maintenance" />
-                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Table Details" />
+                    <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Table Management" />
+                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
                 </Tabs>
             </GlassCard>
 
@@ -245,23 +278,26 @@ export function ConnectionManagementPage() {
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
-                    initialSchema={selectedSchemaForTables}
+                    initialSchema={selectedSchemaForTables || urlSchema}
                     onSchemaViewed={() => setSelectedSchemaForTables(null)}
+                    onManageTable={handleManageTable}
                 />
             )}
             {activeTab === 3 && (
-                <MaintenanceTab
-                    connectionId={connectionId}
-                    connection={connection}
-                    schemas={schemas}
-                />
-            )}
-            {activeTab === 4 && (
                 <TableDetailsTab
                     connectionId={connectionId}
                     connection={connection}
                     schemas={schemas}
                     isLoading={loadingSchemas}
+                    initialSchema={urlSchema}
+                    initialTable={urlTable}
+                />
+            )}
+            {activeTab === 4 && (
+                <MaintenanceTab
+                    connectionId={connectionId}
+                    connection={connection}
+                    schemas={schemas}
                 />
             )}
         </Box>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -47,6 +47,8 @@ interface TableDetailsTabProps {
     connection: ConnectionConfig | undefined;
     schemas: string[];
     isLoading: boolean;
+    initialSchema?: string | null;
+    initialTable?: string | null;
 }
 
 /**
@@ -129,18 +131,34 @@ export function TableDetailsTab({
     connection,
     schemas,
     isLoading,
+    initialSchema,
+    initialTable,
 }: TableDetailsTabProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
 
     // Selection state
     const [selectedSchema, setSelectedSchema] = useState<string>(() => {
+        if (initialSchema && schemas.includes(initialSchema)) return initialSchema;
         if (schemas.includes('public')) return 'public';
         if (schemas.includes('main')) return 'main';
         return schemas[0] || '';
     });
-    const [selectedTable, setSelectedTable] = useState<string>('');
+    const [selectedTable, setSelectedTable] = useState<string>(initialTable || '');
     const [detailsTab, setDetailsTab] = useState(0); // 0: Columns, 1: Indexes, 2: Foreign Keys
+
+    // Update selection when initial values change (from URL params)
+    useEffect(() => {
+        if (initialSchema && schemas.includes(initialSchema) && initialSchema !== selectedSchema) {
+            setSelectedSchema(initialSchema);
+        }
+    }, [initialSchema, schemas, selectedSchema]);
+
+    useEffect(() => {
+        if (initialTable && initialTable !== selectedTable) {
+            setSelectedTable(initialTable);
+        }
+    }, [initialTable, selectedTable]);
 
     // Dialog states
     const [addColumnOpen, setAddColumnOpen] = useState(false);

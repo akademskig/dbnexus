@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -29,6 +30,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningIcon from '@mui/icons-material/Warning';
+import SettingsIcon from '@mui/icons-material/Settings';
 import type { ConnectionConfig, TableInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -42,6 +44,7 @@ interface TablesTabProps {
     isLoading: boolean;
     initialSchema?: string | null;
     onSchemaViewed?: () => void;
+    onManageTable?: (schema: string, table: string) => void;
 }
 
 export function TablesTab({
@@ -51,6 +54,7 @@ export function TablesTab({
     isLoading,
     initialSchema,
     onSchemaViewed,
+    onManageTable,
 }: TablesTabProps) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -225,19 +229,24 @@ export function TablesTab({
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 180,
+            width: 220,
             sortable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
-                        onClick={() => handleOpenInQuery(params.row)}
-                        sx={{ textTransform: 'none' }}
-                    >
-                        Query
-                    </Button>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Query Table">
+                        <IconButton size="small" onClick={() => handleOpenInQuery(params.row)}>
+                            <PlayArrowIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Manage Table">
+                        <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => onManageTable?.(params.row.schema, params.row.name)}
+                        >
+                            <SettingsIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title="Drop Table">
                         <IconButton
                             size="small"
