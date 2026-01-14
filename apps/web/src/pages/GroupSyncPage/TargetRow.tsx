@@ -185,7 +185,7 @@ export function TargetRow({
                                         <Alert severity="success">Schema is in sync</Alert>
                                     ) : (
                                         <Alert severity="info">
-                                            Click "Recheck" to load schema diff
+                                            Click &quot;Recheck&quot; to load schema diff
                                         </Alert>
                                     )}
                                 </Box>
@@ -210,7 +210,7 @@ export function TargetRow({
                                         </Alert>
                                     ) : (
                                         <Alert severity="info" sx={{ mt: 1 }}>
-                                            Click "Recheck" to load data diff
+                                            Click &quot;Recheck&quot; to load data diff
                                         </Alert>
                                     )}
                                 </Box>

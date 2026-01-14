@@ -18,6 +18,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import GridViewIcon from '@mui/icons-material/GridView';
 import BuildIcon from '@mui/icons-material/Build';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -25,12 +26,14 @@ import { OverviewTab } from './OverviewTab';
 import { SchemasTab } from './SchemasTab';
 import { MaintenanceTab } from './MaintenanceTab';
 import { TablesTab } from './TablesTab';
+import { TableDetailsTab } from './TableDetailsTab';
 
 const TAB_ICONS = [
     <DashboardIcon key="overview" fontSize="small" />,
     <GridViewIcon key="schemas" fontSize="small" />,
     <TableChartIcon key="tables" fontSize="small" />,
     <BuildIcon key="maintenance" fontSize="small" />,
+    <SettingsIcon key="table-details" fontSize="small" />,
 ];
 
 export function ConnectionManagementPage() {
@@ -214,6 +217,7 @@ export function ConnectionManagementPage() {
                     />
                     <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
                     <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Maintenance" />
+                    <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Table Details" />
                 </Tabs>
             </GlassCard>
 
@@ -250,6 +254,14 @@ export function ConnectionManagementPage() {
                     connectionId={connectionId}
                     connection={connection}
                     schemas={schemas}
+                />
+            )}
+            {activeTab === 4 && (
+                <TableDetailsTab
+                    connectionId={connectionId}
+                    connection={connection}
+                    schemas={schemas}
+                    isLoading={loadingSchemas}
                 />
             )}
         </Box>

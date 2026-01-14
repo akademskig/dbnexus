@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef, no-console */
 
 /**
  * Icon Generation Script for DB Nexus
