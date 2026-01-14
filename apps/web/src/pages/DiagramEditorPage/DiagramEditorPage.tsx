@@ -148,6 +148,9 @@ export function DiagramEditorPage() {
     // Fullscreen state
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    // Loading state for diagram rendering
+    const [loadingDiagram, setLoadingDiagram] = useState(false);
+
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -301,6 +304,7 @@ export function DiagramEditorPage() {
         }
 
         const loadTableDetails = async () => {
+            setLoadingDiagram(true);
             try {
                 const tableDetails = await Promise.all(
                     tables.map((table) =>
@@ -406,6 +410,8 @@ export function DiagramEditorPage() {
             } catch (error) {
                 console.error('Failed to load table details:', error);
                 toast.error('Failed to load table details');
+            } finally {
+                setLoadingDiagram(false);
             }
         };
 
@@ -585,8 +591,13 @@ export function DiagramEditorPage() {
             );
         }
 
-        if (loadingTables) {
-            return <LoadingState message="Loading tables..." size="large" />;
+        if (loadingTables || loadingDiagram) {
+            return (
+                <LoadingState
+                    message={loadingTables ? 'Loading tables...' : 'Rendering diagram...'}
+                    size="large"
+                />
+            );
         }
 
         if (tables.length === 0) {
