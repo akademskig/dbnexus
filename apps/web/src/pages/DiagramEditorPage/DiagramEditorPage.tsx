@@ -240,8 +240,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                        ? 'public'
-                        : schemas[0];
+                      ? 'public'
+                      : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
@@ -563,6 +563,174 @@ export function DiagramEditorPage() {
     const dataTypes =
         DATA_TYPES[connection?.engine as keyof typeof DATA_TYPES] || DATA_TYPES.postgres;
 
+    // Render diagram canvas content - extracted to avoid nested ternary
+    const renderDiagramCanvas = () => {
+        if (!selectedConnectionId) {
+            return (
+                <EmptyState
+                    icon={<StorageIcon />}
+                    title="Select a connection"
+                    description="Choose a database connection to start editing the schema diagram."
+                />
+            );
+        }
+
+        if (!selectedSchema) {
+            return (
+                <EmptyState
+                    icon={<GridViewIcon />}
+                    title="Select a schema"
+                    description="Choose a schema to view and edit its tables."
+                />
+            );
+        }
+
+        if (loadingTables) {
+            return <LoadingState message="Loading tables..." size="large" />;
+        }
+
+        if (tables.length === 0) {
+            return (
+                <EmptyState
+                    icon={<TableChartIcon />}
+                    title="No tables in this schema"
+                    description="Create a new table to get started with the diagram editor."
+                    action={{
+                        label: 'Create Table',
+                        onClick: () => setCreateTableOpen(true),
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Box
+                sx={{
+                    width: '100%',
+                    height: '100%',
+                    // Style React Flow controls
+                    '& .react-flow__controls': {
+                        bgcolor: 'background.paper',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        bottom: 'auto',
+                        top: 0,
+                    },
+                    '& .react-flow__controls-button': {
+                        bgcolor: 'background.paper',
+                        borderColor: 'divider',
+                        color: 'text.primary',
+                        '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                        '& svg': {
+                            fill: theme.palette.text.primary,
+                        },
+                    },
+                }}
+            >
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    minZoom={0.1}
+                    maxZoom={2}
+                    defaultEdgeOptions={{
+                        type: 'smoothstep',
+                        animated: true,
+                    }}
+                    proOptions={{ hideAttribution: true }}
+                >
+                    <Background
+                        variant={BackgroundVariant.Dots}
+                        gap={20}
+                        size={1}
+                        color={alpha(theme.palette.text.primary, 0.1)}
+                    />
+                    <Controls />
+                    <MiniMap
+                        nodeColor={(node) =>
+                            node.selected
+                                ? theme.palette.primary.main
+                                : alpha(theme.palette.primary.main, 0.5)
+                        }
+                        maskColor={alpha(theme.palette.background.default, 0.8)}
+                        style={{
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                        }}
+                    />
+
+                    {/* Instructions panel */}
+                    <Panel position="top-right">
+                        <Paper
+                            sx={{
+                                p: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                bgcolor: 'background.paper',
+                            }}
+                        >
+                            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                                Drag between columns to create FK
+                            </Typography>
+                        </Paper>
+                    </Panel>
+
+                    {/* Legend */}
+                    <Panel position="bottom-left">
+                        <Paper
+                            sx={{
+                                p: 1.5,
+                                display: 'flex',
+                                gap: 2,
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Box
+                                    sx={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: '50%',
+                                        bgcolor: 'warning.main',
+                                    }}
+                                />
+                                <Typography variant="caption">Primary Key</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Box
+                                    sx={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: '50%',
+                                        bgcolor: 'info.main',
+                                    }}
+                                />
+                                <Typography variant="caption">Foreign Key</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: 'error.main', fontWeight: 600 }}
+                                >
+                                    NN
+                                </Typography>
+                                <Typography variant="caption">Not Null</Typography>
+                            </Box>
+                        </Paper>
+                    </Panel>
+                </ReactFlow>
+            </Box>
+        );
+    };
+
     const diagramContent = (
         <Box
             sx={{
@@ -673,178 +841,7 @@ export function DiagramEditorPage() {
             <GlassCard
                 sx={{ flex: 1, p: 0, overflow: 'hidden', backgroundColor: 'background.default' }}
             >
-                {!selectedConnectionId ? (
-                    <EmptyState
-                        icon={<StorageIcon />}
-                        title="Select a connection"
-                        description="Choose a database connection to start editing the schema diagram."
-                    />
-                ) : !selectedSchema ? (
-                    <EmptyState
-                        icon={<GridViewIcon />}
-                        title="Select a schema"
-                        description="Choose a schema to view and edit its tables."
-                    />
-                ) : loadingTables ? (
-                    <LoadingState message="Loading tables..." size="large" />
-                ) : tables.length === 0 ? (
-                    <EmptyState
-                        icon={<TableChartIcon />}
-                        title="No tables in this schema"
-                        description="Create a new table to get started with the diagram editor."
-                        action={{
-                            label: 'Create Table',
-                            onClick: () => setCreateTableOpen(true),
-                        }}
-                    />
-                ) : (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            height: '100%',
-                            // Style React Flow controls
-                            '& .react-flow__controls': {
-                                bgcolor: 'background.paper',
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                                bottom: 'auto',
-                                top: 0,
-                            },
-                            '& .react-flow__controls-button': {
-                                bgcolor: 'background.paper',
-                                borderColor: 'divider',
-                                color: 'text.primary',
-                                '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                },
-                                '& svg': {
-                                    fill: theme.palette.text.primary,
-                                },
-                            },
-                        }}
-                    >
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            onNodesChange={onNodesChange}
-                            onEdgesChange={onEdgesChange}
-                            onConnect={onConnect}
-                            nodeTypes={nodeTypes}
-                            fitView
-                            minZoom={0.1}
-                            maxZoom={2}
-                            defaultEdgeOptions={{
-                                type: 'smoothstep',
-                                animated: true,
-                            }}
-                            proOptions={{ hideAttribution: true }}
-                        >
-                            <Background
-                                variant={BackgroundVariant.Dots}
-                                gap={20}
-                                size={1}
-                                color={alpha(theme.palette.text.primary, 0.1)}
-                            />
-                            <Controls />
-                            <MiniMap
-                                nodeColor={(node) =>
-                                    node.selected
-                                        ? theme.palette.primary.main
-                                        : alpha(theme.palette.primary.main, 0.5)
-                                }
-                                maskColor={alpha(theme.palette.background.default, 0.8)}
-                                style={{
-                                    backgroundColor: theme.palette.background.paper,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                }}
-                            />
-
-                            {/* Instructions panel */}
-                            <Panel position="top-right">
-                                <Paper
-                                    sx={{
-                                        p: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 0.5,
-                                        bgcolor: 'background.paper',
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ px: 1 }}
-                                    >
-                                        Drag between columns to create FK
-                                    </Typography>
-                                </Paper>
-                            </Panel>
-
-                            {/* Legend */}
-                            <Panel position="bottom-left">
-                                <Paper
-                                    sx={{
-                                        p: 1.5,
-                                        display: 'flex',
-                                        gap: 2,
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.5,
-                                        }}
-                                    >
-                                        <Box
-                                            sx={{
-                                                width: 12,
-                                                height: 12,
-                                                borderRadius: '50%',
-                                                bgcolor: 'warning.main',
-                                            }}
-                                        />
-                                        <Typography variant="caption">Primary Key</Typography>
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.5,
-                                        }}
-                                    >
-                                        <Box
-                                            sx={{
-                                                width: 12,
-                                                height: 12,
-                                                borderRadius: '50%',
-                                                bgcolor: 'info.main',
-                                            }}
-                                        />
-                                        <Typography variant="caption">Foreign Key</Typography>
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.5,
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="caption"
-                                            sx={{ color: 'error.main', fontWeight: 600 }}
-                                        >
-                                            NN
-                                        </Typography>
-                                        <Typography variant="caption">Not Null</Typography>
-                                    </Box>
-                                </Paper>
-                            </Panel>
-                        </ReactFlow>
-                    </Box>
-                )}
+                {renderDiagramCanvas()}
             </GlassCard>
 
             {/* Create Table Dialog */}
