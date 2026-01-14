@@ -49,6 +49,7 @@ interface TableDetailsTabProps {
     isLoading: boolean;
     initialSchema?: string | null;
     initialTable?: string | null;
+    onSelectionChange?: (schema: string, table?: string) => void;
 }
 
 /**
@@ -133,6 +134,7 @@ export function TableDetailsTab({
     isLoading,
     initialSchema,
     initialTable,
+    onSelectionChange,
 }: TableDetailsTabProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -827,8 +829,10 @@ export function TableDetailsTab({
                         <Select
                             value={selectedSchema}
                             onChange={(e) => {
-                                setSelectedSchema(e.target.value);
+                                const newSchema = e.target.value;
+                                setSelectedSchema(newSchema);
                                 setSelectedTable('');
+                                onSelectionChange?.(newSchema);
                             }}
                             label="Schema"
                         >
@@ -844,7 +848,11 @@ export function TableDetailsTab({
                         <InputLabel>Table</InputLabel>
                         <Select
                             value={selectedTable}
-                            onChange={(e) => setSelectedTable(e.target.value)}
+                            onChange={(e) => {
+                                const newTable = e.target.value;
+                                setSelectedTable(newTable);
+                                onSelectionChange?.(selectedSchema, newTable);
+                            }}
                             label="Table"
                             disabled={loadingTables}
                         >

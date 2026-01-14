@@ -68,15 +68,27 @@ export function ConnectionManagementPage() {
         setSearchParams({ tab: 'management', schema: schemaName, table: tableName });
     };
 
+    // Handler for schema change in Tables tab
+    const handleTablesSchemaChange = (schemaName: string) => {
+        setSearchParams({ tab: 'tables', schema: schemaName });
+    };
+
+    // Handler for schema/table change in Table Management tab
+    const handleManagementSelectionChange = (schemaName: string, tableName?: string) => {
+        const params: Record<string, string> = { tab: 'management', schema: schemaName };
+        if (tableName) params.table = tableName;
+        setSearchParams(params);
+    };
+
     // Update URL when tab changes
     const handleTabChange = (_: unknown, newTab: number) => {
         setActiveTab(newTab);
         const tabNames = ['overview', 'schemas', 'tables', 'management', 'maintenance'] as const;
         const params: Record<string, string> = { tab: tabNames[newTab] || 'overview' };
-        // Preserve schema/table params for management tab
-        if (newTab === 3 && urlSchema) {
+        // Preserve schema/table params for tables and management tabs
+        if ((newTab === 2 || newTab === 3) && urlSchema) {
             params.schema = urlSchema;
-            if (urlTable) params.table = urlTable;
+            if (newTab === 3 && urlTable) params.table = urlTable;
         }
         setSearchParams(params);
     };
@@ -281,6 +293,7 @@ export function ConnectionManagementPage() {
                     initialSchema={selectedSchemaForTables || urlSchema}
                     onSchemaViewed={() => setSelectedSchemaForTables(null)}
                     onManageTable={handleManageTable}
+                    onSchemaChange={handleTablesSchemaChange}
                 />
             )}
             {activeTab === 3 && (
@@ -291,6 +304,7 @@ export function ConnectionManagementPage() {
                     isLoading={loadingSchemas}
                     initialSchema={urlSchema}
                     initialTable={urlTable}
+                    onSelectionChange={handleManagementSelectionChange}
                 />
             )}
             {activeTab === 4 && (

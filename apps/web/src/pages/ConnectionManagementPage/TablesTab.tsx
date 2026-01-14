@@ -45,6 +45,7 @@ interface TablesTabProps {
     initialSchema?: string | null;
     onSchemaViewed?: () => void;
     onManageTable?: (schema: string, table: string) => void;
+    onSchemaChange?: (schema: string) => void;
 }
 
 export function TablesTab({
@@ -55,6 +56,7 @@ export function TablesTab({
     initialSchema,
     onSchemaViewed,
     onManageTable,
+    onSchemaChange,
 }: TablesTabProps) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -295,7 +297,11 @@ export function TablesTab({
                         <InputLabel>Schema</InputLabel>
                         <Select
                             value={selectedSchema}
-                            onChange={(e) => setSelectedSchema(e.target.value)}
+                            onChange={(e) => {
+                                const newSchema = e.target.value;
+                                setSelectedSchema(newSchema);
+                                onSchemaChange?.(newSchema);
+                            }}
                             label="Schema"
                         >
                             {schemas.map((schema) => (
