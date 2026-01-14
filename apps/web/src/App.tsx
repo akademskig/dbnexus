@@ -10,7 +10,6 @@ import { ComparePage } from './pages/ComparePage';
 import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
-import { SchemaVisualizerPage } from './pages/SchemaVisualizerPage';
 import { DiagramEditorPage } from './pages/DiagramEditorPage';
 
 function App() {
@@ -31,7 +30,6 @@ function App() {
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="logs" element={<LogsPage />} />
-                <Route path="visualizer" element={<SchemaVisualizerPage />} />
                 <Route path="diagram-editor" element={<DiagramEditorPage />} />
                 <Route path="settings" element={<SettingsPage />} />
             </Route>

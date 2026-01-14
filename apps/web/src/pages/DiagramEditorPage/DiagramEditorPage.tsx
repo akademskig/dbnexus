@@ -568,7 +568,7 @@ export function DiagramEditorPage() {
             sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: isFullscreen ? 'calc(100vh - 32px)' : 'calc(100vh - 180px)',
+                height: isFullscreen ? 'calc(100vh - 32px)' : 'calc(100vh - 35px)',
                 minHeight: 500,
             }}
         >
@@ -670,7 +670,9 @@ export function DiagramEditorPage() {
             </GlassCard>
 
             {/* Diagram Canvas */}
-            <GlassCard sx={{ flex: 1, p: 0, overflow: 'hidden' }}>
+            <GlassCard
+                sx={{ flex: 1, p: 0, overflow: 'hidden', backgroundColor: 'background.default' }}
+            >
                 {!selectedConnectionId ? (
                     <EmptyState
                         icon={<StorageIcon />}
@@ -736,13 +738,18 @@ export function DiagramEditorPage() {
                             }}
                             proOptions={{ hideAttribution: true }}
                         >
-                            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-                            <Controls />
+                            <Background
+                                variant={BackgroundVariant.Dots}
+                                gap={20}
+                                size={1}
+                                color={alpha(theme.palette.text.primary, 0.1)}
+                            />
+                            <Controls showInteractive={false} />
                             <MiniMap
                                 nodeColor={(node) =>
                                     node.selected
                                         ? theme.palette.primary.main
-                                        : theme.palette.grey[600]
+                                        : alpha(theme.palette.primary.main, 0.5)
                                 }
                                 maskColor={alpha(theme.palette.background.default, 0.8)}
                                 style={{
@@ -750,6 +757,8 @@ export function DiagramEditorPage() {
                                     border: `1px solid ${theme.palette.divider}`,
                                 }}
                             />
+
+                            {/* Instructions panel */}
                             <Panel position="top-right">
                                 <Paper
                                     sx={{
@@ -767,6 +776,68 @@ export function DiagramEditorPage() {
                                     >
                                         Drag between columns to create FK
                                     </Typography>
+                                </Paper>
+                            </Panel>
+
+                            {/* Legend */}
+                            <Panel position="bottom-left">
+                                <Paper
+                                    sx={{
+                                        p: 1.5,
+                                        display: 'flex',
+                                        gap: 2,
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 12,
+                                                height: 12,
+                                                borderRadius: '50%',
+                                                bgcolor: 'warning.main',
+                                            }}
+                                        />
+                                        <Typography variant="caption">Primary Key</Typography>
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 12,
+                                                height: 12,
+                                                borderRadius: '50%',
+                                                bgcolor: 'info.main',
+                                            }}
+                                        />
+                                        <Typography variant="caption">Foreign Key</Typography>
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            sx={{ color: 'error.main', fontWeight: 600 }}
+                                        >
+                                            NN
+                                        </Typography>
+                                        <Typography variant="caption">Not Null</Typography>
+                                    </Box>
                                 </Paper>
                             </Panel>
                         </ReactFlow>
@@ -1018,10 +1089,10 @@ export function DiagramEditorPage() {
                     },
                 }}
             >
-                <Box sx={{ p: 2 }}>{diagramContent}</Box>
+                <Box sx={{ p: 2, height: '100%' }}>{diagramContent}</Box>
             </Dialog>
         );
     }
 
-    return <Box sx={{ p: 3 }}>{diagramContent}</Box>;
+    return <Box sx={{ px: 3, pt: 2, pb: 1, height: 'calc(100vh - 64px)' }}>{diagramContent}</Box>;
 }
