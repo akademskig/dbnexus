@@ -857,3 +857,94 @@ export function SaveQueryDialog({
         </Dialog>
     );
 }
+
+// ============ Create Schema Dialog ============
+
+interface CreateSchemaDialogProps {
+    readonly open: boolean;
+    readonly onClose: () => void;
+    readonly onCreated: (schemaName: string) => void;
+    readonly connectionId: string;
+    readonly loading?: boolean;
+}
+
+export function CreateSchemaDialog({
+    open,
+    onClose,
+    onCreated,
+    connectionId: _connectionId,
+    loading = false,
+}: CreateSchemaDialogProps) {
+    const [schemaName, setSchemaName] = useState('');
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!open) {
+            setSchemaName('');
+            setError(null);
+        }
+    }, [open]);
+
+    const handleCreate = () => {
+        // Validate schema name
+        if (!schemaName.trim()) {
+            setError('Schema name is required');
+            return;
+        }
+
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schemaName)) {
+            setError('Invalid name. Use only letters, numbers, and underscores, starting with a letter or underscore.');
+            return;
+        }
+
+        setError(null);
+        onCreated(schemaName.trim());
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && schemaName.trim() && !loading) {
+            handleCreate();
+        }
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <StorageIcon color="primary" />
+                Create New Schema
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                    <TextField
+                        autoFocus
+                        label="Schema Name"
+                        value={schemaName}
+                        onChange={(e) => {
+                            setSchemaName(e.target.value);
+                            setError(null);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="my_schema"
+                        fullWidth
+                        error={!!error}
+                        helperText={error || 'Use letters, numbers, and underscores'}
+                        disabled={loading}
+                    />
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={handleCreate}
+                    disabled={!schemaName.trim() || loading}
+                    startIcon={loading ? <CircularProgress size={16} /> : <AddIcon />}
+                >
+                    {loading ? 'Creating...' : 'Create Schema'}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}

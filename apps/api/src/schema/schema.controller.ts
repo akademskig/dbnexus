@@ -19,6 +19,15 @@ export class SchemaController {
         return this.schemaService.getSchemas(connectionId);
     }
 
+    @Post(':connectionId/schemas')
+    async createSchema(
+        @Param('connectionId') connectionId: string,
+        @Body() body: { name: string }
+    ): Promise<{ success: boolean; name: string }> {
+        await this.schemaService.createSchema(connectionId, body.name);
+        return { success: true, name: body.name };
+    }
+
     @Get(':connectionId/tables')
     async getTables(
         @Param('connectionId') connectionId: string,

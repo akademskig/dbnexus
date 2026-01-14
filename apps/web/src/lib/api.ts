@@ -153,6 +153,12 @@ export const queriesApi = {
 export const schemaApi = {
     getSchemas: (connectionId: string) => fetchApi<string[]>(`/schema/${connectionId}/schemas`),
 
+    createSchema: (connectionId: string, name: string) =>
+        fetchApi<{ success: boolean; name: string }>(`/schema/${connectionId}/schemas`, {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+        }),
+
     getTables: (connectionId: string, schema?: string) => {
         const params = schema ? `?schema=${schema}` : '';
         return fetchApi<TableInfo[]>(`/schema/${connectionId}/tables${params}`);

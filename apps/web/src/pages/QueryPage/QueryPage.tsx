@@ -53,7 +53,7 @@ import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
-import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
+import { CreateTableDialog, AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog, CreateSchemaDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import {
     SIDEBAR_WIDTH,
@@ -138,6 +138,8 @@ export function QueryPage() {
 
     // Edit dialogs state
     const [createTableOpen, setCreateTableOpen] = useState(false);
+    const [createSchemaDialogOpen, setCreateSchemaDialogOpen] = useState(false);
+    const [creatingSchema, setCreatingSchema] = useState(false);
     const [dropTableConfirmOpen, setDropTableConfirmOpen] = useState(false);
     const [addRowOpen, setAddRowOpen] = useState(false);
     const [tableActionsAnchor, setTableActionsAnchor] = useState<null | HTMLElement>(null);
@@ -778,6 +780,28 @@ export function QueryPage() {
         [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, refetchTables, toast]
     );
 
+    // Handle create schema
+    const handleCreateSchema = useCallback(
+        async (schemaName: string) => {
+            if (!selectedConnectionId) return;
+            
+            setCreatingSchema(true);
+            try {
+                await schemaApi.createSchema(selectedConnectionId, schemaName);
+                setCreateSchemaDialogOpen(false);
+                await refetchSchemas();
+                // Select the newly created schema
+                handleSchemaChange(schemaName);
+                toast.success(`Schema "${schemaName}" created`);
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Failed to create schema');
+            } finally {
+                setCreatingSchema(false);
+            }
+        },
+        [selectedConnectionId, refetchSchemas, handleSchemaChange, toast]
+    );
+
     // Helper function to format value for SQL
     const formatSqlValue = useCallback(
         (value: unknown, colName: string): string => {
@@ -1059,8 +1083,8 @@ export function QueryPage() {
                 >
                     {/* Schema Selector */}
                     {selectedConnectionId && schemas.length > 0 && (
-                        <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                            <FormControl size="small" fullWidth>
+                        <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider', display: 'flex', gap: 1 }}>
+                            <FormControl size="small" sx={{ flex: 1 }}>
                                 <InputLabel>Schema</InputLabel>
                                 <Select
                                     value={selectedSchema}
@@ -1082,6 +1106,19 @@ export function QueryPage() {
                                     ))}
                                 </Select>
                             </FormControl>
+                            <Tooltip title="Create new schema">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setCreateSchemaDialogOpen(true)}
+                                    sx={{
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                    }}
+                                >
+                                    <AddIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     )}
 
@@ -1582,6 +1619,15 @@ export function QueryPage() {
                 onClose={() => setCreateTableOpen(false)}
                 onSubmit={handleCreateTable}
                 engine={selectedConnection?.engine || 'postgres'}
+            />
+
+            {/* Create Schema Dialog */}
+            <CreateSchemaDialog
+                open={createSchemaDialogOpen}
+                onClose={() => setCreateSchemaDialogOpen(false)}
+                onCreated={handleCreateSchema}
+                connectionId={selectedConnectionId}
+                loading={creatingSchema}
             />
 
             {/* Drop Table Confirmation Dialog */}
