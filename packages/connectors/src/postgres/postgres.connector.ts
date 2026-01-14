@@ -157,24 +157,21 @@ export class PostgresConnector implements DatabaseConnector {
 
             if (tableRow.type === 'table') {
                 try {
-                    const statsResult = await this.pool.query(
-                        `
-            SELECT 
-              pg_total_relation_size($1) as size,
-              (SELECT reltuples::bigint FROM pg_class WHERE oid = $1::regclass) as row_estimate
-          `,
+                    // Get table size
+                    const sizeResult = await this.pool.query(
+                        `SELECT pg_total_relation_size($1) as size`,
                         [`${tableRow.schema}.${tableRow.name}`]
                     );
+                    if (sizeResult.rows[0]) {
+                        sizeBytes = Number.parseInt((sizeResult.rows[0] as { size: string }).size, 10);
+                    }
 
-                    const stats = statsResult.rows[0] as
-                        | { size: string; row_estimate: string }
-                        | undefined;
-                    if (stats) {
-                        sizeBytes = Number.parseInt(stats.size, 10);
-                        const estimate = Number.parseInt(stats.row_estimate, 10);
-                        // reltuples can be -1 for tables that haven't been analyzed yet
-                        // Return 0 in that case instead of -1
-                        rowCount = estimate < 0 ? 0 : estimate;
+                    // Get actual row count (more accurate than reltuples estimate)
+                    const countResult = await this.pool.query(
+                        `SELECT COUNT(*) as count FROM "${tableRow.schema}"."${tableRow.name}"`
+                    );
+                    if (countResult.rows[0]) {
+                        rowCount = Number.parseInt((countResult.rows[0] as { count: string }).count, 10);
                     }
                 } catch {
                     // Ignore errors getting stats - rowCount will be undefined
