@@ -784,7 +784,7 @@ export function QueryPage() {
     const handleCreateSchema = useCallback(
         async (schemaName: string) => {
             if (!selectedConnectionId) return;
-            
+
             setCreatingSchema(true);
             try {
                 await schemaApi.createSchema(selectedConnectionId, schemaName);

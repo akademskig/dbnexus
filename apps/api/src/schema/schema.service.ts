@@ -89,4 +89,36 @@ export class SchemaService {
 
         await connector.execute(sql);
     }
+
+    /**
+     * Delete a schema from the database
+     */
+    async deleteSchema(connectionId: string, schemaName: string): Promise<void> {
+        const connection = this.connectionsService.findById(connectionId);
+        const connector = await this.connectionsService.getConnector(connectionId);
+
+        // Validate schema name
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schemaName)) {
+            throw new Error('Invalid schema name.');
+        }
+
+        // Prevent deletion of system schemas
+        const systemSchemas = ['information_schema', 'pg_catalog', 'pg_toast', 'mysql', 'performance_schema', 'sys'];
+        if (systemSchemas.includes(schemaName.toLowerCase())) {
+            throw new Error('Cannot delete system schema');
+        }
+
+        // Generate SQL based on database engine
+        let sql: string;
+        if (connection.engine === 'mysql' || connection.engine === 'mariadb') {
+            sql = `DROP SCHEMA \`${schemaName}\``;
+        } else if (connection.engine === 'sqlite') {
+            throw new Error('SQLite does not support deleting schemas');
+        } else {
+            // PostgreSQL - CASCADE to drop all objects within
+            sql = `DROP SCHEMA "${schemaName}" CASCADE`;
+        }
+
+        await connector.execute(sql);
+    }
 }

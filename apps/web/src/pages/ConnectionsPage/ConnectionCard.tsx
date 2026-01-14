@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -16,6 +17,7 @@ import ScienceIcon from '@mui/icons-material/Science';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { connectionsApi } from '../../lib/api';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
@@ -36,6 +38,7 @@ export function ConnectionCard({
     onDelete,
     onQuery,
 }: ConnectionCardProps) {
+    const navigate = useNavigate();
     const [expanded, setExpanded] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
@@ -293,6 +296,14 @@ export function ConnectionCard({
                             onClick={onEdit}
                         >
                             Edit
+                        </Button>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<SettingsIcon />}
+                            onClick={() => navigate(`/connections/${connection.id}`)}
+                        >
+                            Manage
                         </Button>
                         <Box sx={{ flex: 1 }} />
                         <Button

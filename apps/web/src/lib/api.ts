@@ -159,6 +159,11 @@ export const schemaApi = {
             body: JSON.stringify({ name }),
         }),
 
+    deleteSchema: (connectionId: string, schemaName: string) =>
+        fetchApi<{ success: boolean }>(`/schema/${connectionId}/schemas/${schemaName}`, {
+            method: 'DELETE',
+        }),
+
     getTables: (connectionId: string, schema?: string) => {
         const params = schema ? `?schema=${schema}` : '';
         return fetchApi<TableInfo[]>(`/schema/${connectionId}/tables${params}`);

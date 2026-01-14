@@ -28,6 +28,15 @@ export class SchemaController {
         return { success: true, name: body.name };
     }
 
+    @Delete(':connectionId/schemas/:schemaName')
+    async deleteSchema(
+        @Param('connectionId') connectionId: string,
+        @Param('schemaName') schemaName: string
+    ): Promise<{ success: boolean }> {
+        await this.schemaService.deleteSchema(connectionId, schemaName);
+        return { success: true };
+    }
+
     @Get(':connectionId/tables')
     async getTables(
         @Param('connectionId') connectionId: string,

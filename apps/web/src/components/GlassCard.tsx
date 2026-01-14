@@ -1,13 +1,15 @@
-import { Box } from '@mui/material';
+import { Box, type SxProps, type Theme } from '@mui/material';
 import { ReactNode } from 'react';
 
 // Simple card using paper background color
 export function GlassCard({
     children,
     noPadding = false,
+    sx = {},
 }: {
     children: ReactNode;
     noPadding?: boolean;
+    sx?: SxProps<Theme>;
 }) {
     return (
         <Box
@@ -21,6 +23,7 @@ export function GlassCard({
                     borderColor: 'primary.main',
                     boxShadow: '0 0 10px 0 rgba(129, 140, 248, 0.1)',
                 },
+                ...sx as object,
             }}
         >
             {children}
