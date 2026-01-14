@@ -222,6 +222,15 @@ export function DiagramEditorTab({
                     )
                 );
 
+                // Layout constants - similar to Schema Visualizer
+                const nodeWidth = 280;
+                const nodeHeight = 250;
+                const horizontalSpacing = 80;
+                const verticalSpacing = 60;
+
+                // Use square-ish grid layout (like visualizer)
+                const numCols = Math.ceil(Math.sqrt(tableDetails.length));
+
                 // Create nodes
                 const newNodes: Node[] = tableDetails.map((detail, index) => {
                     const columns: EditableColumn[] = detail.columns.map((col, idx) => ({
@@ -236,15 +245,16 @@ export function DiagramEditorTab({
                         defaultValue: col.defaultValue || undefined,
                     }));
 
-                    // Grid layout
-                    const cols = 3;
-                    const row = Math.floor(index / cols);
-                    const col = index % cols;
+                    // Grid layout - square grid like visualizer
+                    const row = Math.floor(index / numCols);
+                    const col = index % numCols;
+                    const x = col * (nodeWidth + horizontalSpacing);
+                    const y = row * (nodeHeight + verticalSpacing);
 
                     return {
                         id: detail.name,
                         type: 'editableTable',
-                        position: { x: col * 320 + 50, y: row * 400 + 50 },
+                        position: { x, y },
                         data: {
                             label: detail.name,
                             columns,
