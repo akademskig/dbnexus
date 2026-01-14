@@ -22,6 +22,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 import { useConnectionManagementStore } from '../../stores/connectionManagementStore';
 import { OverviewTab } from './OverviewTab';
 import { SchemasTab } from './SchemasTab';
@@ -188,6 +189,40 @@ export function ConnectionManagementPage() {
     }
 
     const isLoading = loadingConnection || loadingSchemas;
+
+    // Show full-page loading state while connection is loading
+    if (loadingConnection && !connection) {
+        return (
+            <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
+                {/* Header skeleton */}
+                <Box sx={{ mb: 4 }}>
+                    <Skeleton width={150} height={20} sx={{ mb: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Skeleton variant="circular" width={40} height={40} />
+                        <Skeleton variant="circular" width={32} height={32} />
+                        <Box sx={{ flex: 1 }}>
+                            <Skeleton width={250} height={36} />
+                            <Skeleton width={180} height={20} sx={{ mt: 0.5 }} />
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* Tabs skeleton */}
+                <GlassCard sx={{ mb: 3, p: 0 }}>
+                    <Box sx={{ display: 'flex', gap: 2, p: 2 }}>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <Skeleton key={i} width={100} height={40} />
+                        ))}
+                    </Box>
+                </GlassCard>
+
+                {/* Content skeleton */}
+                <GlassCard>
+                    <LoadingState message="Loading connection details..." size="large" />
+                </GlassCard>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
