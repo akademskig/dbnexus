@@ -45,6 +45,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningIcon from '@mui/icons-material/Warning';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
@@ -89,6 +93,26 @@ const nodeTypes = {
     editableTable: EditableTableNode,
 };
 
+/**
+ * Helper to parse column arrays that may come as PostgreSQL string format "{col1,col2}"
+ */
+function parseColumnArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        // Handle PostgreSQL array format: "{col1,col2}"
+        if (value.startsWith('{') && value.endsWith('}')) {
+            const inner = value.slice(1, -1);
+            if (!inner) return [];
+            return inner.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+        }
+        // Single column as string
+        return value ? [value] : [];
+    }
+    return [];
+}
+
 export function DiagramEditorTab({
     connectionId,
     connection,
@@ -111,6 +135,9 @@ export function DiagramEditorTab({
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+    // Fullscreen state
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Dialog states
     const [createTableOpen, setCreateTableOpen] = useState(false);
@@ -204,9 +231,7 @@ export function DiagramEditorTab({
                         nullable: col.nullable,
                         isPrimaryKey: col.isPrimaryKey,
                         isForeignKey: detail.foreignKeys.some((fk) =>
-                            (Array.isArray(fk.columns) ? fk.columns : [fk.columns]).includes(
-                                col.name
-                            )
+                            parseColumnArray(fk.columns).includes(col.name)
                         ),
                         defaultValue: col.defaultValue || undefined,
                     }));
@@ -237,10 +262,9 @@ export function DiagramEditorTab({
                 const newEdges: Edge[] = [];
                 tableDetails.forEach((detail) => {
                     detail.foreignKeys.forEach((fk, fkIndex) => {
-                        const sourceColumns = Array.isArray(fk.columns) ? fk.columns : [fk.columns];
-                        const targetColumns = Array.isArray(fk.referencedColumns)
-                            ? fk.referencedColumns
-                            : [fk.referencedColumns];
+                        // Use parseColumnArray to handle PostgreSQL string format
+                        const sourceColumns = parseColumnArray(fk.columns);
+                        const targetColumns = parseColumnArray(fk.referencedColumns);
 
                         if (sourceColumns[0] && targetColumns[0]) {
                             const sourceNode = newNodes.find((n) => n.id === detail.name);
@@ -479,15 +503,8 @@ export function DiagramEditorTab({
         );
     }
 
-    return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: 'calc(100vh - 280px)',
-                minHeight: 500,
-            }}
-        >
+    const diagramContent = (
+        <>
             {/* Toolbar */}
             <GlassCard sx={{ mb: 2, p: 1.5 }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -535,6 +552,24 @@ export function DiagramEditorTab({
                         size="small"
                         sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
                     />
+
+                    <Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                        <IconButton
+                            size="small"
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            sx={{
+                                border: 1,
+                                borderColor: 'divider',
+                                borderRadius: 1,
+                            }}
+                        >
+                            {isFullscreen ? (
+                                <FullscreenExitIcon fontSize="small" />
+                            ) : (
+                                <FullscreenIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             </GlassCard>
 
@@ -845,6 +880,48 @@ export function DiagramEditorTab({
                     </Button>
                 </DialogActions>
             </Dialog>
+        </>
+    );
+
+    // Fullscreen mode
+    if (isFullscreen) {
+        return (
+            <Dialog
+                open={isFullscreen}
+                onClose={() => setIsFullscreen(false)}
+                fullScreen
+                slotProps={{
+                    paper: {
+                        sx: {
+                            bgcolor: 'background.default',
+                        },
+                    },
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100vh',
+                        p: 2,
+                    }}
+                >
+                    {diagramContent}
+                </Box>
+            </Dialog>
+        );
+    }
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'calc(100vh - 280px)',
+                minHeight: 500,
+            }}
+        >
+            {diagramContent}
         </Box>
     );
 }
