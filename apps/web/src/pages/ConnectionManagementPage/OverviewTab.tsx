@@ -228,7 +228,7 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                             )
                         }
                     >
-                        Open Diagram Editor
+                        Open Schema Diagram
                     </Button>
                     <Button
                         variant="outlined"

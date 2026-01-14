@@ -256,8 +256,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                      ? 'public'
-                      : schemas[0];
+                        ? 'public'
+                        : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
@@ -649,7 +649,7 @@ export function DiagramEditorPage() {
                 <EmptyState
                     icon={<TableChartIcon />}
                     title="No tables in this schema"
-                    description="Create a new table to get started with the diagram editor."
+                    description="Create a new table to get started with the schema diagram."
                     action={{
                         label: 'Create Table',
                         onClick: () => setCreateTableOpen(true),

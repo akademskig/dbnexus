@@ -591,7 +591,7 @@ export function DiagramEditorTab({
                     <EmptyState
                         icon={<TableChartIcon />}
                         title="No tables in this schema"
-                        description="Create a new table to get started with the diagram editor."
+                        description="Create a new table to get started with the schema diagram."
                         action={{
                             label: 'Create Table',
                             onClick: () => setCreateTableOpen(true),

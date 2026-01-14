@@ -350,8 +350,8 @@ export function ConnectionManagementPage() {
                         <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
                     </Tabs>
 
-                    {/* Diagram Editor shortcut */}
-                    <Tooltip title="Open Diagram Editor">
+                    {/* Schema Diagram shortcut */}
+                    <Tooltip title="Open Schema Diagram">
                         <IconButton
                             onClick={() =>
                                 navigate(
@@ -401,7 +401,7 @@ export function ConnectionManagementPage() {
                     schemas={schemas}
                     isLoading={loadingSchemas}
                     initialSchema={selectedSchema}
-                    onSchemaViewed={() => {}}
+                    onSchemaViewed={() => { }}
                     onManageTable={handleManageTable}
                     onSchemaChange={handleSchemaChange}
                 />
