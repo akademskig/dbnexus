@@ -158,6 +158,7 @@ export function DiagramEditorPage() {
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const [refreshCounter, setRefreshCounter] = useState(0);
 
     // Dialog states
     const [createTableOpen, setCreateTableOpen] = useState(false);
@@ -466,7 +467,7 @@ export function DiagramEditorPage() {
 
         loadTableDetails();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tables, selectedConnectionId, selectedSchema]);
+    }, [tables, selectedConnectionId, selectedSchema, refreshCounter]);
 
     // Handle connection (creating FK)
     const onConnect: OnConnect = useCallback((connection) => {
@@ -484,6 +485,7 @@ export function DiagramEditorPage() {
                 queryKey: ['tables', selectedConnectionId, selectedSchema],
             });
             refetchTables();
+            setRefreshCounter((value) => value + 1);
         },
     });
 
