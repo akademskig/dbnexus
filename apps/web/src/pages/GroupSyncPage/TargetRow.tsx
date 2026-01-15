@@ -239,7 +239,6 @@ export function TargetRow({
                                             targetSchema={targetSchema}
                                             dataDiff={dataDiff}
                                             onSyncComplete={handleDataSyncComplete}
-                                            compact
                                         />
                                     ) : currentTarget.dataStatus === 'in_sync' ? (
                                         <Alert severity="success" sx={{ mt: 1 }}>
