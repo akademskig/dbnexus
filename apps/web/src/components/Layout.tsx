@@ -419,7 +419,7 @@ export function Layout() {
                                     <ExpandMoreIcon fontSize="small" />
                                 )}
                             </ListItemButton>
-                            <Collapse in={connectionsExpanded}>
+                            <Collapse in={connectionsExpanded} sx={{ mt: 0 }}>
                                 <List disablePadding>
                                     {loadingConnections ? (
                                         <Box sx={{ py: 2, textAlign: 'center' }}>
