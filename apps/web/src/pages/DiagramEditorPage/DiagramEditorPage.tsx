@@ -55,6 +55,7 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import type { TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
 import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
@@ -105,7 +106,7 @@ function parseColumnArray(value: unknown): string[] {
         if (value.startsWith('{') && value.endsWith('}')) {
             const inner = value.slice(1, -1);
             if (!inner) return [];
-            return inner.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+            return inner.split(',').map((s) => s.trim().replaceAll(/(^"|"$)/g, ''));
         }
         // Single column as string
         return value ? [value] : [];
@@ -282,26 +283,24 @@ export function DiagramEditorPage() {
         [selectedConnectionId, setConnectionAndSchema, setSearchParams]
     );
 
+    const getDefaultSchema = useCallback(() => {
+        if (schemas.length === 0) return '';
+        if (connection?.defaultSchema && schemas.includes(connection.defaultSchema)) {
+            return connection.defaultSchema;
+        }
+        if (schemas.includes('public')) return 'public';
+        return schemas[0] || '';
+    }, [schemas, connection?.defaultSchema]);
+
     // Set default schema when schemas load
     useEffect(() => {
         if (schemas.length > 0 && !selectedSchema && selectedConnectionId) {
-            const defaultSchema =
-                connection?.defaultSchema && schemas.includes(connection.defaultSchema)
-                    ? connection.defaultSchema
-                    : schemas.includes('public')
-                      ? 'public'
-                      : schemas[0];
+            const defaultSchema = getDefaultSchema();
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
         }
-    }, [
-        schemas,
-        selectedSchema,
-        selectedConnectionId,
-        connection?.defaultSchema,
-        handleSchemaChange,
-    ]);
+    }, [schemas, selectedSchema, selectedConnectionId, getDefaultSchema, handleSchemaChange]);
 
     // Handlers for node operations
     const handleOpenAddColumn = useCallback((tableId: string) => {
@@ -345,6 +344,119 @@ export function DiagramEditorPage() {
         setDeleteTableOpen(true);
     }, []);
 
+    const buildNodeColumns = useCallback((detail: TableSchema) => {
+        return detail.columns.map((col, idx) => ({
+            id: `${detail.name}-col-${idx}`,
+            name: col.name,
+            dataType: col.dataType,
+            nullable: col.nullable,
+            isPrimaryKey: col.isPrimaryKey,
+            isForeignKey: detail.foreignKeys.some((fk) =>
+                parseColumnArray(fk.columns).includes(col.name)
+            ),
+            defaultValue: col.defaultValue || undefined,
+        }));
+    }, []);
+
+    const buildDiagramNodes = useCallback(
+        (tableDetails: TableSchema[]) => {
+            // Layout constants - similar to Schema Visualizer
+            const nodeWidth = 280;
+            const nodeHeight = 250;
+            const horizontalSpacing = 80;
+            const verticalSpacing = 60;
+
+            // Use square-ish grid layout (like visualizer)
+            const numCols = Math.ceil(Math.sqrt(tableDetails.length));
+
+            return tableDetails.map((detail, index) => {
+                const columns = buildNodeColumns(detail);
+                const row = Math.floor(index / numCols);
+                const col = index % numCols;
+                const x = col * (nodeWidth + horizontalSpacing);
+                const y = row * (nodeHeight + verticalSpacing);
+
+                return {
+                    id: detail.name,
+                    type: 'editableTable',
+                    position: { x, y },
+                    data: {
+                        label: detail.name,
+                        columns,
+                        schema: selectedSchema,
+                        onAddColumn: handleOpenAddColumn,
+                        onEditColumn: handleOpenEditColumn,
+                        onDeleteColumn: handleOpenDeleteColumn,
+                        onEditTable: handleOpenEditTable,
+                        onDeleteTable: handleOpenDeleteTable,
+                    } as EditableTableNodeData,
+                };
+            });
+        },
+        [
+            buildNodeColumns,
+            selectedSchema,
+            handleOpenAddColumn,
+            handleOpenEditColumn,
+            handleOpenDeleteColumn,
+            handleOpenEditTable,
+            handleOpenDeleteTable,
+        ]
+    );
+
+    const buildDiagramEdges = useCallback(
+        (tableDetails: TableSchema[], newNodes: Node[]) => {
+            const edges: Edge[] = [];
+
+            for (const detail of tableDetails) {
+                detail.foreignKeys.forEach((fk, fkIndex) => {
+                    const sourceColumns = parseColumnArray(fk.columns);
+                    const targetColumns = parseColumnArray(fk.referencedColumns);
+                    const sourceColumnName = sourceColumns[0];
+                    const targetColumnName = targetColumns[0];
+
+                    if (!sourceColumnName || !targetColumnName) return;
+
+                    const sourceNode = newNodes.find((n) => n.id === detail.name);
+                    const targetNode = newNodes.find((n) => n.id === fk.referencedTable);
+                    if (!sourceNode || !targetNode) return;
+
+                    const sourceCol = (sourceNode.data as EditableTableNodeData).columns.find(
+                        (c) => c.name === sourceColumnName
+                    );
+                    const targetCol = (targetNode.data as EditableTableNodeData).columns.find(
+                        (c) => c.name === targetColumnName
+                    );
+                    if (!sourceCol || !targetCol) return;
+
+                    edges.push({
+                        id: `${detail.name}-${fk.name}-${fkIndex}`,
+                        source: detail.name,
+                        target: fk.referencedTable,
+                        sourceHandle: `${sourceCol.id}-source`,
+                        targetHandle: `${targetCol.id}-target`,
+                        type: 'smoothstep',
+                        animated: true,
+                        style: { stroke: theme.palette.info.main, strokeWidth: 2 },
+                        markerEnd: {
+                            type: MarkerType.ArrowClosed,
+                            color: theme.palette.info.main,
+                        },
+                        label: fk.name,
+                        labelStyle: {
+                            fontSize: 10,
+                            fill: theme.palette.text.secondary,
+                        },
+                        labelBgStyle: { fill: theme.palette.background.paper },
+                    });
+                });
+            }
+
+            return edges;
+        },
+        [theme.palette.info.main, theme.palette.background.paper, theme.palette.text.secondary]
+    );
+
     // Load table details and create nodes/edges
     useEffect(() => {
         if (!tables.length || !selectedConnectionId || !selectedSchema) {
@@ -362,98 +474,8 @@ export function DiagramEditorPage() {
                     )
                 );
 
-                // Layout constants - similar to Schema Visualizer
-                const nodeWidth = 280;
-                const nodeHeight = 250;
-                const horizontalSpacing = 80;
-                const verticalSpacing = 60;
-
-                // Use square-ish grid layout (like visualizer)
-                const numCols = Math.ceil(Math.sqrt(tableDetails.length));
-
-                // Create nodes
-                const newNodes: Node[] = tableDetails.map((detail, index) => {
-                    const columns: EditableColumn[] = detail.columns.map((col, idx) => ({
-                        id: `${detail.name}-col-${idx}`,
-                        name: col.name,
-                        dataType: col.dataType,
-                        nullable: col.nullable,
-                        isPrimaryKey: col.isPrimaryKey,
-                        isForeignKey: detail.foreignKeys.some((fk) =>
-                            parseColumnArray(fk.columns).includes(col.name)
-                        ),
-                        defaultValue: col.defaultValue || undefined,
-                    }));
-
-                    // Grid layout - square grid like visualizer
-                    const row = Math.floor(index / numCols);
-                    const col = index % numCols;
-                    const x = col * (nodeWidth + horizontalSpacing);
-                    const y = row * (nodeHeight + verticalSpacing);
-
-                    return {
-                        id: detail.name,
-                        type: 'editableTable',
-                        position: { x, y },
-                        data: {
-                            label: detail.name,
-                            columns,
-                            schema: selectedSchema,
-                            onAddColumn: handleOpenAddColumn,
-                            onEditColumn: handleOpenEditColumn,
-                            onDeleteColumn: handleOpenDeleteColumn,
-                            onEditTable: handleOpenEditTable,
-                            onDeleteTable: handleOpenDeleteTable,
-                        } as EditableTableNodeData,
-                    };
-                });
-
-                // Create edges for foreign keys
-                const newEdges: Edge[] = [];
-                tableDetails.forEach((detail) => {
-                    detail.foreignKeys.forEach((fk, fkIndex) => {
-                        // Use parseColumnArray to handle PostgreSQL string format
-                        const sourceColumns = parseColumnArray(fk.columns);
-                        const targetColumns = parseColumnArray(fk.referencedColumns);
-
-                        if (sourceColumns[0] && targetColumns[0]) {
-                            const sourceNode = newNodes.find((n) => n.id === detail.name);
-                            const targetNode = newNodes.find((n) => n.id === fk.referencedTable);
-
-                            if (sourceNode && targetNode) {
-                                const sourceCol = (
-                                    sourceNode.data as EditableTableNodeData
-                                ).columns.find((c) => c.name === sourceColumns[0]);
-                                const targetCol = (
-                                    targetNode.data as EditableTableNodeData
-                                ).columns.find((c) => c.name === targetColumns[0]);
-
-                                if (sourceCol && targetCol) {
-                                    newEdges.push({
-                                        id: `${detail.name}-${fk.name}-${fkIndex}`,
-                                        source: detail.name,
-                                        target: fk.referencedTable,
-                                        sourceHandle: `${sourceCol.id}-source`,
-                                        targetHandle: `${targetCol.id}-target`,
-                                        type: 'smoothstep',
-                                        animated: true,
-                                        style: { stroke: theme.palette.info.main, strokeWidth: 2 },
-                                        markerEnd: {
-                                            type: MarkerType.ArrowClosed,
-                                            color: theme.palette.info.main,
-                                        },
-                                        label: fk.name,
-                                        labelStyle: {
-                                            fontSize: 10,
-                                            fill: theme.palette.text.secondary,
-                                        },
-                                        labelBgStyle: { fill: theme.palette.background.paper },
-                                    });
-                                }
-                            }
-                        }
-                    });
-                });
+                const newNodes = buildDiagramNodes(tableDetails);
+                const newEdges = buildDiagramEdges(tableDetails, newNodes);
 
                 setNodes(newNodes);
                 setEdges(newEdges);
@@ -553,54 +575,84 @@ export function DiagramEditorPage() {
         }
     };
 
+    const buildPostgresEditColumnStatements = (
+        fullTableName: string,
+        quotedColumn: string,
+        updates: typeof newColumn,
+        current: EditableColumn
+    ) => {
+        const statements: string[] = [];
+        if (updates.dataType && updates.dataType !== current.dataType) {
+            statements.push(
+                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} TYPE ${updates.dataType}`
+            );
+        }
+        if (updates.nullable !== current.nullable) {
+            statements.push(
+                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} ${
+                    updates.nullable ? 'DROP NOT NULL' : 'SET NOT NULL'
+                }`
+            );
+        }
+        if (updates.defaultValue !== (current.defaultValue || '')) {
+            if (updates.defaultValue) {
+                statements.push(
+                    `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} SET DEFAULT ${updates.defaultValue}`
+                );
+            } else {
+                statements.push(
+                    `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} DROP DEFAULT`
+                );
+            }
+        }
+        return statements;
+    };
+
+    const buildMysqlEditColumnStatements = (
+        fullTableName: string,
+        quotedColumn: string,
+        updates: typeof newColumn,
+        current: EditableColumn
+    ) => {
+        let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${
+            updates.dataType || current.dataType
+        }`;
+        if (!updates.nullable) {
+            sql += ' NOT NULL';
+        }
+        if (updates.defaultValue) {
+            sql += ` DEFAULT ${updates.defaultValue}`;
+        }
+        return [sql];
+    };
+
+    const buildEditColumnStatements = (
+        engine: string | undefined,
+        fullTableName: string,
+        quotedColumn: string,
+        updates: typeof newColumn,
+        current: EditableColumn
+    ) => {
+        if (engine === 'postgres') {
+            return buildPostgresEditColumnStatements(fullTableName, quotedColumn, updates, current);
+        }
+
+        return buildMysqlEditColumnStatements(fullTableName, quotedColumn, updates, current);
+    };
+
     // Edit column handler
     const handleEditColumn = async () => {
         if (!currentTableId || !currentColumn) return;
 
         const fullTableName = buildTableName(selectedSchema, currentTableId, connection?.engine);
         const quotedColumn = quoteIdentifier(currentColumn.name, connection?.engine);
-        const statements: string[] = [];
-
-        // For PostgreSQL, we can alter type, nullable, and default separately
-        if (connection?.engine === 'postgres') {
-            if (newColumn.dataType && newColumn.dataType !== currentColumn.dataType) {
-                statements.push(
-                    `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} TYPE ${newColumn.dataType}`
-                );
-            }
-            if (newColumn.nullable !== currentColumn.nullable) {
-                if (newColumn.nullable) {
-                    statements.push(
-                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} DROP NOT NULL`
-                    );
-                } else {
-                    statements.push(
-                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} SET NOT NULL`
-                    );
-                }
-            }
-            if (newColumn.defaultValue !== (currentColumn.defaultValue || '')) {
-                if (newColumn.defaultValue) {
-                    statements.push(
-                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} SET DEFAULT ${newColumn.defaultValue}`
-                    );
-                } else {
-                    statements.push(
-                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} DROP DEFAULT`
-                    );
-                }
-            }
-        } else {
-            // MySQL/MariaDB uses MODIFY COLUMN
-            let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${newColumn.dataType || currentColumn.dataType}`;
-            if (!newColumn.nullable) {
-                sql += ' NOT NULL';
-            }
-            if (newColumn.defaultValue) {
-                sql += ` DEFAULT ${newColumn.defaultValue}`;
-            }
-            statements.push(sql);
-        }
+        const statements = buildEditColumnStatements(
+            connection?.engine,
+            fullTableName,
+            quotedColumn,
+            newColumn,
+            currentColumn
+        );
 
         if (statements.length === 0) {
             toast.info('No changes to apply');
@@ -655,8 +707,8 @@ export function DiagramEditorPage() {
 
         if (!sourceNode || !targetNode) return;
 
-        const sourceColId = sourceHandle.replace('-source', '');
-        const targetColId = targetHandle.replace('-target', '');
+        const sourceColId = sourceHandle.replaceAll('-source', '');
+        const targetColId = targetHandle.replaceAll('-target', '');
 
         const sourceCol = (sourceNode.data as EditableTableNodeData).columns.find(
             (c) => c.id === sourceColId
@@ -694,223 +746,240 @@ export function DiagramEditorPage() {
         return <Navigate to="/dashboard" replace />;
     }
 
+    const renderNoConnections = () => (
+        <EmptyState
+            icon={<StorageIcon />}
+            title="No connections configured"
+            description="Add a database connection to start using the schema diagram."
+            action={{
+                label: 'Go to Projects',
+                onClick: () => {
+                    if (globalThis.location) {
+                        globalThis.location.href = '/projects';
+                    }
+                },
+            }}
+        />
+    );
+
+    const renderSelectConnection = () => (
+        <EmptyState
+            icon={<StorageIcon />}
+            title="Select a connection"
+            description="Choose a database connection to start editing the schema diagram."
+        />
+    );
+
+    const renderConnectionError = () => {
+        const errorMessage =
+            connectionError instanceof Error ? connectionError.message : 'Unknown error';
+        const isConnectionRefused =
+            errorMessage.includes('ECONNREFUSED') ||
+            errorMessage.includes('connect') ||
+            errorMessage.includes('Connection') ||
+            errorMessage.includes('timeout');
+
+        return (
+            <EmptyState
+                icon={<ErrorOutlineIcon sx={{ color: 'error.main' }} />}
+                title={isConnectionRefused ? 'Database Unavailable' : 'Connection Error'}
+                description={
+                    isConnectionRefused
+                        ? 'Unable to connect to the database. Please ensure the database server is running and accessible.'
+                        : `Failed to load schema data: ${errorMessage}`
+                }
+                action={{
+                    label: 'Retry Connection',
+                    onClick: () => {
+                        refetchSchemas();
+                        if (selectedSchema) refetchTables();
+                    },
+                }}
+            />
+        );
+    };
+
+    const renderSelectSchema = () => (
+        <EmptyState
+            icon={<GridViewIcon />}
+            title="Select a schema"
+            description="Choose a schema to view and edit its tables."
+        />
+    );
+
+    const renderLoadingDiagram = () => (
+        <LoadingState
+            message={loadingTables ? 'Loading tables...' : 'Rendering diagram...'}
+            size="large"
+        />
+    );
+
+    const renderEmptyTables = () => (
+        <EmptyState
+            icon={<TableChartIcon />}
+            title="No tables in this schema"
+            description="Create a new table to get started with the schema diagram."
+            action={{
+                label: 'Create Table',
+                onClick: () => setCreateTableOpen(true),
+            }}
+        />
+    );
+
+    const renderDiagram = () => (
+        <Box
+            sx={{
+                width: '100%',
+                height: '100%',
+                // Style React Flow controls
+                '& .react-flow__controls': {
+                    bgcolor: 'background.paper',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    bottom: 'auto',
+                    top: 0,
+                },
+                '& .react-flow__controls-button': {
+                    bgcolor: 'background.paper',
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                    '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    },
+                    '& svg': {
+                        fill: theme.palette.text.primary,
+                    },
+                },
+            }}
+        >
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                minZoom={0.1}
+                maxZoom={2}
+                defaultEdgeOptions={{
+                    type: 'smoothstep',
+                    animated: true,
+                }}
+                proOptions={{ hideAttribution: true }}
+            >
+                <Background
+                    variant={BackgroundVariant.Dots}
+                    gap={20}
+                    size={1}
+                    color={alpha(theme.palette.text.primary, 0.1)}
+                />
+                <Controls />
+                <MiniMap
+                    nodeColor={(node) =>
+                        node.selected
+                            ? theme.palette.primary.main
+                            : alpha(theme.palette.primary.main, 0.5)
+                    }
+                    maskColor={alpha(theme.palette.background.default, 0.8)}
+                    style={{
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                    }}
+                />
+
+                {/* Instructions panel */}
+                <Panel position="top-right">
+                    <Paper
+                        sx={{
+                            p: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.5,
+                            bgcolor: 'background.paper',
+                        }}
+                    >
+                        <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                            Drag between columns to create FK
+                        </Typography>
+                    </Paper>
+                </Panel>
+
+                {/* Legend */}
+                <Panel position="bottom-left">
+                    <Paper
+                        sx={{
+                            p: 1.5,
+                            display: 'flex',
+                            gap: 2,
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box
+                                sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    bgcolor: 'warning.main',
+                                }}
+                            />
+                            <Typography variant="caption">Primary Key</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box
+                                sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    bgcolor: 'info.main',
+                                }}
+                            />
+                            <Typography variant="caption">Foreign Key</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography
+                                variant="caption"
+                                sx={{ color: 'error.main', fontWeight: 600 }}
+                            >
+                                NN
+                            </Typography>
+                            <Typography variant="caption">Not Null</Typography>
+                        </Box>
+                    </Paper>
+                </Panel>
+            </ReactFlow>
+        </Box>
+    );
+
     // Render diagram canvas content - extracted to avoid nested ternary
     const renderDiagramCanvas = () => {
-        // Show empty state when no connections exist
         if (!loadingConnections && connections.length === 0) {
-            return (
-                <EmptyState
-                    icon={<StorageIcon />}
-                    title="No connections configured"
-                    description="Add a database connection to start using the schema diagram."
-                    action={{
-                        label: 'Go to Projects',
-                        onClick: () => (window.location.href = '/projects'),
-                    }}
-                />
-            );
+            return renderNoConnections();
         }
 
-        // Show select connection state when no connection is selected or selected connection no longer exists
         if (!selectedConnectionId || (!loadingConnections && !isValidConnection)) {
-            return (
-                <EmptyState
-                    icon={<StorageIcon />}
-                    title="Select a connection"
-                    description="Choose a database connection to start editing the schema diagram."
-                />
-            );
+            return renderSelectConnection();
         }
 
-        // Show connection error state
         if (connectionError) {
-            const errorMessage =
-                connectionError instanceof Error ? connectionError.message : 'Unknown error';
-            const isConnectionRefused =
-                errorMessage.includes('ECONNREFUSED') ||
-                errorMessage.includes('connect') ||
-                errorMessage.includes('Connection') ||
-                errorMessage.includes('timeout');
-
-            return (
-                <EmptyState
-                    icon={<ErrorOutlineIcon sx={{ color: 'error.main' }} />}
-                    title={isConnectionRefused ? 'Database Unavailable' : 'Connection Error'}
-                    description={
-                        isConnectionRefused
-                            ? `Unable to connect to the database. Please ensure the database server is running and accessible.`
-                            : `Failed to load schema data: ${errorMessage}`
-                    }
-                    action={{
-                        label: 'Retry Connection',
-                        onClick: () => {
-                            refetchSchemas();
-                            if (selectedSchema) refetchTables();
-                        },
-                    }}
-                />
-            );
+            return renderConnectionError();
         }
 
         if (!selectedSchema) {
-            return (
-                <EmptyState
-                    icon={<GridViewIcon />}
-                    title="Select a schema"
-                    description="Choose a schema to view and edit its tables."
-                />
-            );
+            return renderSelectSchema();
         }
 
         if (loadingTables || loadingDiagram) {
-            return (
-                <LoadingState
-                    message={loadingTables ? 'Loading tables...' : 'Rendering diagram...'}
-                    size="large"
-                />
-            );
+            return renderLoadingDiagram();
         }
 
         if (tables.length === 0) {
-            return (
-                <EmptyState
-                    icon={<TableChartIcon />}
-                    title="No tables in this schema"
-                    description="Create a new table to get started with the schema diagram."
-                    action={{
-                        label: 'Create Table',
-                        onClick: () => setCreateTableOpen(true),
-                    }}
-                />
-            );
+            return renderEmptyTables();
         }
 
-        return (
-            <Box
-                sx={{
-                    width: '100%',
-                    height: '100%',
-                    // Style React Flow controls
-                    '& .react-flow__controls': {
-                        bgcolor: 'background.paper',
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                        bottom: 'auto',
-                        top: 0,
-                    },
-                    '& .react-flow__controls-button': {
-                        bgcolor: 'background.paper',
-                        borderColor: 'divider',
-                        color: 'text.primary',
-                        '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        },
-                        '& svg': {
-                            fill: theme.palette.text.primary,
-                        },
-                    },
-                }}
-            >
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    nodeTypes={nodeTypes}
-                    fitView
-                    minZoom={0.1}
-                    maxZoom={2}
-                    defaultEdgeOptions={{
-                        type: 'smoothstep',
-                        animated: true,
-                    }}
-                    proOptions={{ hideAttribution: true }}
-                >
-                    <Background
-                        variant={BackgroundVariant.Dots}
-                        gap={20}
-                        size={1}
-                        color={alpha(theme.palette.text.primary, 0.1)}
-                    />
-                    <Controls />
-                    <MiniMap
-                        nodeColor={(node) =>
-                            node.selected
-                                ? theme.palette.primary.main
-                                : alpha(theme.palette.primary.main, 0.5)
-                        }
-                        maskColor={alpha(theme.palette.background.default, 0.8)}
-                        style={{
-                            backgroundColor: theme.palette.background.paper,
-                            border: `1px solid ${theme.palette.divider}`,
-                        }}
-                    />
-
-                    {/* Instructions panel */}
-                    <Panel position="top-right">
-                        <Paper
-                            sx={{
-                                p: 1,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.5,
-                                bgcolor: 'background.paper',
-                            }}
-                        >
-                            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                                Drag between columns to create FK
-                            </Typography>
-                        </Paper>
-                    </Panel>
-
-                    {/* Legend */}
-                    <Panel position="bottom-left">
-                        <Paper
-                            sx={{
-                                p: 1.5,
-                                display: 'flex',
-                                gap: 2,
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Box
-                                    sx={{
-                                        width: 12,
-                                        height: 12,
-                                        borderRadius: '50%',
-                                        bgcolor: 'warning.main',
-                                    }}
-                                />
-                                <Typography variant="caption">Primary Key</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Box
-                                    sx={{
-                                        width: 12,
-                                        height: 12,
-                                        borderRadius: '50%',
-                                        bgcolor: 'info.main',
-                                    }}
-                                />
-                                <Typography variant="caption">Foreign Key</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Typography
-                                    variant="caption"
-                                    sx={{ color: 'error.main', fontWeight: 600 }}
-                                >
-                                    NN
-                                </Typography>
-                                <Typography variant="caption">Not Null</Typography>
-                            </Box>
-                        </Paper>
-                    </Panel>
-                </ReactFlow>
-            </Box>
-        );
+        return renderDiagram();
     };
 
     const diagramContent = (
@@ -980,7 +1049,7 @@ export function DiagramEditorPage() {
                     <Box sx={{ flex: 1 }} />
 
                     <Chip
-                        label={`${tables.length} table${tables.length !== 1 ? 's' : ''}`}
+                        label={`${tables.length} table${tables.length === 1 ? '' : 's'}`}
                         size="small"
                         sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
                     />

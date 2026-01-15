@@ -49,7 +49,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import type { ConnectionConfig } from '@dbnexus/shared';
+import type { ConnectionConfig, TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
@@ -107,7 +107,7 @@ function parseColumnArray(value: unknown): string[] {
         if (value.startsWith('{') && value.endsWith('}')) {
             const inner = value.slice(1, -1);
             if (!inner) return [];
-            return inner.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+            return inner.split(',').map((s) => s.trim().replaceAll(/(^"|"$)/g, ''));
         }
         // Single column as string
         return value ? [value] : [];
@@ -121,7 +121,7 @@ export function DiagramEditorTab({
     schemas,
     isLoading,
     initialSchema,
-}: DiagramEditorTabProps) {
+}: Readonly<DiagramEditorTabProps>) {
     const theme = useTheme();
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -242,126 +242,6 @@ export function DiagramEditorTab({
         }
     };
 
-    // Load tables into diagram
-    useEffect(() => {
-        if (tables.length === 0) {
-            setNodes([]);
-            setEdges([]);
-            return;
-        }
-
-        const loadTableDetails = async () => {
-            try {
-                const tableDetails = await Promise.all(
-                    tables.map((table) =>
-                        schemaApi.getTableSchema(connectionId, selectedSchema, table.name)
-                    )
-                );
-
-                // Layout constants - similar to Schema Visualizer
-                const nodeWidth = 280;
-                const nodeHeight = 250;
-                const horizontalSpacing = 80;
-                const verticalSpacing = 60;
-
-                // Use square-ish grid layout (like visualizer)
-                const numCols = Math.ceil(Math.sqrt(tableDetails.length));
-
-                // Create nodes
-                const newNodes: Node[] = tableDetails.map((detail, index) => {
-                    const columns: EditableColumn[] = detail.columns.map((col, idx) => ({
-                        id: `${detail.name}-col-${idx}`,
-                        name: col.name,
-                        dataType: col.dataType,
-                        nullable: col.nullable,
-                        isPrimaryKey: col.isPrimaryKey,
-                        isForeignKey: detail.foreignKeys.some((fk) =>
-                            parseColumnArray(fk.columns).includes(col.name)
-                        ),
-                        defaultValue: col.defaultValue || undefined,
-                    }));
-
-                    // Grid layout - square grid like visualizer
-                    const row = Math.floor(index / numCols);
-                    const col = index % numCols;
-                    const x = col * (nodeWidth + horizontalSpacing);
-                    const y = row * (nodeHeight + verticalSpacing);
-
-                    return {
-                        id: detail.name,
-                        type: 'editableTable',
-                        position: { x, y },
-                        data: {
-                            label: detail.name,
-                            columns,
-                            schema: selectedSchema,
-                            onAddColumn: handleOpenAddColumn,
-                            onEditColumn: handleOpenEditColumn,
-                            onDeleteColumn: handleOpenDeleteColumn,
-                            onEditTable: handleOpenEditTable,
-                            onDeleteTable: handleOpenDeleteTable,
-                        } as EditableTableNodeData,
-                    };
-                });
-
-                // Create edges for foreign keys
-                const newEdges: Edge[] = [];
-                tableDetails.forEach((detail) => {
-                    detail.foreignKeys.forEach((fk, fkIndex) => {
-                        // Use parseColumnArray to handle PostgreSQL string format
-                        const sourceColumns = parseColumnArray(fk.columns);
-                        const targetColumns = parseColumnArray(fk.referencedColumns);
-
-                        if (sourceColumns[0] && targetColumns[0]) {
-                            const sourceNode = newNodes.find((n) => n.id === detail.name);
-                            const targetNode = newNodes.find((n) => n.id === fk.referencedTable);
-
-                            if (sourceNode && targetNode) {
-                                const sourceCol = (
-                                    sourceNode.data as EditableTableNodeData
-                                ).columns.find((c) => c.name === sourceColumns[0]);
-                                const targetCol = (
-                                    targetNode.data as EditableTableNodeData
-                                ).columns.find((c) => c.name === targetColumns[0]);
-
-                                if (sourceCol && targetCol) {
-                                    newEdges.push({
-                                        id: `${detail.name}-${fk.name}-${fkIndex}`,
-                                        source: detail.name,
-                                        target: fk.referencedTable,
-                                        sourceHandle: `${sourceCol.id}-source`,
-                                        targetHandle: `${targetCol.id}-target`,
-                                        type: 'smoothstep',
-                                        animated: true,
-                                        style: { stroke: theme.palette.info.main, strokeWidth: 2 },
-                                        markerEnd: {
-                                            type: MarkerType.ArrowClosed,
-                                            color: theme.palette.info.main,
-                                        },
-                                        label: fk.name,
-                                        labelStyle: {
-                                            fontSize: 10,
-                                            fill: theme.palette.text.secondary,
-                                        },
-                                        labelBgStyle: { fill: theme.palette.background.paper },
-                                    });
-                                }
-                            }
-                        }
-                    });
-                });
-
-                setNodes(newNodes);
-                setEdges(newEdges);
-            } catch (error) {
-                console.error('Failed to load table details:', error);
-                toast.error('Failed to load table details');
-            }
-        };
-
-        loadTableDetails();
-    }, [tables, connectionId, selectedSchema, theme.palette, refreshCounter]);
-
     // Handle connection (creating FK)
     const onConnect: OnConnect = useCallback((connection) => {
         setPendingConnection(connection);
@@ -405,6 +285,153 @@ export function DiagramEditorTab({
         setCurrentTableId(tableId);
         setDeleteTableOpen(true);
     }, []);
+
+    const buildNodeColumns = useCallback((detail: TableSchema) => {
+        return detail.columns.map((col, idx) => ({
+            id: `${detail.name}-col-${idx}`,
+            name: col.name,
+            dataType: col.dataType,
+            nullable: col.nullable,
+            isPrimaryKey: col.isPrimaryKey,
+            isForeignKey: detail.foreignKeys.some((fk) =>
+                parseColumnArray(fk.columns).includes(col.name)
+            ),
+            defaultValue: col.defaultValue || undefined,
+        }));
+    }, []);
+
+    const buildDiagramNodes = useCallback(
+        (tableDetails: TableSchema[]) => {
+            const nodeWidth = 280;
+            const nodeHeight = 250;
+            const horizontalSpacing = 80;
+            const verticalSpacing = 60;
+            const numCols = Math.ceil(Math.sqrt(tableDetails.length));
+
+            return tableDetails.map((detail, index) => {
+                const columns = buildNodeColumns(detail);
+                const row = Math.floor(index / numCols);
+                const col = index % numCols;
+                const x = col * (nodeWidth + horizontalSpacing);
+                const y = row * (nodeHeight + verticalSpacing);
+
+                return {
+                    id: detail.name,
+                    type: 'editableTable',
+                    position: { x, y },
+                    data: {
+                        label: detail.name,
+                        columns,
+                        schema: selectedSchema,
+                        onAddColumn: handleOpenAddColumn,
+                        onEditColumn: handleOpenEditColumn,
+                        onDeleteColumn: handleOpenDeleteColumn,
+                        onEditTable: handleOpenEditTable,
+                        onDeleteTable: handleOpenDeleteTable,
+                    } as EditableTableNodeData,
+                };
+            });
+        },
+        [
+            buildNodeColumns,
+            selectedSchema,
+            handleOpenAddColumn,
+            handleOpenEditColumn,
+            handleOpenDeleteColumn,
+            handleOpenEditTable,
+            handleOpenDeleteTable,
+        ]
+    );
+
+    const buildDiagramEdges = useCallback(
+        (tableDetails: TableSchema[], newNodes: Node[]) => {
+            const edges: Edge[] = [];
+            for (const detail of tableDetails) {
+                detail.foreignKeys.forEach((fk, fkIndex) => {
+                    const sourceColumns = parseColumnArray(fk.columns);
+                    const targetColumns = parseColumnArray(fk.referencedColumns);
+                    const sourceColumnName = sourceColumns[0];
+                    const targetColumnName = targetColumns[0];
+                    if (!sourceColumnName || !targetColumnName) return;
+
+                    const sourceNode = newNodes.find((n) => n.id === detail.name);
+                    const targetNode = newNodes.find((n) => n.id === fk.referencedTable);
+                    if (!sourceNode || !targetNode) return;
+
+                    const sourceCol = (sourceNode.data as EditableTableNodeData).columns.find(
+                        (c) => c.name === sourceColumnName
+                    );
+                    const targetCol = (targetNode.data as EditableTableNodeData).columns.find(
+                        (c) => c.name === targetColumnName
+                    );
+                    if (!sourceCol || !targetCol) return;
+
+                    edges.push({
+                        id: `${detail.name}-${fk.name}-${fkIndex}`,
+                        source: detail.name,
+                        target: fk.referencedTable,
+                        sourceHandle: `${sourceCol.id}-source`,
+                        targetHandle: `${targetCol.id}-target`,
+                        type: 'smoothstep',
+                        animated: true,
+                        style: { stroke: theme.palette.info.main, strokeWidth: 2 },
+                        markerEnd: {
+                            type: MarkerType.ArrowClosed,
+                            color: theme.palette.info.main,
+                        },
+                        label: fk.name,
+                        labelStyle: {
+                            fontSize: 10,
+                            fill: theme.palette.text.secondary,
+                        },
+                        labelBgStyle: { fill: theme.palette.background.paper },
+                    });
+                });
+            }
+            return edges;
+        },
+        [theme.palette.info.main, theme.palette.background.paper, theme.palette.text.secondary]
+    );
+
+    // Load tables into diagram
+    useEffect(() => {
+        if (tables.length === 0) {
+            setNodes([]);
+            setEdges([]);
+            return;
+        }
+
+        const loadTableDetails = async () => {
+            try {
+                const tableDetails = await Promise.all(
+                    tables.map((table) =>
+                        schemaApi.getTableSchema(connectionId, selectedSchema, table.name)
+                    )
+                );
+
+                const newNodes = buildDiagramNodes(tableDetails);
+                const newEdges = buildDiagramEdges(tableDetails, newNodes);
+
+                setNodes(newNodes);
+                setEdges(newEdges);
+            } catch (error) {
+                console.error('Failed to load table details:', error);
+                toast.error('Failed to load table details');
+            }
+        };
+
+        loadTableDetails();
+    }, [
+        tables,
+        connectionId,
+        selectedSchema,
+        refreshCounter,
+        buildDiagramNodes,
+        buildDiagramEdges,
+        setNodes,
+        setEdges,
+        toast,
+    ]);
 
     // Create table
     const handleCreateTable = async () => {
@@ -498,8 +525,8 @@ export function DiagramEditorTab({
 
         if (!sourceNode || !targetNode) return;
 
-        const sourceColId = sourceHandle.replace('-source', '');
-        const targetColId = targetHandle.replace('-target', '');
+        const sourceColId = sourceHandle.replaceAll('-source', '');
+        const targetColId = targetHandle.replaceAll('-target', '');
 
         const sourceCol = (sourceNode.data as EditableTableNodeData).columns.find(
             (c) => c.id === sourceColId
@@ -541,6 +568,98 @@ export function DiagramEditorTab({
             </GlassCard>
         );
     }
+
+    const renderDiagramCanvas = () => {
+        if (loadingTables) {
+            return <LoadingState message="Loading tables..." size="large" />;
+        }
+
+        if (tables.length === 0) {
+            return (
+                <EmptyState
+                    icon={<TableChartIcon />}
+                    title="No tables in this schema"
+                    description="Create a new table to get started with the schema diagram."
+                    action={{
+                        label: 'Create Table',
+                        onClick: () => setCreateTableOpen(true),
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Box
+                sx={{
+                    width: '100%',
+                    height: '100%',
+                    // Style React Flow controls
+                    '& .react-flow__controls': {
+                        bgcolor: 'background.paper',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    },
+                    '& .react-flow__controls-button': {
+                        bgcolor: 'background.paper',
+                        borderColor: 'divider',
+                        color: 'text.primary',
+                        '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                        '& svg': {
+                            fill: theme.palette.text.primary,
+                        },
+                    },
+                }}
+            >
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    minZoom={0.1}
+                    maxZoom={2}
+                    defaultEdgeOptions={{
+                        type: 'smoothstep',
+                        animated: true,
+                    }}
+                    proOptions={{ hideAttribution: true }}
+                >
+                    <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+                    <Controls />
+                    <MiniMap
+                        nodeColor={(node) =>
+                            node.selected ? theme.palette.primary.main : theme.palette.grey[600]
+                        }
+                        maskColor={alpha(theme.palette.background.default, 0.8)}
+                        style={{
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                        }}
+                    />
+                    <Panel position="top-right">
+                        <Paper
+                            sx={{
+                                p: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                bgcolor: 'background.paper',
+                            }}
+                        >
+                            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                                Drag between columns to create FK
+                            </Typography>
+                        </Paper>
+                    </Panel>
+                </ReactFlow>
+            </Box>
+        );
+    };
 
     const diagramContent = (
         <>
@@ -587,7 +706,7 @@ export function DiagramEditorTab({
                     <Box sx={{ flex: 1 }} />
 
                     <Chip
-                        label={`${tables.length} table${tables.length !== 1 ? 's' : ''}`}
+                        label={`${tables.length} table${tables.length === 1 ? '' : 's'}`}
                         size="small"
                         sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
                     />
@@ -614,95 +733,7 @@ export function DiagramEditorTab({
 
             {/* Diagram Canvas */}
             <GlassCard sx={{ flex: 1, p: 0, overflow: 'hidden' }}>
-                {loadingTables ? (
-                    <LoadingState message="Loading tables..." size="large" />
-                ) : tables.length === 0 ? (
-                    <EmptyState
-                        icon={<TableChartIcon />}
-                        title="No tables in this schema"
-                        description="Create a new table to get started with the schema diagram."
-                        action={{
-                            label: 'Create Table',
-                            onClick: () => setCreateTableOpen(true),
-                        }}
-                    />
-                ) : (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            height: '100%',
-                            // Style React Flow controls
-                            '& .react-flow__controls': {
-                                bgcolor: 'background.paper',
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                            },
-                            '& .react-flow__controls-button': {
-                                bgcolor: 'background.paper',
-                                borderColor: 'divider',
-                                color: 'text.primary',
-                                '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                },
-                                '& svg': {
-                                    fill: theme.palette.text.primary,
-                                },
-                            },
-                        }}
-                    >
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            onNodesChange={onNodesChange}
-                            onEdgesChange={onEdgesChange}
-                            onConnect={onConnect}
-                            nodeTypes={nodeTypes}
-                            fitView
-                            minZoom={0.1}
-                            maxZoom={2}
-                            defaultEdgeOptions={{
-                                type: 'smoothstep',
-                                animated: true,
-                            }}
-                            proOptions={{ hideAttribution: true }}
-                        >
-                            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-                            <Controls />
-                            <MiniMap
-                                nodeColor={(node) =>
-                                    node.selected
-                                        ? theme.palette.primary.main
-                                        : theme.palette.grey[600]
-                                }
-                                maskColor={alpha(theme.palette.background.default, 0.8)}
-                                style={{
-                                    backgroundColor: theme.palette.background.paper,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                }}
-                            />
-                            <Panel position="top-right">
-                                <Paper
-                                    sx={{
-                                        p: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 0.5,
-                                        bgcolor: 'background.paper',
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ px: 1 }}
-                                    >
-                                        Drag between columns to create FK
-                                    </Typography>
-                                </Paper>
-                            </Panel>
-                        </ReactFlow>
-                    </Box>
-                )}
+                {renderDiagramCanvas()}
             </GlassCard>
 
             {/* Create Table Dialog */}
