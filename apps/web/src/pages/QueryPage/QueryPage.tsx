@@ -945,7 +945,6 @@ export function QueryPage() {
                     value={selectedConnectionId}
                     onChange={handleConnectionChange}
                     disableOffline={true}
-                    showStatusIcon={true}
                 />
 
                 {selectedConnection && (

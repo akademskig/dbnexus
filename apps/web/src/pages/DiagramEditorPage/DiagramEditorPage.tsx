@@ -804,7 +804,6 @@ export function DiagramEditorPage() {
                         onChange={handleConnectionChange}
                         disabled={loadingConnections}
                         disableOffline={true}
-                        showStatusIcon={true}
                     />
 
                     {/* Schema Selector */}
