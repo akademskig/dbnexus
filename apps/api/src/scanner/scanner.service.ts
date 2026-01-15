@@ -544,14 +544,43 @@ export class ScannerService {
 
     async scanSqliteFiles(workspacePath?: string): Promise<DiscoveredConnection[]> {
         const connections: DiscoveredConnection[] = [];
-        const searchPaths = [workspacePath, process.cwd()].filter(Boolean) as string[];
+        const homeDir = os.homedir();
+
+        // Search paths: workspace, current dir, and common data directories
+        const potentialPaths = [
+            workspacePath,
+            process.cwd(),
+            path.join(homeDir, '.dbnexus'), // Our own data directory
+            path.join(homeDir, 'data'),
+            path.join(homeDir, 'databases'),
+            path.join(homeDir, 'db'),
+        ].filter((p): p is string => Boolean(p));
+
+        // Filter to only existing paths and deduplicate
+        const uniquePaths = [...new Set(potentialPaths)].filter((p) => {
+            try {
+                return fs.existsSync(p);
+            } catch {
+                return false;
+            }
+        });
 
         const sqliteExtensions = ['.db', '.sqlite', '.sqlite3', '.db3'];
-        const ignoreDirs = ['node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'coverage'];
+        const ignoreDirs = [
+            'node_modules',
+            '.git',
+            'dist',
+            'build',
+            '.next',
+            '.nuxt',
+            'coverage',
+            '__pycache__',
+        ];
 
-        for (const basePath of searchPaths) {
+        for (const basePath of uniquePaths) {
             try {
-                const files = this.findFiles(basePath, sqliteExtensions, ignoreDirs, 3);
+                // Use depth 5 for more thorough search
+                const files = this.findFiles(basePath, sqliteExtensions, ignoreDirs, 5);
                 for (const file of files) {
                     // Verify it's a SQLite file by checking magic bytes
                     try {
