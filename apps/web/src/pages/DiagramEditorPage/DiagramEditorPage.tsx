@@ -184,6 +184,7 @@ export function DiagramEditorPage() {
     const [currentTableId, setCurrentTableId] = useState<string | null>(null);
     const [currentColumn, setCurrentColumn] = useState<EditableColumn | null>(null);
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
+    const [confirmDeleteText, setConfirmDeleteText] = useState('');
 
     const [newColumn, setNewColumn] = useState({
         name: '',
@@ -299,8 +300,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                      ? 'public'
-                      : schemas[0];
+                        ? 'public'
+                        : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
@@ -489,8 +490,8 @@ export function DiagramEditorPage() {
 
     // Execute SQL mutation
     const executeSql = useMutation({
-        mutationFn: async (sql: string) => {
-            return queriesApi.execute(selectedConnectionId, sql);
+        mutationFn: async ({ sql, confirmed }: { sql: string; confirmed?: boolean }) => {
+            return queriesApi.execute(selectedConnectionId, sql, confirmed);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({
@@ -510,7 +511,7 @@ export function DiagramEditorPage() {
 )`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             toast.success(`Table "${newTableName}" created`);
             setCreateTableOpen(false);
             setNewTableName('');
@@ -537,7 +538,7 @@ export function DiagramEditorPage() {
         }
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             toast.success(`Column "${newColumn.name}" added to "${currentTableId}"`);
             setAddColumnOpen(false);
             setCurrentTableId(null);
@@ -554,7 +555,7 @@ export function DiagramEditorPage() {
         const sql = `ALTER TABLE ${fullTableName} DROP COLUMN ${quoteIdentifier(currentColumn.name, connection?.engine)}`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             toast.success(`Column "${currentColumn.name}" dropped from "${currentTableId}"`);
             setDeleteColumnOpen(false);
             setCurrentTableId(null);
@@ -566,16 +567,20 @@ export function DiagramEditorPage() {
 
     // Delete table handler
     const handleDeleteTable = async () => {
-        if (!currentTableId) return;
+        if (!currentTableId || confirmDeleteText !== currentTableId) return;
 
         const fullTableName = buildTableName(selectedSchema, currentTableId, connection?.engine);
-        const sql = `DROP TABLE ${fullTableName} CASCADE`;
+        const sql =
+            connection?.engine === 'sqlite'
+                ? `DROP TABLE ${fullTableName}`
+                : `DROP TABLE ${fullTableName} CASCADE`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql, confirmed: true });
             toast.success(`Table "${currentTableId}" dropped`);
             setDeleteTableOpen(false);
             setCurrentTableId(null);
+            setConfirmDeleteText('');
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to drop table');
         }
@@ -620,7 +625,7 @@ export function DiagramEditorPage() {
         const sql = `ALTER TABLE ${fullSourceTable} ADD CONSTRAINT ${quoteIdentifier(fkName, connection?.engine)} FOREIGN KEY (${quoteIdentifier(sourceCol.name, connection?.engine)}) REFERENCES ${fullTargetTable} (${quoteIdentifier(targetCol.name, connection?.engine)})`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             toast.success(`Foreign key "${fkName}" created`);
             setCreateFkOpen(false);
             setPendingConnection(null);
@@ -1120,7 +1125,13 @@ export function DiagramEditorPage() {
             </Dialog>
 
             {/* Delete Table Confirmation */}
-            <Dialog open={deleteTableOpen} onClose={() => setDeleteTableOpen(false)}>
+            <Dialog
+                open={deleteTableOpen}
+                onClose={() => {
+                    setDeleteTableOpen(false);
+                    setConfirmDeleteText('');
+                }}
+            >
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <WarningIcon color="error" />
                     Drop Table
@@ -1133,14 +1144,29 @@ export function DiagramEditorPage() {
                     <Typography>
                         Are you sure you want to drop table &quot;{currentTableId}&quot;?
                     </Typography>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label={`Type "${currentTableId || ''}" to confirm`}
+                        value={confirmDeleteText}
+                        onChange={(e) => setConfirmDeleteText(e.target.value)}
+                        sx={{ mt: 2 }}
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteTableOpen(false)}>Cancel</Button>
+                    <Button
+                        onClick={() => {
+                            setDeleteTableOpen(false);
+                            setConfirmDeleteText('');
+                        }}
+                    >
+                        Cancel
+                    </Button>
                     <Button
                         variant="contained"
                         color="error"
                         onClick={handleDeleteTable}
-                        disabled={executeSql.isPending}
+                        disabled={executeSql.isPending || confirmDeleteText !== currentTableId}
                         startIcon={
                             executeSql.isPending ? <CircularProgress size={16} /> : <DeleteIcon />
                         }

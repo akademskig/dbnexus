@@ -160,6 +160,7 @@ export function DiagramEditorTab({
         isPrimaryKey: false,
         defaultValue: '',
     });
+    const [confirmDeleteText, setConfirmDeleteText] = useState('');
 
     // Fetch tables for selected schema
     const {
@@ -486,17 +487,20 @@ export function DiagramEditorTab({
 
     // Delete table
     const handleDeleteTable = async () => {
-        if (!currentTableId) return;
+        if (!currentTableId || confirmDeleteText !== currentTableId) return;
 
         const fullTableName = buildTableName(selectedSchema, currentTableId);
-        const sql = `DROP TABLE ${fullTableName} CASCADE`;
+        const sql =
+            connection?.engine === 'sqlite'
+                ? `DROP TABLE ${fullTableName}`
+                : `DROP TABLE ${fullTableName} CASCADE`;
 
         try {
-            await executeSqlWithConfirmation(sql, () => {
-                toast.success(`Table "${currentTableId}" dropped`);
-                setDeleteTableOpen(false);
-                setCurrentTableId(null);
-            });
+            await executeSql.mutateAsync({ sql, confirmed: true });
+            toast.success(`Table "${currentTableId}" dropped`);
+            setDeleteTableOpen(false);
+            setCurrentTableId(null);
+            setConfirmDeleteText('');
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to drop table');
         }
@@ -888,7 +892,10 @@ export function DiagramEditorTab({
             {/* Delete Table Dialog */}
             <Dialog
                 open={deleteTableOpen}
-                onClose={() => setDeleteTableOpen(false)}
+                onClose={() => {
+                    setDeleteTableOpen(false);
+                    setConfirmDeleteText('');
+                }}
                 maxWidth="sm"
                 fullWidth
             >
@@ -909,14 +916,29 @@ export function DiagramEditorTab({
                             undone.
                         </Typography>
                     </Alert>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label={`Type "${currentTableId || ''}" to confirm`}
+                        value={confirmDeleteText}
+                        onChange={(e) => setConfirmDeleteText(e.target.value)}
+                        sx={{ mt: 2 }}
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteTableOpen(false)}>Cancel</Button>
+                    <Button
+                        onClick={() => {
+                            setDeleteTableOpen(false);
+                            setConfirmDeleteText('');
+                        }}
+                    >
+                        Cancel
+                    </Button>
                     <Button
                         variant="contained"
                         color="error"
                         onClick={handleDeleteTable}
-                        disabled={executeSql.isPending}
+                        disabled={executeSql.isPending || confirmDeleteText !== currentTableId}
                         startIcon={
                             executeSql.isPending ? <CircularProgress size={16} /> : <DeleteIcon />
                         }
