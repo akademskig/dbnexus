@@ -39,6 +39,10 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
+        // If the error has requiresConfirmation, serialize the whole object so it can be parsed
+        if (error.requiresConfirmation) {
+            throw new Error(JSON.stringify(error));
+        }
         throw new Error(error.message || `HTTP ${response.status}`);
     }
 
