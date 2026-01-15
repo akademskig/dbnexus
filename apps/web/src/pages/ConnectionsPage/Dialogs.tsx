@@ -175,19 +175,25 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     const toast = useToastStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [databaseEngine, setDatabaseEngine] = useState<
+        'postgres' | 'mysql' | 'mariadb' | 'sqlite'
+    >('postgres');
 
     const handleEnter = () => {
         if (group) {
             setName(group.name);
             setDescription(group.description || '');
+            setDatabaseEngine(group.databaseEngine);
         } else {
             setName('');
             setDescription('');
+            setDatabaseEngine('postgres');
         }
     };
 
     const createMutation = useMutation({
-        mutationFn: () => projectsApi.createGroup(projectId!, { name, description }),
+        mutationFn: () =>
+            projectsApi.createGroup(projectId!, { name, description, databaseEngine }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             toast.success('Instance group created');
@@ -243,6 +249,55 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                             rows={2}
                             fullWidth
                         />
+
+                        {/* Database Engine - Only for new groups */}
+                        {!group && (
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Database Engine
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mb: 1, display: 'block' }}
+                                >
+                                    All connections in this group must use the same database engine
+                                </Typography>
+                                <ToggleButtonGroup
+                                    value={databaseEngine}
+                                    exclusive
+                                    onChange={(_, value) => {
+                                        if (value) setDatabaseEngine(value);
+                                    }}
+                                    size="small"
+                                    sx={{ flexWrap: 'wrap' }}
+                                >
+                                    <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                    <ToggleButton value="mysql">MySQL</ToggleButton>
+                                    <ToggleButton value="mariadb">MariaDB</ToggleButton>
+                                    <ToggleButton value="sqlite">SQLite</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+                        )}
+
+                        {/* Engine Display - For editing groups */}
+                        {group && (
+                            <TextField
+                                label="Database Engine"
+                                value={
+                                    group.databaseEngine === 'postgres'
+                                        ? 'PostgreSQL'
+                                        : group.databaseEngine === 'mysql'
+                                          ? 'MySQL'
+                                          : group.databaseEngine === 'mariadb'
+                                            ? 'MariaDB'
+                                            : 'SQLite'
+                                }
+                                disabled
+                                fullWidth
+                                helperText="Database engine cannot be changed after group creation"
+                            />
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -338,7 +393,10 @@ export function ConnectionFormDialog({
 
     const isSqlite = formData.engine === 'sqlite';
     const isMysql = formData.engine === 'mysql' || formData.engine === 'mariadb';
-    const availableGroups = groups.filter((g) => g.projectId === formData.projectId);
+    // Filter groups by project AND database engine
+    const availableGroups = groups.filter(
+        (g) => g.projectId === formData.projectId && g.databaseEngine === formData.engine
+    );
 
     // Get default port based on engine
     const getDefaultPort = (engine: string) => {
@@ -479,6 +537,11 @@ export function ConnectionFormDialog({
                                     <MenuItem value="">
                                         <em>None</em>
                                     </MenuItem>
+                                    {availableGroups.length === 0 && formData.projectId && (
+                                        <MenuItem disabled>
+                                            <em>No groups for {formData.engine} in this project</em>
+                                        </MenuItem>
+                                    )}
                                     {availableGroups.map((g) => (
                                         <MenuItem key={g.id} value={g.id}>
                                             {g.name}
@@ -505,6 +568,7 @@ export function ConnectionFormDialog({
                                             port: getDefaultPort(value),
                                             username: value === 'sqlite' ? '' : formData.username,
                                             password: value === 'sqlite' ? '' : formData.password,
+                                            groupId: undefined, // Reset group when engine changes
                                         });
                                     }
                                 }}

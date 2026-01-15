@@ -14,6 +14,7 @@ interface DatabaseGroupRow {
     project_id: string;
     name: string;
     description: string | null;
+    database_engine: string;
     source_connection_id: string | null;
     sync_schema: number;
     sync_data: number;
@@ -38,8 +39,8 @@ export class DatabaseGroupRepository {
             .getDb()
             .prepare(
                 `
-            INSERT INTO database_groups (id, project_id, name, description, source_connection_id, sync_schema, sync_data, sync_target_schema)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO database_groups (id, project_id, name, description, database_engine, source_connection_id, sync_schema, sync_data, sync_target_schema)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
             .run(
@@ -47,6 +48,7 @@ export class DatabaseGroupRepository {
                 input.projectId,
                 input.name,
                 input.description || null,
+                input.databaseEngine,
                 input.sourceConnectionId || null,
                 input.syncSchema ? 1 : 0,
                 input.syncData ? 1 : 0,
@@ -208,6 +210,7 @@ export class DatabaseGroupRepository {
             projectId: row.project_id,
             name: row.name,
             description: row.description || undefined,
+            databaseEngine: row.database_engine as InstanceGroup['databaseEngine'],
             sourceConnectionId: row.source_connection_id || undefined,
             syncSchema: row.sync_schema === 1,
             syncData: row.sync_data === 1,

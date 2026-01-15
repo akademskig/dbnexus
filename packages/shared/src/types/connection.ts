@@ -40,6 +40,7 @@ export interface InstanceGroup {
     projectId: string;
     name: string;
     description?: string;
+    databaseEngine: DatabaseEngine; // All connections in group must match this engine
     sourceConnectionId?: string;
     syncSchema: boolean;
     syncData: boolean;
@@ -56,6 +57,7 @@ export interface InstanceGroupCreateInput {
     projectId: string;
     name: string;
     description?: string;
+    databaseEngine: DatabaseEngine; // Required when creating a group
     sourceConnectionId?: string;
     syncSchema?: boolean;
     syncData?: boolean;
