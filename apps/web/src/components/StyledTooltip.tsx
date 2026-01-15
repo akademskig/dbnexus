@@ -1,6 +1,6 @@
 import { Tooltip, TooltipProps, styled } from '@mui/material';
 
-export const ConnectionStatusTooltip = styled(({ className, ...props }: TooltipProps) => (
+export const StyledTooltip = styled(({ className, ...props }: TooltipProps) => (
     <Tooltip {...props} classes={{ popper: className }} />
 ))(({ theme }) => ({
     '& .MuiTooltip-tooltip': {

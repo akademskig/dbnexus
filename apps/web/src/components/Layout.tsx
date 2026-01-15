@@ -10,7 +10,6 @@ import {
     Typography,
     Divider,
     IconButton,
-    Tooltip,
     Collapse,
     CircularProgress,
     Menu,
@@ -37,7 +36,7 @@ import { themeColors } from '../theme';
 import type { DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
-import { ConnectionStatusTooltip } from './ConnectionStatusTooltip';
+import { StyledTooltip } from './StyledTooltip';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -197,7 +196,7 @@ export function Layout() {
                         const isActive =
                             location.pathname === to || location.pathname.startsWith(to + '/');
                         return (
-                            <Tooltip
+                            <StyledTooltip
                                 key={to}
                                 title={collapsed ? label : ''}
                                 placement="right"
@@ -223,7 +222,7 @@ export function Layout() {
                                     </ListItemIcon>
                                     {!collapsed && <ListItemText primary={label} />}
                                 </ListItemButton>
-                            </Tooltip>
+                            </StyledTooltip>
                         );
                     })}
 
@@ -308,7 +307,7 @@ export function Layout() {
                     {/* Collapsed sync icon with menu */}
                     {collapsed && groups.length > 0 && (
                         <>
-                            <Tooltip title="Instance Sync" placement="right" arrow>
+                            <StyledTooltip title="Instance Sync" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setSyncMenuAnchor(e.currentTarget)}
                                     selected={isSyncActive}
@@ -327,7 +326,7 @@ export function Layout() {
                                         <SyncIcon />
                                     </ListItemIcon>
                                 </ListItemButton>
-                            </Tooltip>
+                            </StyledTooltip>
                             <Menu
                                 anchorEl={syncMenuAnchor}
                                 open={Boolean(syncMenuAnchor)}
@@ -424,7 +423,7 @@ export function Layout() {
                                             const isOnline = connHealth?.isOnline ?? false;
 
                                             return (
-                                                <ConnectionStatusTooltip
+                                                <StyledTooltip
                                                     key={conn.id}
                                                     title={isOffline ? 'Offline' : ''}
                                                     placement="right"
@@ -470,7 +469,7 @@ export function Layout() {
                                                             />
                                                         </ListItemButton>
                                                     </span>
-                                                </ConnectionStatusTooltip>
+                                                </StyledTooltip>
                                             );
                                         })
                                     )}
@@ -482,7 +481,7 @@ export function Layout() {
                     {/* Collapsed connections icon with menu */}
                     {collapsed && connections.length > 0 && (
                         <>
-                            <Tooltip title="Connections" placement="right" arrow>
+                            <StyledTooltip title="Connections" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
                                     selected={isConnectionsActive}
@@ -503,7 +502,7 @@ export function Layout() {
                                         <StorageIcon />
                                     </ListItemIcon>
                                 </ListItemButton>
-                            </Tooltip>
+                            </StyledTooltip>
                             <Menu
                                 anchorEl={connectionsMenuAnchor}
                                 open={Boolean(connectionsMenuAnchor)}
@@ -526,7 +525,7 @@ export function Layout() {
                                     const isOnline = connHealth?.isOnline ?? false;
 
                                     return (
-                                        <ConnectionStatusTooltip
+                                        <StyledTooltip
                                             key={conn.id}
                                             title={isOffline ? 'Offline' : ''}
                                             placement="right"
@@ -570,7 +569,7 @@ export function Layout() {
                                                     />
                                                 </MenuItem>
                                             </span>
-                                        </ConnectionStatusTooltip>
+                                        </StyledTooltip>
                                     );
                                 })}
                             </Menu>
@@ -582,7 +581,7 @@ export function Layout() {
 
                 {/* Footer */}
                 <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
-                    <Tooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
+                    <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
                         <ListItemButton
                             component={NavLink}
                             to="/settings"
@@ -605,7 +604,7 @@ export function Layout() {
                             </ListItemIcon>
                             {!collapsed && <ListItemText primary="Settings" />}
                         </ListItemButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </List>
 
                 {/* Collapse toggle */}
@@ -618,14 +617,15 @@ export function Layout() {
                         justifyContent: collapsed ? 'center' : 'flex-end',
                     }}
                 >
-                    <Tooltip
+                    <StyledTooltip
                         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         placement="right"
+                        arrow
                     >
                         <IconButton size="small" onClick={toggle} sx={{ color: 'text.secondary' }}>
                             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             </Drawer>
 
