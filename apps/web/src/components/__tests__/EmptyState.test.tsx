@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '../../test/test-utils';
 import { EmptyState } from '../EmptyState';
 import StorageIcon from '@mui/icons-material/Storage';
-import React from 'react';
 
 describe('EmptyState', () => {
     it('should render title', () => {

@@ -46,6 +46,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import WarningIcon from '@mui/icons-material/Warning';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
@@ -161,6 +162,7 @@ export function DiagramEditorPage() {
     // Dialog states
     const [createTableOpen, setCreateTableOpen] = useState(false);
     const [addColumnOpen, setAddColumnOpen] = useState(false);
+    const [editColumnOpen, setEditColumnOpen] = useState(false);
     const [deleteColumnOpen, setDeleteColumnOpen] = useState(false);
     const [deleteTableOpen, setDeleteTableOpen] = useState(false);
     const [createFkOpen, setCreateFkOpen] = useState(false);
@@ -313,9 +315,18 @@ export function DiagramEditorPage() {
         setAddColumnOpen(true);
     }, []);
 
-    const handleOpenEditColumn = useCallback((_tableId: string, column: EditableColumn) => {
+    const handleOpenEditColumn = useCallback((tableId: string, column: EditableColumn) => {
+        setCurrentTableId(tableId);
         setCurrentColumn(column);
-        // Could open edit dialog here
+        // Pre-populate form with current values
+        setNewColumn({
+            name: column.name,
+            dataType: column.dataType,
+            nullable: column.nullable,
+            isPrimaryKey: column.isPrimaryKey,
+            defaultValue: column.defaultValue || '',
+        });
+        setEditColumnOpen(true);
     }, []);
 
     const handleOpenDeleteColumn = useCallback(
@@ -548,6 +559,74 @@ export function DiagramEditorPage() {
             setCurrentColumn(null);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to drop column');
+        }
+    };
+
+    // Edit column handler
+    const handleEditColumn = async () => {
+        if (!currentTableId || !currentColumn) return;
+
+        const fullTableName = buildTableName(selectedSchema, currentTableId, connection?.engine);
+        const quotedColumn = quoteIdentifier(currentColumn.name, connection?.engine);
+        const statements: string[] = [];
+
+        // For PostgreSQL, we can alter type, nullable, and default separately
+        if (connection?.engine === 'postgres') {
+            if (newColumn.dataType && newColumn.dataType !== currentColumn.dataType) {
+                statements.push(
+                    `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} TYPE ${newColumn.dataType}`
+                );
+            }
+            if (newColumn.nullable !== currentColumn.nullable) {
+                if (newColumn.nullable) {
+                    statements.push(
+                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} DROP NOT NULL`
+                    );
+                } else {
+                    statements.push(
+                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} SET NOT NULL`
+                    );
+                }
+            }
+            if (newColumn.defaultValue !== (currentColumn.defaultValue || '')) {
+                if (newColumn.defaultValue) {
+                    statements.push(
+                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} SET DEFAULT ${newColumn.defaultValue}`
+                    );
+                } else {
+                    statements.push(
+                        `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} DROP DEFAULT`
+                    );
+                }
+            }
+        } else {
+            // MySQL/MariaDB uses MODIFY COLUMN
+            let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${newColumn.dataType || currentColumn.dataType}`;
+            if (!newColumn.nullable) {
+                sql += ' NOT NULL';
+            }
+            if (newColumn.defaultValue) {
+                sql += ` DEFAULT ${newColumn.defaultValue}`;
+            }
+            statements.push(sql);
+        }
+
+        if (statements.length === 0) {
+            toast.info('No changes to apply');
+            setEditColumnOpen(false);
+            return;
+        }
+
+        try {
+            for (const sql of statements) {
+                await executeSql.mutateAsync({ sql });
+            }
+            toast.success(`Column "${currentColumn.name}" updated`);
+            setEditColumnOpen(false);
+            setCurrentTableId(null);
+            setCurrentColumn(null);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Failed to update column');
         }
     };
 
@@ -1071,6 +1150,75 @@ export function DiagramEditorPage() {
                         }
                     >
                         Add Column
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Column Dialog */}
+            <Dialog
+                open={editColumnOpen}
+                onClose={() => setEditColumnOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <EditIcon color="primary" />
+                    Edit Column: {currentColumn?.name}
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Alert severity="info">
+                            Column name cannot be changed here. Use SQL to rename columns.
+                        </Alert>
+                        <Autocomplete
+                            freeSolo
+                            options={dataTypes}
+                            value={newColumn.dataType}
+                            onChange={(_, value) =>
+                                setNewColumn((prev) => ({ ...prev, dataType: value || '' }))
+                            }
+                            onInputChange={(_, value) =>
+                                setNewColumn((prev) => ({ ...prev, dataType: value }))
+                            }
+                            renderInput={(params) => <TextField {...params} label="Data Type" />}
+                        />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={newColumn.nullable}
+                                    onChange={(e) =>
+                                        setNewColumn((prev) => ({
+                                            ...prev,
+                                            nullable: e.target.checked,
+                                        }))
+                                    }
+                                />
+                            }
+                            label="Nullable"
+                        />
+                        <TextField
+                            fullWidth
+                            label="Default Value"
+                            value={newColumn.defaultValue}
+                            onChange={(e) =>
+                                setNewColumn((prev) => ({ ...prev, defaultValue: e.target.value }))
+                            }
+                            placeholder="NULL, 0, 'default', now()"
+                            helperText="Enter SQL expression for default value, or leave empty to drop default"
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditColumnOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleEditColumn}
+                        disabled={executeSql.isPending}
+                        startIcon={
+                            executeSql.isPending ? <CircularProgress size={16} /> : <EditIcon />
+                        }
+                    >
+                        Save Changes
                     </Button>
                 </DialogActions>
             </Dialog>
