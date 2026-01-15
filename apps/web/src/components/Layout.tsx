@@ -37,6 +37,7 @@ import { themeColors } from '../theme';
 import type { DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
+import { ConnectionStatusTooltip } from './ConnectionStatusTooltip';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -423,10 +424,11 @@ export function Layout() {
                                             const isOnline = connHealth?.isOnline ?? false;
 
                                             return (
-                                                <Tooltip
+                                                <ConnectionStatusTooltip
                                                     key={conn.id}
                                                     title={isOffline ? 'Offline' : ''}
                                                     placement="right"
+                                                    arrow
                                                 >
                                                     <span>
                                                         <ListItemButton
@@ -468,7 +470,7 @@ export function Layout() {
                                                             />
                                                         </ListItemButton>
                                                     </span>
-                                                </Tooltip>
+                                                </ConnectionStatusTooltip>
                                             );
                                         })
                                     )}
@@ -524,10 +526,11 @@ export function Layout() {
                                     const isOnline = connHealth?.isOnline ?? false;
 
                                     return (
-                                        <Tooltip
+                                        <ConnectionStatusTooltip
                                             key={conn.id}
                                             title={isOffline ? 'Offline' : ''}
                                             placement="right"
+                                            arrow
                                         >
                                             <span>
                                                 <MenuItem
@@ -567,7 +570,7 @@ export function Layout() {
                                                     />
                                                 </MenuItem>
                                             </span>
-                                        </Tooltip>
+                                        </ConnectionStatusTooltip>
                                     );
                                 })}
                             </Menu>
