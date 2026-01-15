@@ -243,10 +243,10 @@ export function Layout() {
                     {/* Sync Section */}
                     {!collapsed && groups.length > 0 && (
                         <>
-                            <Divider sx={{ my: 1.5 }} />
+                            <Divider sx={{ my: 0.5 }} />
                             <ListItemButton
                                 onClick={toggleSync}
-                                sx={{ mb: 0.5, px: 2 }}
+                                sx={{ px: 2 }}
                                 selected={isSyncActive}
                             >
                                 <ListItemIcon
@@ -326,7 +326,6 @@ export function Layout() {
                                     onClick={(e) => setSyncMenuAnchor(e.currentTarget)}
                                     selected={isSyncActive}
                                     sx={{
-                                        mb: 0.5,
                                         justifyContent: 'center',
                                         px: 1.5,
                                     }}
@@ -394,10 +393,10 @@ export function Layout() {
                     {/* Connections Section */}
                     {!collapsed && connections.length > 0 && (
                         <>
-                            <Divider sx={{ my: 1.5 }} />
+                            <Divider sx={{ my: 0.5 }} />
                             <ListItemButton
                                 onClick={toggleConnections}
-                                sx={{ mb: 0.5, px: 2 }}
+                                sx={{ px: 2 }}
                                 selected={isConnectionsActive}
                             >
                                 <ListItemIcon
