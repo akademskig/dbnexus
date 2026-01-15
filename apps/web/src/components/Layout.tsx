@@ -238,6 +238,7 @@ export function Layout() {
                         overflowY: 'auto',
                         overflowX: 'hidden',
                         px: collapsed ? 1 : 1.5,
+                        pb: 0,
                     }}
                 >
                     {/* Sync Section */}
