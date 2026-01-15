@@ -158,7 +158,8 @@ export function TablesTab({
         try {
             const fullTableName = buildTableName(tableToDelete.schema, tableToDelete.name);
             const sql = `DROP TABLE ${fullTableName};`;
-            await queriesApi.execute(connectionId, sql);
+            // Pass confirmed: true since user has already typed the table name to confirm
+            await queriesApi.execute(connectionId, sql, true);
             await refetchTables();
             queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
             toast.success(`Table "${tableToDelete.name}" dropped`);

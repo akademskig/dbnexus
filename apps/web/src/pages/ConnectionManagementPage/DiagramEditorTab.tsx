@@ -195,16 +195,60 @@ export function DiagramEditorTab({
         [connection?.engine, quoteIdentifier]
     );
 
+    // State for dangerous operation confirmation
+    const [pendingDangerousSql, setPendingDangerousSql] = useState<{
+        sql: string;
+        message: string;
+        onSuccess?: () => void;
+    } | null>(null);
+
     // Execute SQL mutation
     const executeSql = useMutation({
-        mutationFn: async (sql: string) => {
-            return queriesApi.execute(connectionId, sql);
+        mutationFn: async ({ sql, confirmed }: { sql: string; confirmed?: boolean }) => {
+            return queriesApi.execute(connectionId, sql, confirmed);
         },
         onSuccess: () => {
             refetchTables();
             queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
         },
     });
+
+    // Helper to execute SQL with dangerous operation handling
+    const executeSqlWithConfirmation = async (
+        sql: string,
+        onSuccess?: () => void
+    ): Promise<void> => {
+        try {
+            await executeSql.mutateAsync({ sql });
+            onSuccess?.();
+        } catch (err) {
+            // Check if it's a dangerous operation requiring confirmation
+            if (err instanceof Error) {
+                try {
+                    const parsed = JSON.parse(err.message);
+                    if (parsed.requiresConfirmation) {
+                        setPendingDangerousSql({ sql, message: parsed.message, onSuccess });
+                        return;
+                    }
+                } catch {
+                    // Not a JSON error, rethrow
+                }
+            }
+            throw err;
+        }
+    };
+
+    // Confirm dangerous operation
+    const handleConfirmDangerous = async () => {
+        if (!pendingDangerousSql) return;
+        try {
+            await executeSql.mutateAsync({ sql: pendingDangerousSql.sql, confirmed: true });
+            pendingDangerousSql.onSuccess?.();
+            setPendingDangerousSql(null);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Operation failed');
+        }
+    };
 
     // Load tables into diagram
     useEffect(() => {
@@ -389,10 +433,11 @@ export function DiagramEditorTab({
         const sql = `CREATE TABLE ${fullTableName} (id SERIAL PRIMARY KEY)`;
 
         try {
-            await executeSql.mutateAsync(sql);
-            toast.success(`Table "${newTableName}" created`);
-            setCreateTableOpen(false);
-            setNewTableName('');
+            await executeSqlWithConfirmation(sql, () => {
+                toast.success(`Table "${newTableName}" created`);
+                setCreateTableOpen(false);
+                setNewTableName('');
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to create table');
         }
@@ -410,9 +455,10 @@ export function DiagramEditorTab({
         if (newColumn.defaultValue) sql += ` DEFAULT ${newColumn.defaultValue}`;
 
         try {
-            await executeSql.mutateAsync(sql);
-            toast.success(`Column "${newColumn.name}" added`);
-            setAddColumnOpen(false);
+            await executeSqlWithConfirmation(sql, () => {
+                toast.success(`Column "${newColumn.name}" added`);
+                setAddColumnOpen(false);
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to add column');
         }
@@ -427,10 +473,11 @@ export function DiagramEditorTab({
         const sql = `ALTER TABLE ${fullTableName} DROP COLUMN ${quotedColumn}`;
 
         try {
-            await executeSql.mutateAsync(sql);
-            toast.success(`Column "${currentColumn.name}" deleted`);
-            setDeleteColumnOpen(false);
-            setCurrentColumn(null);
+            await executeSqlWithConfirmation(sql, () => {
+                toast.success(`Column "${currentColumn.name}" deleted`);
+                setDeleteColumnOpen(false);
+                setCurrentColumn(null);
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to delete column');
         }
@@ -444,10 +491,11 @@ export function DiagramEditorTab({
         const sql = `DROP TABLE ${fullTableName} CASCADE`;
 
         try {
-            await executeSql.mutateAsync(sql);
-            toast.success(`Table "${currentTableId}" dropped`);
-            setDeleteTableOpen(false);
-            setCurrentTableId(null);
+            await executeSqlWithConfirmation(sql, () => {
+                toast.success(`Table "${currentTableId}" dropped`);
+                setDeleteTableOpen(false);
+                setCurrentTableId(null);
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to drop table');
         }
@@ -492,10 +540,11 @@ export function DiagramEditorTab({
         const sql = `ALTER TABLE ${fullSourceTable} ADD CONSTRAINT ${quoteIdentifier(fkName)} FOREIGN KEY (${quoteIdentifier(sourceCol.name)}) REFERENCES ${fullTargetTable} (${quoteIdentifier(targetCol.name)})`;
 
         try {
-            await executeSql.mutateAsync(sql);
-            toast.success(`Foreign key "${fkName}" created`);
-            setCreateFkOpen(false);
-            setPendingConnection(null);
+            await executeSqlWithConfirmation(sql, () => {
+                toast.success(`Foreign key "${fkName}" created`);
+                setCreateFkOpen(false);
+                setPendingConnection(null);
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to create foreign key');
         }
@@ -918,6 +967,42 @@ export function DiagramEditorTab({
                         }
                     >
                         Create Foreign Key
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dangerous Operation Confirmation Dialog */}
+            <Dialog
+                open={!!pendingDangerousSql}
+                onClose={() => setPendingDangerousSql(null)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <WarningIcon color="warning" />
+                    Confirm Dangerous Operation
+                </DialogTitle>
+                <DialogContent>
+                    <Alert severity="warning" sx={{ mt: 1 }}>
+                        {pendingDangerousSql?.message}
+                    </Alert>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                        This operation may permanently modify or delete data. Are you sure you want
+                        to proceed?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPendingDangerousSql(null)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmDangerous}
+                        disabled={executeSql.isPending}
+                        startIcon={
+                            executeSql.isPending ? <CircularProgress size={16} /> : <WarningIcon />
+                        }
+                    >
+                        Execute Anyway
                     </Button>
                 </DialogActions>
             </Dialog>
