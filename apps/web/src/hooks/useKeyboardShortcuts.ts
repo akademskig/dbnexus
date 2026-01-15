@@ -48,29 +48,35 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     {
         key: '2',
         ctrl: true,
-        description: 'Go to Query',
+        description: 'Go to Projects',
         category: 'navigation',
     },
     {
         key: '3',
         ctrl: true,
-        description: 'Go to Schema Diagram',
+        description: 'Go to Query',
         category: 'navigation',
     },
     {
         key: '4',
         ctrl: true,
-        description: 'Go to Compare',
+        description: 'Go to Schema Diagram',
         category: 'navigation',
     },
     {
         key: '5',
         ctrl: true,
-        description: 'Go to Logs',
+        description: 'Go to Compare',
         category: 'navigation',
     },
     {
         key: '6',
+        ctrl: true,
+        description: 'Go to Logs',
+        category: 'navigation',
+    },
+    {
+        key: '7',
         ctrl: true,
         description: 'Go to Settings',
         category: 'navigation',
@@ -172,10 +178,11 @@ export function useKeyboardShortcuts(
 export function useNavigationShortcuts(navigate: (path: string) => void) {
     useKeyboardShortcuts([
         { key: '1', ctrl: true, handler: () => navigate('/dashboard') },
-        { key: '2', ctrl: true, handler: () => navigate('/query') },
-        { key: '3', ctrl: true, handler: () => navigate('/schema-diagram') },
-        { key: '4', ctrl: true, handler: () => navigate('/compare') },
-        { key: '5', ctrl: true, handler: () => navigate('/logs') },
-        { key: '6', ctrl: true, handler: () => navigate('/settings') },
+        { key: '2', ctrl: true, handler: () => navigate('/projects') },
+        { key: '3', ctrl: true, handler: () => navigate('/query') },
+        { key: '4', ctrl: true, handler: () => navigate('/schema-diagram') },
+        { key: '5', ctrl: true, handler: () => navigate('/compare') },
+        { key: '6', ctrl: true, handler: () => navigate('/logs') },
+        { key: '7', ctrl: true, handler: () => navigate('/settings') },
     ]);
 }

@@ -29,6 +29,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import FolderIcon from '@mui/icons-material/Folder';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
@@ -68,6 +69,7 @@ const useSidebarStore = create<SidebarStore>()(
 
 const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
+    { to: '/projects', icon: <FolderIcon />, label: 'Projects' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
     { to: '/schema-diagram', icon: <AccountTreeIcon />, label: 'Schema Diagram' },
     { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProjectsPage } from './pages/ProjectsPage';
 import { ConnectionManagementPage } from './pages/ConnectionManagementPage';
 import { QueryPage } from './pages/QueryPage';
 import { SchemaPage } from './pages/SchemaPage';
@@ -21,6 +22,7 @@ function App() {
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="projects" element={<ProjectsPage />} />
                 <Route path="connections/:connectionId" element={<ConnectionManagementPage />} />
                 <Route path="query" element={<QueryPage />} />
                 <Route path="query/:connectionId" element={<QueryPage />} />
