@@ -153,15 +153,14 @@ export function DashboardPage() {
                         Overview of your database connections and activity
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Scan for connections">
-                        <IconButton
-                            onClick={() => setScanDialogOpen(true)}
-                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-                        >
-                            <SearchIcon />
-                        </IconButton>
-                    </Tooltip>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<SearchIcon />}
+                        onClick={() => setScanDialogOpen(true)}
+                    >
+                        Scan
+                    </Button>
                     <Tooltip title="Refresh">
                         <IconButton
                             onClick={handleRefresh}
