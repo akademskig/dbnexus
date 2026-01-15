@@ -522,7 +522,7 @@ function AboutTab() {
                             '&:hover': { bgcolor: 'action.hover' },
                         }}
                     >
-                        GitHub
+                        ⭐ Star on GitHub
                     </Button>
                     <Button
                         variant="outlined"
