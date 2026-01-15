@@ -136,6 +136,8 @@ export function Layout() {
                         bgcolor: 'background.paper',
                         transition: 'width 0.2s ease',
                         overflowX: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
                     },
                 }}
             >
@@ -192,8 +194,8 @@ export function Layout() {
 
                 <Divider />
 
-                {/* Navigation */}
-                <List sx={{ px: collapsed ? 1 : 1.5, py: 2, flex: 1 }}>
+                {/* Main Navigation - Fixed at top */}
+                <List sx={{ px: collapsed ? 1 : 1.5, py: 2 }}>
                     {navItems.map(({ to, icon, label }) => {
                         const isActive =
                             location.pathname === to || location.pathname.startsWith(to + '/');
@@ -227,7 +229,17 @@ export function Layout() {
                             </StyledTooltip>
                         );
                     })}
+                </List>
 
+                {/* Scrollable middle section for Sync and Connections */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        px: collapsed ? 1 : 1.5,
+                    }}
+                >
                     {/* Sync Section */}
                     {!collapsed && groups.length > 0 && (
                         <>
@@ -577,11 +589,11 @@ export function Layout() {
                             </Menu>
                         </>
                     )}
-                </List>
+                </Box>
 
+                {/* Footer - Fixed at bottom */}
                 <Divider />
 
-                {/* Footer */}
                 <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
                     <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
                         <ListItemButton
