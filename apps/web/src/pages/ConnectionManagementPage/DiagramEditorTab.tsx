@@ -55,6 +55,7 @@ import { useToastStore } from '../../stores/toastStore';
 import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import {
     EditableTableNode,
     type EditableColumn,
@@ -972,40 +973,18 @@ export function DiagramEditorTab({
             </Dialog>
 
             {/* Dangerous Operation Confirmation Dialog */}
-            <Dialog
+            <ConfirmDialog
                 open={!!pendingDangerousSql}
-                onClose={() => setPendingDangerousSql(null)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningIcon color="warning" />
-                    Confirm Dangerous Operation
-                </DialogTitle>
-                <DialogContent>
-                    <Alert severity="warning" sx={{ mt: 1 }}>
-                        {pendingDangerousSql?.message}
-                    </Alert>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                        This operation may permanently modify or delete data. Are you sure you want
-                        to proceed?
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setPendingDangerousSql(null)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleConfirmDangerous}
-                        disabled={executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <WarningIcon />
-                        }
-                    >
-                        Execute Anyway
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                title="Confirm Dangerous Operation"
+                message={
+                    pendingDangerousSql?.message ||
+                    'This operation may permanently modify or delete data.'
+                }
+                confirmLabel="Execute Anyway"
+                confirmColor="error"
+                onConfirm={handleConfirmDangerous}
+                onCancel={() => setPendingDangerousSql(null)}
+            />
         </>
     );
 
