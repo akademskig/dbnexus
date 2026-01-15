@@ -100,6 +100,25 @@ export function DatabaseGroupSection({
                         </Typography>
                     )}
                 </Box>
+                <Chip
+                    label={
+                        group.databaseEngine === 'postgres'
+                            ? 'PostgreSQL'
+                            : group.databaseEngine === 'mysql'
+                              ? 'MySQL'
+                              : group.databaseEngine === 'mariadb'
+                                ? 'MariaDB'
+                                : 'SQLite'
+                    }
+                    size="small"
+                    sx={{
+                        height: 22,
+                        fontSize: 11,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        fontWeight: 500,
+                    }}
+                />
                 {(group.syncSchema || group.syncData) && (
                     <Chip
                         label={

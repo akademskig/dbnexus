@@ -285,7 +285,14 @@ export function ComparePage() {
                                 const project = projects.find((p) => p.id === group.projectId);
                                 return (
                                     <MenuItem key={group.id} value={group.id}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                                width: '100%',
+                                            }}
+                                        >
                                             {project && (
                                                 <Chip
                                                     label={project.name}
@@ -299,6 +306,24 @@ export function ComparePage() {
                                                 />
                                             )}
                                             <span>{group.name}</span>
+                                            <Chip
+                                                label={
+                                                    group.databaseEngine === 'postgres'
+                                                        ? 'PostgreSQL'
+                                                        : group.databaseEngine === 'mysql'
+                                                          ? 'MySQL'
+                                                          : group.databaseEngine === 'mariadb'
+                                                            ? 'MariaDB'
+                                                            : 'SQLite'
+                                                }
+                                                size="small"
+                                                sx={{
+                                                    height: 20,
+                                                    fontSize: 11,
+                                                    bgcolor: 'primary.main',
+                                                    color: 'primary.contrastText',
+                                                }}
+                                            />
                                             <Typography
                                                 variant="caption"
                                                 color="text.secondary"
