@@ -499,7 +499,6 @@ export function Layout() {
                                     onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
                                     selected={isConnectionsActive}
                                     sx={{
-                                        mb: 0.5,
                                         justifyContent: 'center',
                                         px: 1.5,
                                     }}
