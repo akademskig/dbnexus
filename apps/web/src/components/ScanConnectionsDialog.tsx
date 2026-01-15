@@ -102,8 +102,9 @@ export function ScanConnectionsDialog({
 
     // Check if a connection at a given index already exists
     const isExistingConnection = (index: number): boolean => {
-        if (!scanResult || !scanResult.connections[index]) return false;
-        return connectionExists(scanResult.connections[index], existingConnections);
+        const conn = scanResult?.connections[index];
+        if (!conn) return false;
+        return connectionExists(conn, existingConnections);
     };
 
     // Get indices of new (non-existing) connections
@@ -322,7 +323,7 @@ export function ScanConnectionsDialog({
                                         disabled={newConnectionIndices.length === 0}
                                     >
                                         {selectedConnections.size === newConnectionIndices.length &&
-                                        newConnectionIndices.length > 0
+                                            newConnectionIndices.length > 0
                                             ? 'Deselect All'
                                             : 'Select All New'}
                                     </Button>
@@ -349,8 +350,8 @@ export function ScanConnectionsDialog({
                                                     bgcolor: alreadyExists
                                                         ? 'action.disabledBackground'
                                                         : selectedConnections.has(index)
-                                                          ? 'action.selected'
-                                                          : 'background.paper',
+                                                            ? 'action.selected'
+                                                            : 'background.paper',
                                                     opacity: alreadyExists ? 0.7 : 1,
                                                 }}
                                             >
