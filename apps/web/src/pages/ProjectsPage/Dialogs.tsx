@@ -22,8 +22,8 @@ import {
     Chip,
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { connectionsApi, projectsApi } from '../../lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { connectionsApi, projectsApi, schemaApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 import type {
     ConnectionConfig,
@@ -299,6 +299,13 @@ export function ConnectionFormDialog({
         null
     );
 
+    // Fetch schemas for the connection when editing (PostgreSQL only)
+    const { data: schemas = [] } = useQuery({
+        queryKey: ['schemas', connection?.id],
+        queryFn: () => schemaApi.getSchemas(connection!.id),
+        enabled: !!connection?.id && connection?.engine === 'postgres',
+    });
+
     const handleEnter = () => {
         if (connection) {
             setFormData({
@@ -488,35 +495,57 @@ export function ConnectionFormDialog({
                             </FormControl>
                         </Box>
 
-                        {/* Engine Selection */}
-                        <Box>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                Database Engine
-                            </Typography>
-                            <ToggleButtonGroup
-                                value={formData.engine}
-                                exclusive
-                                onChange={(_, value) => {
-                                    if (value) {
-                                        setFormData({
-                                            ...formData,
-                                            engine: value,
-                                            host: value === 'sqlite' ? '' : 'localhost',
-                                            port: getDefaultPort(value),
-                                            username: value === 'sqlite' ? '' : formData.username,
-                                            password: value === 'sqlite' ? '' : formData.password,
-                                        });
-                                    }
-                                }}
-                                size="small"
-                                sx={{ flexWrap: 'wrap' }}
-                            >
-                                <ToggleButton value="postgres">PostgreSQL</ToggleButton>
-                                <ToggleButton value="mysql">MySQL</ToggleButton>
-                                <ToggleButton value="mariadb">MariaDB</ToggleButton>
-                                <ToggleButton value="sqlite">SQLite</ToggleButton>
-                            </ToggleButtonGroup>
-                        </Box>
+                        {/* Engine Selection - Only for new connections */}
+                        {!connection && (
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Database Engine
+                                </Typography>
+                                <ToggleButtonGroup
+                                    value={formData.engine}
+                                    exclusive
+                                    onChange={(_, value) => {
+                                        if (value) {
+                                            setFormData({
+                                                ...formData,
+                                                engine: value,
+                                                host: value === 'sqlite' ? '' : 'localhost',
+                                                port: getDefaultPort(value),
+                                                username:
+                                                    value === 'sqlite' ? '' : formData.username,
+                                                password:
+                                                    value === 'sqlite' ? '' : formData.password,
+                                            });
+                                        }
+                                    }}
+                                    size="small"
+                                    sx={{ flexWrap: 'wrap' }}
+                                >
+                                    <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                    <ToggleButton value="mysql">MySQL</ToggleButton>
+                                    <ToggleButton value="mariadb">MariaDB</ToggleButton>
+                                    <ToggleButton value="sqlite">SQLite</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+                        )}
+
+                        {/* Engine Display - For editing connections */}
+                        {connection && (
+                            <TextField
+                                label="Database Engine"
+                                value={
+                                    formData.engine === 'postgres'
+                                        ? 'PostgreSQL'
+                                        : formData.engine === 'mysql'
+                                          ? 'MySQL'
+                                          : formData.engine === 'mariadb'
+                                            ? 'MariaDB'
+                                            : 'SQLite'
+                                }
+                                disabled
+                                fullWidth
+                            />
+                        )}
 
                         {/* PostgreSQL fields */}
                         {!isSqlite && (
@@ -599,18 +628,48 @@ export function ConnectionFormDialog({
                             />
                         )}
 
-                        {/* Default Schema - for Postgres and MySQL/MariaDB */}
+                        {/* Default Schema - for Postgres */}
                         {!isSqlite && !isMysql && (
-                            <TextField
-                                label="Default Schema"
-                                value={formData.defaultSchema || ''}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, defaultSchema: e.target.value })
-                                }
-                                placeholder="public"
-                                helperText="Default schema to use (leave empty for 'public')"
-                                fullWidth
-                            />
+                            <>
+                                {connection && schemas.length > 0 ? (
+                                    <FormControl fullWidth>
+                                        <InputLabel>Default Schema</InputLabel>
+                                        <Select
+                                            value={formData.defaultSchema || ''}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    defaultSchema: e.target.value,
+                                                })
+                                            }
+                                            label="Default Schema"
+                                        >
+                                            <MenuItem value="">
+                                                <em>None (use &quot;public&quot;)</em>
+                                            </MenuItem>
+                                            {schemas.map((schema) => (
+                                                <MenuItem key={schema} value={schema}>
+                                                    {schema}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                ) : (
+                                    <TextField
+                                        label="Default Schema"
+                                        value={formData.defaultSchema || ''}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                defaultSchema: e.target.value,
+                                            })
+                                        }
+                                        placeholder="public"
+                                        helperText="Default schema to use (leave empty for 'public')"
+                                        fullWidth
+                                    />
+                                )}
+                            </>
                         )}
 
                         <Box>
