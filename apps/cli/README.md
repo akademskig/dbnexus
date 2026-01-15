@@ -157,7 +157,7 @@ MIT © DB Nexus Team
 
 ## Support
 
-- 📧 Email: admin@dbnexus.dev
+- 📧 Email: <admin@dbnexus.dev>
 - 🐛 Issues: [GitHub Issues](https://github.com/akademskig/dbnexus/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/akademskig/dbnexus/discussions)
 

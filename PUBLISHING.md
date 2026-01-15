@@ -4,7 +4,7 @@ This guide explains how to publish DB Nexus to npm.
 
 ## Prerequisites
 
-1. **npm account** - Create one at https://www.npmjs.com/signup
+1. **npm account** - Create one at <https://www.npmjs.com/signup>
 2. **npm login** - Run `npm login` and enter your credentials
 3. **Build the project** - Ensure everything builds successfully
 
@@ -93,7 +93,7 @@ dbnexus
 
 ### 7. Create GitHub Release
 
-1. Go to https://github.com/akademskig/dbnexus/releases
+1. Go to <https://github.com/akademskig/dbnexus/releases>
 2. Click "Draft a new release"
 3. Create a new tag (e.g., `v0.2.0`)
 4. Title: "DB Nexus v0.2.0"
@@ -157,6 +157,7 @@ If `dbnexus` is taken, use a scoped package:
     ```
 
 2. Publish with:
+
     ```bash
     npm publish --access public
     ```
@@ -216,7 +217,7 @@ jobs:
 
 ### Setup npm Token
 
-1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+1. Go to <https://www.npmjs.com/settings/YOUR_USERNAME/tokens>
 2. Generate a new "Automation" token
 3. Add it to GitHub Secrets as `NPM_TOKEN`
 
@@ -252,7 +253,7 @@ npm install -g dbnexus@beta
 
 ## Post-Publishing Checklist
 
-- [ ] Verify package on npm: https://www.npmjs.com/package/dbnexus
+- [ ] Verify package on npm: <https://www.npmjs.com/package/dbnexus>
 - [ ] Test installation: `npm install -g dbnexus`
 - [ ] Update documentation
 - [ ] Announce on social media / Discord / etc.
@@ -263,5 +264,5 @@ npm install -g dbnexus@beta
 
 If you encounter issues during publishing:
 
-- 📧 Email: admin@dbnexus.dev
-- 🐛 Issues: https://github.com/akademskig/dbnexus/issues
+- 📧 Email: <admin@dbnexus.dev>
+- 🐛 Issues: <https://github.com/akademskig/dbnexus/issues>

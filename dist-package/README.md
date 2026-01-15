@@ -144,12 +144,12 @@ rm -rf ~/.dbnexus
 ## Documentation
 
 - [Full Documentation](https://docs.dbnexus.dev)
-- [GitHub Repository](https://github.com/dbnexus/dbnexus)
-- [Issue Tracker](https://github.com/dbnexus/dbnexus/issues)
+- [GitHub Repository](https://github.com/akademskig/dbnexus)
+- [Issue Tracker](https://github.com/akademskig/dbnexus/issues)
 
 ## Contributing
 
-Contributions are welcome! Please see our [Contributing Guide](https://github.com/dbnexus/dbnexus/blob/main/CONTRIBUTING.md).
+Contributions are welcome! Please see our [Contributing Guide](https://github.com/akademskig/dbnexus/blob/main/CONTRIBUTING.md).
 
 ## License
 
@@ -157,9 +157,9 @@ MIT © DB Nexus Team
 
 ## Support
 
-- 📧 Email: admin@dbnexus.dev
-- 🐛 Issues: [GitHub Issues](https://github.com/dbnexus/dbnexus/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/dbnexus/dbnexus/discussions)
+- 📧 Email: <admin@dbnexus.dev>
+- 🐛 Issues: [GitHub Issues](https://github.com/akademskig/dbnexus/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/akademskig/dbnexus/discussions)
 
 ---
 
