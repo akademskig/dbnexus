@@ -311,10 +311,10 @@ export function ComparePage() {
                                                     group.databaseEngine === 'postgres'
                                                         ? 'PostgreSQL'
                                                         : group.databaseEngine === 'mysql'
-                                                          ? 'MySQL'
-                                                          : group.databaseEngine === 'mariadb'
-                                                            ? 'MariaDB'
-                                                            : 'SQLite'
+                                                            ? 'MySQL'
+                                                            : group.databaseEngine === 'mariadb'
+                                                                ? 'MariaDB'
+                                                                : 'SQLite'
                                                 }
                                                 size="small"
                                                 sx={{

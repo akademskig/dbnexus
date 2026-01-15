@@ -365,13 +365,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -745,22 +745,56 @@ export function QueryPage() {
         [tableSchema]
     );
 
+    // Extract table name from SQL query (simple regex for SELECT queries)
+    const extractTableNameFromQuery = (query: string): string | null => {
+        const match = query.match(/FROM\s+([`"]?[\w.]+[`"]?)/i);
+        return match?.[1]?.replace(/[`"]/g, '') ?? null;
+    };
+
+    // Infer primary keys from result columns (for raw queries without tableSchema)
+    const inferPrimaryKeysFromResult = (result: QueryResult | null): string[] => {
+        if (!result) return [];
+        return result.columns
+            .filter(col => {
+                const name = col.name.toLowerCase();
+                return name === 'id' || name === 'version' || name.endsWith('_id');
+            })
+            .map(col => col.name);
+    };
+
     // Handle update row
     const handleUpdateRow = useCallback(
         async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
-            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
+            if (!selectedConnectionId) return;
 
             const engine = selectedConnection?.engine;
-            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
-            const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-            if (pkColumns.length === 0) {
-                throw new Error('Cannot update row: no primary key defined');
+            // Determine table name and primary keys
+            let tableName: string;
+            let pkColumns: string[];
+
+            if (selectedTable && tableSchema) {
+                // Use selected table info if available
+                tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
+                pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
+            } else {
+                // For raw queries, try to extract table name from SQL
+                const extractedTable = extractTableNameFromQuery(sql);
+                if (!extractedTable) {
+                    throw new Error('Cannot determine table name for update');
+                }
+                tableName = extractedTable;
+
+                // Infer primary keys from result
+                pkColumns = inferPrimaryKeysFromResult(result);
+                if (pkColumns.length === 0) {
+                    throw new Error('Cannot update row: no primary key identified (looking for columns named: id, version, or ending with _id)');
+                }
             }
 
             const changes: string[] = [];
             for (const key of Object.keys(newRow)) {
-                if (key === 'id') continue;
+                if (key === '__rowIndex') continue; // Skip internal row index
                 const oldVal = oldRow[key];
                 const newVal = newRow[key];
                 const hasChanged =
@@ -790,7 +824,7 @@ export function QueryPage() {
                     { query, confirmed: true },
                     {
                         onSuccess: () => {
-                            if (selectedTable) {
+                            if (selectedTable && tableSchema) {
                                 fetchTableData(
                                     selectedTable,
                                     paginationModel.page,
@@ -798,6 +832,9 @@ export function QueryPage() {
                                     searchQuery,
                                     tableSchema
                                 );
+                            } else {
+                                // For raw queries, re-run the original query
+                                executeMutation.mutate({ query: sql, confirmed: true });
                             }
                             toast.success('Row updated');
                             resolve();
@@ -821,6 +858,8 @@ export function QueryPage() {
             searchQuery,
             formatSqlValue,
             toast,
+            sql,
+            result,
         ]
     );
 
