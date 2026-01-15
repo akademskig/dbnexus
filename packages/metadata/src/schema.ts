@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -221,5 +221,12 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE database_groups ADD COLUMN database_engine TEXT NOT NULL DEFAULT 'postgres' CHECK(database_engine IN ('postgres', 'mysql', 'mariadb', 'sqlite'));
 
   UPDATE schema_version SET version = 8;
+  `,
+
+    // Version 9: Add connection_type to connections (local, docker, remote)
+    `
+  ALTER TABLE connections ADD COLUMN connection_type TEXT NOT NULL DEFAULT 'local' CHECK(connection_type IN ('local', 'docker', 'remote'));
+
+  UPDATE schema_version SET version = 9;
   `,
 ];

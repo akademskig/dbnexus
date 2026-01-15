@@ -181,9 +181,18 @@ export function ScanConnectionsDialog({
                 const defaultDb = isPostgres ? 'postgres' : 'mysql';
                 const defaultUser = isPostgres ? 'postgres' : 'root';
 
+                // Determine connection type from source
+                const connectionType =
+                    conn.source === 'docker' || conn.source === 'docker-compose'
+                        ? 'docker'
+                        : conn.source === 'port-scan' || conn.source === 'sqlite-file'
+                          ? 'local'
+                          : 'local'; // env-file and config-file default to local
+
                 await connectionsApi.create({
                     name: conn.name,
                     engine: conn.engine,
+                    connectionType,
                     host: isSqlite ? '' : conn.host || 'localhost',
                     port: isSqlite ? 0 : conn.port || defaultPort,
                     // For SQLite, database field stores the file path
@@ -323,7 +332,7 @@ export function ScanConnectionsDialog({
                                         disabled={newConnectionIndices.length === 0}
                                     >
                                         {selectedConnections.size === newConnectionIndices.length &&
-                                            newConnectionIndices.length > 0
+                                        newConnectionIndices.length > 0
                                             ? 'Deselect All'
                                             : 'Select All New'}
                                     </Button>
@@ -350,8 +359,8 @@ export function ScanConnectionsDialog({
                                                     bgcolor: alreadyExists
                                                         ? 'action.disabledBackground'
                                                         : selectedConnections.has(index)
-                                                            ? 'action.selected'
-                                                            : 'background.paper',
+                                                          ? 'action.selected'
+                                                          : 'background.paper',
                                                     opacity: alreadyExists ? 0.7 : 1,
                                                 }}
                                             >

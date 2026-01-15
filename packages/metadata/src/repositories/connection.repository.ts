@@ -9,6 +9,7 @@ import type {
     ConnectionUpdateInput,
     ConnectionTag,
     DatabaseEngine,
+    ConnectionType,
 } from '@dbnexus/shared';
 import { MetadataDatabase } from '../database.js';
 import { encryptPassword, decryptPassword } from '../crypto.js';
@@ -17,6 +18,7 @@ interface ConnectionRow {
     id: string;
     name: string;
     engine: string;
+    connection_type: string;
     host: string;
     port: number;
     database: string;
@@ -42,24 +44,36 @@ export class ConnectionRepository {
     }
 
     /**
+     * Infer connection type from host
+     */
+    private inferConnectionType(host: string): ConnectionType {
+        if (!host || host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
+            return 'local';
+        }
+        return 'remote';
+    }
+
+    /**
      * Create a new connection with password
      */
     create(input: ConnectionCreateInput): ConnectionConfig {
         const id = MetadataDatabase.generateId();
         const now = new Date().toISOString();
         const encryptedPwd = input.password ? encryptPassword(input.password) : null;
+        const connectionType = input.connectionType || this.inferConnectionType(input.host);
 
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, project_id, group_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, project_id, group_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
                 id,
                 input.name,
                 input.engine,
+                connectionType,
                 input.host,
                 input.port,
                 input.database,
@@ -280,6 +294,10 @@ export class ConnectionRepository {
             updates.push('group_id = ?');
             values.push(input.groupId);
         }
+        if (input.connectionType !== undefined) {
+            updates.push('connection_type = ?');
+            values.push(input.connectionType);
+        }
 
         if (updates.length > 0) {
             updates.push('updated_at = ?');
@@ -335,6 +353,7 @@ export class ConnectionRepository {
             id: row.id,
             name: row.name,
             engine: row.engine as DatabaseEngine,
+            connectionType: (row.connection_type as ConnectionType) || 'local',
             host: row.host,
             port: row.port,
             database: row.database,

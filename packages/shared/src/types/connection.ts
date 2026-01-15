@@ -7,6 +7,8 @@ export type ConnectionTag = string;
 
 export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql' | 'mariadb';
 
+export type ConnectionType = 'local' | 'docker' | 'remote';
+
 /**
  * Project - top-level grouping for connections
  */
@@ -115,6 +117,7 @@ export interface ConnectionConfig {
     id: string;
     name: string;
     engine: DatabaseEngine;
+    connectionType: ConnectionType; // local, docker, or remote
     host: string;
     port: number;
     database: string;
@@ -137,6 +140,7 @@ export interface ConnectionConfig {
 export interface ConnectionCreateInput {
     name: string;
     engine: DatabaseEngine;
+    connectionType?: ConnectionType; // If not provided, will be inferred from host
     host: string;
     port: number;
     database: string;
@@ -152,6 +156,7 @@ export interface ConnectionCreateInput {
 
 export interface ConnectionUpdateInput {
     name?: string;
+    connectionType?: ConnectionType;
     host?: string;
     port?: number;
     database?: string;

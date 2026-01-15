@@ -154,6 +154,25 @@ export function ConnectionCard({
                                 color: connection.engine === 'postgres' ? '#6BA3D6' : '#47A3F3',
                             }}
                         />
+                        {connection.connectionType && connection.connectionType !== 'local' && (
+                            <Chip
+                                label={connection.connectionType === 'docker' ? 'Docker' : 'Remote'}
+                                size="small"
+                                sx={{
+                                    height: 18,
+                                    fontSize: 9,
+                                    fontWeight: 600,
+                                    bgcolor:
+                                        connection.connectionType === 'docker'
+                                            ? 'rgba(0, 150, 214, 0.15)'
+                                            : 'rgba(255, 152, 0, 0.15)',
+                                    color:
+                                        connection.connectionType === 'docker'
+                                            ? 'rgb(0, 150, 214)'
+                                            : 'rgb(255, 152, 0)',
+                                }}
+                            />
+                        )}
                         {connection.readOnly && (
                             <Chip
                                 label="READ-ONLY"
