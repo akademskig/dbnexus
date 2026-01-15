@@ -401,7 +401,7 @@ export function ConnectionManagementPage() {
                     schemas={schemas}
                     isLoading={loadingSchemas}
                     initialSchema={selectedSchema}
-                    onSchemaViewed={() => {}}
+                    onSchemaViewed={() => { }}
                     onManageTable={handleManageTable}
                     onSchemaChange={handleSchemaChange}
                 />

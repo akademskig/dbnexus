@@ -431,7 +431,7 @@ export function Layout() {
                                                     title={
                                                         isOffline
                                                             ? connHealth?.error ||
-                                                              'Connection is offline'
+                                                            'Connection is offline'
                                                             : ''
                                                     }
                                                     placement="right"
