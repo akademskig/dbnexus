@@ -428,12 +428,7 @@ export function Layout() {
                                             return (
                                                 <Tooltip
                                                     key={conn.id}
-                                                    title={
-                                                        isOffline
-                                                            ? connHealth?.error ||
-                                                              'Connection is offline'
-                                                            : ''
-                                                    }
+                                                    title={isOffline ? 'Offline' : ''}
                                                     placement="right"
                                                 >
                                                     <span>
@@ -543,11 +538,7 @@ export function Layout() {
                                     return (
                                         <Tooltip
                                             key={conn.id}
-                                            title={
-                                                isOffline
-                                                    ? connHealth?.error || 'Connection is offline'
-                                                    : ''
-                                            }
+                                            title={isOffline ? 'Offline' : ''}
                                             placement="right"
                                         >
                                             <span>
