@@ -115,9 +115,9 @@ function AppearanceTab() {
                         sx={{
                             px: 2,
                             '&.Mui-selected': {
-                                bgcolor: 'rgba(255, 193, 7, 0.15)',
-                                color: '#fbbf24',
-                                '&:hover': { bgcolor: 'rgba(255, 193, 7, 0.25)' },
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                '&:hover': { bgcolor: 'primary.dark' },
                             },
                         }}
                     >
@@ -129,9 +129,9 @@ function AppearanceTab() {
                         sx={{
                             px: 2,
                             '&.Mui-selected': {
-                                bgcolor: 'rgba(99, 102, 241, 0.15)',
-                                color: '#818cf8',
-                                '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.25)' },
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                '&:hover': { bgcolor: 'primary.dark' },
                             },
                         }}
                     >

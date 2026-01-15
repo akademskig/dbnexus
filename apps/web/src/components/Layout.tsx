@@ -195,7 +195,7 @@ export function Layout() {
                 <Divider />
 
                 {/* Main Navigation - Fixed at top */}
-                <List sx={{ px: collapsed ? 1 : 1.5, py: 2 }}>
+                <List disablePadding sx={{ px: collapsed ? 1 : 1.5, pt: 2 }}>
                     {navItems.map(({ to, icon, label }) => {
                         const isActive =
                             location.pathname === to || location.pathname.startsWith(to + '/');
