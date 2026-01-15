@@ -7,12 +7,14 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import EditIcon from '@mui/icons-material/Edit';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ConnectionConfig } from '@dbnexus/shared';
+import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
-import { connectionsApi, schemaApi } from '../../lib/api';
+import { connectionsApi, schemaApi, projectsApi, groupsApi } from '../../lib/api';
+import { ConnectionFormDialog } from '../ProjectsPage/Dialogs';
 
 interface StatCardProps {
     icon: React.ReactNode;
@@ -78,6 +80,7 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
         null
     );
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     // Fetch total table count across all schemas
     const { data: totalTables = 0, isLoading: loadingTables } = useQuery({
@@ -92,6 +95,17 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
             return total;
         },
         enabled: !!connection?.id && schemas.length > 0,
+    });
+
+    // Fetch projects and groups for the edit dialog
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: projectsApi.getAll,
+    });
+
+    const { data: groups = [] } = useQuery<DatabaseGroup[]>({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
     });
 
     const handleTest = async () => {
@@ -221,7 +235,7 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                     </Button>
                     <Button
                         variant="outlined"
-                        startIcon={<EditIcon />}
+                        startIcon={<AccountTreeIcon />}
                         onClick={() =>
                             navigate(
                                 `/schema-diagram?connection=${connection?.id}${connection?.defaultSchema ? `&schema=${connection.defaultSchema}` : ''}`
@@ -229,6 +243,13 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                         }
                     >
                         Open Schema Diagram
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() => setEditDialogOpen(true)}
+                    >
+                        Edit Connection
                     </Button>
                     <Button
                         variant="outlined"
@@ -240,6 +261,15 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                     </Button>
                 </Box>
             </GlassCard>
+
+            {/* Edit Connection Dialog */}
+            <ConnectionFormDialog
+                open={editDialogOpen}
+                connection={connection || null}
+                projects={projects}
+                groups={groups}
+                onClose={() => setEditDialogOpen(false)}
+            />
         </Box>
     );
 }
