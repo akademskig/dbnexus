@@ -27,14 +27,12 @@ import { ActivityItem } from './ActivityItem';
 import { SyncGroupRow } from './SyncGroupRow';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
+import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 
 export function DashboardPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [connections, setConnections] = useState<ConnectionConfig[]>([]);
-    const [connectionStatuses, setConnectionStatuses] = useState<
-        Record<string, 'online' | 'offline' | 'checking'>
-    >({});
     const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
     const [syncGroups, setSyncGroups] = useState<InstanceGroup[]>([]);
     const [syncStatuses, setSyncStatuses] = useState<Record<string, InstanceGroupSyncStatus>>({});
@@ -42,18 +40,8 @@ export function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const checkConnectionStatus = async (id: string) => {
-        setConnectionStatuses((prev) => ({ ...prev, [id]: 'checking' }));
-        try {
-            const result = await connectionsApi.getStatus(id);
-            setConnectionStatuses((prev) => ({
-                ...prev,
-                [id]: result.connected ? 'online' : 'offline',
-            }));
-        } catch {
-            setConnectionStatuses((prev) => ({ ...prev, [id]: 'offline' }));
-        }
-    };
+    // Use global connection health store
+    const { healthStatus, checkAllConnections } = useConnectionHealthStore();
 
     // Check sync status for a group in background
     const checkGroupSyncStatus = async (groupId: string) => {
@@ -81,10 +69,8 @@ export function DashboardPage() {
             setHistory(hist);
             setSyncGroups(groups);
 
-            // Check status for each connection (in background)
-            conns.forEach((conn) => {
-                checkConnectionStatus(conn.id);
-            });
+            // Check health for all connections using global store
+            checkAllConnections(conns.map((c) => c.id));
 
             // Check sync status for each group with sync enabled (in background)
             groups.forEach((group) => {
@@ -302,15 +288,23 @@ export function DashboardPage() {
                                 size="small"
                             />
                         ) : (
-                            connections.map((conn, i) => (
-                                <ConnectionRow
-                                    key={conn.id}
-                                    connection={conn}
-                                    status={connectionStatuses[conn.id] || 'checking'}
-                                    isFirst={i === 0}
-                                    onClick={() => navigate(`/query/${conn.id}`)}
-                                />
-                            ))
+                            connections.map((conn, i) => {
+                                const health = healthStatus[conn.id];
+                                const status: 'online' | 'offline' | 'checking' = health
+                                    ? health.isOnline
+                                        ? 'online'
+                                        : 'offline'
+                                    : 'checking';
+                                return (
+                                    <ConnectionRow
+                                        key={conn.id}
+                                        connection={conn}
+                                        status={status}
+                                        isFirst={i === 0}
+                                        onClick={() => navigate(`/query/${conn.id}`)}
+                                    />
+                                );
+                            })
                         )}
                     </GlassCard>
                 </Grid>
