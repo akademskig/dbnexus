@@ -18,19 +18,67 @@ A **local-first database management tool** with a modern web UI, CLI, and produc
 - 🎨 **Customizable Theme** - Configure card styles, colors, and opacity in Settings
 - 📜 **Query History** - Track and replay previous queries
 
-## 🚀 Getting Started
+## 🚀 Quick Start
+
+### Installation
+
+Install DB Nexus globally using npm:
+
+```bash
+npm install -g dbnexus
+```
+
+Or run directly with npx (no installation required):
+
+```bash
+npx dbnexus
+```
+
+### Usage
+
+Start DB Nexus:
+
+```bash
+dbnexus
+```
+
+This will:
+
+- Start the server on `http://localhost:3001`
+- Automatically open your browser
+- Store metadata in `~/.dbnexus/metadata.db`
+
+#### Options
+
+```bash
+dbnexus --port 8080           # Custom port
+dbnexus --data-dir /path      # Custom data directory
+dbnexus --no-open             # Don't open browser
+dbnexus --help                # Show all options
+```
+
+### Supported Databases
+
+- PostgreSQL
+- MySQL
+- MariaDB
+- SQLite
+
+---
+
+## 🛠️ Development Setup
 
 ### Prerequisites
 
 - Node.js 18+
 - pnpm
-- PostgreSQL (for target databases)
+- PostgreSQL/MySQL/MariaDB (for target databases)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/akademskig/dbnexus.git
+git clone https://github.com/dbnexus/dbnexus.git
 cd dbnexus
 
 # Install dependencies
@@ -40,7 +88,7 @@ pnpm install
 pnpm build
 ```
 
-### Running the Application
+### Running in Development
 
 ```bash
 # Start development servers (API + Web UI)

@@ -21,13 +21,30 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _databaseGroupRepository!: DatabaseGroupRepository;
 
     onModuleInit() {
-        // Get workspace path from environment or use current directory
-        const workspacePath = process.env['DBNEXUS_WORKSPACE'] ?? process.cwd();
-        const dbnexusDir = path.join(workspacePath, '.dbnexus');
+        // Get data directory path
+        // Priority: DBNEXUS_DATA_DIR > DBNEXUS_WORKSPACE > user home directory
+        let dbnexusDir: string;
 
-        // Ensure .dbnexus directory exists
+        if (process.env['DBNEXUS_DATA_DIR']) {
+            // Explicit data directory
+            dbnexusDir = process.env['DBNEXUS_DATA_DIR'];
+        } else if (process.env['DBNEXUS_WORKSPACE']) {
+            // Legacy workspace directory
+            dbnexusDir = path.join(process.env['DBNEXUS_WORKSPACE'], '.dbnexus');
+        } else {
+            // Default to user home directory for global installation
+            const homeDir =
+                process.env['HOME'] ||
+                process.env['USERPROFILE'] ||
+                process.env['HOMEPATH'] ||
+                process.cwd();
+            dbnexusDir = path.join(homeDir, '.dbnexus');
+        }
+
+        // Ensure directory exists
         if (!fs.existsSync(dbnexusDir)) {
             fs.mkdirSync(dbnexusDir, { recursive: true });
+            this.logger.log(`📁 Created data directory at ${dbnexusDir}`);
         }
 
         const dbPath = path.join(dbnexusDir, 'metadata.db');

@@ -1,16 +1,45 @@
 {
-    "name": "@dbnexus/cli",
+    "name": "dbnexus",
     "version": "0.1.0",
-    "private": true,
+    "private": false,
     "type": "module",
+    "description": "Database management tool with web UI - like Prisma Studio for any database",
+    "keywords": [
+        "database",
+        "postgres",
+        "mysql",
+        "mariadb",
+        "sqlite",
+        "database-management",
+        "schema-migration",
+        "data-sync",
+        "database-tool",
+        "cli"
+    ],
+    "homepage": "https://github.com/dbnexus/dbnexus",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dbnexus/dbnexus.git"
+    },
+    "bugs": {
+        "url": "https://github.com/dbnexus/dbnexus/issues"
+    },
+    "author": "DB Nexus Team",
+    "license": "MIT",
     "bin": {
         "dbnexus": "./dist/index.js"
     },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch",
         "start": "node dist/index.js",
-        "clean": "rm -rf dist"
+        "clean": "rm -rf dist",
+        "prepublishOnly": "pnpm build"
     },
     "dependencies": {
         "@dbnexus/connectors": "workspace:*",
@@ -18,6 +47,7 @@
         "@dbnexus/shared": "workspace:*",
         "chalk": "^5.3.0",
         "commander": "^12.1.0",
+        "open": "^10.1.0",
         "ora": "^8.1.1"
     },
     "devDependencies": {

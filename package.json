@@ -12,6 +12,7 @@
     "packageManager": "pnpm@9.15.0",
     "scripts": {
         "build": "pnpm -r build",
+        "build:package": "./scripts/build-package.sh",
         "dev": "pnpm -r --parallel dev",
         "test": "pnpm -r test:run",
         "test:web": "pnpm --filter @dbnexus/web test",

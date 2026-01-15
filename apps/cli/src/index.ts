@@ -13,15 +13,32 @@ program
     .description('A local-first database management CLI with web UI')
     .version('0.1.0');
 
+// Default action - start the UI
+program
+    .option('-p, --port <port>', 'Port to run on', '3001')
+    .option('--no-open', 'Do not open browser automatically')
+    .option('--data-dir <path>', 'Custom data directory for metadata')
+    .action((options) => {
+        // If no command is specified, start the UI
+        if (
+            process.argv.length === 2 ||
+            process.argv.slice(2).every((arg) => arg.startsWith('-'))
+        ) {
+            uiCommand(options);
+        }
+    });
+
 // Init command
 program.command('init').description('Initialize a new DB Nexus workspace').action(initCommand);
 
-// UI command
+// Start/UI command (explicit)
 program
-    .command('ui')
-    .description('Start the web UI')
-    .option('-p, --port <port>', 'API port', '3001')
-    .option('--ui-port <port>', 'Web UI port', '5173')
+    .command('start')
+    .alias('ui')
+    .description('Start DB Nexus (default command)')
+    .option('-p, --port <port>', 'Port to run on', '3001')
+    .option('--no-open', 'Do not open browser automatically')
+    .option('--data-dir <path>', 'Custom data directory for metadata')
     .action(uiCommand);
 
 // Connect commands
