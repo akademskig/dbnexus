@@ -67,12 +67,16 @@ function connectionExists(discovered: DiscoveredConnection, existing: Connection
             // For SQLite, compare by filepath (database field stores the path)
             return conn.engine === 'sqlite' && conn.database === discovered.filepath;
         }
-        // For other engines, compare by engine, host, port, database
+        // For other engines, compare by host and port only
+        // This catches the same database whether found via port scan or Docker
+        const discoveredHost = discovered.host || 'localhost';
+        const connHost = conn.host || 'localhost';
+        // Normalize localhost variants
+        const normalizeHost = (h: string) =>
+            h === '127.0.0.1' || h === '0.0.0.0' ? 'localhost' : h;
         return (
-            conn.engine === discovered.engine &&
-            conn.host === (discovered.host || 'localhost') &&
-            conn.port === discovered.port &&
-            conn.database === discovered.database
+            normalizeHost(connHost) === normalizeHost(discoveredHost) &&
+            conn.port === discovered.port
         );
     });
 }

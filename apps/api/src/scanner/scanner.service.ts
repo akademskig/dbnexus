@@ -656,24 +656,52 @@ export class ScannerService {
     private deduplicateConnections(connections: DiscoveredConnection[]): DiscoveredConnection[] {
         const seen = new Map<string, DiscoveredConnection>();
 
+        // Normalize localhost variants
+        const normalizeHost = (host: string | undefined): string => {
+            if (!host || host === '127.0.0.1' || host === '0.0.0.0') return 'localhost';
+            return host;
+        };
+
+        // Source priority: docker > docker-compose > env-file > config-file > port-scan
+        const sourceRank: Record<string, number> = {
+            docker: 5,
+            'docker-compose': 4,
+            'env-file': 3,
+            'config-file': 2,
+            'port-scan': 1,
+            'sqlite-file': 5,
+        };
+
         for (const conn of connections) {
-            // Create a unique key based on connection properties
+            // Create a unique key based on host + port only
+            // This catches the same database found via different methods
             const key = conn.filepath
                 ? `sqlite:${conn.filepath}`
-                : `${conn.engine}:${conn.host}:${conn.port}:${conn.database}`;
+                : `${normalizeHost(conn.host)}:${conn.port}`;
 
             const existing = seen.get(key);
             if (!existing) {
                 seen.set(key, conn);
             } else {
-                // Keep the one with higher confidence or more details
-                const confidenceRank = { high: 3, medium: 2, low: 1 };
-                if (confidenceRank[conn.confidence] > confidenceRank[existing.confidence]) {
+                // Keep the one from a better source (Docker > port-scan, etc.)
+                const existingRank = sourceRank[existing.source] || 0;
+                const newRank = sourceRank[conn.source] || 0;
+
+                if (newRank > existingRank) {
+                    // New connection is from a better source, replace
                     seen.set(key, conn);
-                } else if (conn.password && !existing.password) {
-                    // Prefer the one with credentials
-                    seen.set(key, conn);
+                } else if (newRank === existingRank) {
+                    // Same source priority, prefer one with more info
+                    const confidenceRank = { high: 3, medium: 2, low: 1 };
+                    if (confidenceRank[conn.confidence] > confidenceRank[existing.confidence]) {
+                        seen.set(key, conn);
+                    } else if (conn.password && !existing.password) {
+                        seen.set(key, conn);
+                    } else if (conn.database && !existing.database) {
+                        seen.set(key, conn);
+                    }
                 }
+                // Otherwise keep the existing one
             }
         }
 
