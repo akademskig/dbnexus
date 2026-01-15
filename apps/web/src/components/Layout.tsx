@@ -396,7 +396,7 @@ export function Layout() {
                             <Divider sx={{ my: 0.5 }} />
                             <ListItemButton
                                 onClick={toggleConnections}
-                                sx={{ px: 2 }}
+                                sx={{ px: 2, mb: 0 }}
                                 selected={isConnectionsActive}
                             >
                                 <ListItemIcon
@@ -419,7 +419,7 @@ export function Layout() {
                                     <ExpandMoreIcon fontSize="small" />
                                 )}
                             </ListItemButton>
-                            <Collapse in={connectionsExpanded} sx={{ mt: 0 }}>
+                            <Collapse in={connectionsExpanded}>
                                 <List disablePadding>
                                     {loadingConnections ? (
                                         <Box sx={{ py: 2, textAlign: 'center' }}>
