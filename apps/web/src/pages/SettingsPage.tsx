@@ -514,7 +514,7 @@ function AboutTab() {
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Button
                         variant="outlined"
-                        href="https://github.com/dbnexus/dbnexus"
+                        href="https://github.com/akademskig/dbnexus"
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
@@ -538,7 +538,7 @@ function AboutTab() {
                     </Button>
                     <Button
                         variant="outlined"
-                        href="https://github.com/dbnexus/dbnexus/issues"
+                        href="https://github.com/akademskig/dbnexus/issues"
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{

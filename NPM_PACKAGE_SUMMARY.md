@@ -118,6 +118,7 @@ dbnexus --help
     ```
 
 5. **Verify**:
+
     ```bash
     npm install -g dbnexus
     dbnexus --version
@@ -286,4 +287,4 @@ For questions or issues, see:
 
 - INSTALLATION.md (end users)
 - PUBLISHING.md (maintainers)
-- GitHub Issues: https://github.com/dbnexus/dbnexus/issues
+- GitHub Issues: <https://github.com/akademskig/dbnexus/issues>

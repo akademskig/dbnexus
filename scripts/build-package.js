@@ -240,13 +240,13 @@ const packageJson = {
         'database-tool',
         'cli',
     ],
-    homepage: 'https://github.com/dbnexus/dbnexus',
+    homepage: 'https://github.com/akademskig/dbnexus',
     repository: {
         type: 'git',
-        url: 'https://github.com/dbnexus/dbnexus.git',
+        url: 'https://github.com/akademskig/dbnexus.git',
     },
     bugs: {
-        url: 'https://github.com/dbnexus/dbnexus/issues',
+        url: 'https://github.com/akademskig/dbnexus/issues',
     },
     author: 'DB Nexus Team',
     license: 'MIT',

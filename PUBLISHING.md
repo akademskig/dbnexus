@@ -93,7 +93,7 @@ dbnexus
 
 ### 7. Create GitHub Release
 
-1. Go to https://github.com/dbnexus/dbnexus/releases
+1. Go to https://github.com/akademskig/dbnexus/releases
 2. Click "Draft a new release"
 3. Create a new tag (e.g., `v0.2.0`)
 4. Title: "DB Nexus v0.2.0"
@@ -128,7 +128,7 @@ npx dbnexus
 
 ## 📚 Documentation
 
-- [Installation Guide](https://github.com/dbnexus/dbnexus/blob/main/INSTALLATION.md)
+- [Installation Guide](https://github.com/akademskig/dbnexus/blob/main/INSTALLATION.md)
 - [Full Documentation](https://docs.dbnexus.dev)
 
 ````
@@ -264,4 +264,4 @@ npm install -g dbnexus@beta
 If you encounter issues during publishing:
 
 - 📧 Email: admin@dbnexus.dev
-- 🐛 Issues: https://github.com/dbnexus/dbnexus/issues
+- 🐛 Issues: https://github.com/akademskig/dbnexus/issues

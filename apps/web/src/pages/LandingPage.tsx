@@ -242,7 +242,7 @@ export function LandingPage() {
                                     textTransform: 'none',
                                     borderRadius: 2,
                                 }}
-                                href="https://github.com/dbnexus/db-nexus"
+                                href="https://github.com/akademskig/dbnexus"
                                 target="_blank"
                             >
                                 View on GitHub
@@ -412,7 +412,7 @@ export function LandingPage() {
                             <Typography
                                 variant="body2"
                                 component="a"
-                                href="https://github.com/dbnexus/db-nexus"
+                                href="https://github.com/akademskig/dbnexus"
                                 target="_blank"
                                 sx={{
                                     color: 'text.secondary',

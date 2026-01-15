@@ -78,7 +78,7 @@ dbnexus --help                # Show all options
 
 ```bash
 # Clone the repository
-git clone https://github.com/dbnexus/dbnexus.git
+git clone https://github.com/akademskig/dbnexus.git
 cd dbnexus
 
 # Install dependencies

@@ -93,7 +93,7 @@ pnpm install
 pnpm build
 ```
 
-2. **Create the distributable package:**
+1. **Create the distributable package:**
 
 ```bash
 pnpm build:package
@@ -132,7 +132,7 @@ npm unlink -g dbnexus
 npm login
 ```
 
-2. **Publish:**
+1. **Publish:**
 
 ```bash
 cd dist-package
