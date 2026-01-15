@@ -149,20 +149,20 @@ Total package size: ~22MB
 ### How It Works
 
 1. **User runs `dbnexus`**
-   - Entry point (`dist/index.js`) is executed
-   - Parses CLI arguments (--port, --data-dir, --no-open)
-   - Dynamically imports the bundled API server (`dist/api.js`)
+    - Entry point (`dist/index.js`) is executed
+    - Parses CLI arguments (--port, --data-dir, --no-open)
+    - Dynamically imports the bundled API server (`dist/api.js`)
 
 2. **API server starts**
-   - Initializes metadata database in `~/.dbnexus/`
-   - Detects and serves web UI static files from `dist/web/`
-   - Sets up API routes under `/api` prefix
-   - Implements SPA fallback for React Router
+    - Initializes metadata database in `~/.dbnexus/`
+    - Detects and serves web UI static files from `dist/web/`
+    - Sets up API routes under `/api` prefix
+    - Implements SPA fallback for React Router
 
 3. **Browser opens**
-   - Entry point uses `open` package to launch browser
-   - User accesses `http://localhost:3001`
-   - Web UI loads and connects to API
+    - Entry point uses `open` package to launch browser
+    - User accesses `http://localhost:3001`
+    - Web UI loads and connects to API
 
 ### Build Process
 

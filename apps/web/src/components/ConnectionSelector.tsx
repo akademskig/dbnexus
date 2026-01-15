@@ -76,21 +76,27 @@ export function ConnectionSelector({
         <FormControl size={size} sx={{ minWidth }} disabled={disabled || isLoading}>
             <InputLabel>{label}</InputLabel>
             <Select value={value} onChange={handleChange} label={label}>
-                {sortedConnections.map((conn) => {
-                    const isDisabled = isConnectionDisabled(conn);
-                    return (
-                        <MenuItem
-                            key={conn.id}
-                            value={conn.id}
-                            disabled={isDisabled}
-                            sx={{
-                                opacity: isDisabled ? 0.5 : 1,
-                            }}
-                        >
-                            {conn.name}
-                        </MenuItem>
-                    );
-                })}
+                {sortedConnections.length === 0 && !isLoading ? (
+                    <MenuItem disabled value="">
+                        No connections available
+                    </MenuItem>
+                ) : (
+                    sortedConnections.map((conn) => {
+                        const isDisabled = isConnectionDisabled(conn);
+                        return (
+                            <MenuItem
+                                key={conn.id}
+                                value={conn.id}
+                                disabled={isDisabled}
+                                sx={{
+                                    opacity: isDisabled ? 0.5 : 1,
+                                }}
+                            >
+                                {conn.name}
+                            </MenuItem>
+                        );
+                    })
+                )}
             </Select>
         </FormControl>
     );

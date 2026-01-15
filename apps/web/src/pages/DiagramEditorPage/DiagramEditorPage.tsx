@@ -585,6 +585,21 @@ export function DiagramEditorPage() {
 
     // Render diagram canvas content - extracted to avoid nested ternary
     const renderDiagramCanvas = () => {
+        // Show empty state when no connections exist
+        if (!loadingConnections && connections.length === 0) {
+            return (
+                <EmptyState
+                    icon={<StorageIcon />}
+                    title="No connections configured"
+                    description="Add a database connection to start using the schema diagram."
+                    action={{
+                        label: 'Go to Projects',
+                        onClick: () => (window.location.href = '/projects'),
+                    }}
+                />
+            );
+        }
+
         if (!selectedConnectionId) {
             return (
                 <EmptyState
