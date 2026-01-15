@@ -140,6 +140,7 @@ export function DiagramEditorTab({
 
     // Fullscreen state
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [refreshCounter, setRefreshCounter] = useState(0);
 
     // Dialog states
     const [createTableOpen, setCreateTableOpen] = useState(false);
@@ -200,6 +201,7 @@ export function DiagramEditorTab({
         onSuccess: () => {
             refetchTables();
             queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
+            setRefreshCounter((value) => value + 1);
         },
     });
 
@@ -358,7 +360,7 @@ export function DiagramEditorTab({
         };
 
         loadTableDetails();
-    }, [tables, connectionId, selectedSchema, theme.palette]);
+    }, [tables, connectionId, selectedSchema, theme.palette, refreshCounter]);
 
     // Handle connection (creating FK)
     const onConnect: OnConnect = useCallback((connection) => {
@@ -386,22 +388,11 @@ export function DiagramEditorTab({
         [toast]
     );
 
-    const handleOpenDeleteColumn = useCallback(
-        (tableId: string, columnId: string) => {
-            setCurrentTableId(tableId);
-            const node = nodes.find((n) => n.id === tableId);
-            if (node) {
-                const column = (node.data as EditableTableNodeData).columns.find(
-                    (c) => c.id === columnId
-                );
-                if (column) {
-                    setCurrentColumn(column);
-                    setDeleteColumnOpen(true);
-                }
-            }
-        },
-        [nodes]
-    );
+    const handleOpenDeleteColumn = useCallback((tableId: string, column: EditableColumn) => {
+        setCurrentTableId(tableId);
+        setCurrentColumn(column);
+        setDeleteColumnOpen(true);
+    }, []);
 
     const handleOpenEditTable = useCallback(
         (_tableId: string) => {
@@ -851,8 +842,8 @@ export function DiagramEditorTab({
                     <Alert severity="error" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             <strong>Warning:</strong> This will permanently delete the column{' '}
-                            <strong>&quot;{currentColumn?.name}&quot;</strong> from table{' '}
-                            <strong>&quot;{currentTableId}&quot;</strong>.
+                            <strong>&quot;{currentColumn?.name}&quot;</strong> and ALL data within
+                            it.
                         </Typography>
                         <Typography variant="body2">This action cannot be undone.</Typography>
                     </Alert>

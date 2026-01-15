@@ -329,22 +329,11 @@ export function DiagramEditorPage() {
         setEditColumnOpen(true);
     }, []);
 
-    const handleOpenDeleteColumn = useCallback(
-        (tableId: string, columnId: string) => {
-            setCurrentTableId(tableId);
-            const node = nodes.find((n) => n.id === tableId);
-            if (node) {
-                const col = (node.data as EditableTableNodeData).columns.find(
-                    (c) => c.id === columnId
-                );
-                if (col) {
-                    setCurrentColumn(col);
-                    setDeleteColumnOpen(true);
-                }
-            }
-        },
-        [nodes]
-    );
+    const handleOpenDeleteColumn = useCallback((tableId: string, column: EditableColumn) => {
+        setCurrentTableId(tableId);
+        setCurrentColumn(column);
+        setDeleteColumnOpen(true);
+    }, []);
 
     const handleOpenEditTable = useCallback((_tableId: string) => {
         // Could implement table rename
@@ -1223,20 +1212,28 @@ export function DiagramEditorPage() {
                 </DialogActions>
             </Dialog>
 
-            {/* Delete Column Confirmation */}
-            <Dialog open={deleteColumnOpen} onClose={() => setDeleteColumnOpen(false)}>
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningIcon color="error" />
+            {/* Delete Column Dialog */}
+            <Dialog
+                open={deleteColumnOpen}
+                onClose={() => setDeleteColumnOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}
+                >
+                    <WarningIcon />
                     Delete Column
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                        This action cannot be undone. All data in this column will be lost.
+                    <Alert severity="error" sx={{ mt: 1 }}>
+                        <Typography variant="body2" gutterBottom>
+                            <strong>Warning:</strong> This will permanently delete the column{' '}
+                            <strong>&quot;{currentColumn?.name}&quot;</strong> and ALL data within
+                            it.
+                        </Typography>
+                        <Typography variant="body2">This action cannot be undone.</Typography>
                     </Alert>
-                    <Typography>
-                        Are you sure you want to delete column &quot;{currentColumn?.name}&quot;
-                        from table &quot;{currentTableId}&quot;?
-                    </Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>

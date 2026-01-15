@@ -39,7 +39,7 @@ export interface EditableTableNodeData extends Record<string, unknown> {
     isNew?: boolean;
     onAddColumn?: (tableId: string) => void;
     onEditColumn?: (tableId: string, column: EditableColumn) => void;
-    onDeleteColumn?: (tableId: string, columnId: string) => void;
+    onDeleteColumn?: (tableId: string, column: EditableColumn) => void;
     onEditTable?: (tableId: string) => void;
     onDeleteTable?: (tableId: string) => void;
 }
@@ -206,7 +206,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                 </Box>
 
                 {/* Columns */}
-                <Box sx={{ maxHeight: 350, overflow: 'visible' }}>
+                <Box sx={{ maxHeight: 600, overflow: 'visible' }}>
                     {columns.length === 0 ? (
                         <Box
                             sx={{
@@ -339,7 +339,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                                     size="small"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        onDeleteColumn?.(id, column.id);
+                                                        onDeleteColumn?.(id, column);
                                                     }}
                                                     sx={{ p: 0.25, color: 'error.main' }}
                                                 >
