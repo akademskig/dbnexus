@@ -34,18 +34,6 @@ import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 
-const PROJECT_COLORS = [
-    '#ef4444', // red
-    '#f97316', // orange
-    '#eab308', // yellow
-    '#22c55e', // green
-    '#14b8a6', // teal
-    '#0ea5e9', // sky
-    '#6366f1', // indigo
-    '#a855f7', // purple
-    '#ec4899', // pink
-];
-
 function formatDate(date: Date | string): string {
     const d = new Date(date);
     return d.toLocaleString();
@@ -111,8 +99,7 @@ export function QueryHistoryTab() {
         if (!conn) return { name: 'Unknown', color: undefined };
 
         const project = projects.find((p) => p.id === conn.projectId);
-        const colorIndex = project ? projects.indexOf(project) % PROJECT_COLORS.length : -1;
-        const color = colorIndex >= 0 ? PROJECT_COLORS[colorIndex] : undefined;
+        const color = project?.color;
 
         return { name: conn.name, color };
     };

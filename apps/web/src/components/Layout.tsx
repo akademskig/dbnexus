@@ -99,21 +99,38 @@ export function Layout() {
     useNavigationShortcuts(navigate);
 
     useEffect(() => {
-        groupsApi
-            .getAll()
-            .then(setGroups)
-            .catch(() => setGroups([]))
-            .finally(() => setLoadingGroups(false));
+        // Fetch groups and connections, then filter groups with more than 1 connection
+        Promise.all([groupsApi.getAll(), connectionsApi.getAll()])
+            .then(([allGroups, allConnections]) => {
+                // Count connections per group
+                const connectionCountByGroup = allConnections.reduce(
+                    (acc, conn) => {
+                        if (conn.groupId) {
+                            acc[conn.groupId] = (acc[conn.groupId] || 0) + 1;
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, number>
+                );
 
-        connectionsApi
-            .getAll()
-            .then((conns) => {
-                setConnections(conns);
+                // Filter groups that have more than 1 connection
+                const filteredGroups = allGroups.filter(
+                    (group) => (connectionCountByGroup[group.id] || 0) > 1
+                );
+
+                setGroups(filteredGroups);
+                setConnections(allConnections);
                 // Check health of all connections in background
-                checkAllConnections(conns.map((c) => c.id));
+                checkAllConnections(allConnections.map((c) => c.id));
             })
-            .catch(() => setConnections([]))
-            .finally(() => setLoadingConnections(false));
+            .catch(() => {
+                setGroups([]);
+                setConnections([]);
+            })
+            .finally(() => {
+                setLoadingGroups(false);
+                setLoadingConnections(false);
+            });
     }, [checkAllConnections]);
 
     const isSyncActive =
