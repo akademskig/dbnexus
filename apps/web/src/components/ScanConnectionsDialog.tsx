@@ -90,38 +90,37 @@ export function ScanConnectionsDialog({
     const [showErrors, setShowErrors] = useState(false);
     const [addingConnections, setAddingConnections] = useState(false);
 
-    // Fetch existing connections to filter out already added ones
+    // Fetch existing connections to check for duplicates
     const { data: existingConnections = [] } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
 
-    // Filter scan results to only show new connections
-    const availableConnections = useMemo(() => {
-        if (!scanResult) return [];
-        return scanResult.connections.filter(
-            (conn) => !connectionExists(conn, existingConnections)
-        );
-    }, [scanResult, existingConnections]);
+    // Check if a connection at a given index already exists
+    const isExistingConnection = (index: number): boolean => {
+        if (!scanResult || !scanResult.connections[index]) return false;
+        return connectionExists(scanResult.connections[index], existingConnections);
+    };
 
-    // Count how many were filtered out
-    const existingCount = useMemo(() => {
-        if (!scanResult) return 0;
-        return scanResult.connections.length - availableConnections.length;
-    }, [scanResult, availableConnections]);
+    // Get indices of new (non-existing) connections
+    const newConnectionIndices = useMemo(() => {
+        if (!scanResult) return [];
+        return scanResult.connections
+            .map((conn, i) => (connectionExists(conn, existingConnections) ? -1 : i))
+            .filter((i) => i >= 0);
+    }, [scanResult, existingConnections]);
 
     const scanMutation = useMutation({
         mutationFn: () => scannerApi.scanAll(),
         onSuccess: (result) => {
             setScanResult(result);
             // Auto-select high confidence connections that don't already exist
-            const newConnections = result.connections.filter(
-                (conn) => !connectionExists(conn, existingConnections)
-            );
-            const highConfidence = newConnections
-                .map((c, i) => (c.confidence === 'high' ? i : -1))
+            const highConfidenceNew = result.connections
+                .map((c, i) =>
+                    c.confidence === 'high' && !connectionExists(c, existingConnections) ? i : -1
+                )
                 .filter((i) => i >= 0);
-            setSelectedConnections(new Set(highConfidence));
+            setSelectedConnections(new Set(highConfidenceNew));
         },
         onError: (error: Error) => {
             toast.error(`Scan failed: ${error.message}`);
@@ -135,6 +134,9 @@ export function ScanConnectionsDialog({
     };
 
     const handleToggleConnection = (index: number) => {
+        // Don't allow toggling existing connections
+        if (isExistingConnection(index)) return;
+
         const newSelected = new Set(selectedConnections);
         if (newSelected.has(index)) {
             newSelected.delete(index);
@@ -145,21 +147,23 @@ export function ScanConnectionsDialog({
     };
 
     const handleSelectAll = () => {
-        if (availableConnections.length > 0) {
-            if (selectedConnections.size === availableConnections.length) {
+        if (newConnectionIndices.length > 0) {
+            // Check if all new connections are selected
+            const allNewSelected = newConnectionIndices.every((i) => selectedConnections.has(i));
+            if (allNewSelected) {
                 setSelectedConnections(new Set());
             } else {
-                setSelectedConnections(new Set(availableConnections.map((_, i) => i)));
+                setSelectedConnections(new Set(newConnectionIndices));
             }
         }
     };
 
     const handleAddSelected = async () => {
-        if (availableConnections.length === 0) return;
+        if (!scanResult || selectedConnections.size === 0) return;
 
         setAddingConnections(true);
         const selected = Array.from(selectedConnections)
-            .map((i) => availableConnections[i])
+            .map((i) => scanResult.connections[i])
             .filter((conn) => conn !== undefined);
         let addedCount = 0;
         const errors: string[] = [];
@@ -271,14 +275,6 @@ export function ScanConnectionsDialog({
                                 Found <strong>{scanResult.connections.length}</strong> connection
                                 {scanResult.connections.length !== 1 ? 's' : ''}
                             </Typography>
-                            {existingCount > 0 && (
-                                <Chip
-                                    size="small"
-                                    label={`${existingCount} already added`}
-                                    color="default"
-                                    variant="outlined"
-                                />
-                            )}
                             <Tooltip title="Scan again">
                                 <IconButton size="small" onClick={handleScan}>
                                     <RefreshIcon fontSize="small" />
@@ -311,46 +307,121 @@ export function ScanConnectionsDialog({
                         )}
 
                         {/* Connection List */}
-                        {availableConnections.length > 0 ? (
+                        {scanResult.connections.length > 0 ? (
                             <>
                                 <Box
                                     sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
                                 >
-                                    <Button size="small" onClick={handleSelectAll}>
-                                        {selectedConnections.size === availableConnections.length
+                                    <Button
+                                        size="small"
+                                        onClick={handleSelectAll}
+                                        disabled={newConnectionIndices.length === 0}
+                                    >
+                                        {selectedConnections.size === newConnectionIndices.length &&
+                                        newConnectionIndices.length > 0
                                             ? 'Deselect All'
-                                            : 'Select All'}
+                                            : 'Select All New'}
                                     </Button>
                                     <Typography variant="body2" color="text.secondary">
                                         {selectedConnections.size} selected
+                                        {newConnectionIndices.length <
+                                            scanResult.connections.length &&
+                                            ` (${scanResult.connections.length - newConnectionIndices.length} already added)`}
                                     </Typography>
                                 </Box>
                                 <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-                                    {availableConnections.map((conn, index) => (
-                                        <ListItem
-                                            key={index}
-                                            sx={{
-                                                border: 1,
-                                                borderColor: 'divider',
-                                                borderRadius: 1,
-                                                mb: 1,
-                                                bgcolor: selectedConnections.has(index)
-                                                    ? 'action.selected'
-                                                    : 'background.paper',
-                                            }}
-                                        >
-                                            <ListItemIcon>
-                                                <Checkbox
-                                                    edge="start"
-                                                    checked={selectedConnections.has(index)}
-                                                    onChange={() => handleToggleConnection(index)}
+                                    {scanResult.connections.map((conn, index) => {
+                                        const alreadyExists = isExistingConnection(index);
+                                        return (
+                                            <ListItem
+                                                key={index}
+                                                sx={{
+                                                    border: 1,
+                                                    borderColor: alreadyExists
+                                                        ? 'success.main'
+                                                        : 'divider',
+                                                    borderRadius: 1,
+                                                    mb: 1,
+                                                    bgcolor: alreadyExists
+                                                        ? 'action.disabledBackground'
+                                                        : selectedConnections.has(index)
+                                                          ? 'action.selected'
+                                                          : 'background.paper',
+                                                    opacity: alreadyExists ? 0.7 : 1,
+                                                }}
+                                            >
+                                                <ListItemIcon>
+                                                    <Checkbox
+                                                        edge="start"
+                                                        checked={selectedConnections.has(index)}
+                                                        onChange={() =>
+                                                            handleToggleConnection(index)
+                                                        }
+                                                        disabled={alreadyExists}
+                                                    />
+                                                </ListItemIcon>
+                                                <ListItemIcon sx={{ minWidth: 36 }}>
+                                                    {getEngineIcon(conn.engine)}
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary={
+                                                        <Box
+                                                            sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1,
+                                                            }}
+                                                        >
+                                                            <Typography
+                                                                variant="body1"
+                                                                color={
+                                                                    alreadyExists
+                                                                        ? 'text.secondary'
+                                                                        : 'text.primary'
+                                                                }
+                                                            >
+                                                                {conn.name}
+                                                            </Typography>
+                                                            <Chip
+                                                                label={
+                                                                    ENGINE_LABELS[conn.engine] ||
+                                                                    conn.engine
+                                                                }
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                            {alreadyExists && (
+                                                                <Chip
+                                                                    label="Already added"
+                                                                    size="small"
+                                                                    color="success"
+                                                                    variant="filled"
+                                                                />
+                                                            )}
+                                                        </Box>
+                                                    }
+                                                    secondary={
+                                                        <Box>
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                            >
+                                                                {conn.filepath
+                                                                    ? conn.filepath
+                                                                    : `${conn.host || 'localhost'}:${conn.port || '?'}${conn.database ? `/${conn.database}` : ''}`}
+                                                            </Typography>
+                                                            {conn.details && (
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    color="text.secondary"
+                                                                >
+                                                                    {conn.details}
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
+                                                    }
                                                 />
-                                            </ListItemIcon>
-                                            <ListItemIcon sx={{ minWidth: 36 }}>
-                                                {getEngineIcon(conn.engine)}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={
+                                                <ListItemSecondaryAction>
                                                     <Box
                                                         sx={{
                                                             display: 'flex',
@@ -358,88 +429,41 @@ export function ScanConnectionsDialog({
                                                             gap: 1,
                                                         }}
                                                     >
-                                                        <Typography variant="body1">
-                                                            {conn.name}
-                                                        </Typography>
                                                         <Chip
                                                             label={
-                                                                ENGINE_LABELS[conn.engine] ||
-                                                                conn.engine
+                                                                SOURCE_LABELS[conn.source] ||
+                                                                conn.source
                                                             }
                                                             size="small"
                                                             variant="outlined"
                                                         />
-                                                    </Box>
-                                                }
-                                                secondary={
-                                                    <Box>
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="text.secondary"
+                                                        <Tooltip
+                                                            title={`${conn.confidence} confidence${conn.password ? ' • credentials found' : ''}`}
                                                         >
-                                                            {conn.filepath
-                                                                ? conn.filepath
-                                                                : `${conn.host || 'localhost'}:${conn.port || '?'}${conn.database ? `/${conn.database}` : ''}`}
-                                                        </Typography>
-                                                        {conn.details && (
-                                                            <Typography
-                                                                variant="caption"
-                                                                color="text.secondary"
-                                                            >
-                                                                {conn.details}
-                                                            </Typography>
-                                                        )}
+                                                            {conn.confidence === 'high' ? (
+                                                                <CheckCircleIcon
+                                                                    fontSize="small"
+                                                                    color="success"
+                                                                />
+                                                            ) : conn.confidence === 'medium' ? (
+                                                                <WarningIcon
+                                                                    fontSize="small"
+                                                                    color="warning"
+                                                                />
+                                                            ) : (
+                                                                <InfoIcon
+                                                                    fontSize="small"
+                                                                    color="info"
+                                                                />
+                                                            )}
+                                                        </Tooltip>
                                                     </Box>
-                                                }
-                                            />
-                                            <ListItemSecondaryAction>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1,
-                                                    }}
-                                                >
-                                                    <Chip
-                                                        label={
-                                                            SOURCE_LABELS[conn.source] ||
-                                                            conn.source
-                                                        }
-                                                        size="small"
-                                                        variant="outlined"
-                                                    />
-                                                    <Tooltip
-                                                        title={`${conn.confidence} confidence${conn.password ? ' • credentials found' : ''}`}
-                                                    >
-                                                        {conn.confidence === 'high' ? (
-                                                            <CheckCircleIcon
-                                                                fontSize="small"
-                                                                color="success"
-                                                            />
-                                                        ) : conn.confidence === 'medium' ? (
-                                                            <WarningIcon
-                                                                fontSize="small"
-                                                                color="warning"
-                                                            />
-                                                        ) : (
-                                                            <InfoIcon
-                                                                fontSize="small"
-                                                                color="info"
-                                                            />
-                                                        )}
-                                                    </Tooltip>
-                                                </Box>
-                                            </ListItemSecondaryAction>
-                                        </ListItem>
-                                    ))}
+                                                </ListItemSecondaryAction>
+                                            </ListItem>
+                                        );
+                                    })}
                                 </List>
                             </>
-                        ) : scanResult.connections.length > 0 ? (
-                            <Alert severity="success">
-                                All {scanResult.connections.length} discovered connection
-                                {scanResult.connections.length !== 1 ? 's have' : ' has'} already
-                                been added.
-                            </Alert>
                         ) : (
                             <Alert severity="info">
                                 No database connections were found. Make sure your databases are
@@ -459,7 +483,7 @@ export function ScanConnectionsDialog({
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
-                {scanResult && availableConnections.length > 0 && (
+                {scanResult && newConnectionIndices.length > 0 && (
                     <Button
                         variant="contained"
                         onClick={handleAddSelected}
