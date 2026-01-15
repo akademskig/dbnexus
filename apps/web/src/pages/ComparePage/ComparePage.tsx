@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -12,6 +12,10 @@ import {
     Tooltip,
     Tabs,
     Tab,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import {
     CompareArrows as CompareIcon,
@@ -19,13 +23,14 @@ import {
     Schema as SchemaIcon,
     Storage as DataIcon,
 } from '@mui/icons-material';
-import { connectionsApi, schemaApi } from '../../lib/api';
+import { connectionsApi, schemaApi, groupsApi, projectsApi } from '../../lib/api';
 import { ConnectionSelector } from './ConnectionSelector';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import { DataDiffDisplay } from './DataDiffDisplay';
 import { getDefaultSchema } from './utils';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
+import type { DatabaseGroup } from '@dbnexus/shared';
 
 type CompareTab = 'schema' | 'data';
 
@@ -34,6 +39,7 @@ const COMPARE_CACHE_TIME = 10 * 60 * 1000;
 
 export function ComparePage() {
     const queryClient = useQueryClient();
+    const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [sourceConnectionId, setSourceConnectionId] = useState<string>('');
     const [targetConnectionId, setTargetConnectionId] = useState<string>('');
     const [sourceSchema, setSourceSchema] = useState<string>('');
@@ -48,9 +54,37 @@ export function ComparePage() {
         queryFn: connectionsApi.getAll,
     });
 
+    // Fetch groups
+    const { data: groups = [] } = useQuery<DatabaseGroup[]>({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+    });
+
+    // Fetch projects for group display
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: projectsApi.getAll,
+    });
+
+    // Filter connections by selected group
+    const groupedConnections = useMemo(() => {
+        if (!selectedGroupId) return [];
+        return connections.filter((conn) => conn.groupId === selectedGroupId);
+    }, [connections, selectedGroupId]);
+
+    // Auto-select first group if none selected
+    useEffect(() => {
+        if (groups.length > 0 && !selectedGroupId && groups[0]) {
+            setSelectedGroupId(groups[0].id);
+        }
+    }, [groups, selectedGroupId]);
+
     // Get selected connections
-    const sourceConnection = connections.find((c) => c.id === sourceConnectionId);
-    const targetConnection = connections.find((c) => c.id === targetConnectionId);
+    const sourceConnection = groupedConnections.find((c) => c.id === sourceConnectionId);
+    const targetConnection = groupedConnections.find((c) => c.id === targetConnectionId);
+
+    // Get selected group info
+    const selectedGroup = groups.find((g) => g.id === selectedGroupId);
 
     // Fetch schemas for source connection
     const { data: sourceSchemas = [] } = useQuery({
@@ -208,6 +242,15 @@ export function ComparePage() {
 
     const canCompare = sourceConnectionId && targetConnectionId && sourceSchema && targetSchema;
 
+    // Reset connection selections when group changes
+    useEffect(() => {
+        setSourceConnectionId('');
+        setTargetConnectionId('');
+        setSourceSchema('');
+        setTargetSchema('');
+        setHasCompared(false);
+    }, [selectedGroupId]);
+
     return (
         <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
             {/* Header */}
@@ -216,81 +259,149 @@ export function ComparePage() {
                     Compare Databases
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Compare schemas and data between any two database connections.
+                    Compare schemas and data between connections within the same instance group.
                 </Typography>
             </Box>
 
-            {/* Connection Selection */}
+            {/* Group Selection */}
             <Paper sx={{ p: 3, mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    {/* Source */}
-                    <ConnectionSelector
-                        label="Source (reference)"
-                        connectionId={sourceConnectionId}
-                        schema={sourceSchema}
-                        connections={connections}
-                        schemas={sourceSchemas}
-                        disabledConnectionId={targetConnectionId}
-                        loadingConnections={loadingConnections}
-                        onConnectionChange={(id) => {
-                            setSourceConnectionId(id);
-                            setSourceSchema('');
-                            // Check if we have cached results for new selection
-                        }}
-                        onSchemaChange={(s) => {
-                            setSourceSchema(s);
-                        }}
-                    />
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    Select Instance Group
+                </Typography>
+                {groups.length === 0 ? (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                        No instance groups found. Create groups in the Projects page to compare
+                        connections.
+                    </Alert>
+                ) : (
+                    <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                        <InputLabel>Instance Group</InputLabel>
+                        <Select
+                            value={selectedGroupId}
+                            onChange={(e) => setSelectedGroupId(e.target.value)}
+                            label="Instance Group"
+                        >
+                            {groups.map((group) => {
+                                const project = projects.find((p) => p.id === group.projectId);
+                                return (
+                                    <MenuItem key={group.id} value={group.id}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {project && (
+                                                <Chip
+                                                    label={project.name}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 20,
+                                                        fontSize: 11,
+                                                        bgcolor: `${project.color}20`,
+                                                        color: project.color,
+                                                    }}
+                                                />
+                                            )}
+                                            <span>{group.name}</span>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{ ml: 'auto' }}
+                                            >
+                                                {
+                                                    connections.filter(
+                                                        (c) => c.groupId === group.id
+                                                    ).length
+                                                }{' '}
+                                                connections
+                                            </Typography>
+                                        </Box>
+                                    </MenuItem>
+                                );
+                            })}
+                        </Select>
+                    </FormControl>
+                )}
+            </Paper>
 
-                    {/* Swap Button */}
-                    <Tooltip title="Swap source and target">
-                        <IconButton
-                            onClick={handleSwap}
-                            disabled={!sourceConnectionId || !targetConnectionId}
+            {/* Connection Selection */}
+            {selectedGroupId && groupedConnections.length >= 2 && (
+                <Paper sx={{ p: 3, mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                        {/* Source */}
+                        <ConnectionSelector
+                            label="Source (reference)"
+                            connectionId={sourceConnectionId}
+                            schema={sourceSchema}
+                            connections={groupedConnections}
+                            schemas={sourceSchemas}
+                            disabledConnectionId={targetConnectionId}
+                            loadingConnections={loadingConnections}
+                            onConnectionChange={(id) => {
+                                setSourceConnectionId(id);
+                                setSourceSchema('');
+                                // Check if we have cached results for new selection
+                            }}
+                            onSchemaChange={(s) => {
+                                setSourceSchema(s);
+                            }}
+                        />
+
+                        {/* Swap Button */}
+                        <Tooltip title="Swap source and target">
+                            <IconButton
+                                onClick={handleSwap}
+                                disabled={!sourceConnectionId || !targetConnectionId}
+                                sx={{ mt: 2 }}
+                            >
+                                <SwapIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        {/* Target */}
+                        <ConnectionSelector
+                            label="Target (to be updated)"
+                            connectionId={targetConnectionId}
+                            schema={targetSchema}
+                            connections={groupedConnections}
+                            schemas={targetSchemas}
+                            disabledConnectionId={sourceConnectionId}
+                            loadingConnections={loadingConnections}
+                            onConnectionChange={(id) => {
+                                setTargetConnectionId(id);
+                                setTargetSchema('');
+                            }}
+                            onSchemaChange={(s) => {
+                                setTargetSchema(s);
+                            }}
+                        />
+
+                        {/* Compare Button */}
+                        <Button
+                            variant="contained"
+                            startIcon={
+                                isComparing ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                    <CompareIcon />
+                                )
+                            }
+                            onClick={handleCompare}
+                            disabled={!canCompare || isComparing}
                             sx={{ mt: 2 }}
                         >
-                            <SwapIcon />
-                        </IconButton>
-                    </Tooltip>
+                            {isComparing && 'Comparing...'}
+                            {!isComparing && (hasCachedResults || schemaDiff) && 'Refresh'}
+                            {!isComparing && !hasCachedResults && !schemaDiff && 'Compare'}
+                        </Button>
+                    </Box>
+                </Paper>
+            )}
 
-                    {/* Target */}
-                    <ConnectionSelector
-                        label="Target (to be updated)"
-                        connectionId={targetConnectionId}
-                        schema={targetSchema}
-                        connections={connections}
-                        schemas={targetSchemas}
-                        disabledConnectionId={sourceConnectionId}
-                        loadingConnections={loadingConnections}
-                        onConnectionChange={(id) => {
-                            setTargetConnectionId(id);
-                            setTargetSchema('');
-                        }}
-                        onSchemaChange={(s) => {
-                            setTargetSchema(s);
-                        }}
-                    />
-
-                    {/* Compare Button */}
-                    <Button
-                        variant="contained"
-                        startIcon={
-                            isComparing ? (
-                                <CircularProgress size={16} color="inherit" />
-                            ) : (
-                                <CompareIcon />
-                            )
-                        }
-                        onClick={handleCompare}
-                        disabled={!canCompare || isComparing}
-                        sx={{ mt: 2 }}
-                    >
-                        {isComparing && 'Comparing...'}
-                        {!isComparing && (hasCachedResults || schemaDiff) && 'Refresh'}
-                        {!isComparing && !hasCachedResults && !schemaDiff && 'Compare'}
-                    </Button>
-                </Box>
-            </Paper>
+            {/* Not enough connections message */}
+            {selectedGroupId && groupedConnections.length < 2 && (
+                <Alert severity="info">
+                    {groupedConnections.length === 0
+                        ? `No connections found in the "${selectedGroup?.name}" group. Add connections to this group in the Projects page.`
+                        : `Only ${groupedConnections.length} connection found in the "${selectedGroup?.name}" group. At least 2 connections are required for comparison.`}
+                </Alert>
+            )}
 
             {/* Results */}
             {hasCompared && (
