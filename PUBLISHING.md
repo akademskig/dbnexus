@@ -13,6 +13,7 @@ This guide explains how to publish DB Nexus to npm.
 ### 1. Update Version
 
 Update the version in both:
+
 - `apps/cli/package.json`
 - `package.json` (root)
 
@@ -53,6 +54,7 @@ dbnexus --port 8080
 ```
 
 Verify:
+
 - ✅ Server starts correctly
 - ✅ Browser opens automatically
 - ✅ Web UI loads
@@ -100,7 +102,7 @@ dbnexus
 
 ## Release Notes Template
 
-```markdown
+````markdown
 ## 🚀 What's New
 
 - Feature 1
@@ -112,6 +114,7 @@ dbnexus
 ```bash
 npm install -g dbnexus
 ```
+````
 
 Or use npx:
 
@@ -127,7 +130,8 @@ npx dbnexus
 
 - [Installation Guide](https://github.com/dbnexus/dbnexus/blob/main/INSTALLATION.md)
 - [Full Documentation](https://docs.dbnexus.dev)
-```
+
+````
 
 ## Troubleshooting
 
@@ -138,23 +142,24 @@ Make sure you're logged in:
 ```bash
 npm whoami
 npm login
-```
+````
 
 ### "Package name already taken"
 
 If `dbnexus` is taken, use a scoped package:
 
 1. Update `apps/cli/package.json`:
-   ```json
-   {
-     "name": "@your-org/dbnexus"
-   }
-   ```
+
+    ```json
+    {
+        "name": "@your-org/dbnexus"
+    }
+    ```
 
 2. Publish with:
-   ```bash
-   npm publish --access public
-   ```
+    ```bash
+    npm publish --access public
+    ```
 
 ### "Version already published"
 
@@ -179,34 +184,34 @@ Create `.github/workflows/publish.yml`:
 name: Publish to npm
 
 on:
-  release:
-    types: [created]
+    release:
+        types: [created]
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies
-        run: pnpm install
-      
-      - name: Build package
-        run: pnpm build:package
-      
-      - name: Publish to npm
-        run: cd dist-package && npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 9
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+                  registry-url: 'https://registry.npmjs.org'
+
+            - name: Install dependencies
+              run: pnpm install
+
+            - name: Build package
+              run: pnpm build:package
+
+            - name: Publish to npm
+              run: cd dist-package && npm publish
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
 ### Setup npm Token
@@ -229,7 +234,7 @@ For beta/alpha releases:
 
 ```json
 {
-  "version": "0.2.0-beta.1"
+    "version": "0.2.0-beta.1"
 }
 ```
 

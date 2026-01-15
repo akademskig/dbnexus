@@ -7,18 +7,21 @@ DB Nexus can now be distributed as an npm package, similar to Prisma Studio!
 ## 🎯 What Was Implemented
 
 ### 1. **Production Server Setup**
+
 - API server now serves the built React frontend in production mode
 - Automatic detection of web UI build location
 - Single unified server on one port (default: 3001)
 - SPA fallback routing for React Router
 
 ### 2. **Data Directory Management**
+
 - Metadata database stored in `~/.dbnexus/` by default (user home directory)
 - Configurable via `--data-dir` flag or `DBNEXUS_DATA_DIR` environment variable
 - Automatic directory creation on first run
 - No workspace initialization required
 
 ### 3. **Enhanced CLI**
+
 - Default command: Just run `dbnexus` (no subcommand needed!)
 - Auto-opens browser on start
 - Custom port support: `dbnexus --port 8080`
@@ -26,6 +29,7 @@ DB Nexus can now be distributed as an npm package, similar to Prisma Studio!
 - Disable auto-open: `dbnexus --no-open`
 
 ### 4. **Package Configuration**
+
 - Updated `apps/cli/package.json` for npm publishing
 - Changed package name from `@dbnexus/cli` to `dbnexus`
 - Set `private: false` to allow publishing
@@ -34,11 +38,13 @@ DB Nexus can now be distributed as an npm package, similar to Prisma Studio!
 - Added `prepublishOnly` script
 
 ### 5. **Build System**
+
 - Created `scripts/build-package.sh` for bundling
 - Added `pnpm build:package` command
 - Bundles API, Web UI, CLI, and all dependencies into `dist-package/`
 
 ### 6. **Documentation**
+
 - **INSTALLATION.md** - Complete installation and usage guide
 - **PUBLISHING.md** - Step-by-step publishing guide for maintainers
 - **apps/cli/README.md** - npm package page documentation
@@ -87,31 +93,34 @@ dbnexus --help
 1. **Update version** in `apps/cli/package.json` and root `package.json`
 
 2. **Build the package**:
-   ```bash
-   pnpm build:package
-   ```
+
+    ```bash
+    pnpm build:package
+    ```
 
 3. **Test locally**:
-   ```bash
-   cd dist-package
-   npm link
-   dbnexus  # Test it works
-   npm unlink -g dbnexus  # Clean up
-   ```
+
+    ```bash
+    cd dist-package
+    npm link
+    dbnexus  # Test it works
+    npm unlink -g dbnexus  # Clean up
+    ```
 
 4. **Publish to npm**:
-   ```bash
-   cd dist-package
-   npm login
-   npm publish
-   ```
+
+    ```bash
+    cd dist-package
+    npm login
+    npm publish
+    ```
 
 5. **Verify**:
-   ```bash
-   npm install -g dbnexus
-   dbnexus --version
-   dbnexus
-   ```
+    ```bash
+    npm install -g dbnexus
+    dbnexus --version
+    dbnexus
+    ```
 
 See **PUBLISHING.md** for detailed instructions, troubleshooting, and CI/CD setup.
 
@@ -136,20 +145,20 @@ dist-package/
 ### How It Works
 
 1. **User runs `dbnexus`**
-   - CLI entry point (`dist/cli/index.js`) is executed
-   - Sets `NODE_ENV=production` and `PORT` environment variable
-   - Spawns the API server (`dist/api/main.js`)
+    - CLI entry point (`dist/cli/index.js`) is executed
+    - Sets `NODE_ENV=production` and `PORT` environment variable
+    - Spawns the API server (`dist/api/main.js`)
 
 2. **API server starts**
-   - Initializes metadata database in `~/.dbnexus/`
-   - Detects and serves web UI static files from `dist/web/`
-   - Sets up API routes under `/api` prefix
-   - Implements SPA fallback for React Router
+    - Initializes metadata database in `~/.dbnexus/`
+    - Detects and serves web UI static files from `dist/web/`
+    - Sets up API routes under `/api` prefix
+    - Implements SPA fallback for React Router
 
 3. **Browser opens**
-   - CLI uses `open` package to launch browser
-   - User accesses `http://localhost:3001`
-   - Web UI loads and connects to API
+    - CLI uses `open` package to launch browser
+    - User accesses `http://localhost:3001`
+    - Web UI loads and connects to API
 
 ### Key Features
 
@@ -162,6 +171,7 @@ dist-package/
 ## 📋 Files Modified/Created
 
 ### Modified Files
+
 - `apps/api/src/main.ts` - Added static file serving
 - `apps/api/src/metadata/metadata.service.ts` - Updated data directory logic
 - `apps/cli/src/index.ts` - Made `start` the default command
@@ -171,6 +181,7 @@ dist-package/
 - `README.md` - Added quick start section
 
 ### Created Files
+
 - `scripts/build-package.sh` - Build script for distribution
 - `INSTALLATION.md` - End user installation guide
 - `PUBLISHING.md` - Maintainer publishing guide
@@ -180,6 +191,7 @@ dist-package/
 ## 🎨 User Experience
 
 ### Before (Development)
+
 ```bash
 git clone repo
 pnpm install
@@ -188,6 +200,7 @@ pnpm dev  # Start in two terminals
 ```
 
 ### After (Production)
+
 ```bash
 npm install -g dbnexus
 dbnexus  # Done! 🎉
@@ -195,14 +208,14 @@ dbnexus  # Done! 🎉
 
 ## 🔄 Comparison with Prisma Studio
 
-| Feature | Prisma Studio | DB Nexus |
-|---------|--------------|----------|
-| Installation | `npm install -g prisma` | `npm install -g dbnexus` |
-| Start Command | `prisma studio` | `dbnexus` |
-| Data Storage | Project directory | `~/.dbnexus/` |
-| Databases | Prisma-connected only | Any PostgreSQL/MySQL/MariaDB/SQLite |
-| Schema Sync | Via Prisma migrations | Built-in comparison & sync |
-| Port | 5555 | 3001 (configurable) |
+| Feature       | Prisma Studio           | DB Nexus                            |
+| ------------- | ----------------------- | ----------------------------------- |
+| Installation  | `npm install -g prisma` | `npm install -g dbnexus`            |
+| Start Command | `prisma studio`         | `dbnexus`                           |
+| Data Storage  | Project directory       | `~/.dbnexus/`                       |
+| Databases     | Prisma-connected only   | Any PostgreSQL/MySQL/MariaDB/SQLite |
+| Schema Sync   | Via Prisma migrations   | Built-in comparison & sync          |
+| Port          | 5555                    | 3001 (configurable)                 |
 
 ## 🧪 Testing Checklist
 
@@ -257,6 +270,7 @@ Before publishing, test:
 **Status**: ✅ Ready for publishing to npm!
 
 For questions or issues, see:
+
 - INSTALLATION.md (end users)
 - PUBLISHING.md (maintainers)
 - GitHub Issues: https://github.com/dbnexus/dbnexus/issues
