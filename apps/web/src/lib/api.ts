@@ -23,6 +23,7 @@ import type {
     DatabaseGroupUpdateInput,
     InstanceGroup,
     InstanceGroupSyncStatus,
+    InstanceGroupTargetStatus,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -335,6 +336,10 @@ export const syncApi = {
     // Get sync status for an instance group
     getGroupSyncStatus: (groupId: string) =>
         fetchApi<InstanceGroupSyncStatus>(`/sync/groups/${groupId}/status`),
+
+    // Check sync status for a single target connection in a group
+    checkSingleTargetStatus: (groupId: string, targetConnectionId: string) =>
+        fetchApi<InstanceGroupTargetStatus>(`/sync/groups/${groupId}/status/${targetConnectionId}`),
 
     // Get all groups with sync enabled
     getSyncEnabledGroups: () => fetchApi<InstanceGroup[]>('/sync/groups'),

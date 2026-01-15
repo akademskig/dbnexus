@@ -365,13 +365,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                            schemas.includes(selectedConnection.database)
+                        schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                            schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -755,11 +755,11 @@ export function QueryPage() {
     const inferPrimaryKeysFromResult = (result: QueryResult | null): string[] => {
         if (!result) return [];
         return result.columns
-            .filter(col => {
+            .filter((col) => {
                 const name = col.name.toLowerCase();
                 return name === 'id' || name === 'version' || name.endsWith('_id');
             })
-            .map(col => col.name);
+            .map((col) => col.name);
     };
 
     // Handle update row
@@ -788,7 +788,9 @@ export function QueryPage() {
                 // Infer primary keys from result
                 pkColumns = inferPrimaryKeysFromResult(result);
                 if (pkColumns.length === 0) {
-                    throw new Error('Cannot update row: no primary key identified (looking for columns named: id, version, or ending with _id)');
+                    throw new Error(
+                        'Cannot update row: no primary key identified (looking for columns named: id, version, or ending with _id)'
+                    );
                 }
             }
 

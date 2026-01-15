@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { SyncService, TableDataDiff, DataSyncResult } from './sync.service.js';
-import type { InstanceGroupSyncStatus } from '@dbnexus/shared';
+import type { InstanceGroupSyncStatus, InstanceGroupTargetStatus } from '@dbnexus/shared';
 
 @Controller('sync')
 export class SyncController {
@@ -14,6 +14,17 @@ export class SyncController {
         @Param('groupId') groupId: string
     ): Promise<InstanceGroupSyncStatus | null> {
         return this.syncService.getGroupSyncStatus(groupId);
+    }
+
+    /**
+     * Check sync status for a single target connection in a group
+     */
+    @Get('groups/:groupId/status/:targetConnectionId')
+    async checkSingleTargetStatus(
+        @Param('groupId') groupId: string,
+        @Param('targetConnectionId') targetConnectionId: string
+    ): Promise<InstanceGroupTargetStatus | null> {
+        return this.syncService.checkSingleTargetStatus(groupId, targetConnectionId);
     }
 
     /**

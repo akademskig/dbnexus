@@ -170,6 +170,25 @@ export class SyncService {
     }
 
     /**
+     * Check sync status for a single target connection in a group
+     */
+    async checkSingleTargetStatus(
+        groupId: string,
+        targetConnectionId: string
+    ): Promise<InstanceGroupTargetStatus | null> {
+        const group = this.metadataService.databaseGroupRepository.findById(groupId);
+        if (!group || !group.sourceConnectionId) return null;
+
+        const connections = this.metadataService.connectionRepository.findByGroup(groupId);
+        const sourceConnection = connections.find((c) => c.id === group.sourceConnectionId);
+        const targetConnection = connections.find((c) => c.id === targetConnectionId);
+
+        if (!sourceConnection || !targetConnection) return null;
+
+        return this.checkTargetStatus(group, sourceConnection, targetConnection);
+    }
+
+    /**
      * Check sync status for a single target - includes full diff data
      */
     private async checkTargetStatus(

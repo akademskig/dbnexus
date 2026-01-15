@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
     Box,
     Typography,
@@ -11,6 +11,7 @@ import {
     Collapse,
     Tabs,
     Tab,
+    CircularProgress,
 } from '@mui/material';
 import {
     ExpandMore as ExpandIcon,
@@ -20,7 +21,7 @@ import {
     Schema as SchemaIcon,
     TableChart as DataIcon,
 } from '@mui/icons-material';
-import { schemaApi } from '../../lib/api';
+import { schemaApi, syncApi } from '../../lib/api';
 import { StatusIcon, StatusChip } from './StatusComponents';
 import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import { DataDiffDisplay } from '../../components/DataDiffDisplay';
@@ -45,13 +46,40 @@ export function TargetRow({
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState(0); // 0 = Schema, 1 = Data
     const [applying, setApplying] = useState(false);
+    const [currentTarget, setCurrentTarget] = useState<InstanceGroupTargetStatus>(target);
     const queryClient = useQueryClient();
     const toast = useToastStore();
 
-    // Use diff data from the status response (no separate API call needed!)
-    const schemaDiff = target.schemaDiff;
-    const migrationSql = target.migrationSql || [];
-    const dataDiff = target.dataDiff || [];
+    // Sync currentTarget with the target prop when it changes
+    useEffect(() => {
+        setCurrentTarget(target);
+    }, [target]);
+
+    // Use diff data from the current target state
+    const schemaDiff = currentTarget.schemaDiff;
+    const migrationSql = currentTarget.migrationSql || [];
+    const dataDiff = currentTarget.dataDiff || [];
+
+    // Mutation to recheck a single target
+    const recheckMutation = useMutation({
+        mutationFn: async () => {
+            const result = await syncApi.checkSingleTargetStatus(group.id, target.connectionId);
+            if (!result) {
+                throw new Error('Failed to check target status');
+            }
+            return result;
+        },
+        onSuccess: (data) => {
+            setCurrentTarget(data);
+            // Also invalidate the group status to keep it in sync
+            queryClient.invalidateQueries({ queryKey: ['groupSyncStatus', group.id] });
+            toast.success('Status updated');
+        },
+        onError: (error) => {
+            console.error('Failed to recheck status:', error);
+            toast.error('Failed to recheck status');
+        },
+    });
 
     const handleApplyMigration = async () => {
         setApplying(true);
@@ -63,7 +91,8 @@ export function TargetRow({
                 targetSchema,
                 'Applied from Instance Group Sync'
             );
-            queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+            // Recheck after applying migration
+            recheckMutation.mutate();
             toast.success('Migration applied successfully');
             // Collapse after successful migration
             setExpanded(false);
@@ -76,7 +105,15 @@ export function TargetRow({
     };
 
     const handleDataSyncComplete = () => {
-        queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+        // Recheck after data sync
+        recheckMutation.mutate();
+    };
+
+    const handleRecheck = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        recheckMutation.mutate();
+        // Expand if not already
+        if (!expanded) setExpanded(true);
     };
 
     return (
@@ -98,22 +135,23 @@ export function TargetRow({
                 </TableCell>
                 <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <StatusIcon status={target.schemaStatus} />
-                        <StatusChip status={target.schemaStatus} />
-                        {target.schemaDiffCount !== undefined && target.schemaDiffCount > 0 && (
-                            <Typography variant="caption" color="text.secondary">
-                                ({target.schemaDiffCount} differences)
-                            </Typography>
-                        )}
+                        <StatusIcon status={currentTarget.schemaStatus} />
+                        <StatusChip status={currentTarget.schemaStatus} />
+                        {currentTarget.schemaDiffCount !== undefined &&
+                            currentTarget.schemaDiffCount > 0 && (
+                                <Typography variant="caption" color="text.secondary">
+                                    ({currentTarget.schemaDiffCount} differences)
+                                </Typography>
+                            )}
                     </Box>
                 </TableCell>
                 <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <StatusIcon status={target.dataStatus} />
-                        <StatusChip status={target.dataStatus} />
-                        {target.dataDiffSummary && (
+                        <StatusIcon status={currentTarget.dataStatus} />
+                        <StatusChip status={currentTarget.dataStatus} />
+                        {currentTarget.dataDiffSummary && (
                             <Typography variant="caption" color="text.secondary">
-                                {target.dataDiffSummary}
+                                {currentTarget.dataDiffSummary}
                             </Typography>
                         )}
                     </Box>
@@ -123,18 +161,17 @@ export function TargetRow({
                         <Button
                             size="small"
                             variant="outlined"
-                            startIcon={<RefreshIcon />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                // Invalidate the status cache to force refetch (includes diff data)
-                                queryClient.invalidateQueries({
-                                    queryKey: ['groupSyncStatus'],
-                                });
-                                // Expand if not already
-                                if (!expanded) setExpanded(true);
-                            }}
+                            startIcon={
+                                recheckMutation.isPending ? (
+                                    <CircularProgress size={16} />
+                                ) : (
+                                    <RefreshIcon />
+                                )
+                            }
+                            onClick={handleRecheck}
+                            disabled={recheckMutation.isPending}
                         >
-                            Recheck
+                            {recheckMutation.isPending ? 'Checking...' : 'Recheck'}
                         </Button>
                     </Box>
                 </TableCell>
@@ -143,9 +180,9 @@ export function TargetRow({
                 <TableCell colSpan={5} sx={{ py: 0, borderBottom: expanded ? undefined : 'none' }}>
                     <Collapse in={expanded}>
                         <Box sx={{ py: 1 }}>
-                            {target.error && (
+                            {currentTarget.error && (
                                 <Alert severity="error" sx={{ mb: 1 }}>
-                                    {target.error}
+                                    {currentTarget.error}
                                 </Alert>
                             )}
 
@@ -158,7 +195,7 @@ export function TargetRow({
                                 <Tab
                                     icon={<SchemaIcon fontSize="small" />}
                                     iconPosition="start"
-                                    label={`Schema ${target.schemaDiffCount ? `(${target.schemaDiffCount})` : ''}`}
+                                    label={`Schema ${currentTarget.schemaDiffCount ? `(${currentTarget.schemaDiffCount})` : ''}`}
                                     sx={{ minHeight: 48 }}
                                     disabled={!group.syncSchema}
                                 />
@@ -181,7 +218,7 @@ export function TargetRow({
                                             onApplyMigration={handleApplyMigration}
                                             applying={applying}
                                         />
-                                    ) : target.schemaStatus === 'in_sync' ? (
+                                    ) : currentTarget.schemaStatus === 'in_sync' ? (
                                         <Alert severity="success">Schema is in sync</Alert>
                                     ) : (
                                         <Alert severity="info">
@@ -197,14 +234,14 @@ export function TargetRow({
                                     {dataDiff.length > 0 ? (
                                         <DataDiffDisplay
                                             sourceConnectionId={sourceConnectionId}
-                                            targetConnectionId={target.connectionId}
+                                            targetConnectionId={currentTarget.connectionId}
                                             sourceSchema={sourceSchema}
                                             targetSchema={targetSchema}
                                             dataDiff={dataDiff}
                                             onSyncComplete={handleDataSyncComplete}
                                             compact
                                         />
-                                    ) : target.dataStatus === 'in_sync' ? (
+                                    ) : currentTarget.dataStatus === 'in_sync' ? (
                                         <Alert severity="success" sx={{ mt: 1 }}>
                                             All tables are in sync
                                         </Alert>

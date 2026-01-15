@@ -99,21 +99,21 @@ export function DataTab({
     // Get primary key columns for identifying rows
     const primaryKeyColumns =
         tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || [];
-    
+
     // For raw queries without tableSchema, try to infer primary key from common column names
-    const inferredPrimaryKeys = !tableSchema && result?.columns
-        ? result.columns
-            .filter(col => {
-                const name = col.name.toLowerCase();
-                return name === 'id' || name === 'version' || name.endsWith('_id');
-            })
-            .map(col => col.name)
-        : [];
-    
-    const effectivePrimaryKeys = primaryKeyColumns.length > 0 
-        ? primaryKeyColumns 
-        : inferredPrimaryKeys;
-    
+    const inferredPrimaryKeys =
+        !tableSchema && result?.columns
+            ? result.columns
+                  .filter((col) => {
+                      const name = col.name.toLowerCase();
+                      return name === 'id' || name === 'version' || name.endsWith('_id');
+                  })
+                  .map((col) => col.name)
+            : [];
+
+    const effectivePrimaryKeys =
+        primaryKeyColumns.length > 0 ? primaryKeyColumns : inferredPrimaryKeys;
+
     // Can only edit/delete/sync if we have primary keys to identify rows
     const canEditRows = effectivePrimaryKeys.length > 0;
     // Check if we have any selected rows
