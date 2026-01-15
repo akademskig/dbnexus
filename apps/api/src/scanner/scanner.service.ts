@@ -64,10 +64,10 @@ export class ScannerService {
         // Run all scans in parallel
         const handleError =
             (source: string) =>
-            (e: Error): DiscoveredConnection[] => {
-                result.errors.push(`${source}: ${e.message}`);
-                return [];
-            };
+                (e: Error): DiscoveredConnection[] => {
+                    result.errors.push(`${source}: ${e.message}`);
+                    return [];
+                };
 
         const [portResults, dockerResults, envResults, composeResults, sqliteResults] =
             await Promise.all([

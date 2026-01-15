@@ -168,7 +168,7 @@ export function ScanConnectionsDialog({
         setAddingConnections(true);
         const selected = Array.from(selectedConnections)
             .map((i) => scanResult.connections[i])
-            .filter((conn) => conn !== undefined);
+            .filter((conn): conn is DiscoveredConnection => conn !== undefined);
         let addedCount = 0;
         const errors: string[] = [];
 

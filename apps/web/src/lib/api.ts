@@ -462,14 +462,6 @@ export const syncApi = {
 
 // ============ Scanner ============
 
-export type DiscoveredConnectionSource =
-    | 'port-scan'
-    | 'docker'
-    | 'env-file'
-    | 'docker-compose'
-    | 'sqlite-file'
-    | 'config-file';
-
 export interface DiscoveredConnection {
     name: string;
     engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
@@ -479,8 +471,7 @@ export interface DiscoveredConnection {
     username?: string;
     password?: string;
     filepath?: string;
-    source: DiscoveredConnectionSource;
-    sources?: DiscoveredConnectionSource[]; // Multiple sources when deduplicated
+    source: 'port-scan' | 'docker' | 'env-file' | 'docker-compose' | 'sqlite-file' | 'config-file';
     confidence: 'high' | 'medium' | 'low';
     details?: string;
 }
