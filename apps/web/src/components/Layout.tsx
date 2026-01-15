@@ -71,7 +71,6 @@ const useSidebarStore = create<SidebarStore>()(
 
 const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
-    { to: '/connections', icon: <StorageIcon />, label: 'Connections' },
     { to: '/query', icon: <TerminalIcon />, label: 'Query' },
     { to: '/schema-diagram', icon: <AccountTreeIcon />, label: 'Schema Diagram' },
     { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },
@@ -121,8 +120,7 @@ export function Layout() {
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
 
-    const isConnectionManagementActive =
-        location.pathname.startsWith('/connections/') && location.pathname !== '/connections';
+    const isConnectionsActive = location.pathname.startsWith('/connections/');
 
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -382,27 +380,27 @@ export function Layout() {
                         </>
                     )}
 
-                    {/* Connection Management Section */}
+                    {/* Connections Section */}
                     {!collapsed && connections.length > 0 && (
                         <>
                             <Divider sx={{ my: 1.5 }} />
                             <ListItemButton
                                 onClick={toggleConnections}
                                 sx={{ px: 2 }}
-                                selected={isConnectionManagementActive}
+                                selected={isConnectionsActive}
                             >
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 40,
-                                        color: isConnectionManagementActive
+                                        color: isConnectionsActive
                                             ? 'primary.main'
                                             : 'text.secondary',
                                     }}
                                 >
-                                    <SettingsIcon />
+                                    <StorageIcon />
                                 </ListItemIcon>
                                 <ListItemText
-                                    primary="Manage"
+                                    primary="Connections"
                                     primaryTypographyProps={{ fontSize: 14 }}
                                 />
                                 {connectionsExpanded ? (
@@ -496,13 +494,13 @@ export function Layout() {
                         </>
                     )}
 
-                    {/* Collapsed connection management icon with menu */}
+                    {/* Collapsed connections icon with menu */}
                     {collapsed && connections.length > 0 && (
                         <>
-                            <Tooltip title="Manage Connections" placement="right" arrow>
+                            <Tooltip title="Connections" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
-                                    selected={isConnectionManagementActive}
+                                    selected={isConnectionsActive}
                                     sx={{
                                         mb: 0.5,
                                         justifyContent: 'center',
@@ -512,12 +510,12 @@ export function Layout() {
                                     <ListItemIcon
                                         sx={{
                                             minWidth: 0,
-                                            color: isConnectionManagementActive
+                                            color: isConnectionsActive
                                                 ? 'primary.main'
                                                 : 'text.secondary',
                                         }}
                                     >
-                                        <SettingsIcon />
+                                        <StorageIcon />
                                     </ListItemIcon>
                                 </ListItemButton>
                             </Tooltip>
@@ -532,7 +530,7 @@ export function Layout() {
                                     variant="caption"
                                     sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
                                 >
-                                    Manage Connections
+                                    Connections
                                 </Typography>
                                 <Divider />
                                 {connections.map((conn) => {

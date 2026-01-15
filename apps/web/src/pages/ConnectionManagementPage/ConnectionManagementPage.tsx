@@ -170,7 +170,7 @@ export function ConnectionManagementPage() {
     // Handle missing connection
     useEffect(() => {
         if (connectionError) {
-            navigate('/connections');
+            navigate('/dashboard');
         }
     }, [connectionError, navigate]);
 
@@ -401,7 +401,7 @@ export function ConnectionManagementPage() {
                     schemas={schemas}
                     isLoading={loadingSchemas}
                     initialSchema={selectedSchema}
-                    onSchemaViewed={() => { }}
+                    onSchemaViewed={() => {}}
                     onManageTable={handleManageTable}
                     onSchemaChange={handleSchemaChange}
                 />

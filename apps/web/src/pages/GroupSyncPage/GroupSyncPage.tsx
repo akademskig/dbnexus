@@ -150,7 +150,7 @@ export function GroupSyncPage() {
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                <IconButton onClick={() => navigate('/connections')}>
+                <IconButton onClick={() => navigate('/dashboard')}>
                     <BackIcon />
                 </IconButton>
                 <Box sx={{ flex: 1 }}>

@@ -244,7 +244,7 @@ export function DashboardPage() {
                             <Button
                                 size="small"
                                 startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                                onClick={() => navigate('/connections')}
+                                onClick={() => navigate('/dashboard')}
                                 sx={{
                                     color: 'primary.main',
                                     textTransform: 'none',
@@ -296,7 +296,7 @@ export function DashboardPage() {
                                 description="Add your first database connection to get started."
                                 action={{
                                     label: 'Add Connection',
-                                    onClick: () => navigate('/connections'),
+                                    onClick: () => navigate('/dashboard'),
                                     variant: 'text',
                                 }}
                                 size="small"

@@ -178,7 +178,7 @@ export function useKeyboardShortcuts(
 export function useNavigationShortcuts(navigate: (path: string) => void) {
     useKeyboardShortcuts([
         { key: '1', ctrl: true, handler: () => navigate('/') },
-        { key: '2', ctrl: true, handler: () => navigate('/connections') },
+        { key: '2', ctrl: true, handler: () => navigate('/query') },
         { key: '3', ctrl: true, handler: () => navigate('/query') },
         { key: '4', ctrl: true, handler: () => navigate('/visualizer') },
         { key: '5', ctrl: true, handler: () => navigate('/compare') },

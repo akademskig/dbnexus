@@ -256,8 +256,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                        ? 'public'
-                        : schemas[0];
+                      ? 'public'
+                      : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
