@@ -138,7 +138,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (showVersion) {
-    console.log('0.1.0');
+    console.log('0.1.1');
     process.exit(0);
 }
 
@@ -226,7 +226,7 @@ fs.writeFileSync(path.join(distPackage, 'dist/index.js'), entryPoint);
 console.log('📝 Creating package.json...');
 const packageJson = {
     name: 'dbnexus',
-    version: '0.1.0',
+    version: '0.1.1',
     description: 'Database management tool with web UI - like Prisma Studio for any database',
     keywords: [
         'database',

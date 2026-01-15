@@ -37,6 +37,8 @@ async function bootstrap() {
     if (!isDev) {
         // Look for the web UI build in multiple possible locations
         const possiblePaths = [
+            path.join(__dirname, 'web'), // When installed globally (api.js and web/ are siblings)
+            path.join(__dirname, '..', 'web'), // Alternative: one level up
             path.join(__dirname, '..', '..', 'web', 'dist'), // When running from built CLI
             path.join(__dirname, '..', '..', '..', 'web', 'dist'), // Alternative structure
             path.join(process.cwd(), 'dist', 'web'), // When packaged
