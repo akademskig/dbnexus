@@ -246,7 +246,7 @@ export function Layout() {
                             <Divider sx={{ my: 1.5 }} />
                             <ListItemButton
                                 onClick={toggleSync}
-                                sx={{ px: 2 }}
+                                sx={{ mb: 0.5, px: 2 }}
                                 selected={isSyncActive}
                             >
                                 <ListItemIcon
@@ -397,7 +397,7 @@ export function Layout() {
                             <Divider sx={{ my: 1.5 }} />
                             <ListItemButton
                                 onClick={toggleConnections}
-                                sx={{ px: 2 }}
+                                sx={{ mb: 0.5, px: 2 }}
                                 selected={isConnectionsActive}
                             >
                                 <ListItemIcon
