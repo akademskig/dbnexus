@@ -27,6 +27,7 @@ import type { ConnectionConfig } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { DetailRow } from './DetailRow';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 interface ConnectionCardProps {
     connection: ConnectionConfig;
@@ -49,6 +50,7 @@ export function ConnectionCard({
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
         null
     );
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const { tags: availableTags } = useTagsStore();
     const { healthStatus, checkConnection } = useConnectionHealthStore();
 
@@ -359,13 +361,26 @@ export function ConnectionCard({
                             size="small"
                             color="error"
                             startIcon={<DeleteIcon />}
-                            onClick={onDelete}
+                            onClick={() => setDeleteConfirmOpen(true)}
                         >
                             Delete
                         </Button>
                     </Box>
                 </Box>
             </Collapse>
+
+            <ConfirmDialog
+                open={deleteConfirmOpen}
+                title="Delete Connection"
+                message={`Are you sure you want to delete "${connection.name}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                confirmColor="error"
+                onConfirm={() => {
+                    setDeleteConfirmOpen(false);
+                    onDelete();
+                }}
+                onCancel={() => setDeleteConfirmOpen(false)}
+            />
         </Box>
     );
 }

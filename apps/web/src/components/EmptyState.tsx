@@ -1,16 +1,23 @@
 import { Box, Typography, Button, SxProps, Theme } from '@mui/material';
 import { ReactNode } from 'react';
 
+interface EmptyStateAction {
+    label: string;
+    onClick: () => void;
+    variant?: 'text' | 'outlined' | 'contained';
+    icon?: ReactNode;
+}
+
 interface EmptyStateProps {
     readonly icon?: ReactNode;
     readonly title: string;
     readonly description?: string;
-    readonly action?: {
+    readonly action?: EmptyStateAction;
+    readonly secondaryAction?: {
         label: string;
         onClick: () => void;
-        variant?: 'text' | 'outlined' | 'contained';
     };
-    readonly secondaryAction?: {
+    readonly tertiaryAction?: {
         label: string;
         onClick: () => void;
     };
@@ -25,6 +32,7 @@ export function EmptyState({
     description,
     action,
     secondaryAction,
+    tertiaryAction,
     size = 'medium',
     sx,
 }: EmptyStateProps) {
@@ -88,8 +96,25 @@ export function EmptyState({
                 </Typography>
             )}
 
-            {(action || secondaryAction) && (
-                <Box sx={{ display: 'flex', gap: 1.5, mt: 1 }}>
+            {(action || secondaryAction || tertiaryAction) && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        gap: 1.5,
+                        mt: 1,
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {tertiaryAction && (
+                        <Button
+                            variant="text"
+                            onClick={tertiaryAction.onClick}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            {tertiaryAction.label}
+                        </Button>
+                    )}
                     {secondaryAction && (
                         <Button
                             variant="outlined"
@@ -104,6 +129,7 @@ export function EmptyState({
                             variant={action.variant || 'contained'}
                             onClick={action.onClick}
                             sx={{ textTransform: 'none' }}
+                            startIcon={action.icon}
                         >
                             {action.label}
                         </Button>

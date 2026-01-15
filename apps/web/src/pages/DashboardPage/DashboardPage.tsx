@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, IconButton } from '@mui/material';
+import { Box, Typography, Grid, Button, IconButton, Tooltip } from '@mui/material';
 import {
     Add as AddIcon,
     Refresh as RefreshIcon,
@@ -11,6 +11,7 @@ import {
     Sync as SyncIcon,
     Storage as StorageIcon,
     History as HistoryIcon,
+    Search as SearchIcon,
 } from '@mui/icons-material';
 import { useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, syncApi } from '../../lib/api';
@@ -28,6 +29,7 @@ import { SyncGroupRow } from './SyncGroupRow';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
 
 export function DashboardPage() {
     const navigate = useNavigate();
@@ -39,6 +41,7 @@ export function DashboardPage() {
     const [syncChecking, setSyncChecking] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [scanDialogOpen, setScanDialogOpen] = useState(false);
 
     // Use global connection health store
     const { healthStatus, checkAllConnections } = useConnectionHealthStore();
@@ -150,18 +153,30 @@ export function DashboardPage() {
                         Overview of your database connections and activity
                     </Typography>
                 </Box>
-                <IconButton
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                    sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-                >
-                    <RefreshIcon
-                        sx={{
-                            animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                            '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
-                        }}
-                    />
-                </IconButton>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="Scan for connections">
+                        <IconButton
+                            onClick={() => setScanDialogOpen(true)}
+                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                        >
+                            <SearchIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Refresh">
+                        <IconButton
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                        >
+                            <RefreshIcon
+                                sx={{
+                                    animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                                    '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
+                                }}
+                            />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </Box>
 
             {/* Stats Row */}
@@ -276,17 +291,35 @@ export function DashboardPage() {
                         {loading ? (
                             <LoadingState size="small" />
                         ) : connections.length === 0 ? (
-                            <EmptyState
-                                icon={<StorageIcon />}
-                                title="No connections yet"
-                                description="Add your first database connection to get started."
-                                action={{
-                                    label: 'Add Connection',
-                                    onClick: () => navigate('/dashboard'),
-                                    variant: 'text',
-                                }}
-                                size="small"
-                            />
+                            <Box sx={{ textAlign: 'center', py: 3 }}>
+                                <StorageIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    No connections yet
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        gap: 1,
+                                        justifyContent: 'center',
+                                        mt: 2,
+                                    }}
+                                >
+                                    <Button
+                                        size="small"
+                                        startIcon={<SearchIcon />}
+                                        onClick={() => setScanDialogOpen(true)}
+                                    >
+                                        Scan
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => navigate('/projects')}
+                                    >
+                                        Add Manually
+                                    </Button>
+                                </Box>
+                            </Box>
                         ) : (
                             connections.map((conn, i) => {
                                 const health = healthStatus[conn.id];
@@ -399,6 +432,15 @@ export function DashboardPage() {
                     </Grid>
                 )}
             </Grid>
+
+            {/* Scan Connections Dialog */}
+            <ScanConnectionsDialog
+                open={scanDialogOpen}
+                onClose={() => {
+                    setScanDialogOpen(false);
+                    loadData(); // Refresh after scanning
+                }}
+            />
         </Box>
     );
 }

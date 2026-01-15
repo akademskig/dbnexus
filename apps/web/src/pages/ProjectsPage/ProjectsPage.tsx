@@ -5,6 +5,7 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
+import SearchIcon from '@mui/icons-material/Search';
 import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
@@ -14,6 +15,7 @@ import { useToastStore } from '../../stores/toastStore';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
 import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
+import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
 
 export function ProjectsPage() {
     const queryClient = useQueryClient();
@@ -26,6 +28,7 @@ export function ProjectsPage() {
     const [groupFormOpen, setGroupFormOpen] = useState(false);
     const [groupFormProjectId, setGroupFormProjectId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
+    const [scanDialogOpen, setScanDialogOpen] = useState(false);
 
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
@@ -157,6 +160,13 @@ export function ProjectsPage() {
                         New Project
                     </Button>
                     <Button
+                        variant="outlined"
+                        startIcon={<SearchIcon />}
+                        onClick={() => setScanDialogOpen(true)}
+                    >
+                        Scan
+                    </Button>
+                    <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setFormOpen(true)}
@@ -185,6 +195,7 @@ export function ProjectsPage() {
                 projectId={groupFormProjectId}
                 onClose={handleCloseGroupForm}
             />
+            <ScanConnectionsDialog open={scanDialogOpen} onClose={() => setScanDialogOpen(false)} />
 
             {/* Content */}
             {isLoading ? (
@@ -194,12 +205,17 @@ export function ProjectsPage() {
                     <EmptyState
                         icon={<StorageIcon />}
                         title="No connections yet"
-                        description="Add your first database connection to start exploring your data. Organize connections into projects and instance groups for better management."
+                        description="Add your first database connection to start exploring your data. You can scan for databases automatically or add them manually."
                         action={{
-                            label: 'Add Connection',
-                            onClick: () => setFormOpen(true),
+                            label: 'Scan for Databases',
+                            onClick: () => setScanDialogOpen(true),
+                            icon: <SearchIcon />,
                         }}
                         secondaryAction={{
+                            label: 'Add Manually',
+                            onClick: () => setFormOpen(true),
+                        }}
+                        tertiaryAction={{
                             label: 'Create Project',
                             onClick: () => setProjectFormOpen(true),
                         }}

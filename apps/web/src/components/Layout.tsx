@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box,
     Drawer,
@@ -34,7 +35,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
 import { themeColors } from '../theme';
-import type { DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
+// Types are inferred from React Query
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import { StyledTooltip } from './StyledTooltip';
@@ -90,11 +91,7 @@ export function Layout() {
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
     const colors = themeColors[theme.palette.mode];
 
-    const [groups, setGroups] = useState<DatabaseGroup[]>([]);
-    const [loadingGroups, setLoadingGroups] = useState(true);
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
-    const [connections, setConnections] = useState<ConnectionConfig[]>([]);
-    const [loadingConnections, setLoadingConnections] = useState(true);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
 
     // Connection health store
@@ -103,41 +100,40 @@ export function Layout() {
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);
 
+    // Use React Query for connections - this automatically updates when invalidated
+    const { data: connections = [], isLoading: loadingConnections } = useQuery({
+        queryKey: ['connections'],
+        queryFn: connectionsApi.getAll,
+    });
+
+    // Use React Query for groups
+    const { data: allGroups = [], isLoading: loadingGroups } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+    });
+
+    // Filter groups that have more than 1 connection
+    const groups = useMemo(() => {
+        const connectionCountByGroup = connections.reduce(
+            (acc, conn) => {
+                if (conn.groupId) {
+                    acc[conn.groupId] = (acc[conn.groupId] || 0) + 1;
+                }
+                return acc;
+            },
+            {} as Record<string, number>
+        );
+
+        return allGroups.filter((group) => (connectionCountByGroup[group.id] || 0) > 1);
+    }, [connections, allGroups]);
+
+    // Check health of all connections when connections change
     useEffect(() => {
-        // Fetch groups and connections, then filter groups with more than 1 connection
-        Promise.all([groupsApi.getAll(), connectionsApi.getAll()])
-            .then(([allGroups, allConnections]) => {
-                // Count connections per group
-                const connectionCountByGroup = allConnections.reduce(
-                    (acc, conn) => {
-                        if (conn.groupId) {
-                            acc[conn.groupId] = (acc[conn.groupId] || 0) + 1;
-                        }
-                        return acc;
-                    },
-                    {} as Record<string, number>
-                );
-
-                // Filter groups that have more than 1 connection
-                const filteredGroups = allGroups.filter(
-                    (group) => (connectionCountByGroup[group.id] || 0) > 1
-                );
-
-                setGroups(filteredGroups);
-                setConnections(allConnections);
-                // Check health of all connections in background
-                checkAllConnections(allConnections.map((c) => c.id));
-            })
-            .catch(() => {
-                setGroups([]);
-                setConnections([]);
-            })
-            .finally(() => {
-                setLoadingGroups(false);
-                setLoadingConnections(false);
-            });
+        if (connections.length > 0) {
+            checkAllConnections(connections.map((c) => c.id));
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [connections.length]);
 
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');

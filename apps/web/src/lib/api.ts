@@ -459,3 +459,57 @@ export const syncApi = {
             }
         ),
 };
+
+// ============ Scanner ============
+
+export interface DiscoveredConnection {
+    name: string;
+    engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
+    filepath?: string;
+    source: 'port-scan' | 'docker' | 'env-file' | 'docker-compose' | 'sqlite-file' | 'config-file';
+    confidence: 'high' | 'medium' | 'low';
+    details?: string;
+}
+
+export interface ScanResult {
+    connections: DiscoveredConnection[];
+    scannedSources: string[];
+    errors: string[];
+}
+
+export const scannerApi = {
+    // Scan for all database connections
+    scanAll: (workspace?: string) =>
+        fetchApi<ScanResult>(
+            `/scanner/scan${workspace ? `?workspace=${encodeURIComponent(workspace)}` : ''}`
+        ),
+
+    // Scan only local ports
+    scanPorts: () => fetchApi<DiscoveredConnection[]>('/scanner/scan/ports'),
+
+    // Scan Docker containers
+    scanDocker: () => fetchApi<DiscoveredConnection[]>('/scanner/scan/docker'),
+
+    // Scan .env files
+    scanEnvFiles: (workspace?: string) =>
+        fetchApi<DiscoveredConnection[]>(
+            `/scanner/scan/env${workspace ? `?workspace=${encodeURIComponent(workspace)}` : ''}`
+        ),
+
+    // Scan docker-compose files
+    scanDockerCompose: (workspace?: string) =>
+        fetchApi<DiscoveredConnection[]>(
+            `/scanner/scan/compose${workspace ? `?workspace=${encodeURIComponent(workspace)}` : ''}`
+        ),
+
+    // Scan for SQLite files
+    scanSqliteFiles: (workspace?: string) =>
+        fetchApi<DiscoveredConnection[]>(
+            `/scanner/scan/sqlite${workspace ? `?workspace=${encodeURIComponent(workspace)}` : ''}`
+        ),
+};
