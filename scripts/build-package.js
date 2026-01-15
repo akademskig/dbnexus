@@ -226,7 +226,7 @@ fs.writeFileSync(path.join(distPackage, 'dist/index.js'), entryPoint);
 console.log('📝 Creating package.json...');
 const packageJson = {
     name: 'dbnexus',
-    version: '0.1.2',
+    version: '0.1.3',
     description: 'Database management tool with web UI',
     keywords: [
         'database',

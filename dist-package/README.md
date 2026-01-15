@@ -1,6 +1,6 @@
 # DB Nexus
 
-> Database management tool with web UI - like Prisma Studio for any database
+> Database management tool with web UI
 
 [![npm version](https://img.shields.io/npm/v/dbnexus.svg)](https://www.npmjs.com/package/dbnexus)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
