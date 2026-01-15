@@ -1,7 +1,7 @@
 {
     "name": "dbnexus",
     "version": "0.1.1",
-    "description": "Database management tool with web UI - like Prisma Studio for any database",
+    "description": "Database management tool with web",
     "keywords": [
         "database",
         "postgres",

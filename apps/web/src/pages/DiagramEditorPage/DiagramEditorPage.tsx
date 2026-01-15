@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ReactFlow,
@@ -143,8 +143,23 @@ export function DiagramEditorPage() {
     const urlConnectionId = searchParams.get('connection') || '';
     const urlSchema = searchParams.get('schema') || '';
 
-    // Use URL params directly as the selected values (ensure string type)
-    const selectedConnectionId = urlConnectionId || storeConnectionId || '';
+    // Fetch connections
+    const { data: connections = [], isLoading: loadingConnections } = useQuery({
+        queryKey: ['connections'],
+        queryFn: connectionsApi.getAll,
+    });
+
+    // Compute the candidate connection ID from URL or store
+    const candidateConnectionId = urlConnectionId || storeConnectionId || '';
+
+    // Only use the connection ID if it exists in the connections list
+    // This prevents invalid values being passed to Select component
+    const selectedConnectionId = useMemo(() => {
+        if (!candidateConnectionId || loadingConnections) return '';
+        const exists = connections.some((c) => c.id === candidateConnectionId);
+        return exists ? candidateConnectionId : '';
+    }, [candidateConnectionId, connections, loadingConnections]);
+
     const selectedSchema = urlSchema || storeSchema || '';
 
     // Fullscreen state
@@ -178,16 +193,13 @@ export function DiagramEditorPage() {
         defaultValue: '',
     });
 
-    // Fetch connections
-    const { data: connections = [], isLoading: loadingConnections } = useQuery({
-        queryKey: ['connections'],
-        queryFn: connectionsApi.getAll,
-    });
-
-    // Get current connection
+    // Get current connection - only if it exists in the connections list
     const connection = connections.find((c) => c.id === selectedConnectionId);
 
-    // Fetch schemas for selected connection
+    // Check if selected connection is valid (exists in connections list)
+    const isValidConnection = !!selectedConnectionId && !!connection;
+
+    // Fetch schemas for selected connection - only if connection is valid
     const {
         data: schemas = [],
         isLoading: loadingSchemas,
@@ -196,11 +208,11 @@ export function DiagramEditorPage() {
     } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
-        enabled: !!selectedConnectionId,
+        enabled: isValidConnection,
         retry: 1,
     });
 
-    // Fetch tables for selected schema
+    // Fetch tables for selected schema - only if connection is valid
     const {
         data: tables = [],
         isLoading: loadingTables,
@@ -209,7 +221,7 @@ export function DiagramEditorPage() {
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
         queryFn: () => schemaApi.getTables(selectedConnectionId, selectedSchema),
-        enabled: !!selectedConnectionId && !!selectedSchema,
+        enabled: isValidConnection && !!selectedSchema,
         retry: 1,
     });
 
@@ -221,33 +233,64 @@ export function DiagramEditorPage() {
         if (urlConnectionId || urlSchema) {
             setConnectionAndSchema(urlConnectionId, urlSchema);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Update URL when selection changes
-    const handleConnectionChange = (connectionId: string) => {
-        const newParams = new URLSearchParams(searchParams);
-        if (connectionId) {
-            newParams.set('connection', connectionId);
-            // Reset schema when connection changes
-            newParams.delete('schema');
-        } else {
-            newParams.delete('connection');
-            newParams.delete('schema');
-        }
-        setSearchParams(newParams, { replace: true });
-        setConnectionAndSchema(connectionId, '');
-    };
+    // Clear invalid connection from store when connections are loaded
+    useEffect(() => {
+        if (loadingConnections || connections.length === 0) return;
 
-    const handleSchemaChange = (schema: string) => {
-        const newParams = new URLSearchParams(searchParams);
-        if (schema) {
-            newParams.set('schema', schema);
-        } else {
-            newParams.delete('schema');
+        // If the candidate connection ID doesn't exist in connections, clear the store
+        if (candidateConnectionId) {
+            const exists = connections.some((c) => c.id === candidateConnectionId);
+            if (!exists) {
+                setConnectionAndSchema('', '');
+            }
         }
-        setSearchParams(newParams, { replace: true });
-        setConnectionAndSchema(selectedConnectionId, schema);
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loadingConnections, connections.length]);
+
+    // Update URL when selection changes
+    const handleConnectionChange = useCallback(
+        (connectionId: string) => {
+            setSearchParams(
+                (prev) => {
+                    const newParams = new URLSearchParams(prev);
+                    if (connectionId) {
+                        newParams.set('connection', connectionId);
+                        // Reset schema when connection changes
+                        newParams.delete('schema');
+                    } else {
+                        newParams.delete('connection');
+                        newParams.delete('schema');
+                    }
+                    return newParams;
+                },
+                { replace: true }
+            );
+            setConnectionAndSchema(connectionId, '');
+        },
+        [setConnectionAndSchema, setSearchParams]
+    );
+
+    const handleSchemaChange = useCallback(
+        (schema: string) => {
+            setSearchParams(
+                (prev) => {
+                    const newParams = new URLSearchParams(prev);
+                    if (schema) {
+                        newParams.set('schema', schema);
+                    } else {
+                        newParams.delete('schema');
+                    }
+                    return newParams;
+                },
+                { replace: true }
+            );
+            setConnectionAndSchema(selectedConnectionId, schema);
+        },
+        [selectedConnectionId, setConnectionAndSchema, setSearchParams]
+    );
 
     // Set default schema when schemas load
     useEffect(() => {
@@ -262,7 +305,13 @@ export function DiagramEditorPage() {
                 handleSchemaChange(defaultSchema);
             }
         }
-    }, [schemas, selectedSchema, selectedConnectionId, connection?.defaultSchema]);
+    }, [
+        schemas,
+        selectedSchema,
+        selectedConnectionId,
+        connection?.defaultSchema,
+        handleSchemaChange,
+    ]);
 
     // Handlers for node operations
     const handleOpenAddColumn = useCallback((tableId: string) => {
@@ -583,6 +632,11 @@ export function DiagramEditorPage() {
     const dataTypes =
         DATA_TYPES[connection?.engine as keyof typeof DATA_TYPES] || DATA_TYPES.postgres;
 
+    // Redirect to dashboard if no connections after loading
+    if (!loadingConnections && connections.length === 0) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     // Render diagram canvas content - extracted to avoid nested ternary
     const renderDiagramCanvas = () => {
         // Show empty state when no connections exist
@@ -600,7 +654,8 @@ export function DiagramEditorPage() {
             );
         }
 
-        if (!selectedConnectionId) {
+        // Show select connection state when no connection is selected or selected connection no longer exists
+        if (!selectedConnectionId || (!loadingConnections && !isValidConnection)) {
             return (
                 <EmptyState
                     icon={<StorageIcon />}

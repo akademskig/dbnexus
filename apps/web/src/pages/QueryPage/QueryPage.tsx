@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
     Box,
@@ -259,7 +259,7 @@ export function QueryPage() {
     ]);
 
     // Connections query
-    const { data: connections = [] } = useQuery({
+    const { data: connections = [], isLoading: connectionsLoading } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
@@ -925,6 +925,11 @@ export function QueryPage() {
         totalRowCount,
         toast,
     ]);
+
+    // Redirect to dashboard if no connections after loading
+    if (!connectionsLoading && connections.length === 0) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

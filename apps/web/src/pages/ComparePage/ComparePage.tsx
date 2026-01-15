@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -250,6 +251,11 @@ export function ComparePage() {
         setTargetSchema('');
         setHasCompared(false);
     }, [selectedGroupId]);
+
+    // Redirect to dashboard if no connections after loading
+    if (!loadingConnections && connections.length === 0) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     return (
         <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>

@@ -227,7 +227,7 @@ console.log('📝 Creating package.json...');
 const packageJson = {
     name: 'dbnexus',
     version: '0.1.2',
-    description: 'Database management tool with web UI - like Prisma Studio for any database',
+    description: 'Database management tool with web UI',
     keywords: [
         'database',
         'postgres',

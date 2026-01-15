@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Box, Typography, Tabs, Tab, Paper } from '@mui/material';
 import {
     History as HistoryIcon,
@@ -8,6 +10,7 @@ import {
 import { QueryHistoryTab } from './QueryHistoryTab';
 import { MigrationHistoryTab } from './MigrationHistoryTab';
 import { ActivityLogTab } from './ActivityLogTab';
+import { connectionsApi } from '../../lib/api';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -34,6 +37,17 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 
 export function LogsPage() {
     const [activeTab, setActiveTab] = useState(0);
+
+    // Fetch connections to check if any exist
+    const { data: connections = [], isLoading: loadingConnections } = useQuery({
+        queryKey: ['connections'],
+        queryFn: connectionsApi.getAll,
+    });
+
+    // Redirect to dashboard if no connections after loading
+    if (!loadingConnections && connections.length === 0) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     return (
         <Box

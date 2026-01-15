@@ -68,12 +68,17 @@ const useSidebarStore = create<SidebarStore>()(
 );
 
 const navItems = [
-    { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard' },
-    { to: '/projects', icon: <FolderIcon />, label: 'Projects' },
-    { to: '/query', icon: <TerminalIcon />, label: 'Query' },
-    { to: '/schema-diagram', icon: <AccountTreeIcon />, label: 'Schema Diagram' },
-    { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare' },
-    { to: '/logs', icon: <HistoryIcon />, label: 'Logs' },
+    { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', requiresConnections: false },
+    { to: '/projects', icon: <FolderIcon />, label: 'Projects', requiresConnections: false },
+    { to: '/query', icon: <TerminalIcon />, label: 'Query', requiresConnections: true },
+    {
+        to: '/schema-diagram',
+        icon: <AccountTreeIcon />,
+        label: 'Schema Diagram',
+        requiresConnections: true,
+    },
+    { to: '/compare', icon: <CompareArrowsIcon />, label: 'Compare', requiresConnections: true },
+    { to: '/logs', icon: <HistoryIcon />, label: 'Logs', requiresConnections: true },
 ];
 
 export function Layout() {
@@ -131,7 +136,8 @@ export function Layout() {
                 setLoadingGroups(false);
                 setLoadingConnections(false);
             });
-    }, [checkAllConnections]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
@@ -213,36 +219,49 @@ export function Layout() {
 
                 {/* Main Navigation - Fixed at top */}
                 <List disablePadding sx={{ px: collapsed ? 1 : 1.5, pt: 2 }}>
-                    {navItems.map(({ to, icon, label }) => {
+                    {navItems.map(({ to, icon, label, requiresConnections }) => {
                         const isActive =
                             location.pathname === to || location.pathname.startsWith(to + '/');
+                        const isDisabled = requiresConnections && connections.length === 0;
+                        const tooltipTitle = collapsed
+                            ? isDisabled
+                                ? `${label} (No connections)`
+                                : label
+                            : isDisabled
+                              ? 'No connections available'
+                              : '';
+
                         return (
-                            <StyledTooltip
-                                key={to}
-                                title={collapsed ? label : ''}
-                                placement="right"
-                                arrow
-                            >
-                                <ListItemButton
-                                    component={NavLink}
-                                    to={to}
-                                    selected={isActive}
-                                    sx={{
-                                        mb: 0.5,
-                                        justifyContent: collapsed ? 'center' : 'flex-start',
-                                        px: collapsed ? 1.5 : 2,
-                                    }}
-                                >
-                                    <ListItemIcon
+                            <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
+                                <span>
+                                    <ListItemButton
+                                        component={isDisabled ? 'div' : NavLink}
+                                        to={isDisabled ? undefined : to}
+                                        selected={isActive}
+                                        disabled={isDisabled}
                                         sx={{
-                                            minWidth: collapsed ? 0 : 40,
-                                            color: isActive ? 'primary.main' : 'text.secondary',
+                                            mb: 0.5,
+                                            justifyContent: collapsed ? 'center' : 'flex-start',
+                                            px: collapsed ? 1.5 : 2,
+                                            opacity: isDisabled ? 0.5 : 1,
+                                            cursor: isDisabled ? 'not-allowed' : 'pointer',
                                         }}
                                     >
-                                        {icon}
-                                    </ListItemIcon>
-                                    {!collapsed && <ListItemText primary={label} />}
-                                </ListItemButton>
+                                        <ListItemIcon
+                                            sx={{
+                                                minWidth: collapsed ? 0 : 40,
+                                                color: isActive
+                                                    ? 'primary.main'
+                                                    : isDisabled
+                                                      ? 'text.disabled'
+                                                      : 'text.secondary',
+                                            }}
+                                        >
+                                            {icon}
+                                        </ListItemIcon>
+                                        {!collapsed && <ListItemText primary={label} />}
+                                    </ListItemButton>
+                                </span>
                             </StyledTooltip>
                         );
                     })}
