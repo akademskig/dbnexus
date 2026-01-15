@@ -30,9 +30,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
@@ -442,30 +439,21 @@ export function Layout() {
                                                                 opacity: isOffline ? 0.5 : 1,
                                                             }}
                                                         >
-                                                            <ListItemIcon sx={{ minWidth: 32 }}>
-                                                                {isOnline ? (
-                                                                    <CheckCircleIcon
-                                                                        sx={{
-                                                                            fontSize: 16,
-                                                                            color: 'success.main',
-                                                                        }}
-                                                                    />
-                                                                ) : isOffline ? (
-                                                                    <ErrorIcon
-                                                                        sx={{
-                                                                            fontSize: 16,
-                                                                            color: 'error.main',
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                    <HelpOutlineIcon
-                                                                        sx={{
-                                                                            fontSize: 16,
-                                                                            color: 'text.disabled',
-                                                                        }}
-                                                                    />
-                                                                )}
-                                                            </ListItemIcon>
+                                                            <Box
+                                                                sx={{
+                                                                    width: 8,
+                                                                    height: 8,
+                                                                    borderRadius: '50%',
+                                                                    bgcolor: isOnline
+                                                                        ? 'success.main'
+                                                                        : isOffline
+                                                                          ? 'error.main'
+                                                                          : 'text.disabled',
+                                                                    ml: 1,
+                                                                    mr: 2,
+                                                                    flexShrink: 0,
+                                                                }}
+                                                            />
                                                             <ListItemText
                                                                 primary={conn.name}
                                                                 primaryTypographyProps={{
@@ -556,30 +544,21 @@ export function Layout() {
                                                         opacity: isOffline ? 0.5 : 1,
                                                     }}
                                                 >
-                                                    <ListItemIcon sx={{ minWidth: 32 }}>
-                                                        {isOnline ? (
-                                                            <CheckCircleIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'success.main',
-                                                                }}
-                                                            />
-                                                        ) : isOffline ? (
-                                                            <ErrorIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'error.main',
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <HelpOutlineIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'text.disabled',
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </ListItemIcon>
+                                                    <Box
+                                                        sx={{
+                                                            width: 8,
+                                                            height: 8,
+                                                            borderRadius: '50%',
+                                                            bgcolor: isOnline
+                                                                ? 'success.main'
+                                                                : isOffline
+                                                                  ? 'error.main'
+                                                                  : 'text.disabled',
+                                                            ml: 1,
+                                                            mr: 2,
+                                                            flexShrink: 0,
+                                                        }}
+                                                    />
                                                     <ListItemText
                                                         primary={conn.name}
                                                         secondary={conn.engine}
