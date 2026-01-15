@@ -28,6 +28,8 @@ import {
     LightMode as LightModeIcon,
     DarkMode as DarkModeIcon,
     Keyboard as KeyboardIcon,
+    Info as InfoIcon,
+    Email as EmailIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
@@ -449,6 +451,122 @@ function TagsTab() {
     );
 }
 
+// About Tab Content
+function AboutTab() {
+    const version = '0.1.0';
+
+    return (
+        <>
+            {/* Description */}
+            <GlassCard sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                    <InfoIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                        About DB Nexus
+                    </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    DB Nexus is a powerful database management tool that helps you manage multiple
+                    database connections, compare schemas, synchronize data, and visualize database
+                    structures across PostgreSQL, MySQL, MariaDB, and SQLite databases.
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+                    Built with modern technologies including React, TypeScript, NestJS, and
+                    Material-UI, DB Nexus provides a seamless experience for database administrators
+                    and developers.
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                    Version {version}
+                </Typography>
+            </GlassCard>
+
+            {/* Contact */}
+            <GlassCard sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, mb: 2 }}>
+                    Contact & Support
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    For questions, feedback, or support:
+                </Typography>
+                <Button
+                    variant="outlined"
+                    startIcon={<EmailIcon />}
+                    href="mailto:admin@dbnexus.dev"
+                    sx={{
+                        textTransform: 'none',
+                        borderColor: 'divider',
+                        color: 'text.primary',
+                        '&:hover': {
+                            borderColor: 'primary.main',
+                            bgcolor: 'action.hover',
+                        },
+                    }}
+                >
+                    admin@dbnexus.dev
+                </Button>
+            </GlassCard>
+
+            {/* Resources */}
+            <GlassCard sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, mb: 2 }}>
+                    Resources
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Button
+                        variant="outlined"
+                        href="https://github.com/dbnexus/dbnexus"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                    >
+                        GitHub
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        href="https://docs.dbnexus.dev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                    >
+                        Documentation
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        href="https://github.com/dbnexus/dbnexus/issues"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                    >
+                        Report Issue
+                    </Button>
+                </Box>
+            </GlassCard>
+
+            {/* License */}
+            <GlassCard>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, mb: 2 }}>
+                    License & Credits
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    DB Nexus is open source software.
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                    © {new Date().getFullYear()} DB Nexus. All rights reserved.
+                </Typography>
+            </GlassCard>
+        </>
+    );
+}
+
 // Keyboard Shortcuts Tab Content
 function KeyboardShortcutsTab() {
     const queryShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'query');
@@ -562,12 +680,13 @@ export function SettingsPage() {
         if (tabParam === 'appearance') setTab(0);
         else if (tabParam === 'tags') setTab(1);
         else if (tabParam === 'shortcuts') setTab(2);
+        else if (tabParam === 'about') setTab(3);
     }, [searchParams]);
 
     // Update URL when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setTab(newValue);
-        const tabNames = ['appearance', 'tags', 'shortcuts'];
+        const tabNames = ['appearance', 'tags', 'shortcuts', 'about'];
         const tabName = tabNames[newValue];
         if (tabName) {
             setSearchParams({ tab: tabName });
@@ -616,12 +735,14 @@ export function SettingsPage() {
                     <Tab label="Appearance" />
                     <Tab label="Tags" />
                     <Tab label="Keyboard Shortcuts" />
+                    <Tab label="About" />
                 </Tabs>
 
                 {/* Tab Content */}
                 {tab === 0 && <AppearanceTab />}
                 {tab === 1 && <TagsTab />}
                 {tab === 2 && <KeyboardShortcutsTab />}
+                {tab === 3 && <AboutTab />}
             </Box>
         </Box>
     );
