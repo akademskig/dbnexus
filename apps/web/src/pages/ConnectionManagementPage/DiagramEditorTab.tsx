@@ -51,6 +51,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { schemaApi, queriesApi } from '../../lib/api';
+import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
 import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
@@ -174,27 +175,14 @@ export function DiagramEditorTab({
     });
 
     // Quote identifier based on engine
-    const quoteIdentifier = useCallback(
-        (name: string) => {
-            if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-                return `\`${name}\``;
-            }
-            return `"${name}"`;
-        },
+    const quoteIdentifierForEngine = useCallback(
+        (name: string) => quoteIdentifier(name, connection?.engine),
         [connection?.engine]
     );
 
-    // Build full table name
-    const buildTableName = useCallback(
-        (schema: string, table: string) => {
-            const quotedSchema = quoteIdentifier(schema);
-            const quotedTable = quoteIdentifier(table);
-            if (connection?.engine === 'sqlite') {
-                return quotedTable;
-            }
-            return `${quotedSchema}.${quotedTable}`;
-        },
-        [connection?.engine, quoteIdentifier]
+    const buildTableNameForEngine = useCallback(
+        (schema: string, table: string) => buildTableName(schema, table, connection?.engine),
+        [connection?.engine]
     );
 
     // State for dangerous operation confirmation
@@ -431,7 +419,7 @@ export function DiagramEditorTab({
     const handleCreateTable = async () => {
         if (!newTableName.trim()) return;
 
-        const fullTableName = buildTableName(selectedSchema, newTableName);
+        const fullTableName = buildTableNameForEngine(selectedSchema, newTableName);
         const sql = `CREATE TABLE ${fullTableName} (id SERIAL PRIMARY KEY)`;
 
         try {
@@ -449,8 +437,8 @@ export function DiagramEditorTab({
     const handleAddColumn = async () => {
         if (!currentTableId || !newColumn.name || !newColumn.dataType) return;
 
-        const fullTableName = buildTableName(selectedSchema, currentTableId);
-        const quotedColumn = quoteIdentifier(newColumn.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, currentTableId);
+        const quotedColumn = quoteIdentifierForEngine(newColumn.name);
 
         let sql = `ALTER TABLE ${fullTableName} ADD COLUMN ${quotedColumn} ${newColumn.dataType}`;
         if (!newColumn.nullable) sql += ' NOT NULL';
@@ -470,8 +458,8 @@ export function DiagramEditorTab({
     const handleDeleteColumn = async () => {
         if (!currentTableId || !currentColumn) return;
 
-        const fullTableName = buildTableName(selectedSchema, currentTableId);
-        const quotedColumn = quoteIdentifier(currentColumn.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, currentTableId);
+        const quotedColumn = quoteIdentifierForEngine(currentColumn.name);
         const sql = `ALTER TABLE ${fullTableName} DROP COLUMN ${quotedColumn}`;
 
         try {
@@ -489,11 +477,7 @@ export function DiagramEditorTab({
     const handleDeleteTable = async () => {
         if (!currentTableId || confirmDeleteText !== currentTableId) return;
 
-        const fullTableName = buildTableName(selectedSchema, currentTableId);
-        const sql =
-            connection?.engine === 'sqlite'
-                ? `DROP TABLE ${fullTableName}`
-                : `DROP TABLE ${fullTableName} CASCADE`;
+        const sql = buildDropTableSql(selectedSchema, currentTableId, connection?.engine, true);
 
         try {
             await executeSql.mutateAsync({ sql, confirmed: true });
@@ -539,10 +523,10 @@ export function DiagramEditorTab({
         }
 
         const fkName = `fk_${sourceTable}_${sourceCol.name}`;
-        const fullSourceTable = buildTableName(selectedSchema, sourceTable);
-        const fullTargetTable = buildTableName(selectedSchema, targetTable);
+        const fullSourceTable = buildTableNameForEngine(selectedSchema, sourceTable);
+        const fullTargetTable = buildTableNameForEngine(selectedSchema, targetTable);
 
-        const sql = `ALTER TABLE ${fullSourceTable} ADD CONSTRAINT ${quoteIdentifier(fkName)} FOREIGN KEY (${quoteIdentifier(sourceCol.name)}) REFERENCES ${fullTargetTable} (${quoteIdentifier(targetCol.name)})`;
+        const sql = `ALTER TABLE ${fullSourceTable} ADD CONSTRAINT ${quoteIdentifierForEngine(fkName)} FOREIGN KEY (${quoteIdentifierForEngine(sourceCol.name)}) REFERENCES ${fullTargetTable} (${quoteIdentifierForEngine(targetCol.name)})`;
 
         try {
             await executeSqlWithConfirmation(sql, () => {

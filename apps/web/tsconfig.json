@@ -19,8 +19,9 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"]
-        }
+        },
+        "types": ["@testing-library/jest-dom"]
     },
     "include": ["src"],
-    "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
+    "exclude": ["src/test"]
 }

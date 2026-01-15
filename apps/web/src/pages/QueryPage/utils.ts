@@ -1,18 +1,4 @@
-// Helper to quote identifiers based on database engine
-export const quoteIdentifier = (name: string, engine?: string) => {
-    if (engine === 'mysql' || engine === 'mariadb') {
-        return `\`${name}\``;
-    }
-    return `"${name}"`;
-};
-
-// Helper to build fully qualified table name
-export const buildTableName = (schema: string, table: string, engine?: string) => {
-    if (engine === 'sqlite') {
-        return quoteIdentifier(table, engine);
-    }
-    return `${quoteIdentifier(schema, engine)}.${quoteIdentifier(table, engine)}`;
-};
+export { quoteIdentifier, buildTableName } from '../../lib/sql';
 
 // Tab name mapping for URL
 export const TAB_NAMES = ['data', 'structure', 'indexes', 'foreignKeys', 'sql'] as const;

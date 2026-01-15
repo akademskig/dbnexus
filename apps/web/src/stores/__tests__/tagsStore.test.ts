@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useTagsStore, TAG_COLORS } from './tagsStore';
+import { useTagsStore, TAG_COLORS } from '../tagsStore';
 
 describe('tagsStore', () => {
     beforeEach(() => {

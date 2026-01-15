@@ -40,6 +40,7 @@ import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { schemaApi, queriesApi } from '../../lib/api';
+import { buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
 
 interface TableDetailsTabProps {
@@ -245,28 +246,14 @@ export function TableDetailsTab({
         enabled: !!connectionId && !!newFk.referencedSchema && !!newFk.referencedTable && addFkOpen,
     });
 
-    // Quote identifier based on engine
-    const quoteIdentifier = useCallback(
-        (name: string) => {
-            if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-                return `\`${name}\``;
-            }
-            return `"${name}"`;
-        },
+    const quoteIdentifierForEngine = useCallback(
+        (name: string) => quoteIdentifier(name, connection?.engine),
         [connection?.engine]
     );
 
-    // Build full table name
-    const buildTableName = useCallback(
-        (schema: string, table: string) => {
-            const quotedSchema = quoteIdentifier(schema);
-            const quotedTable = quoteIdentifier(table);
-            if (connection?.engine === 'sqlite') {
-                return quotedTable;
-            }
-            return `${quotedSchema}.${quotedTable}`;
-        },
-        [connection?.engine, quoteIdentifier]
+    const buildTableNameForEngine = useCallback(
+        (schema: string, table: string) => buildTableName(schema, table, connection?.engine),
+        [connection?.engine]
     );
 
     // Execute SQL mutation
@@ -285,8 +272,8 @@ export function TableDetailsTab({
     const handleAddColumn = async () => {
         if (!newColumn.name || !newColumn.dataType) return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedColumn = quoteIdentifier(newColumn.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedColumn = quoteIdentifierForEngine(newColumn.name);
 
         let sql = `ALTER TABLE ${fullTableName} ADD COLUMN ${quotedColumn} ${newColumn.dataType}`;
 
@@ -311,8 +298,8 @@ export function TableDetailsTab({
     const handleEditColumn = async () => {
         if (!columnToEdit) return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedColumn = quoteIdentifier(columnToEdit.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedColumn = quoteIdentifierForEngine(columnToEdit.name);
 
         // Build ALTER statements based on what changed
         const statements: string[] = [];
@@ -374,8 +361,8 @@ export function TableDetailsTab({
     const handleDeleteColumn = async () => {
         if (!columnToDelete) return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedColumn = quoteIdentifier(columnToDelete.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedColumn = quoteIdentifierForEngine(columnToDelete.name);
 
         const sql = `ALTER TABLE ${fullTableName} DROP COLUMN ${quotedColumn}`;
 
@@ -394,9 +381,9 @@ export function TableDetailsTab({
     const handleAddIndex = async () => {
         if (!newIndex.name || newIndex.columns.length === 0) return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedIndexName = quoteIdentifier(newIndex.name);
-        const quotedColumns = newIndex.columns.map((c) => quoteIdentifier(c)).join(', ');
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedIndexName = quoteIdentifierForEngine(newIndex.name);
+        const quotedColumns = newIndex.columns.map((c) => quoteIdentifierForEngine(c)).join(', ');
 
         const uniqueKeyword = newIndex.isUnique ? 'UNIQUE ' : '';
         const sql = `CREATE ${uniqueKeyword}INDEX ${quotedIndexName} ON ${fullTableName} (${quotedColumns})`;
@@ -414,13 +401,13 @@ export function TableDetailsTab({
     const handleDeleteIndex = async () => {
         if (!indexToDelete) return;
 
-        const quotedIndexName = quoteIdentifier(indexToDelete.name);
+        const quotedIndexName = quoteIdentifierForEngine(indexToDelete.name);
 
         let sql: string;
         if (connection?.engine === 'postgres') {
-            sql = `DROP INDEX ${quoteIdentifier(selectedSchema)}.${quotedIndexName}`;
+            sql = `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedIndexName}`;
         } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-            const fullTableName = buildTableName(selectedSchema, selectedTable);
+            const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
             sql = `DROP INDEX ${quotedIndexName} ON ${fullTableName}`;
         } else {
             sql = `DROP INDEX ${quotedIndexName}`;
@@ -447,11 +434,16 @@ export function TableDetailsTab({
         )
             return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedFkName = quoteIdentifier(newFk.name);
-        const quotedColumns = newFk.columns.map((c) => quoteIdentifier(c)).join(', ');
-        const quotedRefTable = buildTableName(newFk.referencedSchema, newFk.referencedTable);
-        const quotedRefColumns = newFk.referencedColumns.map((c) => quoteIdentifier(c)).join(', ');
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedFkName = quoteIdentifierForEngine(newFk.name);
+        const quotedColumns = newFk.columns.map((c) => quoteIdentifierForEngine(c)).join(', ');
+        const quotedRefTable = buildTableNameForEngine(
+            newFk.referencedSchema,
+            newFk.referencedTable
+        );
+        const quotedRefColumns = newFk.referencedColumns
+            .map((c) => quoteIdentifierForEngine(c))
+            .join(', ');
 
         const sql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quotedFkName} FOREIGN KEY (${quotedColumns}) REFERENCES ${quotedRefTable} (${quotedRefColumns}) ON DELETE ${newFk.onDelete} ON UPDATE ${newFk.onUpdate}`;
 
@@ -476,8 +468,8 @@ export function TableDetailsTab({
     const handleDeleteFk = async () => {
         if (!fkToDelete) return;
 
-        const fullTableName = buildTableName(selectedSchema, selectedTable);
-        const quotedFkName = quoteIdentifier(fkToDelete.name);
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedFkName = quoteIdentifierForEngine(fkToDelete.name);
 
         let sql: string;
         if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {

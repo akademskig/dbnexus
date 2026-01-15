@@ -55,6 +55,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
+import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { GlassCard } from '../../components/GlassCard';
@@ -109,21 +110,6 @@ function parseColumnArray(value: unknown): string[] {
         return value ? [value] : [];
     }
     return [];
-}
-
-// Helper to quote identifiers
-function quoteIdentifier(name: string, engine?: string): string {
-    if (engine === 'mysql' || engine === 'mariadb') {
-        return `\`${name}\``;
-    }
-    return `"${name}"`;
-}
-
-// Helper to build full table name with schema
-function buildTableName(schema: string, table: string, engine?: string): string {
-    const quotedSchema = quoteIdentifier(schema, engine);
-    const quotedTable = quoteIdentifier(table, engine);
-    return `${quotedSchema}.${quotedTable}`;
 }
 
 export function DiagramEditorPage() {
@@ -300,8 +286,8 @@ export function DiagramEditorPage() {
                 connection?.defaultSchema && schemas.includes(connection.defaultSchema)
                     ? connection.defaultSchema
                     : schemas.includes('public')
-                        ? 'public'
-                        : schemas[0];
+                      ? 'public'
+                      : schemas[0];
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
@@ -569,11 +555,7 @@ export function DiagramEditorPage() {
     const handleDeleteTable = async () => {
         if (!currentTableId || confirmDeleteText !== currentTableId) return;
 
-        const fullTableName = buildTableName(selectedSchema, currentTableId, connection?.engine);
-        const sql =
-            connection?.engine === 'sqlite'
-                ? `DROP TABLE ${fullTableName}`
-                : `DROP TABLE ${fullTableName} CASCADE`;
+        const sql = buildDropTableSql(selectedSchema, currentTableId, connection?.engine, true);
 
         try {
             await executeSql.mutateAsync({ sql, confirmed: true });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '../test/test-utils';
-import { LoadingState, LoadingSkeleton } from './LoadingState';
+import { render, screen } from '../../test/test-utils';
+import { LoadingState, LoadingSkeleton } from '../LoadingState';
 
 describe('LoadingState', () => {
     it('should render circular progress by default', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatShortcut, KEYBOARD_SHORTCUTS } from './useKeyboardShortcuts';
+import { formatShortcut, KEYBOARD_SHORTCUTS } from '../useKeyboardShortcuts';
 
 describe('formatShortcut', () => {
     it('should format Ctrl+Enter shortcut', () => {
@@ -74,7 +74,7 @@ describe('KEYBOARD_SHORTCUTS', () => {
         const descriptions = navShortcuts.map((s) => s.description.toLowerCase());
 
         expect(descriptions.some((d) => d.includes('dashboard'))).toBe(true);
-        expect(descriptions.some((d) => d.includes('connections'))).toBe(true);
+        expect(descriptions.some((d) => d.includes('projects'))).toBe(true);
         expect(descriptions.some((d) => d.includes('query'))).toBe(true);
         expect(descriptions.some((d) => d.includes('settings'))).toBe(true);
     });

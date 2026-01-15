@@ -35,6 +35,7 @@ import type { ConnectionConfig, TableInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { schemaApi, queriesApi } from '../../lib/api';
+import { buildDropTableSql, buildTableName } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
 
 interface TablesTabProps {
@@ -112,30 +113,16 @@ export function TablesTab({
         navigate(`/query/${connectionId}?schema=${table.schema}&table=${table.name}`);
     };
 
-    // Quote identifier based on engine
-    const quoteIdentifier = (name: string) => {
-        if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-            return `\`${name}\``;
-        }
-        return `"${name}"`;
-    };
-
-    // Build full table name
-    const buildTableName = (schema: string, table: string) => {
-        const quotedSchema = quoteIdentifier(schema);
-        const quotedTable = quoteIdentifier(table);
-        if (connection?.engine === 'sqlite') {
-            return quotedTable;
-        }
-        return `${quotedSchema}.${quotedTable}`;
-    };
-
     const handleCreateTable = async () => {
         if (!newTableName.trim()) return;
 
         setCreating(true);
         try {
-            const fullTableName = buildTableName(selectedSchema, newTableName.trim());
+            const fullTableName = buildTableName(
+                selectedSchema,
+                newTableName.trim(),
+                connection?.engine
+            );
             // Create a simple table with an id column
             const sql = `CREATE TABLE ${fullTableName} (id SERIAL PRIMARY KEY);`;
             await queriesApi.execute(connectionId, sql);
@@ -156,8 +143,12 @@ export function TablesTab({
 
         setDropping(true);
         try {
-            const fullTableName = buildTableName(tableToDelete.schema, tableToDelete.name);
-            const sql = `DROP TABLE ${fullTableName};`;
+            const sql = `${buildDropTableSql(
+                tableToDelete.schema,
+                tableToDelete.name,
+                connection?.engine,
+                false
+            )};`;
             // Pass confirmed: true since user has already typed the table name to confirm
             await queriesApi.execute(connectionId, sql, true);
             await refetchTables();

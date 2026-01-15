@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useConnectionStore } from './connectionStore';
+import { useConnectionStore } from '../connectionStore';
 
 describe('connectionStore', () => {
     beforeEach(() => {
