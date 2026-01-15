@@ -102,8 +102,10 @@ dbnexus --help
 
     ```bash
     cd dist-package
-    npm link
-    dbnexus  # Test it works
+    npm install        # Install native dependencies
+    npm link           # Link globally
+    dbnexus --help     # Test CLI
+    dbnexus --no-open  # Test server (without browser)
     npm unlink -g dbnexus  # Clean up
     ```
 
@@ -131,34 +133,45 @@ See **PUBLISHING.md** for detailed instructions, troubleshooting, and CI/CD setu
 ```
 dist-package/
 ├── dist/
-│   ├── api/          # NestJS server (serves API + static files)
-│   ├── web/          # React frontend (built static files)
-│   ├── cli/          # CLI entry point
-│   ├── connectors/   # Database connectors
-│   ├── metadata/     # Metadata management
-│   └── shared/       # Shared types
+│   ├── index.js      # Entry point with CLI (~4KB)
+│   ├── cli.js        # Bundled CLI (~1.8MB)
+│   ├── api.js        # Bundled API server (~4.1MB)
+│   └── web/          # React frontend (~1.5MB)
+├── node_modules/     # Native modules only (~14MB)
 ├── package.json      # npm package config
 ├── README.md         # Package documentation
 └── LICENSE           # MIT license
+
+Total package size: ~22MB
 ```
 
 ### How It Works
 
 1. **User runs `dbnexus`**
-    - CLI entry point (`dist/cli/index.js`) is executed
-    - Sets `NODE_ENV=production` and `PORT` environment variable
-    - Spawns the API server (`dist/api/main.js`)
+   - Entry point (`dist/index.js`) is executed
+   - Parses CLI arguments (--port, --data-dir, --no-open)
+   - Dynamically imports the bundled API server (`dist/api.js`)
 
 2. **API server starts**
-    - Initializes metadata database in `~/.dbnexus/`
-    - Detects and serves web UI static files from `dist/web/`
-    - Sets up API routes under `/api` prefix
-    - Implements SPA fallback for React Router
+   - Initializes metadata database in `~/.dbnexus/`
+   - Detects and serves web UI static files from `dist/web/`
+   - Sets up API routes under `/api` prefix
+   - Implements SPA fallback for React Router
 
 3. **Browser opens**
-    - CLI uses `open` package to launch browser
-    - User accesses `http://localhost:3001`
-    - Web UI loads and connects to API
+   - Entry point uses `open` package to launch browser
+   - User accesses `http://localhost:3001`
+   - Web UI loads and connects to API
+
+### Build Process
+
+The build uses **esbuild** to bundle everything:
+
+1. `pnpm build` - Build all TypeScript packages
+2. esbuild bundles CLI → `dist/cli.js` (includes commander, chalk, ora)
+3. esbuild bundles API → `dist/api.js` (includes NestJS, Express, connectors)
+4. Web UI is copied as static files → `dist/web/`
+5. Native modules (better-sqlite3) remain as npm dependencies
 
 ### Key Features
 

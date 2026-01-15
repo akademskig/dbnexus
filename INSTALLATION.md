@@ -107,13 +107,15 @@ Before publishing, test the package locally:
 
 ```bash
 cd dist-package
+npm install
 npm link
 ```
 
 Then in another terminal:
 
 ```bash
-dbnexus
+dbnexus --help
+dbnexus --no-open  # Start without opening browser
 ```
 
 To unlink:
