@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -552,7 +553,26 @@ function KeyboardShortcutsTab() {
 
 // Main Settings Page
 export function SettingsPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [tab, setTab] = useState(0);
+
+    // Sync tab with URL on mount
+    useEffect(() => {
+        const tabParam = searchParams.get('tab');
+        if (tabParam === 'appearance') setTab(0);
+        else if (tabParam === 'tags') setTab(1);
+        else if (tabParam === 'shortcuts') setTab(2);
+    }, [searchParams]);
+
+    // Update URL when tab changes
+    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+        setTab(newValue);
+        const tabNames = ['appearance', 'tags', 'shortcuts'];
+        const tabName = tabNames[newValue];
+        if (tabName) {
+            setSearchParams({ tab: tabName });
+        }
+    };
 
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
@@ -578,7 +598,7 @@ export function SettingsPage() {
                 {/* Tabs */}
                 <Tabs
                     value={tab}
-                    onChange={(_, v) => setTab(v)}
+                    onChange={handleTabChange}
                     sx={{
                         '& .MuiTabs-indicator': {
                             bgcolor: 'primary.main',
