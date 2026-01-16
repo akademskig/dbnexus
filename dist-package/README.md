@@ -15,6 +15,7 @@
 - 📜 **Query History** - Track and replay queries
 - 🔒 **Secure** - Encrypted credentials with AES-256-GCM
 - 🛡️ **Safety First** - Production guardrails for dangerous queries
+- 🔎 **Connection Scanning** - Discover databases via local ports, Docker containers, env/compose files, and SQLite files
 
 ## Installation
 
