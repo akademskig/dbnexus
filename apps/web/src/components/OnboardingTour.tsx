@@ -366,18 +366,18 @@ export function OnboardingTour({
                         color="primary"
                         onClick={handleExpand}
                         sx={{
-                            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${currentStep?.color})`,
+                            bgcolor: theme.palette.primary.main,
                             animation: 'fab-pulse 2s ease-in-out infinite',
                             '&:hover': {
-                                background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${currentStep?.color})`,
+                                bgcolor: theme.palette.primary.dark,
                                 animation: 'none',
                             },
                             '@keyframes fab-pulse': {
                                 '0%, 100%': {
-                                    boxShadow: `0 0 0 0 ${alpha(currentStep?.color || theme.palette.primary.main, 0.4)}`,
+                                    boxShadow: `0 0 0 0 ${alpha(theme.palette.primary.main, 0.4)}`,
                                 },
                                 '50%': {
-                                    boxShadow: `0 0 0 12px ${alpha(currentStep?.color || theme.palette.primary.main, 0)}`,
+                                    boxShadow: `0 0 0 12px ${alpha(theme.palette.primary.main, 0)}`,
                                 },
                             },
                         }}
@@ -463,7 +463,7 @@ export function OnboardingTour({
                         zIndex: 1300,
                         borderRadius: 3,
                         overflow: 'hidden',
-                        border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.3)}`,
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     }}
                 >
                     {/* Progress bar */}
@@ -477,7 +477,7 @@ export function OnboardingTour({
                             sx={{
                                 height: '100%',
                                 width: `${progress}%`,
-                                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${currentStep?.color})`,
+                                bgcolor: theme.palette.primary.main,
                                 transition: 'width 0.3s ease',
                             }}
                         />
@@ -491,7 +491,7 @@ export function OnboardingTour({
                             gap: 1.5,
                             px: 2,
                             py: 1.5,
-                            background: `linear-gradient(135deg, ${alpha(currentStep?.color || theme.palette.primary.main, 0.15)} 0%, transparent 100%)`,
+                            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, transparent 100%)`,
                             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
                         }}
                     >
@@ -503,11 +503,8 @@ export function OnboardingTour({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                bgcolor: alpha(
-                                    currentStep?.color || theme.palette.primary.main,
-                                    0.2
-                                ),
-                                color: currentStep?.color,
+                                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                color: theme.palette.primary.main,
                             }}
                         >
                             {currentStep?.icon}
@@ -565,7 +562,7 @@ export function OnboardingTour({
                                         <CheckCircleIcon
                                             sx={{
                                                 fontSize: 18,
-                                                color: currentStep?.color || 'primary.main',
+                                                color: 'primary.main',
                                             }}
                                         />
                                         <Typography
@@ -584,11 +581,8 @@ export function OnboardingTour({
                                 sx={{
                                     p: 1.5,
                                     borderRadius: 2,
-                                    bgcolor: alpha(
-                                        currentStep?.color || theme.palette.primary.main,
-                                        0.12
-                                    ),
-                                    border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.25)}`,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.12),
+                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.25)}`,
                                 }}
                             >
                                 <Typography
@@ -698,15 +692,10 @@ export function OnboardingTour({
                                 endIcon={isLastStep ? <RocketLaunchIcon /> : <ArrowForwardIcon />}
                                 sx={{
                                     textTransform: 'none',
-                                    bgcolor: currentStep?.color,
                                     fontWeight: 600,
                                     px: 2.5,
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    '&:hover': {
-                                        bgcolor: currentStep?.color,
-                                        filter: 'brightness(0.9)',
-                                    },
                                     '&::before': {
                                         content: '""',
                                         position: 'absolute',
