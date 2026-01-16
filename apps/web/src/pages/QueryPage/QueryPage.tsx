@@ -90,12 +90,14 @@ export function QueryPage() {
         () => urlSchema || sharedSchema || lastState?.schema || ''
     );
 
-    // Sync state when URL params change (e.g., navigation)
+    // Sync state when URL params change (e.g., external navigation)
+    // Only sync FROM URL, not when we're programmatically changing the connection
     useEffect(() => {
         if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
             setSelectedConnectionId(routeConnectionId);
         }
-    }, [routeConnectionId, selectedConnectionId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [routeConnectionId]); // Only react to URL changes, not state changes
 
     useEffect(() => {
         if (urlSchema && urlSchema !== selectedSchema) {

@@ -29,7 +29,7 @@ export function ConnectionSelector({
         queryFn: connectionsApi.getAll,
     });
 
-    const { healthStatus, checkConnection } = useConnectionHealthStore();
+    const { healthStatus } = useConnectionHealthStore();
 
     // Check if a connection is disabled
     const isConnectionDisabled = (conn: ConnectionConfig) => {
@@ -41,20 +41,7 @@ export function ConnectionSelector({
 
     const handleChange = async (event: SelectChangeEvent<string>) => {
         const connectionId = event.target.value;
-
-        // Check connection health if not yet checked
-        const health = healthStatus[connectionId];
-        if (!health) {
-            const isOnline = await checkConnection(connectionId);
-            if (!isOnline && disableOffline) {
-                // Don't allow selection of offline connections
-                return;
-            }
-        } else if (!health.isOnline && disableOffline) {
-            // Already know it's offline
-            return;
-        }
-
+        // Allow selection immediately
         onChange(connectionId);
     };
 
