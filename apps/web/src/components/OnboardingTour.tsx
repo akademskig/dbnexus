@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Button,
@@ -7,7 +7,6 @@ import {
     Typography,
     useTheme,
     alpha,
-    Collapse,
     Fade,
     Fab,
     Badge,
@@ -27,7 +26,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SchoolIcon from '@mui/icons-material/School';
 import MinimizeIcon from '@mui/icons-material/Remove';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 export const ONBOARDING_STORAGE_KEY = 'dbnexus:onboarding:completed';
 const ONBOARDING_STEP_KEY = 'dbnexus:onboarding:step';
@@ -37,6 +35,7 @@ type TourStep = {
     id: string;
     title: string;
     description: string;
+    features?: string[];
     hint?: string;
     icon: React.ReactNode;
     route: string;
@@ -58,78 +57,96 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [hasNavigated, setHasNavigated] = useState(false);
 
-    const steps: TourStep[] = [
-        {
-            id: 'projects',
-            title: 'Step 1: Add a Connection',
-            description:
-                'Start by adding your first database connection. Click "Add Connection" or use the scan feature to auto-discover databases.',
-            hint: '💡 Try the "Scan for Connections" button to find running databases',
-            icon: <StorageIcon />,
-            route: '/projects',
-            color: theme.palette.primary.main,
-        },
-        {
-            id: 'organize',
-            title: 'Step 2: Organize Connections',
-            description:
-                'Group related connections into Projects (e.g., "E-commerce App") and Sync Groups (e.g., dev/staging/prod) to keep things organized.',
-            hint: '💡 Sync Groups let you compare and sync schemas across environments',
-            icon: <FolderIcon />,
-            route: '/projects',
-            color: theme.palette.secondary.main,
-        },
-        {
-            id: 'query',
-            title: 'Step 3: Query Your Data',
-            description:
-                'Select a connection and table from the sidebar, or write custom SQL. Click on foreign key values to follow relationships.',
-            hint: '💡 Use Ctrl+Enter to execute queries quickly',
-            icon: <TerminalIcon />,
-            route: '/query',
-            color: theme.palette.success.main,
-        },
-        {
-            id: 'schema-diagram',
-            title: 'Step 4: Explore the Schema',
-            description:
-                'Visualize your database structure. Drag tables to organize them, and click on columns to see relationships.',
-            hint: '💡 Right-click tables for quick actions like drop or add column',
-            icon: <AccountTreeIcon />,
-            route: '/schema-diagram',
-            color: theme.palette.warning.main,
-        },
-        {
-            id: 'compare',
-            title: 'Step 5: Compare Databases',
-            description:
-                'Select two connections to compare their schemas or data. Great for syncing dev/staging/prod environments.',
-            hint: '💡 Use this to generate migration scripts between environments',
-            icon: <CompareArrowsIcon />,
-            route: '/compare',
-            color: theme.palette.info.main,
-        },
-        {
-            id: 'logs',
-            title: 'Step 6: View Logs',
-            description:
-                'Track your query history, see migration logs, and review all database activity in one place.',
-            hint: '💡 Re-run past queries directly from the history tab',
-            icon: <HistoryIcon />,
-            route: '/logs',
-            color: theme.palette.error.main,
-        },
-        {
-            id: 'dashboard',
-            title: 'Step 7: Your Dashboard',
-            description:
-                "You're all set! The dashboard shows your connections at a glance. Use the scan button anytime to find new databases.",
-            hint: '🎉 Tutorial complete! Explore freely or restart from Settings.',
-            icon: <RocketLaunchIcon />,
-            route: '/dashboard',
-            color: theme.palette.secondary.main,
-        },
-    ];
+    const steps: TourStep[] = useMemo(
+        () => [
+            {
+                id: 'welcome',
+                title: 'Welcome to DB Nexus! 👋',
+                description: 'Your all-in-one database management tool',
+                features: [
+                    'Query data with syntax highlighting',
+                    'Visualize schemas interactively',
+                    'Compare environments side-by-side',
+                    'Sync databases effortlessly',
+                ],
+                hint: '✨ Supports PostgreSQL, MySQL, MariaDB, and SQLite',
+                icon: <RocketLaunchIcon />,
+                route: '/dashboard',
+                color: theme.palette.primary.main,
+            },
+            {
+                id: 'projects',
+                title: 'Step 1: Add a Connection',
+                description:
+                    'Start by adding your first database connection. Click "Add Connection" or use the scan feature to auto-discover databases.',
+                hint: '💡 Try the "Scan for Connections" button to find running databases',
+                icon: <StorageIcon />,
+                route: '/projects',
+                color: theme.palette.primary.main,
+            },
+            {
+                id: 'organize',
+                title: 'Step 2: Organize Connections',
+                description:
+                    'Group related connections into Projects (e.g., "E-commerce App") and Sync Groups (e.g., dev/staging/prod) to keep things organized.',
+                hint: '💡 Sync Groups let you compare and sync schemas across environments',
+                icon: <FolderIcon />,
+                route: '/projects',
+                color: theme.palette.secondary.main,
+            },
+            {
+                id: 'query',
+                title: 'Step 3: Query Your Data',
+                description:
+                    'Select a connection and table from the sidebar, or write custom SQL. Click on foreign key values to follow relationships.',
+                hint: '💡 Use Ctrl+Enter to execute queries quickly',
+                icon: <TerminalIcon />,
+                route: '/query',
+                color: theme.palette.success.main,
+            },
+            {
+                id: 'schema-diagram',
+                title: 'Step 4: Explore the Schema',
+                description:
+                    'Visualize your database structure. Drag tables to organize them, and click on columns to see relationships.',
+                hint: '💡 Right-click tables for quick actions like drop or add column',
+                icon: <AccountTreeIcon />,
+                route: '/schema-diagram',
+                color: theme.palette.warning.main,
+            },
+            {
+                id: 'compare',
+                title: 'Step 5: Compare Databases',
+                description:
+                    'Select two connections to compare their schemas or data. Great for syncing dev/staging/prod environments.',
+                hint: '💡 Use this to generate migration scripts between environments',
+                icon: <CompareArrowsIcon />,
+                route: '/compare',
+                color: theme.palette.info.main,
+            },
+            {
+                id: 'logs',
+                title: 'Step 6: View Logs',
+                description:
+                    'Track your query history, see migration logs, and review all database activity in one place.',
+                hint: '💡 Re-run past queries directly from the history tab',
+                icon: <HistoryIcon />,
+                route: '/logs',
+                color: theme.palette.error.main,
+            },
+            {
+                id: 'dashboard',
+                title: 'All Done! 🎉',
+                description:
+                    "You're all set! The dashboard shows your connections at a glance. Use the scan button anytime to find new databases.",
+                hint: '🎉 Tutorial complete! Explore freely or restart from Settings.',
+                icon: <RocketLaunchIcon />,
+                route: '/dashboard',
+                color: theme.palette.secondary.main,
+            },
+        ],
+        [theme]
+    );
 
     const currentStep = steps[currentStepIndex];
     const isLastStep = currentStepIndex === steps.length - 1;
@@ -284,7 +301,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                     position: 'fixed',
                     bottom: 24,
                     right: 24,
-                    width: 380,
+                    width: 440,
                     maxWidth: 'calc(100vw - 48px)',
                     zIndex: 1300,
                     borderRadius: 3,
@@ -335,7 +352,11 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                     >
                         {currentStep?.icon}
                     </Box>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight={700}
+                        sx={{ flex: 1, fontSize: '1.1rem' }}
+                    >
                         {currentStep?.title}
                     </Typography>
                     <IconButton
@@ -352,9 +373,47 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
 
                 {/* Content */}
                 <Box sx={{ px: 2, py: 2 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            mb: 1.5,
+                            whiteSpace: 'pre-line',
+                            fontWeight: 500,
+                            color: 'text.primary',
+                            lineHeight: 1.6,
+                        }}
+                    >
                         {currentStep?.description}
                     </Typography>
+
+                    {currentStep?.features && (
+                        <Box sx={{ mb: 1.5 }}>
+                            {currentStep.features.map((feature) => (
+                                <Box
+                                    key={feature}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        py: 0.5,
+                                    }}
+                                >
+                                    <CheckCircleIcon
+                                        sx={{
+                                            fontSize: 18,
+                                            color: currentStep?.color || 'primary.main',
+                                        }}
+                                    />
+                                    <Typography
+                                        variant="body1"
+                                        sx={{ fontWeight: 600, color: 'text.primary' }}
+                                    >
+                                        {feature}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                    )}
 
                     {currentStep?.hint && (
                         <Box
@@ -363,12 +422,15 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                                 borderRadius: 2,
                                 bgcolor: alpha(
                                     currentStep?.color || theme.palette.primary.main,
-                                    0.08
+                                    0.12
                                 ),
-                                border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.2)}`,
+                                border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.25)}`,
                             }}
                         >
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ color: 'text.primary', fontWeight: 500 }}
+                            >
                                 {currentStep.hint}
                             </Typography>
                         </Box>
@@ -380,39 +442,49 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        gap: 0.75,
+                        alignItems: 'center',
+                        gap: 0.5,
                         pb: 1.5,
                     }}
                 >
-                    {steps.map((step, index) => (
-                        <Box
-                            key={step.id}
-                            onClick={() => handleGoToStep(index)}
-                            sx={{
-                                width: index === currentStepIndex ? 20 : 8,
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor:
-                                    index < currentStepIndex
+                    {steps.map((step, index) => {
+                        const isCompleted = index < currentStepIndex;
+                        const isCurrent = index === currentStepIndex;
+
+                        return (
+                            <Box
+                                key={step.id}
+                                onClick={() => handleGoToStep(index)}
+                                sx={{
+                                    width: isCompleted ? 20 : isCurrent ? 24 : 10,
+                                    height: isCompleted ? 20 : 10,
+                                    borderRadius: isCompleted ? '50%' : 5,
+                                    bgcolor: isCompleted
                                         ? theme.palette.success.main
-                                        : index === currentStepIndex
+                                        : isCurrent
                                           ? currentStep?.color
                                           : alpha(theme.palette.text.primary, 0.2),
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                '&:hover': {
-                                    transform: 'scale(1.2)',
-                                },
-                            }}
-                        >
-                            {index < currentStepIndex && (
-                                <CheckCircleIcon sx={{ fontSize: 8, color: 'white' }} />
-                            )}
-                        </Box>
-                    ))}
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    '&:hover': {
+                                        transform: 'scale(1.15)',
+                                        bgcolor: isCompleted
+                                            ? theme.palette.success.dark
+                                            : isCurrent
+                                              ? currentStep?.color
+                                              : alpha(theme.palette.text.primary, 0.35),
+                                    },
+                                }}
+                            >
+                                {isCompleted && (
+                                    <CheckCircleIcon sx={{ fontSize: 20, color: 'white' }} />
+                                )}
+                            </Box>
+                        );
+                    })}
                 </Box>
 
                 {/* Actions */}
