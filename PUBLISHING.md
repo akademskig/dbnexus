@@ -123,7 +123,7 @@ dbnexus
 When you push a `vX.Y.Z` tag, GitHub Actions publishes automatically using the `NPM_TOKEN` secret.
 
 1. Create an npm automation token:
-   - <https://www.npmjs.com/settings/YOUR_USERNAME/tokens>
+    - <https://www.npmjs.com/settings/YOUR_USERNAME/tokens>
 2. Add it to GitHub Secrets as `NPM_TOKEN`
 3. Push tags: `git push --tags`
 
@@ -166,7 +166,7 @@ Make sure you're logged in:
 ```bash
 npm whoami
 npm login
-````
+```
 
 ### "Package name already taken"
 

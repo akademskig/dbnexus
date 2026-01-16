@@ -71,9 +71,7 @@ if (!bumpArg) {
 const rootPackageJson = readJson(rootPackagePath);
 const currentVersion = rootPackageJson.version;
 
-const nextVersion = isSemver(bumpArg)
-    ? bumpArg
-    : bumpVersion(currentVersion, bumpArg);
+const nextVersion = isSemver(bumpArg) ? bumpArg : bumpVersion(currentVersion, bumpArg);
 
 // Guard: ensure clean working tree unless --no-commit
 if (!flags.has('--no-commit')) {

@@ -30,11 +30,14 @@ import {
     Keyboard as KeyboardIcon,
     Info as InfoIcon,
     Email as EmailIcon,
+    School as SchoolIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
 import { useThemeModeStore } from '../stores/themeModeStore';
 import { KEYBOARD_SHORTCUTS, formatShortcut } from '../hooks/useKeyboardShortcuts';
+import { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour';
+import { useToastStore } from '../stores/toastStore';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -89,61 +92,100 @@ function ColorPicker({
 // Appearance Tab Content
 function AppearanceTab() {
     const { mode, toggleMode } = useThemeModeStore();
+    const toast = useToastStore();
+
+    const handleRestartTutorial = () => {
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        localStorage.removeItem('dbnexus:onboarding:step');
+        localStorage.removeItem('dbnexus:onboarding:minimized');
+        toast.success('Tutorial reset! Redirecting to start...');
+        // Navigate to projects page to start the tour
+        globalThis.location.href = '/projects';
+    };
 
     return (
-        <GlassCard>
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                }}
-            >
-                <Box>
-                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                        Theme
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                        Choose between light and dark mode
-                    </Typography>
-                </Box>
-                <ToggleButtonGroup
-                    value={mode}
-                    exclusive
-                    onChange={(_, v) => v && toggleMode()}
-                    size="small"
+        <>
+            <GlassCard sx={{ mb: 3 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
                 >
-                    <ToggleButton
-                        value="light"
-                        sx={{
-                            px: 2,
-                            '&.Mui-selected': {
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                '&:hover': { bgcolor: 'primary.dark' },
-                            },
-                        }}
+                    <Box>
+                        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                            Theme
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                            Choose between light and dark mode
+                        </Typography>
+                    </Box>
+                    <ToggleButtonGroup
+                        value={mode}
+                        exclusive
+                        onChange={(_, v) => v && toggleMode()}
+                        size="small"
                     >
-                        <LightModeIcon sx={{ mr: 1, fontSize: 18 }} />
-                        Light
-                    </ToggleButton>
-                    <ToggleButton
-                        value="dark"
-                        sx={{
-                            px: 2,
-                            '&.Mui-selected': {
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                                '&:hover': { bgcolor: 'primary.dark' },
-                            },
-                        }}
+                        <ToggleButton
+                            value="light"
+                            sx={{
+                                px: 2,
+                                '&.Mui-selected': {
+                                    bgcolor: 'primary.main',
+                                    color: 'primary.contrastText',
+                                    '&:hover': { bgcolor: 'primary.dark' },
+                                },
+                            }}
+                        >
+                            <LightModeIcon sx={{ mr: 1, fontSize: 18 }} />
+                            Light
+                        </ToggleButton>
+                        <ToggleButton
+                            value="dark"
+                            sx={{
+                                px: 2,
+                                '&.Mui-selected': {
+                                    bgcolor: 'primary.main',
+                                    color: 'primary.contrastText',
+                                    '&:hover': { bgcolor: 'primary.dark' },
+                                },
+                            }}
+                        >
+                            <DarkModeIcon sx={{ mr: 1, fontSize: 18 }} />
+                            Dark
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+            </GlassCard>
+
+            <GlassCard>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Box>
+                        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                            Tutorial
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                            Restart the welcome walkthrough to learn about features
+                        </Typography>
+                    </Box>
+                    <Button
+                        variant="outlined"
+                        startIcon={<SchoolIcon />}
+                        onClick={handleRestartTutorial}
+                        sx={{ textTransform: 'none' }}
                     >
-                        <DarkModeIcon sx={{ mr: 1, fontSize: 18 }} />
-                        Dark
-                    </ToggleButton>
-                </ToggleButtonGroup>
-            </Box>
-        </GlassCard>
+                        Restart Tutorial
+                    </Button>
+                </Box>
+            </GlassCard>
+        </>
     );
 }
 

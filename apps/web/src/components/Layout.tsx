@@ -39,6 +39,7 @@ import { themeColors } from '../theme';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import { StyledTooltip } from './StyledTooltip';
+import { OnboardingTour } from './OnboardingTour';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -685,6 +686,9 @@ export function Layout() {
             >
                 <Outlet />
             </Box>
+
+            {/* Interactive onboarding tour */}
+            <OnboardingTour />
         </Box>
     );
 }
