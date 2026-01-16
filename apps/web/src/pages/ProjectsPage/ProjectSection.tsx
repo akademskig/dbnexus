@@ -9,6 +9,7 @@ import {
     ListItemIcon,
     ListItemText,
     Stack,
+    alpha,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,11 +19,12 @@ import FolderIcon from '@mui/icons-material/Folder';
 import LayersIcon from '@mui/icons-material/Layers';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { projectsApi } from '../../lib/api';
+import { projectsApi, connectionsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { PROJECT_COLORS } from './constants';
 import { ConnectionCard } from './ConnectionCard';
 import { DatabaseGroupSection } from './DatabaseGroupSection';
+import { useToastStore } from '../../stores/toastStore';
 
 interface ProjectSectionProps {
     project: Project;
@@ -49,7 +51,9 @@ export function ProjectSection({
 }: ProjectSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
     const queryClient = useQueryClient();
+    const toast = useToastStore();
 
     const deleteProjectMutation = useMutation({
         mutationFn: () => projectsApi.delete(project.id),
@@ -58,6 +62,60 @@ export function ProjectSection({
             queryClient.invalidateQueries({ queryKey: ['connections'] });
         },
     });
+
+    const moveConnectionMutation = useMutation({
+        mutationFn: ({
+            connectionId,
+            projectId,
+            groupId,
+        }: {
+            connectionId: string;
+            projectId: string | null;
+            groupId: string | null;
+        }) => connectionsApi.update(connectionId, { projectId, groupId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Connection moved');
+        },
+        onError: () => {
+            toast.error('Failed to move connection');
+        },
+    });
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        // Only set isDragOver to false if we're leaving the container, not entering a child
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragOver(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            // Move to this project, remove from group (ungrouped within project)
+            if (
+                data.connectionId &&
+                (data.currentProjectId !== project.id || data.currentGroupId)
+            ) {
+                moveConnectionMutation.mutate({
+                    connectionId: data.connectionId,
+                    projectId: project.id,
+                    groupId: null,
+                });
+            }
+        } catch {
+            // Invalid drop data
+        }
+    };
 
     const projectColor = project.color || PROJECT_COLORS[0] || '#0ea5e9';
     const totalConnections = Array.from(groupsMap.values()).reduce(
@@ -68,11 +126,19 @@ export function ProjectSection({
 
     return (
         <Box
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             sx={{
                 bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
+                border: '2px solid',
+                borderColor: isDragOver ? 'primary.main' : 'divider',
+                borderStyle: isDragOver ? 'dashed' : 'solid',
                 overflow: 'hidden',
+                transition: 'border-color 0.15s, background-color 0.15s',
+                ...(isDragOver && {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                }),
             }}
         >
             {/* Project header */}
@@ -204,6 +270,13 @@ export function ProjectSection({
                                 onEditConnection={onEditConnection}
                                 onDeleteConnection={onDeleteConnection}
                                 onQuery={onQuery}
+                                onMoveConnection={(connectionId) =>
+                                    moveConnectionMutation.mutate({
+                                        connectionId,
+                                        projectId: project.id,
+                                        groupId: group.id,
+                                    })
+                                }
                             />
                         ))}
 

@@ -1,57 +1,57 @@
 {
-  "name": "dbnexus",
-  "version": "0.1.6",
-  "private": false,
-  "type": "module",
-  "description": "Database management tool with web UI",
-  "keywords": [
-    "database",
-    "postgres",
-    "mysql",
-    "mariadb",
-    "sqlite",
-    "database-management",
-    "schema-migration",
-    "data-sync",
-    "database-tool",
-    "cli"
-  ],
-  "homepage": "https://github.com/akademskig/dbnexus",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/akademskig/dbnexus.git"
-  },
-  "bugs": {
-    "url": "https://github.com/akademskig/dbnexus/issues"
-  },
-  "author": "DB Nexus Team",
-  "license": "MIT",
-  "bin": {
-    "dbnexus": "./dist/index.js"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node dist/index.js",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "pnpm build"
-  },
-  "dependencies": {
-    "@dbnexus/connectors": "workspace:*",
-    "@dbnexus/metadata": "workspace:*",
-    "@dbnexus/shared": "workspace:*",
-    "chalk": "^5.3.0",
-    "commander": "^12.1.0",
-    "open": "^10.1.0",
-    "ora": "^8.1.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.3.3"
-  }
+    "name": "dbnexus",
+    "version": "0.1.6",
+    "private": false,
+    "type": "module",
+    "description": "Database management tool with web UI",
+    "keywords": [
+        "database",
+        "postgres",
+        "mysql",
+        "mariadb",
+        "sqlite",
+        "database-management",
+        "schema-migration",
+        "data-sync",
+        "database-tool",
+        "cli"
+    ],
+    "homepage": "https://github.com/akademskig/dbnexus",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/akademskig/dbnexus.git"
+    },
+    "bugs": {
+        "url": "https://github.com/akademskig/dbnexus/issues"
+    },
+    "author": "DB Nexus Team",
+    "license": "MIT",
+    "bin": {
+        "dbnexus": "./dist/index.js"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node dist/index.js",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "pnpm build"
+    },
+    "dependencies": {
+        "@dbnexus/connectors": "workspace:*",
+        "@dbnexus/metadata": "workspace:*",
+        "@dbnexus/shared": "workspace:*",
+        "chalk": "^5.3.0",
+        "commander": "^12.1.0",
+        "open": "^10.1.0",
+        "ora": "^8.1.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "typescript": "^5.3.3"
+    }
 }

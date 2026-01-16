@@ -10,6 +10,7 @@ import {
     ListItemIcon,
     ListItemText,
     Stack,
+    alpha,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -31,6 +32,7 @@ interface DatabaseGroupSectionProps {
     onEditConnection: (conn: ConnectionConfig) => void;
     onDeleteConnection: (id: string) => void;
     onQuery: (id: string) => void;
+    onMoveConnection?: (connectionId: string) => void;
 }
 
 export function DatabaseGroupSection({
@@ -41,10 +43,41 @@ export function DatabaseGroupSection({
     onEditConnection,
     onDeleteConnection,
     onQuery,
+    onMoveConnection,
 }: DatabaseGroupSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
     const queryClient = useQueryClient();
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent parent from handling
+        e.dataTransfer.dropEffect = 'move';
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragOver(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent parent from handling
+        setIsDragOver(false);
+
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            // Move to this group
+            if (data.connectionId && data.currentGroupId !== group.id && onMoveConnection) {
+                onMoveConnection(data.connectionId);
+            }
+        } catch {
+            // Invalid drop data
+        }
+    };
 
     const deleteGroupMutation = useMutation({
         mutationFn: () => projectsApi.deleteGroup(group.projectId, group.id),
@@ -56,11 +89,19 @@ export function DatabaseGroupSection({
 
     return (
         <Box
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             sx={{
                 bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
+                border: '2px solid',
+                borderColor: isDragOver ? 'primary.main' : 'divider',
+                borderStyle: isDragOver ? 'dashed' : 'solid',
                 overflow: 'hidden',
+                transition: 'border-color 0.15s, background-color 0.15s',
+                ...(isDragOver && {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                }),
             }}
         >
             {/* Group header */}

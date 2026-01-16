@@ -35,6 +35,7 @@ interface ConnectionCardProps {
     onEdit: () => void;
     onDelete: () => void;
     onQuery: () => void;
+    draggable?: boolean;
 }
 
 export function ConnectionCard({
@@ -43,6 +44,7 @@ export function ConnectionCard({
     onEdit,
     onDelete,
     onQuery,
+    draggable = true,
 }: ConnectionCardProps) {
     const navigate = useNavigate();
     const [expanded, setExpanded] = useState(false);
@@ -103,15 +105,36 @@ export function ConnectionCard({
             ? connection.database
             : `${connection.host}:${connection.port}`;
 
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.setData(
+            'application/json',
+            JSON.stringify({
+                connectionId: connection.id,
+                connectionName: connection.name,
+                currentProjectId: connection.projectId || null,
+                currentGroupId: connection.groupId || null,
+            })
+        );
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
     return (
         <Box
+            draggable={draggable}
+            onDragStart={handleDragStart}
             sx={{
                 bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
                 overflow: 'hidden',
-                transition: 'border-color 0.15s',
+                transition: 'border-color 0.15s, opacity 0.15s, transform 0.15s',
+                cursor: draggable ? 'grab' : 'default',
                 '&:hover': { borderColor: 'primary.main' },
+                '&:active': draggable ? { cursor: 'grabbing' } : {},
+                '&[draggable="true"]:active': {
+                    opacity: 0.6,
+                    transform: 'scale(0.98)',
+                },
             }}
         >
             {/* Header */}

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Stack } from '@mui/material';
+import { Box, Typography, Button, Stack, alpha } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -29,6 +29,7 @@ export function ProjectsPage() {
     const [groupFormProjectId, setGroupFormProjectId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
+    const [isUngroupedDragOver, setIsUngroupedDragOver] = useState(false);
 
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
@@ -93,6 +94,56 @@ export function ProjectsPage() {
             toast.success('Connection deleted');
         },
     });
+
+    const moveConnectionMutation = useMutation({
+        mutationFn: ({
+            connectionId,
+            projectId,
+            groupId,
+        }: {
+            connectionId: string;
+            projectId: string | null;
+            groupId: string | null;
+        }) => connectionsApi.update(connectionId, { projectId, groupId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Connection moved');
+        },
+        onError: () => {
+            toast.error('Failed to move connection');
+        },
+    });
+
+    const handleUngroupedDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setIsUngroupedDragOver(true);
+    };
+
+    const handleUngroupedDragLeave = (e: React.DragEvent) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsUngroupedDragOver(false);
+        }
+    };
+
+    const handleUngroupedDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsUngroupedDragOver(false);
+
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            // Move to ungrouped (remove from project and group)
+            if (data.connectionId && (data.currentProjectId || data.currentGroupId)) {
+                moveConnectionMutation.mutate({
+                    connectionId: data.connectionId,
+                    projectId: null,
+                    groupId: null,
+                });
+            }
+        } catch {
+            // Invalid drop data
+        }
+    };
 
     const handleEdit = (connection: ConnectionConfig) => {
         setEditingConnection(connection);
@@ -242,22 +293,47 @@ export function ProjectsPage() {
                         />
                     ))}
 
-                    {/* Ungrouped connections */}
-                    {organizedData.ungroupedConnections.length > 0 && (
-                        <Box>
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: 'text.secondary',
-                                    mb: 2,
-                                    display: 'block',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                    fontWeight: 500,
-                                }}
-                            >
-                                Ungrouped Connections
-                            </Typography>
+                    {/* Ungrouped connections - also acts as drop zone */}
+                    <Box
+                        onDragOver={handleUngroupedDragOver}
+                        onDragLeave={handleUngroupedDragLeave}
+                        onDrop={handleUngroupedDrop}
+                        sx={{
+                            p: 2,
+                            border: '2px solid',
+                            borderColor: isUngroupedDragOver ? 'primary.main' : 'transparent',
+                            borderStyle: isUngroupedDragOver ? 'dashed' : 'solid',
+                            borderRadius: 1,
+                            transition: 'border-color 0.15s, background-color 0.15s',
+                            minHeight:
+                                organizedData.ungroupedConnections.length === 0 ? 100 : 'auto',
+                            ...(isUngroupedDragOver && {
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                            }),
+                        }}
+                    >
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: 'text.secondary',
+                                mb: 2,
+                                display: 'block',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                fontWeight: 500,
+                            }}
+                        >
+                            Ungrouped Connections
+                            {isUngroupedDragOver && (
+                                <Typography
+                                    component="span"
+                                    sx={{ ml: 1, color: 'primary.main', fontWeight: 600 }}
+                                >
+                                    — Drop here to remove from project
+                                </Typography>
+                            )}
+                        </Typography>
+                        {organizedData.ungroupedConnections.length > 0 ? (
                             <Stack spacing={1.5}>
                                 {organizedData.ungroupedConnections.map((connection) => (
                                     <ConnectionCard
@@ -269,8 +345,18 @@ export function ProjectsPage() {
                                     />
                                 ))}
                             </Stack>
-                        </Box>
-                    )}
+                        ) : (
+                            <Typography
+                                variant="body2"
+                                color="text.disabled"
+                                sx={{ textAlign: 'center', py: 2 }}
+                            >
+                                {isUngroupedDragOver
+                                    ? 'Release to move here'
+                                    : 'Drag connections here to remove from projects'}
+                            </Typography>
+                        )}
+                    </Box>
                 </Stack>
             )}
         </Box>
