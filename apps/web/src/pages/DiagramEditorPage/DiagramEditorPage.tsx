@@ -294,13 +294,22 @@ export function DiagramEditorPage() {
 
     // Set default schema when schemas load
     useEffect(() => {
-        if (schemas.length > 0 && !selectedSchema && selectedConnectionId) {
+        // Only run when we have a valid connection and schemas but no schema selected
+        if (!selectedConnectionId || !isValidConnection) return;
+        if (schemas.length > 0 && !selectedSchema) {
             const defaultSchema = getDefaultSchema();
             if (defaultSchema) {
                 handleSchemaChange(defaultSchema);
             }
         }
-    }, [schemas, selectedSchema, selectedConnectionId, getDefaultSchema, handleSchemaChange]);
+    }, [
+        schemas,
+        selectedSchema,
+        selectedConnectionId,
+        isValidConnection,
+        getDefaultSchema,
+        handleSchemaChange,
+    ]);
 
     // Handlers for node operations
     const handleOpenAddColumn = useCallback((tableId: string) => {
@@ -459,7 +468,12 @@ export function DiagramEditorPage() {
 
     // Load table details and create nodes/edges
     useEffect(() => {
-        if (!tables.length || !selectedConnectionId || !selectedSchema) {
+        // Early exit - don't set anything if no valid connection
+        if (!selectedConnectionId || !selectedSchema) {
+            return;
+        }
+
+        if (!tables.length) {
             setNodes([]);
             setEdges([]);
             return;
