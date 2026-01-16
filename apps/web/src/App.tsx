@@ -33,6 +33,7 @@ function App() {
                 <Route path="schema-diagram" element={<DiagramEditorPage />} />
                 <Route path="diagram-editor" element={<Navigate to="/schema-diagram" replace />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
         </Routes>
     );
