@@ -6,18 +6,36 @@ A **local-first database management tool** with a modern web UI, CLI, and produc
 
 ## ✨ Features
 
+### Core
+
 - 🖥️ **Modern Web UI** - Beautiful, dark-themed interface with glassmorphism design
 - 🔌 **Multiple Connections** - Manage and switch between multiple database connections
 - 🔒 **Encrypted Credentials** - Passwords stored securely with AES-256-GCM encryption
 - 🛡️ **Safety Guardrails** - Blocks dangerous queries (UPDATE/DELETE without WHERE) on production databases
-- 📊 **Schema Browser** - Explore tables, columns, indexes, and relationships
+
+### Query & Data
+
 - ⚡ **Query Editor** - Execute SQL with syntax highlighting and results table
-- 🔄 **Schema Sync** - Compare and sync database schemas between connections
-- 📦 **Data Sync** - Sync table data between databases with conflict resolution
-- 🏷️ **Connection Tags** - Organize connections with customizable tags (dev, staging, prod)
-- 🎨 **Customizable Theme** - Configure card styles, colors, and opacity in Settings
+- 🔗 **Foreign Key Navigation** - Click FK values to instantly query referenced rows
 - 📜 **Query History** - Track and replay previous queries
-- 🔎 **Connection Scanning** - Discover databases via local ports, Docker containers, env/compose files, and SQLite files
+- ✏️ **Inline Editing** - Edit table data directly in the results grid
+
+### Schema Tools
+
+- 📊 **Schema Browser** - Explore tables, columns, indexes, and relationships
+- 🗺️ **Schema Diagram** - Visual database schema editor with drag-and-drop
+- 🔄 **Schema Sync** - Compare and sync database schemas between connections
+
+### Data Management
+
+- 📦 **Data Sync** - Sync table data between databases with conflict resolution
+- 🔎 **Connection Scanning** - Auto-discover databases via ports, Docker, env files, and SQLite
+
+### Organization
+
+- 🏷️ **Connection Tags** - Organize connections with customizable tags (dev, staging, prod)
+- 📁 **Projects & Groups** - Group related connections together
+- 🎨 **Customizable Theme** - Configure colors and styles in Settings
 
 ## 🚀 Quick Start
 

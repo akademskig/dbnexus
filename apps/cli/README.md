@@ -11,11 +11,12 @@
 - 🔌 **Multiple Databases** - PostgreSQL, MySQL, MariaDB, SQLite
 - 🔄 **Schema Sync** - Compare and migrate schemas between databases
 - 📊 **Data Sync** - Synchronize table data with conflict resolution
-- 🎨 **Schema Diagram** - Visual database schema editor
+- 🗺️ **Schema Diagram** - Visual database schema editor with drag-and-drop
+- 🔗 **FK Navigation** - Click foreign key values to query referenced rows
 - 📜 **Query History** - Track and replay queries
 - 🔒 **Secure** - Encrypted credentials with AES-256-GCM
 - 🛡️ **Safety First** - Production guardrails for dangerous queries
-- 🔎 **Connection Scanning** - Discover databases via local ports, Docker containers, env/compose files, and SQLite files
+- 🔎 **Auto-Discovery** - Scan for databases via ports, Docker, env files
 
 ## Installation
 
@@ -83,17 +84,20 @@ DBNEXUS_DATA_DIR=/custom/path dbnexus
 - Organize connections into projects and groups
 - Test connection health
 - Encrypted credential storage
+- Auto-discover databases via port scanning and Docker
 
 ### Query Editor
 
 - Execute SQL queries with syntax highlighting
 - View results in a data grid
 - Edit data inline
+- **Click FK values to navigate to referenced rows**
 - Query history and saved queries
 
 ### Schema Management
 
 - Browse tables, columns, indexes, and foreign keys
+- Visual schema diagram with drag-and-drop
 - Compare schemas between databases
 - Generate migration SQL
 - Apply schema changes
@@ -104,13 +108,6 @@ DBNEXUS_DATA_DIR=/custom/path dbnexus
 - Sync data with conflict resolution
 - Bulk data operations
 - Dump and restore databases
-
-### Schema Diagram
-
-- Visual database schema editor
-- Drag-and-drop table relationships
-- Create and modify tables visually
-- Export diagrams
 
 ## Requirements
 
@@ -144,7 +141,6 @@ rm -rf ~/.dbnexus
 
 ## Documentation
 
-- [Full Documentation](https://docs.dbnexus.dev)
 - [GitHub Repository](https://github.com/akademskig/dbnexus)
 - [Issue Tracker](https://github.com/akademskig/dbnexus/issues)
 
@@ -158,7 +154,6 @@ MIT © DB Nexus Team
 
 ## Support
 
-- 📧 Email: <admin@dbnexus.dev>
 - 🐛 Issues: [GitHub Issues](https://github.com/akademskig/dbnexus/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/akademskig/dbnexus/discussions)
 
