@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
+/* global console */
 
 /**
  * Build script for creating the distributable npm package
@@ -14,6 +16,9 @@ import { execSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
+const rootPackagePath = path.join(rootDir, 'package.json');
+const rootPackageJson = JSON.parse(fs.readFileSync(rootPackagePath, 'utf8'));
+const packageVersion = rootPackageJson.version;
 
 console.log('🏗️  Building DB Nexus for distribution...\n');
 
@@ -138,7 +143,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (showVersion) {
-    console.log('0.1.2');
+    console.log('${packageVersion}');
     process.exit(0);
 }
 
@@ -226,7 +231,7 @@ fs.writeFileSync(path.join(distPackage, 'dist/index.js'), entryPoint);
 console.log('📝 Creating package.json...');
 const packageJson = {
     name: 'dbnexus',
-    version: '0.1.4',
+    version: packageVersion,
     description: 'Database management tool with web UI',
     keywords: [
         'database',

@@ -8,27 +8,45 @@ This guide explains how to publish DB Nexus to npm.
 2. **npm login** - Run `npm login` and enter your credentials
 3. **Build the project** - Ensure everything builds successfully
 
-## Publishing Steps
+## Publishing Steps (Recommended Flow)
 
-### 1. Update Version
+### 1. Bump Version (Auto)
 
-Update the version in both:
-
-- `apps/cli/package.json`
-- `package.json` (root)
+Use the release helper to bump versions, commit, and tag:
 
 ```bash
-# Example: Update to 0.2.0
+# Patch release (0.1.4 -> 0.1.5)
+pnpm release:patch
+
+# Minor release (0.1.4 -> 0.2.0)
+pnpm release:minor
+
+# Major release (0.1.4 -> 1.0.0)
+pnpm release:major
 ```
 
-### 2. Build Everything
+This updates:
+
+- `package.json` (root)
+- `apps/cli/package.json`
+
+It also creates a commit and git tag (e.g. `v0.1.5`).
+
+### 2. Push the Tag
+
+```bash
+git push
+git push --tags
+```
+
+### 3. Build Everything (Local Publish)
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-### 3. Create the Distribution Package
+### 4. Create the Distribution Package
 
 ```bash
 pnpm build:package
@@ -36,7 +54,7 @@ pnpm build:package
 
 This creates a `dist-package/` directory with the bundled application.
 
-### 4. Test Locally (Important!)
+### 5. Test Locally (Important!)
 
 Before publishing, test the package locally:
 
@@ -67,7 +85,7 @@ When done testing:
 npm unlink -g dbnexus
 ```
 
-### 5. Publish to npm
+### 6. Publish to npm (Local)
 
 ```bash
 cd dist-package
@@ -80,7 +98,7 @@ For first-time publishing or scoped packages:
 npm publish --access public
 ```
 
-### 6. Verify Publication
+### 7. Verify Publication
 
 ```bash
 # Install from npm
@@ -91,7 +109,7 @@ dbnexus --version
 dbnexus
 ```
 
-### 7. Create GitHub Release
+### 8. Create GitHub Release
 
 1. Go to <https://github.com/akademskig/dbnexus/releases>
 2. Click "Draft a new release"
@@ -99,6 +117,15 @@ dbnexus
 4. Title: "DB Nexus v0.2.0"
 5. Add release notes (see template below)
 6. Publish release
+
+## Automated Publishing (Recommended)
+
+When you push a `vX.Y.Z` tag, GitHub Actions publishes automatically using the `NPM_TOKEN` secret.
+
+1. Create an npm automation token:
+   - <https://www.npmjs.com/settings/YOUR_USERNAME/tokens>
+2. Add it to GitHub Secrets as `NPM_TOKEN`
+3. Push tags: `git push --tags`
 
 ## Release Notes Template
 
@@ -114,7 +141,6 @@ dbnexus
 ```bash
 npm install -g dbnexus
 ```
-````
 
 Or use npx:
 
@@ -129,8 +155,6 @@ npx dbnexus
 ## 📚 Documentation
 
 - [Installation Guide](https://github.com/akademskig/dbnexus/blob/main/INSTALLATION.md)
-- [Full Documentation](https://docs.dbnexus.dev)
-
 ````
 
 ## Troubleshooting
@@ -175,22 +199,21 @@ pnpm install
 pnpm build
 ```
 
-## Automated Publishing (CI/CD)
-
 ### GitHub Actions
-
-Create `.github/workflows/publish.yml`:
 
 ```yaml
 name: Publish to npm
 
 on:
-    release:
-        types: [created]
+    push:
+        tags:
+            - 'v*'
 
 jobs:
     publish:
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
         steps:
             - uses: actions/checkout@v4
 
@@ -213,6 +236,11 @@ jobs:
               run: cd dist-package && npm publish
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  generate_release_notes: true
 ```
 
 ### Setup npm Token
@@ -264,5 +292,4 @@ npm install -g dbnexus@beta
 
 If you encounter issues during publishing:
 
-- 📧 Email: <admin@dbnexus.dev>
 - 🐛 Issues: <https://github.com/akademskig/dbnexus/issues>
