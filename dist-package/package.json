@@ -1,43 +1,43 @@
 {
-    "name": "dbnexus",
-    "version": "0.1.3",
-    "description": "Database management tool with web UI",
-    "keywords": [
-        "database",
-        "postgres",
-        "mysql",
-        "mariadb",
-        "sqlite",
-        "database-management",
-        "schema-migration",
-        "data-sync",
-        "database-tool",
-        "cli"
-    ],
-    "homepage": "https://github.com/akademskig/dbnexus",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/akademskig/dbnexus.git"
-    },
-    "bugs": {
-        "url": "https://github.com/akademskig/dbnexus/issues"
-    },
-    "author": "DB Nexus Team",
-    "license": "MIT",
-    "type": "module",
-    "bin": {
-        "dbnexus": "./dist/index.js"
-    },
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE"
-    ],
-    "engines": {
-        "node": ">=18.0.0"
-    },
-    "dependencies": {
-        "better-sqlite3": "^11.7.0",
-        "open": "^10.1.0"
-    }
+  "name": "dbnexus",
+  "version": "0.1.3",
+  "description": "Database management tool with web UI",
+  "keywords": [
+    "database",
+    "postgres",
+    "mysql",
+    "mariadb",
+    "sqlite",
+    "database-management",
+    "schema-migration",
+    "data-sync",
+    "database-tool",
+    "cli"
+  ],
+  "homepage": "https://github.com/akademskig/dbnexus",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akademskig/dbnexus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/akademskig/dbnexus/issues"
+  },
+  "author": "DB Nexus Team",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "dbnexus": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "open": "^10.1.0"
+  }
 }

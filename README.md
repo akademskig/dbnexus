@@ -17,6 +17,7 @@ A **local-first database management tool** with a modern web UI, CLI, and produc
 - 🏷️ **Connection Tags** - Organize connections with customizable tags (dev, staging, prod)
 - 🎨 **Customizable Theme** - Configure card styles, colors, and opacity in Settings
 - 📜 **Query History** - Track and replay previous queries
+- 🔎 **Connection Scanning** - Discover databases via local ports, Docker containers, env/compose files, and SQLite files
 
 ## 🚀 Quick Start
 
