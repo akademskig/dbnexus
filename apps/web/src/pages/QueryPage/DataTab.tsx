@@ -40,9 +40,16 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
-import type { QueryResult, TableSchema } from '@dbnexus/shared';
+import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
+import LinkIcon from '@mui/icons-material/Link';
+
+interface ForeignKeyClickInfo {
+    referencedTable: string;
+    referencedColumn: string;
+    value: unknown;
+}
 
 interface DataTabProps {
     readonly result: QueryResult | null;
@@ -63,6 +70,7 @@ interface DataTabProps {
     ) => Promise<void>;
     readonly onDeleteRow?: (row: Record<string, unknown>) => void;
     readonly onSyncRow?: (rows: Record<string, unknown>[]) => void;
+    readonly onForeignKeyClick?: (info: ForeignKeyClickInfo) => void;
     // For export filename
     readonly connectionHost?: string;
     readonly connectionDatabase?: string;
@@ -85,6 +93,7 @@ export function DataTab({
     onUpdateRow,
     onDeleteRow,
     onSyncRow,
+    onForeignKeyClick,
     connectionHost,
     connectionDatabase,
     tableName,
@@ -161,6 +170,39 @@ export function DataTab({
         onUpdateRow(row, newRow);
     };
 
+    // Helper to parse PostgreSQL array strings like "{col1,col2}" to JS arrays
+    const parseArrayField = (value: string | string[]): string[] => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+            return value
+                .slice(1, -1)
+                .split(',')
+                .map((s) => s.trim());
+        }
+        return [value];
+    };
+
+    // Build a map of column names to their foreign key info
+    const columnToForeignKey = new Map<string, ForeignKeyInfo>();
+    if (tableSchema?.foreignKeys) {
+        for (const fk of tableSchema.foreignKeys) {
+            const columns = parseArrayField(fk.columns as unknown as string | string[]);
+            const refColumns = parseArrayField(
+                fk.referencedColumns as unknown as string | string[]
+            );
+            for (let i = 0; i < columns.length; i++) {
+                const colName = columns[i];
+                const refCol = refColumns[i] ?? refColumns[0] ?? '';
+                if (!colName) continue;
+                columnToForeignKey.set(colName, {
+                    ...fk,
+                    columns: columns,
+                    referencedColumns: [refCol],
+                });
+            }
+        }
+    }
+
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col) => {
@@ -170,6 +212,8 @@ export function DataTab({
               const isEditable = canEditRows && !isPrimaryKey && !isJson;
               // JSON columns can be edited via dialog if we have edit capability
               const canEditJson = canEditRows && !isPrimaryKey && isJson;
+              // Check if this column is a foreign key
+              const fkInfo = columnToForeignKey.get(col.name);
 
               return {
                   field: col.name,
@@ -178,26 +222,71 @@ export function DataTab({
                   flex: 1,
                   minWidth: 120,
                   editable: isEditable,
-                  renderCell: (params: GridRenderCellParams) => (
-                      <CellValue
-                          value={params.value}
-                          onSaveJson={
-                              canEditJson
-                                  ? (newValue) =>
-                                        handleJsonCellSave(
-                                            params.row as Record<string, unknown>,
-                                            col.name,
-                                            newValue
-                                        )
-                                  : undefined
-                          }
-                      />
-                  ),
+                  renderCell: (params: GridRenderCellParams) => {
+                      const cellValue = (
+                          <CellValue
+                              value={params.value}
+                              onSaveJson={
+                                  canEditJson
+                                      ? (newValue) =>
+                                            handleJsonCellSave(
+                                                params.row as Record<string, unknown>,
+                                                col.name,
+                                                newValue
+                                            )
+                                      : undefined
+                              }
+                          />
+                      );
+                      // If this is a FK column and we have a click handler, make it clickable
+                      if (fkInfo && onForeignKeyClick && params.value !== null) {
+                          return (
+                              <Tooltip title={`Click to view in ${fkInfo.referencedTable}`}>
+                                  <Box
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          onForeignKeyClick({
+                                              referencedTable: fkInfo.referencedTable,
+                                              referencedColumn: fkInfo.referencedColumns[0] ?? '',
+                                              value: params.value,
+                                          });
+                                      }}
+                                      sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 0.5,
+                                          cursor: 'pointer',
+                                          color: 'primary.main',
+                                          textDecoration: 'underline',
+                                          textDecorationStyle: 'dotted',
+                                          '&:hover': {
+                                              textDecorationStyle: 'solid',
+                                          },
+                                      }}
+                                  >
+                                      {cellValue}
+                                      <LinkIcon sx={{ fontSize: 12 }} />
+                                  </Box>
+                              </Tooltip>
+                          );
+                      }
+
+                      return cellValue;
+                  },
                   renderHeader: () => (
                       <Box>
-                          <Typography variant="body2" fontWeight={600}>
-                              {col.name}
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                  {col.name}
+                              </Typography>
+                              {fkInfo && (
+                                  <Tooltip
+                                      title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
+                                  >
+                                      <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                  </Tooltip>
+                              )}
+                          </Box>
                           <Typography variant="caption" color="text.secondary">
                               {col.dataType}
                           </Typography>

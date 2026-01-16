@@ -151,6 +151,9 @@ export function QueryPage() {
     // Track last executed query for table selection
     const lastExecutedQueryRef = useRef<string>('');
 
+    // Skip table restoration when doing FK query
+    const skipTableRestoreRef = useRef(false);
+
     // Restore from shared store or persisted state on mount if no URL params
     useEffect(() => {
         if (!routeConnectionId) {
@@ -468,6 +471,12 @@ export function QueryPage() {
 
     // Restore table selection from URL
     useEffect(() => {
+        // Skip restoration if we just did a FK query
+        if (skipTableRestoreRef.current) {
+            skipTableRestoreRef.current = false;
+            return;
+        }
+
         if (tables.length > 0 && !selectedTable) {
             const tableNameToRestore = urlTable || lastState?.table;
             const schemaToMatch = urlSchema || lastState?.schema;
@@ -925,6 +934,71 @@ export function QueryPage() {
         totalRowCount,
         toast,
     ]);
+
+    // Handle foreign key click - query the specific referenced row
+    const handleForeignKeyClick = useCallback(
+        (info: { referencedTable: string; referencedColumn: string; value: unknown }) => {
+            if (!selectedConnectionId) return;
+
+            const engine = selectedConnection?.engine;
+
+            // Parse table name - might include schema (e.g., "public.users" or just "users")
+            const parts = info.referencedTable.split('.');
+            const targetTableName =
+                (parts.length > 1 ? parts[1] : parts[0]) ?? info.referencedTable;
+            const targetSchema = (parts.length > 1 ? parts[0] : selectedSchema) ?? 'public';
+
+            // Build the query to fetch the specific row
+            const tableName = buildTableName(targetSchema, targetTableName, engine);
+            const quotedColumn = quoteIdentifier(info.referencedColumn, engine);
+
+            // Format the value for SQL
+            let sqlValue: string;
+            if (info.value === null) {
+                sqlValue = 'NULL';
+            } else if (typeof info.value === 'number') {
+                sqlValue = String(info.value);
+            } else if (typeof info.value === 'boolean') {
+                sqlValue = info.value ? 'TRUE' : 'FALSE';
+            } else {
+                sqlValue = `'${String(info.value).replaceAll("'", "''")}'`;
+            }
+
+            const query = `SELECT * FROM ${tableName} WHERE ${quotedColumn} = ${sqlValue};`;
+
+            // Set the SQL and execute
+            setSql(query);
+            setActiveTab(0); // Switch to Data tab
+
+            // Set flag to skip table restoration
+            skipTableRestoreRef.current = true;
+
+            // Clear selected table immediately
+            setSelectedTable(null);
+
+            // Execute the query
+            executeMutation.mutate(
+                { query },
+                {
+                    onSuccess: (data) => {
+                        setResult(data);
+                        setError(null);
+                        setTotalRowCount(null);
+                        setSearchQuery('');
+                    },
+                    onError: (err) => {
+                        setError(err instanceof Error ? err.message : String(err));
+                        setResult(null);
+                    },
+                }
+            );
+
+            toast.info(
+                `Querying ${info.referencedTable} where ${info.referencedColumn} = ${info.value}`
+            );
+        },
+        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, toast]
+    );
 
     // Redirect to dashboard if no connections after loading
     if (!connectionsLoading && connections.length === 0) {
@@ -1401,6 +1475,7 @@ export function QueryPage() {
                                             setRowsToSync(rows);
                                             setSyncRowDialogOpen(true);
                                         }}
+                                        onForeignKeyClick={handleForeignKeyClick}
                                         connectionHost={selectedConnection?.host}
                                         connectionDatabase={selectedConnection?.database}
                                         tableName={selectedTable?.name}
