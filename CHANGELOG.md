@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-01-16
+
 ### Added
 
 - Drag and drop connections between projects and groups on Projects page
+  - Visual feedback with dashed border on drag over
+  - Drop zones on projects, groups, and ungrouped section
+
+### Fixed
+
+- Drag highlight not clearing when dropping on nested elements
 
 ## [0.1.6] - 2026-01-16
 
@@ -110,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark/Light theme support
 - Keyboard shortcuts for common actions
 
-[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/yourusername/db-manager/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/yourusername/db-manager/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/yourusername/db-manager/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/yourusername/db-manager/compare/v0.1.3...v0.1.4
