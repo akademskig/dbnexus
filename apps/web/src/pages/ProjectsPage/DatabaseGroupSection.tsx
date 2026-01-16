@@ -33,6 +33,7 @@ interface DatabaseGroupSectionProps {
     onDeleteConnection: (id: string) => void;
     onQuery: (id: string) => void;
     onMoveConnection?: (connectionId: string) => void;
+    onDropComplete?: () => void;
 }
 
 export function DatabaseGroupSection({
@@ -44,6 +45,7 @@ export function DatabaseGroupSection({
     onDeleteConnection,
     onQuery,
     onMoveConnection,
+    onDropComplete,
 }: DatabaseGroupSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -67,6 +69,7 @@ export function DatabaseGroupSection({
         e.preventDefault();
         e.stopPropagation(); // Prevent parent from handling
         setIsDragOver(false);
+        onDropComplete?.(); // Notify parent to reset its drag state
 
         try {
             const data = JSON.parse(e.dataTransfer.getData('application/json'));

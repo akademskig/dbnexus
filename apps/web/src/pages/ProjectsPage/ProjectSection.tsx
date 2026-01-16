@@ -95,6 +95,11 @@ export function ProjectSection({
         }
     };
 
+    // Called when a child element handles a drop - reset parent drag state
+    const handleChildDrop = () => {
+        setIsDragOver(false);
+    };
+
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
@@ -277,6 +282,7 @@ export function ProjectSection({
                                         groupId: group.id,
                                     })
                                 }
+                                onDropComplete={handleChildDrop}
                             />
                         ))}
 
