@@ -10,10 +10,6 @@ import {
     IconButton,
     Tooltip,
     LinearProgress,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Menu,
     MenuItem,
     ListItemIcon,
@@ -69,6 +65,7 @@ interface DataTabProps {
         newRow: Record<string, unknown>
     ) => Promise<void>;
     readonly onDeleteRow?: (row: Record<string, unknown>) => void;
+    readonly onDeleteRows?: (rows: Record<string, unknown>[]) => void;
     readonly onSyncRow?: (rows: Record<string, unknown>[]) => void;
     readonly onForeignKeyClick?: (info: ForeignKeyClickInfo) => void;
     // For export filename
@@ -92,6 +89,7 @@ export function DataTab({
     tableSchema,
     onUpdateRow,
     onDeleteRow,
+    onDeleteRows,
     onSyncRow,
     onForeignKeyClick,
     connectionHost,
@@ -100,7 +98,6 @@ export function DataTab({
 }: DataTabProps) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
-    const [deleteConfirmRow, setDeleteConfirmRow] = useState<Record<string, unknown> | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
     const toast = useToastStore();
@@ -137,13 +134,6 @@ export function DataTab({
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
-    };
-
-    const handleConfirmDelete = () => {
-        if (deleteConfirmRow && onDeleteRow) {
-            onDeleteRow(deleteConfirmRow);
-        }
-        setDeleteConfirmRow(null);
     };
 
     const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
@@ -346,12 +336,19 @@ export function DataTab({
     };
 
     const handleDeleteSelected = () => {
-        if (selectedRowIds.length === 1) {
-            const row = rows.find((r) => r.__rowIndex === selectedRowIds[0]);
-            if (row) {
-                const { __rowIndex: _, ...rowData } = row;
-                setDeleteConfirmRow(rowData);
-            }
+        if (selectedRowIds.length === 0) return;
+        const selectedRows = selectedRowIds
+            .map((id) => rows.find((r) => r.__rowIndex === id))
+            .filter(Boolean)
+            .map((row) => {
+                const { __rowIndex: _, ...rowData } = row as Record<string, unknown>;
+                return rowData;
+            });
+
+        if (selectedRows.length === 1 && selectedRows[0]) {
+            onDeleteRow?.(selectedRows[0]);
+        } else if (selectedRows.length > 1) {
+            onDeleteRows?.(selectedRows);
         }
     };
 
@@ -563,9 +560,9 @@ export function DataTab({
                                     title={
                                         !canEditRows
                                             ? 'No primary key'
-                                            : selectedRowIds.length > 1
-                                              ? 'Select 1 row'
-                                              : 'Delete'
+                                            : selectedRowIds.length === 1
+                                              ? 'Delete row'
+                                              : 'Delete selected rows'
                                     }
                                 >
                                     <span>
@@ -575,8 +572,9 @@ export function DataTab({
                                             onClick={handleDeleteSelected}
                                             disabled={
                                                 !canEditRows ||
-                                                selectedRowIds.length !== 1 ||
-                                                !onDeleteRow
+                                                selectedRowIds.length === 0 ||
+                                                (!onDeleteRow && !onDeleteRows) ||
+                                                (selectedRowIds.length > 1 && !onDeleteRows)
                                             }
                                         >
                                             <DeleteIcon fontSize="small" />
@@ -856,42 +854,6 @@ export function DataTab({
                     <Typography variant="body2">Loading data...</Typography>
                 </Box>
             )}
-
-            {/* Delete Row Confirmation Dialog */}
-            <Dialog open={!!deleteConfirmRow} onClose={() => setDeleteConfirmRow(null)}>
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningIcon color="error" />
-                    Delete Row
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Are you sure you want to delete this row? This action cannot be undone.
-                    </Typography>
-                    {deleteConfirmRow && primaryKeyColumns.length > 0 && (
-                        <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                display="block"
-                                mb={0.5}
-                            >
-                                Row identifier:
-                            </Typography>
-                            {primaryKeyColumns.map((pk) => (
-                                <Typography key={pk} variant="body2" fontFamily="monospace">
-                                    {pk}: {String(deleteConfirmRow[pk])}
-                                </Typography>
-                            ))}
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteConfirmRow(null)}>Cancel</Button>
-                    <Button variant="contained" color="error" onClick={handleConfirmDelete}>
-                        Delete Row
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 }

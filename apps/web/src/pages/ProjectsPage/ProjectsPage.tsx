@@ -156,6 +156,7 @@ export function ProjectsPage() {
                         variant="outlined"
                         startIcon={<FolderIcon />}
                         onClick={() => setProjectFormOpen(true)}
+                        data-tour="create-project"
                     >
                         New Project
                     </Button>
@@ -170,6 +171,7 @@ export function ProjectsPage() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setFormOpen(true)}
+                        data-tour="add-connection"
                     >
                         Add Connection
                     </Button>

@@ -406,6 +406,7 @@ export function ComparePage() {
                         {/* Compare Button */}
                         <Button
                             variant="contained"
+                            data-tour="compare-button"
                             startIcon={
                                 isComparing ? (
                                     <CircularProgress size={16} color="inherit" />

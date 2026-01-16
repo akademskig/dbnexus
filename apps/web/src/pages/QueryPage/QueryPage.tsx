@@ -149,6 +149,7 @@ export function QueryPage() {
 
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
+    const [rowsToDelete, setRowsToDelete] = useState<Record<string, unknown>[] | null>(null);
 
     // Track last executed query for table selection
     const lastExecutedQueryRef = useRef<string>('');
@@ -491,7 +492,14 @@ export function QueryPage() {
                 );
                 if (tableToRestore) {
                     handleTableSelect(tableToRestore);
+                    return;
                 }
+            }
+
+            // Auto-select first table if none specified
+            const firstTable = tables[0];
+            if (firstTable) {
+                handleTableSelect(firstTable);
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -881,6 +889,10 @@ export function QueryPage() {
         setRowToDelete(row);
     }, []);
 
+    const handleDeleteRows = useCallback((rows: Record<string, unknown>[]) => {
+        setRowsToDelete(rows);
+    }, []);
+
     // Actually perform row deletion
     const confirmDeleteRow = useCallback(() => {
         if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
@@ -928,6 +940,76 @@ export function QueryPage() {
         selectedConnection?.engine,
         tableSchema,
         rowToDelete,
+        executeMutation,
+        fetchTableData,
+        paginationModel,
+        searchQuery,
+        formatSqlValue,
+        totalRowCount,
+        toast,
+    ]);
+
+    const confirmDeleteRows = useCallback(() => {
+        if (
+            !selectedTable ||
+            !selectedConnectionId ||
+            !tableSchema ||
+            !rowsToDelete ||
+            rowsToDelete.length === 0
+        ) {
+            return;
+        }
+
+        const engine = selectedConnection?.engine;
+        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
+
+        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
+        if (pkColumns.length === 0) {
+            setError('Cannot delete rows: no primary key defined');
+            setRowsToDelete(null);
+            return;
+        }
+
+        const rowClauses = rowsToDelete.map((row) => {
+            const conditions = pkColumns.map(
+                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(row[pk], pk)}`
+            );
+            return `(${conditions.join(' AND ')})`;
+        });
+
+        const query = `DELETE FROM ${tableName} WHERE ${rowClauses.join(' OR ')};`;
+        setSql(query);
+        executeMutation.mutate(
+            { query, confirmed: true },
+            {
+                onSuccess: () => {
+                    if (selectedTable) {
+                        fetchTableData(
+                            selectedTable,
+                            paginationModel.page,
+                            paginationModel.pageSize,
+                            searchQuery,
+                            tableSchema
+                        );
+                    }
+                    if (totalRowCount !== null) {
+                        setTotalRowCount(totalRowCount - rowsToDelete.length);
+                    }
+                    toast.success(`Deleted ${rowsToDelete.length} rows`);
+                    setRowsToDelete(null);
+                },
+                onError: () => {
+                    toast.error('Failed to delete rows');
+                    setRowsToDelete(null);
+                },
+            }
+        );
+    }, [
+        selectedTable,
+        selectedConnectionId,
+        selectedConnection?.engine,
+        tableSchema,
+        rowsToDelete,
         executeMutation,
         fetchTableData,
         paginationModel,
@@ -1318,6 +1400,7 @@ export function QueryPage() {
                                             <Button
                                                 variant="contained"
                                                 size="small"
+                                                data-tour="run-query"
                                                 startIcon={
                                                     executeMutation.isPending ? (
                                                         <CircularProgress
@@ -1473,6 +1556,7 @@ export function QueryPage() {
                                         tableSchema={tableSchema}
                                         onUpdateRow={handleUpdateRow}
                                         onDeleteRow={handleDeleteRow}
+                                        onDeleteRows={handleDeleteRows}
                                         onSyncRow={(rows) => {
                                             setRowsToSync(rows);
                                             setSyncRowDialogOpen(true);
@@ -1644,6 +1728,64 @@ export function QueryPage() {
                     </Box>
                 }
                 confirmText="Delete Row"
+                confirmColor="error"
+                loading={executeMutation.isPending}
+            />
+
+            {/* Delete Rows Confirmation Dialog */}
+            <ConfirmDialog
+                open={!!rowsToDelete}
+                onClose={() => setRowsToDelete(null)}
+                onConfirm={confirmDeleteRows}
+                title="Delete Rows"
+                message={
+                    <Box>
+                        <Typography gutterBottom>
+                            Are you sure you want to delete{' '}
+                            <strong>{rowsToDelete?.length ?? 0}</strong> rows from{' '}
+                            <strong>{selectedTable?.name}</strong>?
+                        </Typography>
+                        {rowsToDelete && tableSchema && (
+                            <Box
+                                sx={{
+                                    mt: 1,
+                                    p: 1.5,
+                                    bgcolor: 'action.hover',
+                                    borderRadius: 1,
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    maxHeight: 150,
+                                    overflow: 'auto',
+                                }}
+                            >
+                                {rowsToDelete.slice(0, 5).map((row) => {
+                                    const primaryKeys = tableSchema.columns
+                                        .filter((c) => c.isPrimaryKey)
+                                        .map((c) => c.name);
+                                    const key = primaryKeys.length
+                                        ? primaryKeys.map((pk) => String(row[pk])).join('|')
+                                        : JSON.stringify(row);
+
+                                    return (
+                                        <Box key={key} sx={{ mb: 0.5 }}>
+                                            {primaryKeys.map((pk) => (
+                                                <Box key={pk}>
+                                                    <strong>{pk}:</strong> {String(row[pk])}
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    );
+                                })}
+                                {rowsToDelete.length > 5 && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        ...and {rowsToDelete.length - 5} more
+                                    </Typography>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
+                }
+                confirmText="Delete Rows"
                 confirmColor="error"
                 loading={executeMutation.isPending}
             />

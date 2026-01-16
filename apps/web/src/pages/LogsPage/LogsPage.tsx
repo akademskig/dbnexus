@@ -88,6 +88,7 @@ export function LogsPage() {
                         icon={<HistoryIcon sx={{ fontSize: 18 }} />}
                         iconPosition="start"
                         label="Query History"
+                        data-tour="query-history"
                     />
                     <Tab
                         icon={<MigrationIcon sx={{ fontSize: 18 }} />}

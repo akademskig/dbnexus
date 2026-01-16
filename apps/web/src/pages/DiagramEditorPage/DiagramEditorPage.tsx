@@ -1014,6 +1014,7 @@ export function DiagramEditorPage() {
                         onChange={handleConnectionChange}
                         disabled={loadingConnections}
                         disableOffline={true}
+                        data-tour="connection-selector"
                     />
 
                     {/* Schema Selector */}

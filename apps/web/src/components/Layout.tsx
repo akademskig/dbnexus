@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Drawer,
@@ -38,6 +38,7 @@ import { themeColors } from '../theme';
 // Types are inferred from React Query
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
+import { useConnectionStore } from '../stores/connectionStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
 
@@ -98,13 +99,25 @@ export function Layout() {
     // Connection health store
     const { healthStatus, checkAllConnections } = useConnectionHealthStore();
 
+    // Global connection selection
+    const { selectedConnectionId, setConnectionAndSchema } = useConnectionStore();
+
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);
+
+    const queryClient = useQueryClient();
+
+    // Refetch connections when route changes to ensure fresh data
+    useEffect(() => {
+        queryClient.invalidateQueries({ queryKey: ['connections'] });
+    }, [location.pathname, queryClient]);
 
     // Use React Query for connections - this automatically updates when invalidated
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
+        staleTime: 0, // Always consider data stale to ensure fresh data
+        refetchOnWindowFocus: true, // Refetch when user returns to the app
     });
 
     // Use React Query for groups
@@ -136,10 +149,77 @@ export function Layout() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connections.length]);
 
+    // Helper to get default schema for a connection
+    const getDefaultSchemaForConnection = useCallback((conn: (typeof connections)[0]) => {
+        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+            return conn.database || '';
+        }
+        if (conn.engine === 'sqlite') {
+            return 'main';
+        }
+        // PostgreSQL and others
+        return conn.defaultSchema || 'public';
+    }, []);
+
+    // Auto-select first connection when none is selected
+    useEffect(() => {
+        if (loadingConnections) return;
+
+        const firstConnection = connections[0];
+        if (!firstConnection) return;
+
+        // If no connection is selected and we have connections, select the first one
+        if (!selectedConnectionId) {
+            const defaultSchema = getDefaultSchemaForConnection(firstConnection);
+            setConnectionAndSchema(firstConnection.id, defaultSchema);
+            return;
+        }
+
+        // If selected connection no longer exists, select first available
+        const exists = connections.some((c) => c.id === selectedConnectionId);
+        if (!exists) {
+            const defaultSchema = getDefaultSchemaForConnection(firstConnection);
+            setConnectionAndSchema(firstConnection.id, defaultSchema);
+        }
+    }, [
+        loadingConnections,
+        connections,
+        selectedConnectionId,
+        setConnectionAndSchema,
+        getDefaultSchemaForConnection,
+    ]);
+
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
 
     const isConnectionsActive = location.pathname.startsWith('/connections/');
+
+    // Redirect from pages that require connections when there are none
+    useEffect(() => {
+        if (loadingConnections) return; // Wait for connections to load
+
+        if (connections.length === 0) {
+            // Check if current page requires connections
+            const currentNavItem = navItems.find(
+                (item) =>
+                    location.pathname === item.to || location.pathname.startsWith(item.to + '/')
+            );
+
+            if (currentNavItem?.requiresConnections) {
+                navigate('/projects', { replace: true });
+            }
+
+            // Also redirect from connection details pages
+            if (location.pathname.startsWith('/connections/')) {
+                navigate('/projects', { replace: true });
+            }
+
+            // Redirect from group sync pages
+            if (location.pathname.startsWith('/groups/') && location.pathname.includes('/sync')) {
+                navigate('/projects', { replace: true });
+            }
+        }
+    }, [connections.length, loadingConnections, location.pathname, navigate]);
 
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -225,8 +305,8 @@ export function Layout() {
                                 ? `${label} (No connections)`
                                 : label
                             : isDisabled
-                              ? 'No connections available'
-                              : '';
+                                ? 'No connections available'
+                                : '';
 
                         return (
                             <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
@@ -250,8 +330,8 @@ export function Layout() {
                                                 color: isActive
                                                     ? 'primary.main'
                                                     : isDisabled
-                                                      ? 'text.disabled'
-                                                      : 'text.secondary',
+                                                        ? 'text.disabled'
+                                                        : 'text.secondary',
                                             }}
                                         >
                                             {icon}
@@ -495,8 +575,8 @@ export function Layout() {
                                                                     bgcolor: isOnline
                                                                         ? 'success.main'
                                                                         : isOffline
-                                                                          ? 'error.main'
-                                                                          : 'text.disabled',
+                                                                            ? 'error.main'
+                                                                            : 'text.disabled',
                                                                     ml: 1,
                                                                     mr: 2,
                                                                     flexShrink: 0,
@@ -600,8 +680,8 @@ export function Layout() {
                                                             bgcolor: isOnline
                                                                 ? 'success.main'
                                                                 : isOffline
-                                                                  ? 'error.main'
-                                                                  : 'text.disabled',
+                                                                    ? 'error.main'
+                                                                    : 'text.disabled',
                                                             ml: 1,
                                                             mr: 2,
                                                             flexShrink: 0,
@@ -688,7 +768,7 @@ export function Layout() {
             </Box>
 
             {/* Interactive onboarding tour */}
-            <OnboardingTour />
+            <OnboardingTour hasConnections={connections.length > 0} />
         </Box>
     );
 }

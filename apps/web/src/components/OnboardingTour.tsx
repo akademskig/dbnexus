@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     Box,
     Button,
@@ -40,14 +40,21 @@ type TourStep = {
     icon: React.ReactNode;
     route: string;
     color: string;
+    targetSelector?: string; // CSS selector for element to highlight
+    requiresConnections?: boolean; // Whether this step needs connections to work
 };
 
 interface OnboardingTourProps {
     readonly forceOpen?: boolean;
     readonly onComplete?: () => void;
+    readonly hasConnections?: boolean;
 }
 
-export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
+export function OnboardingTour({
+    forceOpen,
+    onComplete,
+    hasConnections = false,
+}: OnboardingTourProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
@@ -56,6 +63,8 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [hasNavigated, setHasNavigated] = useState(false);
+    const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+    const spotlightRef = useRef<HTMLDivElement>(null);
 
     const steps: TourStep[] = useMemo(
         () => [
@@ -83,6 +92,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <StorageIcon />,
                 route: '/projects',
                 color: theme.palette.primary.main,
+                targetSelector: '[data-tour="add-connection"]',
             },
             {
                 id: 'organize',
@@ -93,6 +103,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <FolderIcon />,
                 route: '/projects',
                 color: theme.palette.secondary.main,
+                targetSelector: '[data-tour="create-project"]',
             },
             {
                 id: 'query',
@@ -103,6 +114,8 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <TerminalIcon />,
                 route: '/query',
                 color: theme.palette.success.main,
+                targetSelector: '[data-tour="run-query"]',
+                requiresConnections: true,
             },
             {
                 id: 'schema-diagram',
@@ -113,6 +126,8 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <AccountTreeIcon />,
                 route: '/schema-diagram',
                 color: theme.palette.warning.main,
+                targetSelector: '[data-tour="connection-selector"]',
+                requiresConnections: true,
             },
             {
                 id: 'compare',
@@ -123,6 +138,8 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <CompareArrowsIcon />,
                 route: '/compare',
                 color: theme.palette.info.main,
+                targetSelector: '[data-tour="compare-button"]',
+                requiresConnections: true,
             },
             {
                 id: 'logs',
@@ -133,6 +150,8 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                 icon: <HistoryIcon />,
                 route: '/logs',
                 color: theme.palette.error.main,
+                targetSelector: '[data-tour="query-history"]',
+                requiresConnections: true,
             },
             {
                 id: 'dashboard',
@@ -148,9 +167,41 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
         [theme]
     );
 
-    const currentStep = steps[currentStepIndex];
-    const isLastStep = currentStepIndex === steps.length - 1;
-    const progress = ((currentStepIndex + 1) / steps.length) * 100;
+    // Filter steps based on whether connections exist
+    const availableSteps = useMemo(() => {
+        if (hasConnections) {
+            return steps;
+        }
+        // When no connections, only show steps that don't require connections
+        // This results in: welcome, projects, organize, dashboard
+        return steps
+            .filter((step) => !step.requiresConnections)
+            .map((step, index, arr) => {
+                // Modify the final step message when no connections
+                if (index === arr.length - 1 && step.id === 'dashboard') {
+                    return {
+                        ...step,
+                        title: 'Almost There! 🚀',
+                        description:
+                            'Add your first connection to unlock all features: Query Editor, Schema Diagram, Compare & Sync, and more!',
+                        hint: '💡 Click "Add Connection" on the Projects page or use "Scan for Connections" to auto-discover databases',
+                    };
+                }
+                return step;
+            });
+    }, [steps, hasConnections]);
+
+    // Reset step index if it's out of bounds (e.g., connections were deleted)
+    useEffect(() => {
+        if (currentStepIndex >= availableSteps.length && availableSteps.length > 0) {
+            setCurrentStepIndex(availableSteps.length - 1);
+        }
+    }, [availableSteps.length, currentStepIndex]);
+
+    const safeStepIndex = Math.min(currentStepIndex, availableSteps.length - 1);
+    const currentStep = availableSteps[safeStepIndex];
+    const isLastStep = safeStepIndex === availableSteps.length - 1;
+    const progress = ((safeStepIndex + 1) / availableSteps.length) * 100;
 
     // Initialize from localStorage
     useEffect(() => {
@@ -165,7 +216,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
             localStorage.removeItem(ONBOARDING_STORAGE_KEY);
         } else if (!completed) {
             setIsActive(true);
-            if (savedStep) setCurrentStepIndex(parseInt(savedStep, 10));
+            if (savedStep) setCurrentStepIndex(Number.parseInt(savedStep, 10));
             if (savedMinimized === 'true') setIsMinimized(true);
         }
     }, [forceOpen]);
@@ -177,6 +228,36 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
             localStorage.setItem(ONBOARDING_MINIMIZED_KEY, String(isMinimized));
         }
     }, [currentStepIndex, isMinimized, isActive]);
+
+    // Track target element position for spotlight
+    useEffect(() => {
+        if (!isActive || isMinimized || !currentStep?.targetSelector) {
+            setTargetRect(null);
+            return;
+        }
+
+        const updateTargetPosition = () => {
+            const target = document.querySelector(currentStep.targetSelector!);
+            if (target) {
+                setTargetRect(target.getBoundingClientRect());
+            } else {
+                setTargetRect(null);
+            }
+        };
+
+        // Initial check with delay to allow page to render
+        const timeoutId = setTimeout(updateTargetPosition, 500);
+
+        // Update on scroll/resize
+        globalThis.addEventListener('scroll', updateTargetPosition, true);
+        globalThis.addEventListener('resize', updateTargetPosition);
+
+        return () => {
+            clearTimeout(timeoutId);
+            globalThis.removeEventListener('scroll', updateTargetPosition, true);
+            globalThis.removeEventListener('resize', updateTargetPosition);
+        };
+    }, [isActive, isMinimized, currentStep?.targetSelector, currentStepIndex]);
 
     // Navigate to current step's route when step changes
     useEffect(() => {
@@ -196,6 +277,9 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
     ]);
 
     const handleNext = useCallback(() => {
+        // Clear spotlight immediately
+        setTargetRect(null);
+
         if (isLastStep) {
             // Complete the tour
             localStorage.setItem(ONBOARDING_STORAGE_KEY, '1');
@@ -205,24 +289,27 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
             onComplete?.();
         } else {
             setHasNavigated(true);
-            const nextStep = steps[currentStepIndex + 1];
+            const nextStep = availableSteps[currentStepIndex + 1];
             if (nextStep) {
                 navigate(nextStep.route);
             }
             setCurrentStepIndex((prev) => prev + 1);
         }
-    }, [isLastStep, currentStepIndex, steps, navigate, onComplete]);
+    }, [isLastStep, currentStepIndex, availableSteps, navigate, onComplete]);
 
     const handleBack = useCallback(() => {
+        // Clear spotlight immediately
+        setTargetRect(null);
+
         if (currentStepIndex > 0) {
             setHasNavigated(true);
-            const prevStep = steps[currentStepIndex - 1];
+            const prevStep = availableSteps[currentStepIndex - 1];
             if (prevStep) {
                 navigate(prevStep.route);
             }
             setCurrentStepIndex((prev) => prev - 1);
         }
-    }, [currentStepIndex, steps, navigate]);
+    }, [currentStepIndex, availableSteps, navigate]);
 
     const handleMinimize = () => {
         setIsMinimized(true);
@@ -247,7 +334,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
 
     const handleGoToStep = (index: number) => {
         setHasNavigated(true);
-        const targetStep = steps[index];
+        const targetStep = availableSteps[index];
         if (targetStep) {
             navigate(targetStep.route);
         }
@@ -261,7 +348,7 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
         return (
             <Zoom in>
                 <Badge
-                    badgeContent={`${currentStepIndex + 1}/${steps.length}`}
+                    badgeContent={`${safeStepIndex + 1}/${availableSteps.length}`}
                     color="primary"
                     sx={{
                         position: 'fixed',
@@ -280,8 +367,18 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
                         onClick={handleExpand}
                         sx={{
                             background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${currentStep?.color})`,
+                            animation: 'fab-pulse 2s ease-in-out infinite',
                             '&:hover': {
                                 background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${currentStep?.color})`,
+                                animation: 'none',
+                            },
+                            '@keyframes fab-pulse': {
+                                '0%, 100%': {
+                                    boxShadow: `0 0 0 0 ${alpha(currentStep?.color || theme.palette.primary.main, 0.4)}`,
+                                },
+                                '50%': {
+                                    boxShadow: `0 0 0 12px ${alpha(currentStep?.color || theme.palette.primary.main, 0)}`,
+                                },
                             },
                         }}
                     >
@@ -294,250 +391,351 @@ export function OnboardingTour({ forceOpen, onComplete }: OnboardingTourProps) {
 
     // Expanded tour panel
     return (
-        <Fade in>
-            <Paper
-                elevation={8}
-                sx={{
-                    position: 'fixed',
-                    bottom: 24,
-                    right: 24,
-                    width: 440,
-                    maxWidth: 'calc(100vw - 48px)',
-                    zIndex: 1300,
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                    border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.3)}`,
-                }}
-            >
-                {/* Progress bar */}
+        <>
+            {/* Simple arrow pointing to target element */}
+            {targetRect && !isMinimized && (
                 <Box
+                    ref={spotlightRef}
                     sx={{
-                        height: 4,
-                        bgcolor: alpha(theme.palette.text.primary, 0.1),
+                        position: 'fixed',
+                        left: targetRect.left + targetRect.width / 2,
+                        top: targetRect.top - 20,
+                        transform: 'translateX(-50%)',
+                        zIndex: 1299,
+                        pointerEvents: 'none',
+                        animation: 'bounce-arrow 0.8s ease-in-out infinite',
+                        '@keyframes bounce-arrow': {
+                            '0%, 100%': { transform: 'translateX(-50%) translateY(0)' },
+                            '50%': { transform: 'translateX(-50%) translateY(-6px)' },
+                        },
                     }}
                 >
+                    {/* Arrow pointing down */}
                     <Box
                         sx={{
-                            height: '100%',
-                            width: `${progress}%`,
-                            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${currentStep?.color})`,
-                            transition: 'width 0.3s ease',
+                            width: 0,
+                            height: 0,
+                            borderLeft: '10px solid transparent',
+                            borderRight: '10px solid transparent',
+                            borderTop: `14px solid ${theme.palette.primary.main}`,
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
                         }}
                     />
                 </Box>
+            )}
 
-                {/* Header */}
+            {/* Highlight ring around target */}
+            {targetRect && !isMinimized && (
                 <Box
                     sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 2,
-                        py: 1.5,
-                        background: `linear-gradient(135deg, ${alpha(currentStep?.color || theme.palette.primary.main, 0.15)} 0%, transparent 100%)`,
-                        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                        position: 'fixed',
+                        left: targetRect.left - 4,
+                        top: targetRect.top - 4,
+                        width: targetRect.width + 8,
+                        height: targetRect.height + 8,
+                        borderRadius: 2,
+                        border: `2px solid ${theme.palette.primary.main}`,
+                        boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.3)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                        zIndex: 1298,
+                        pointerEvents: 'none',
+                        animation: 'pulse-highlight 2s ease-in-out infinite',
+                        '@keyframes pulse-highlight': {
+                            '0%, 100%': {
+                                boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.3)}, 0 0 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                            },
+                            '50%': {
+                                boxShadow: `0 0 0 8px ${alpha(theme.palette.primary.main, 0.2)}, 0 0 30px ${alpha(theme.palette.primary.main, 0.5)}`,
+                            },
+                        },
+                    }}
+                />
+            )}
+
+            <Fade in>
+                <Paper
+                    elevation={8}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        width: 440,
+                        maxWidth: 'calc(100vw - 48px)',
+                        zIndex: 1300,
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                        border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.3)}`,
                     }}
                 >
+                    {/* Progress bar */}
                     <Box
                         sx={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            bgcolor: alpha(currentStep?.color || theme.palette.primary.main, 0.2),
-                            color: currentStep?.color,
+                            height: 4,
+                            bgcolor: alpha(theme.palette.text.primary, 0.1),
                         }}
                     >
-                        {currentStep?.icon}
-                    </Box>
-                    <Typography
-                        variant="subtitle1"
-                        fontWeight={700}
-                        sx={{ flex: 1, fontSize: '1.1rem' }}
-                    >
-                        {currentStep?.title}
-                    </Typography>
-                    <IconButton
-                        size="small"
-                        onClick={handleMinimize}
-                        sx={{ color: 'text.secondary' }}
-                    >
-                        <MinimizeIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={handleSkip} sx={{ color: 'text.secondary' }}>
-                        <CloseIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-
-                {/* Content */}
-                <Box sx={{ px: 2, py: 2 }}>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            mb: 1.5,
-                            whiteSpace: 'pre-line',
-                            fontWeight: 500,
-                            color: 'text.primary',
-                            lineHeight: 1.6,
-                        }}
-                    >
-                        {currentStep?.description}
-                    </Typography>
-
-                    {currentStep?.features && (
-                        <Box sx={{ mb: 1.5 }}>
-                            {currentStep.features.map((feature) => (
-                                <Box
-                                    key={feature}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                        py: 0.5,
-                                    }}
-                                >
-                                    <CheckCircleIcon
-                                        sx={{
-                                            fontSize: 18,
-                                            color: currentStep?.color || 'primary.main',
-                                        }}
-                                    />
-                                    <Typography
-                                        variant="body1"
-                                        sx={{ fontWeight: 600, color: 'text.primary' }}
-                                    >
-                                        {feature}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                    )}
-
-                    {currentStep?.hint && (
                         <Box
                             sx={{
-                                p: 1.5,
-                                borderRadius: 2,
+                                height: '100%',
+                                width: `${progress}%`,
+                                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${currentStep?.color})`,
+                                transition: 'width 0.3s ease',
+                            }}
+                        />
+                    </Box>
+
+                    {/* Header */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            px: 2,
+                            py: 1.5,
+                            background: `linear-gradient(135deg, ${alpha(currentStep?.color || theme.palette.primary.main, 0.15)} 0%, transparent 100%)`,
+                            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 bgcolor: alpha(
                                     currentStep?.color || theme.palette.primary.main,
-                                    0.12
+                                    0.2
                                 ),
-                                border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.25)}`,
+                                color: currentStep?.color,
                             }}
                         >
-                            <Typography
-                                variant="body2"
-                                sx={{ color: 'text.primary', fontWeight: 500 }}
-                            >
-                                {currentStep.hint}
-                            </Typography>
+                            {currentStep?.icon}
                         </Box>
-                    )}
-                </Box>
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight={700}
+                            sx={{ flex: 1, fontSize: '1.1rem' }}
+                        >
+                            {currentStep?.title}
+                        </Typography>
+                        <IconButton
+                            size="small"
+                            onClick={handleMinimize}
+                            sx={{ color: 'text.secondary' }}
+                        >
+                            <MinimizeIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={handleSkip}
+                            sx={{ color: 'text.secondary' }}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
 
-                {/* Step indicators */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        pb: 1.5,
-                    }}
-                >
-                    {steps.map((step, index) => {
-                        const isCompleted = index < currentStepIndex;
-                        const isCurrent = index === currentStepIndex;
+                    {/* Content */}
+                    <Box sx={{ px: 2, py: 2 }}>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                mb: 1.5,
+                                whiteSpace: 'pre-line',
+                                fontWeight: 500,
+                                color: 'text.primary',
+                                lineHeight: 1.6,
+                            }}
+                        >
+                            {currentStep?.description}
+                        </Typography>
 
-                        return (
+                        {currentStep?.features && (
+                            <Box sx={{ mb: 1.5 }}>
+                                {currentStep.features.map((feature) => (
+                                    <Box
+                                        key={feature}
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            py: 0.5,
+                                        }}
+                                    >
+                                        <CheckCircleIcon
+                                            sx={{
+                                                fontSize: 18,
+                                                color: currentStep?.color || 'primary.main',
+                                            }}
+                                        />
+                                        <Typography
+                                            variant="body1"
+                                            sx={{ fontWeight: 600, color: 'text.primary' }}
+                                        >
+                                            {feature}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+
+                        {currentStep?.hint && (
                             <Box
-                                key={step.id}
-                                onClick={() => handleGoToStep(index)}
                                 sx={{
-                                    width: isCompleted ? 20 : isCurrent ? 24 : 10,
-                                    height: isCompleted ? 20 : 10,
-                                    borderRadius: isCompleted ? '50%' : 5,
-                                    bgcolor: isCompleted
-                                        ? theme.palette.success.main
-                                        : isCurrent
-                                          ? currentStep?.color
-                                          : alpha(theme.palette.text.primary, 0.2),
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
+                                    p: 1.5,
+                                    borderRadius: 2,
+                                    bgcolor: alpha(
+                                        currentStep?.color || theme.palette.primary.main,
+                                        0.12
+                                    ),
+                                    border: `1px solid ${alpha(currentStep?.color || theme.palette.primary.main, 0.25)}`,
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    sx={{ color: 'text.primary', fontWeight: 500 }}
+                                >
+                                    {currentStep.hint}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Step indicators */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            pb: 1.5,
+                        }}
+                    >
+                        {availableSteps.map((step, index) => {
+                            const isCompleted = index < safeStepIndex;
+                            const isCurrent = index === safeStepIndex;
+                            let indicatorWidth = 10;
+                            let indicatorHeight = 10;
+                            let indicatorRadius: number | string = 5;
+                            let indicatorColor = alpha(theme.palette.text.primary, 0.2);
+                            let hoverColor = alpha(theme.palette.text.primary, 0.35);
+
+                            if (isCompleted) {
+                                indicatorWidth = 20;
+                                indicatorHeight = 20;
+                                indicatorRadius = '50%';
+                                indicatorColor = theme.palette.success.main;
+                                hoverColor = theme.palette.success.dark;
+                            } else if (isCurrent) {
+                                indicatorWidth = 24;
+                                indicatorColor = theme.palette.primary.main;
+                                hoverColor = theme.palette.primary.main;
+                            }
+
+                            return (
+                                <Box
+                                    key={step.id}
+                                    onClick={() => handleGoToStep(index)}
+                                    sx={{
+                                        width: indicatorWidth,
+                                        height: indicatorHeight,
+                                        borderRadius: indicatorRadius,
+                                        bgcolor: indicatorColor,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        '&:hover': {
+                                            transform: 'scale(1.15)',
+                                            bgcolor: hoverColor,
+                                        },
+                                    }}
+                                >
+                                    {isCompleted && (
+                                        <CheckCircleIcon sx={{ fontSize: 20, color: 'white' }} />
+                                    )}
+                                </Box>
+                            );
+                        })}
+                    </Box>
+
+                    {/* Actions */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: 1,
+                            px: 2,
+                            pb: 2,
+                            justifyContent: 'space-between',
+                        }}
+                    >
+                        <Button
+                            size="small"
+                            onClick={handleBack}
+                            disabled={currentStepIndex === 0}
+                            startIcon={<ArrowBackIcon />}
+                            sx={{
+                                visibility: currentStepIndex === 0 ? 'hidden' : 'visible',
+                                textTransform: 'none',
+                            }}
+                        >
+                            Back
+                        </Button>
+
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                size="small"
+                                onClick={handleSkip}
+                                sx={{ textTransform: 'none', color: 'text.secondary' }}
+                            >
+                                Skip Tour
+                            </Button>
+                            <Button
+                                size="small"
+                                variant="contained"
+                                onClick={handleNext}
+                                endIcon={isLastStep ? <RocketLaunchIcon /> : <ArrowForwardIcon />}
+                                sx={{
+                                    textTransform: 'none',
+                                    bgcolor: currentStep?.color,
+                                    fontWeight: 600,
+                                    px: 2.5,
+                                    position: 'relative',
+                                    overflow: 'hidden',
                                     '&:hover': {
-                                        transform: 'scale(1.15)',
-                                        bgcolor: isCompleted
-                                            ? theme.palette.success.dark
-                                            : isCurrent
-                                              ? currentStep?.color
-                                              : alpha(theme.palette.text.primary, 0.35),
+                                        bgcolor: currentStep?.color,
+                                        filter: 'brightness(0.9)',
+                                    },
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: 0,
+                                        borderRadius: 'inherit',
+                                        animation: 'pulse-ring 2s ease-out infinite',
+                                        border: '2px solid',
+                                        borderColor: 'inherit',
+                                        opacity: 0,
+                                    },
+                                    '@keyframes pulse-ring': {
+                                        '0%': {
+                                            transform: 'scale(1)',
+                                            opacity: 0.5,
+                                        },
+                                        '100%': {
+                                            transform: 'scale(1.15)',
+                                            opacity: 0,
+                                        },
                                     },
                                 }}
                             >
-                                {isCompleted && (
-                                    <CheckCircleIcon sx={{ fontSize: 20, color: 'white' }} />
-                                )}
-                            </Box>
-                        );
-                    })}
-                </Box>
-
-                {/* Actions */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        gap: 1,
-                        px: 2,
-                        pb: 2,
-                        justifyContent: 'space-between',
-                    }}
-                >
-                    <Button
-                        size="small"
-                        onClick={handleBack}
-                        disabled={currentStepIndex === 0}
-                        startIcon={<ArrowBackIcon />}
-                        sx={{
-                            visibility: currentStepIndex === 0 ? 'hidden' : 'visible',
-                            textTransform: 'none',
-                        }}
-                    >
-                        Back
-                    </Button>
-
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            size="small"
-                            onClick={handleSkip}
-                            sx={{ textTransform: 'none', color: 'text.secondary' }}
-                        >
-                            Skip Tour
-                        </Button>
-                        <Button
-                            size="small"
-                            variant="contained"
-                            onClick={handleNext}
-                            endIcon={isLastStep ? <RocketLaunchIcon /> : <ArrowForwardIcon />}
-                            sx={{
-                                textTransform: 'none',
-                                bgcolor: currentStep?.color,
-                                '&:hover': {
-                                    bgcolor: currentStep?.color,
-                                    filter: 'brightness(0.9)',
-                                },
-                            }}
-                        >
-                            {isLastStep ? 'Finish' : 'Next'}
-                        </Button>
+                                {isLastStep ? 'Finish' : 'Next'}
+                            </Button>
+                        </Box>
                     </Box>
-                </Box>
-            </Paper>
-        </Fade>
+                </Paper>
+            </Fade>
+        </>
     );
 }
 

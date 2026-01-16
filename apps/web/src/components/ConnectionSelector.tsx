@@ -6,13 +6,14 @@ import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import type { ConnectionConfig } from '@dbnexus/shared';
 
 interface ConnectionSelectorProps {
-    value: string;
-    onChange: (connectionId: string) => void;
-    disabled?: boolean;
-    size?: 'small' | 'medium';
-    minWidth?: number;
-    label?: string;
-    disableOffline?: boolean;
+    readonly value: string;
+    readonly onChange: (connectionId: string) => void;
+    readonly disabled?: boolean;
+    readonly size?: 'small' | 'medium';
+    readonly minWidth?: number;
+    readonly label?: string;
+    readonly disableOffline?: boolean;
+    readonly 'data-tour'?: string;
 }
 
 export function ConnectionSelector({
@@ -23,6 +24,7 @@ export function ConnectionSelector({
     minWidth = 200,
     label = 'Connection',
     disableOffline = true,
+    'data-tour': dataTour,
 }: ConnectionSelectorProps) {
     const { data: connections = [], isLoading } = useQuery({
         queryKey: ['connections'],
@@ -47,20 +49,25 @@ export function ConnectionSelector({
 
     // Sort connections: online first, then offline
     const sortedConnections = useMemo(() => {
+        const getOnlineRank = (health: (typeof healthStatus)[string] | undefined) => {
+            if (!health) return 0;
+            return health.isOnline ? 1 : -1;
+        };
+
         return [...connections].sort((a, b) => {
-            const aHealth = healthStatus[a.id];
-            const bHealth = healthStatus[b.id];
-
-            // Unknown status goes in the middle
-            const aOnline = aHealth ? (aHealth.isOnline ? 1 : -1) : 0;
-            const bOnline = bHealth ? (bHealth.isOnline ? 1 : -1) : 0;
-
+            const aOnline = getOnlineRank(healthStatus[a.id]);
+            const bOnline = getOnlineRank(healthStatus[b.id]);
             return bOnline - aOnline;
         });
     }, [connections, healthStatus]);
 
     return (
-        <FormControl size={size} sx={{ minWidth }} disabled={disabled || isLoading}>
+        <FormControl
+            size={size}
+            sx={{ minWidth }}
+            disabled={disabled || isLoading}
+            data-tour={dataTour}
+        >
             <InputLabel>{label}</InputLabel>
             <Select value={value} onChange={handleChange} label={label}>
                 {sortedConnections.length === 0 && !isLoading ? (
