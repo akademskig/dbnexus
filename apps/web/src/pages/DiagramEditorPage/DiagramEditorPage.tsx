@@ -55,7 +55,6 @@ import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import type { TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
 import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
@@ -604,8 +603,7 @@ export function DiagramEditorPage() {
         }
         if (updates.nullable !== current.nullable) {
             statements.push(
-                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} ${
-                    updates.nullable ? 'DROP NOT NULL' : 'SET NOT NULL'
+                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} ${updates.nullable ? 'DROP NOT NULL' : 'SET NOT NULL'
                 }`
             );
         }
@@ -629,9 +627,8 @@ export function DiagramEditorPage() {
         updates: typeof newColumn,
         current: EditableColumn
     ) => {
-        let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${
-            updates.dataType || current.dataType
-        }`;
+        let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${updates.dataType || current.dataType
+            }`;
         if (!updates.nullable) {
             sql += ' NOT NULL';
         }

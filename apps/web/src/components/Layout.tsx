@@ -15,7 +15,6 @@ import {
     CircularProgress,
     Menu,
     MenuItem,
-    useTheme,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -34,8 +33,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
-import { colorSchemes } from '../theme';
-import { useColorSchemeStore } from '../stores/colorSchemeStore';
 import { DynamicLogo } from './DynamicLogo';
 // Types are inferred from React Query
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -92,8 +89,6 @@ export function Layout() {
     const { collapsed, syncExpanded, connectionsExpanded, toggle, toggleSync, toggleConnections } =
         useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
-    const colorScheme = useColorSchemeStore((state) => state.colorScheme);
-    const colors = colorSchemes[colorScheme];
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);

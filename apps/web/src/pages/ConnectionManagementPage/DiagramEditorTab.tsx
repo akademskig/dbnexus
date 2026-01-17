@@ -49,7 +49,6 @@ import WarningIcon from '@mui/icons-material/Warning';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import type { ConnectionConfig, TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
