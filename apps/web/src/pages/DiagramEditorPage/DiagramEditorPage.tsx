@@ -64,6 +64,7 @@ import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
+import { AddColumnDialog, type NewColumnState } from '../../components/AddColumnDialog';
 import {
     EditableTableNode,
     type EditableColumn,
@@ -176,11 +177,14 @@ export function DiagramEditorPage() {
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
     const [confirmDeleteText, setConfirmDeleteText] = useState('');
 
-    const [newColumn, setNewColumn] = useState({
+    const [newColumn, setNewColumn] = useState<NewColumnState>({
         name: '',
         dataType: '',
         nullable: true,
         isPrimaryKey: false,
+        isForeignKey: false,
+        foreignKeyTable: '',
+        foreignKeyColumn: '',
         defaultValue: '',
     });
 
@@ -319,6 +323,9 @@ export function DiagramEditorPage() {
             dataType: '',
             nullable: true,
             isPrimaryKey: false,
+            isForeignKey: false,
+            foreignKeyTable: '',
+            foreignKeyColumn: '',
             defaultValue: '',
         });
         setAddColumnOpen(true);
@@ -333,6 +340,9 @@ export function DiagramEditorPage() {
             dataType: column.dataType,
             nullable: column.nullable,
             isPrimaryKey: column.isPrimaryKey,
+            isForeignKey: false,
+            foreignKeyTable: '',
+            foreignKeyColumn: '',
             defaultValue: column.defaultValue || '',
         });
         setEditColumnOpen(true);
@@ -547,6 +557,13 @@ export function DiagramEditorPage() {
     // Add column handler
     const handleAddColumn = async () => {
         if (!currentTableId || !newColumn.name || !newColumn.dataType) return;
+        if (
+            newColumn.isForeignKey &&
+            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
+        ) {
+            toast.error('Select a reference table and column for the foreign key');
+            return;
+        }
 
         const fullTableName = buildTableName(selectedSchema, currentTableId, connection?.engine);
         let sql = `ALTER TABLE ${fullTableName} ADD COLUMN ${quoteIdentifier(newColumn.name, connection?.engine)} ${newColumn.dataType}`;
@@ -563,6 +580,25 @@ export function DiagramEditorPage() {
 
         try {
             await executeSql.mutateAsync({ sql });
+            if (newColumn.isForeignKey) {
+                const fkName = `fk_${currentTableId}_${newColumn.name}`;
+                const fullTargetTable = buildTableName(
+                    selectedSchema,
+                    newColumn.foreignKeyTable,
+                    connection?.engine
+                );
+                const fkSql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quoteIdentifier(
+                    fkName,
+                    connection?.engine
+                )} FOREIGN KEY (${quoteIdentifier(
+                    newColumn.name,
+                    connection?.engine
+                )}) REFERENCES ${fullTargetTable} (${quoteIdentifier(
+                    newColumn.foreignKeyColumn,
+                    connection?.engine
+                )})`;
+                await executeSql.mutateAsync({ sql: fkSql });
+            }
             toast.success(`Column "${newColumn.name}" added to "${currentTableId}"`);
             setAddColumnOpen(false);
             setCurrentTableId(null);
@@ -752,6 +788,16 @@ export function DiagramEditorPage() {
 
     const dataTypes =
         DATA_TYPES[connection?.engine as keyof typeof DATA_TYPES] || DATA_TYPES.postgres;
+
+    const getColumnsForTable = useCallback(
+        (tableName: string) => {
+            const tableNode = nodes.find((node) => node.id === tableName);
+            if (!tableNode) return [];
+            const data = tableNode.data as EditableTableNodeData;
+            return data.columns.map((col) => ({ name: col.name }));
+        },
+        [nodes]
+    );
 
     // Redirect to dashboard if no connections after loading
     if (!loadingConnections && connections.length === 0) {
@@ -1140,92 +1186,18 @@ export function DiagramEditorPage() {
                 </DialogActions>
             </Dialog>
 
-            {/* Add Column Dialog */}
-            <Dialog
+            <AddColumnDialog
                 open={addColumnOpen}
+                tableName={currentTableId}
+                dataTypes={dataTypes}
+                tables={tables}
+                getColumnsForTable={getColumnsForTable}
+                isSubmitting={executeSql.isPending}
+                newColumn={newColumn}
+                setNewColumn={setNewColumn}
                 onClose={() => setAddColumnOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Add Column to &quot;{currentTableId}&quot;</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                        <TextField
-                            autoFocus
-                            label="Column Name"
-                            fullWidth
-                            value={newColumn.name}
-                            onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
-                        />
-                        <Autocomplete
-                            freeSolo
-                            options={dataTypes}
-                            value={newColumn.dataType}
-                            onChange={(_, value) =>
-                                setNewColumn({ ...newColumn, dataType: value || '' })
-                            }
-                            onInputChange={(_, value) =>
-                                setNewColumn({ ...newColumn, dataType: value })
-                            }
-                            renderInput={(params) => (
-                                <TextField {...params} label="Data Type" fullWidth />
-                            )}
-                        />
-                        <TextField
-                            label="Default Value (optional)"
-                            fullWidth
-                            value={newColumn.defaultValue}
-                            onChange={(e) =>
-                                setNewColumn({ ...newColumn, defaultValue: e.target.value })
-                            }
-                            helperText="Enter SQL expression (e.g., 'now()', '0', 'true')"
-                        />
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={newColumn.nullable}
-                                        onChange={(e) =>
-                                            setNewColumn({
-                                                ...newColumn,
-                                                nullable: e.target.checked,
-                                            })
-                                        }
-                                    />
-                                }
-                                label="Nullable"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={newColumn.isPrimaryKey}
-                                        onChange={(e) =>
-                                            setNewColumn({
-                                                ...newColumn,
-                                                isPrimaryKey: e.target.checked,
-                                            })
-                                        }
-                                    />
-                                }
-                                label="Primary Key"
-                            />
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAddColumnOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleAddColumn}
-                        disabled={!newColumn.name || !newColumn.dataType || executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <AddIcon />
-                        }
-                    >
-                        Add Column
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSubmit={handleAddColumn}
+            />
 
             {/* Edit Column Dialog */}
             <Dialog

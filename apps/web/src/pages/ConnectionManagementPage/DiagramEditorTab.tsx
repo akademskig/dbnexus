@@ -32,9 +32,6 @@ import {
     Alert,
     CircularProgress,
     Chip,
-    Switch,
-    FormControlLabel,
-    Autocomplete,
     Divider,
     Paper,
     alpha,
@@ -57,6 +54,7 @@ import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { AddColumnDialog, type NewColumnState } from '../../components/AddColumnDialog';
 import {
     EditableTableNode,
     type EditableColumn,
@@ -155,11 +153,14 @@ export function DiagramEditorTab({
     const [currentColumn, setCurrentColumn] = useState<EditableColumn | null>(null);
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
 
-    const [newColumn, setNewColumn] = useState({
+    const [newColumn, setNewColumn] = useState<NewColumnState>({
         name: '',
         dataType: '',
         nullable: true,
         isPrimaryKey: false,
+        isForeignKey: false,
+        foreignKeyTable: '',
+        foreignKeyColumn: '',
         defaultValue: '',
     });
     const [confirmDeleteText, setConfirmDeleteText] = useState('');
@@ -256,6 +257,9 @@ export function DiagramEditorTab({
             dataType: '',
             nullable: true,
             isPrimaryKey: false,
+            isForeignKey: false,
+            foreignKeyTable: '',
+            foreignKeyColumn: '',
             defaultValue: '',
         });
         setAddColumnOpen(true);
@@ -454,6 +458,13 @@ export function DiagramEditorTab({
     // Add column
     const handleAddColumn = async () => {
         if (!currentTableId || !newColumn.name || !newColumn.dataType) return;
+        if (
+            newColumn.isForeignKey &&
+            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
+        ) {
+            toast.error('Select a reference table and column for the foreign key');
+            return;
+        }
 
         const fullTableName = buildTableNameForEngine(selectedSchema, currentTableId);
         const quotedColumn = quoteIdentifierForEngine(newColumn.name);
@@ -461,9 +472,23 @@ export function DiagramEditorTab({
         let sql = `ALTER TABLE ${fullTableName} ADD COLUMN ${quotedColumn} ${newColumn.dataType}`;
         if (!newColumn.nullable) sql += ' NOT NULL';
         if (newColumn.defaultValue) sql += ` DEFAULT ${newColumn.defaultValue}`;
+        if (newColumn.isPrimaryKey) sql += ' PRIMARY KEY';
 
         try {
-            await executeSqlWithConfirmation(sql, () => {
+            await executeSqlWithConfirmation(sql, async () => {
+                if (newColumn.isForeignKey) {
+                    const fkName = `fk_${currentTableId}_${newColumn.name}`;
+                    const fullTargetTable = buildTableNameForEngine(
+                        selectedSchema,
+                        newColumn.foreignKeyTable
+                    );
+                    const fkSql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quoteIdentifierForEngine(
+                        fkName
+                    )} FOREIGN KEY (${quotedColumn}) REFERENCES ${fullTargetTable} (${quoteIdentifierForEngine(
+                        newColumn.foreignKeyColumn
+                    )})`;
+                    await executeSqlWithConfirmation(fkSql, () => undefined);
+                }
                 toast.success(`Column "${newColumn.name}" added`);
                 setAddColumnOpen(false);
             });
@@ -560,6 +585,16 @@ export function DiagramEditorTab({
     // Get data types for current engine
     const dataTypes =
         DATA_TYPES[connection?.engine as keyof typeof DATA_TYPES] || DATA_TYPES.postgres;
+
+    const getColumnsForTable = useCallback(
+        (tableName: string) => {
+            const tableNode = nodes.find((node) => node.id === tableName);
+            if (!tableNode) return [];
+            const data = tableNode.data as EditableTableNodeData;
+            return data.columns.map((col) => ({ name: col.name }));
+        },
+        [nodes]
+    );
 
     if (isLoading) {
         return (
@@ -775,86 +810,18 @@ export function DiagramEditorTab({
                 </DialogActions>
             </Dialog>
 
-            {/* Add Column Dialog */}
-            <Dialog
+            <AddColumnDialog
                 open={addColumnOpen}
+                tableName={currentTableId}
+                dataTypes={dataTypes}
+                tables={tables}
+                getColumnsForTable={getColumnsForTable}
+                isSubmitting={executeSql.isPending}
+                newColumn={newColumn}
+                setNewColumn={setNewColumn}
                 onClose={() => setAddColumnOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AddIcon color="primary" />
-                    Add Column to {currentTableId}
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            autoFocus
-                            fullWidth
-                            label="Column Name"
-                            value={newColumn.name}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                            placeholder="column_name"
-                        />
-                        <Autocomplete
-                            freeSolo
-                            options={dataTypes}
-                            value={newColumn.dataType}
-                            onChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value || '' }))
-                            }
-                            onInputChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value }))
-                            }
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Data Type"
-                                    placeholder="varchar(255)"
-                                />
-                            )}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newColumn.nullable}
-                                    onChange={(e) =>
-                                        setNewColumn((prev) => ({
-                                            ...prev,
-                                            nullable: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Nullable"
-                        />
-                        <TextField
-                            fullWidth
-                            label="Default Value (optional)"
-                            value={newColumn.defaultValue}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, defaultValue: e.target.value }))
-                            }
-                            placeholder="NULL, 0, 'default'"
-                        />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAddColumnOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleAddColumn}
-                        disabled={!newColumn.name || !newColumn.dataType || executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <AddIcon />
-                        }
-                    >
-                        Add Column
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSubmit={handleAddColumn}
+            />
 
             {/* Delete Column Dialog */}
             <Dialog

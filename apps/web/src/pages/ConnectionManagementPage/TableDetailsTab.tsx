@@ -21,9 +21,6 @@ import {
     Tabs,
     Tab,
     Divider,
-    Switch,
-    FormControlLabel,
-    Autocomplete,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
@@ -34,7 +31,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
-import ListAltIcon from '@mui/icons-material/ListAlt';
 import WarningIcon from '@mui/icons-material/Warning';
 import type { ConnectionConfig, ColumnInfo, IndexInfo, ForeignKeyInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
@@ -43,6 +39,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
+import { AddColumnDialog, type NewColumnState } from '../../components/AddColumnDialog';
 
 interface TableDetailsTabProps {
     connectionId: string;
@@ -180,10 +177,14 @@ export function TableDetailsTab({
     const [fkToDelete, setFkToDelete] = useState<ForeignKeyInfo | null>(null);
 
     // New column form
-    const [newColumn, setNewColumn] = useState({
+    const [newColumn, setNewColumn] = useState<NewColumnState>({
         name: '',
         dataType: '',
         nullable: true,
+        isPrimaryKey: false,
+        isForeignKey: false,
+        foreignKeyTable: '',
+        foreignKeyColumn: '',
         defaultValue: '',
     });
 
@@ -247,6 +248,17 @@ export function TableDetailsTab({
         enabled: !!connectionId && !!newFk.referencedSchema && !!newFk.referencedTable && addFkOpen,
     });
 
+    const { data: fkTableSchema } = useQuery({
+        queryKey: ['tableSchema', connectionId, selectedSchema, newColumn.foreignKeyTable],
+        queryFn: () =>
+            schemaApi.getTableSchema(connectionId, selectedSchema, newColumn.foreignKeyTable),
+        enabled:
+            !!connectionId &&
+            !!selectedSchema &&
+            !!newColumn.foreignKeyTable &&
+            addColumnOpen,
+    });
+
     const quoteIdentifierForEngine = useCallback(
         (name: string) => quoteIdentifier(name, connection?.engine),
         [connection?.engine]
@@ -255,6 +267,14 @@ export function TableDetailsTab({
     const buildTableNameForEngine = useCallback(
         (schema: string, table: string) => buildTableName(schema, table, connection?.engine),
         [connection?.engine]
+    );
+
+    const getColumnsForTable = useCallback(
+        (tableName: string) => {
+            if (!fkTableSchema || tableName !== newColumn.foreignKeyTable) return [];
+            return fkTableSchema.columns.map((col) => ({ name: col.name }));
+        },
+        [fkTableSchema, newColumn.foreignKeyTable]
     );
 
     // Execute SQL mutation
@@ -272,6 +292,13 @@ export function TableDetailsTab({
 
     const handleAddColumn = async () => {
         if (!newColumn.name || !newColumn.dataType) return;
+        if (
+            newColumn.isForeignKey &&
+            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
+        ) {
+            toast.error('Select a reference table and column for the foreign key');
+            return;
+        }
 
         const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
         const quotedColumn = quoteIdentifierForEngine(newColumn.name);
@@ -286,11 +313,37 @@ export function TableDetailsTab({
             sql += ` DEFAULT ${newColumn.defaultValue}`;
         }
 
+        if (newColumn.isPrimaryKey) {
+            sql += ' PRIMARY KEY';
+        }
+
         try {
             await executeSql.mutateAsync(sql);
+            if (newColumn.isForeignKey) {
+                const fkName = `fk_${selectedTable}_${newColumn.name}`;
+                const fullTargetTable = buildTableNameForEngine(
+                    selectedSchema,
+                    newColumn.foreignKeyTable
+                );
+                const fkSql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quoteIdentifierForEngine(
+                    fkName
+                )} FOREIGN KEY (${quotedColumn}) REFERENCES ${fullTargetTable} (${quoteIdentifierForEngine(
+                    newColumn.foreignKeyColumn
+                )})`;
+                await executeSql.mutateAsync(fkSql);
+            }
             toast.success(`Column "${newColumn.name}" added`);
             setAddColumnOpen(false);
-            setNewColumn({ name: '', dataType: '', nullable: true, defaultValue: '' });
+            setNewColumn({
+                name: '',
+                dataType: '',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                foreignKeyTable: '',
+                foreignKeyColumn: '',
+                defaultValue: '',
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to add column');
         }
@@ -1067,87 +1120,18 @@ export function TableDetailsTab({
                 </GlassCard>
             ) : null}
 
-            {/* ============ Add Column Dialog ============ */}
-            <Dialog
+            <AddColumnDialog
                 open={addColumnOpen}
+                tableName={selectedTable}
+                dataTypes={dataTypes}
+                tables={tables}
+                getColumnsForTable={getColumnsForTable}
+                isSubmitting={executeSql.isPending}
+                newColumn={newColumn}
+                setNewColumn={setNewColumn}
                 onClose={() => setAddColumnOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ListAltIcon color="primary" />
-                    Add Column
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            autoFocus
-                            fullWidth
-                            label="Column Name"
-                            value={newColumn.name}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                            placeholder="column_name"
-                        />
-                        <Autocomplete
-                            freeSolo
-                            options={dataTypes}
-                            value={newColumn.dataType}
-                            onChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value || '' }))
-                            }
-                            onInputChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value }))
-                            }
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Data Type"
-                                    placeholder="varchar(255)"
-                                />
-                            )}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newColumn.nullable}
-                                    onChange={(e) =>
-                                        setNewColumn((prev) => ({
-                                            ...prev,
-                                            nullable: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Nullable"
-                        />
-                        <TextField
-                            fullWidth
-                            label="Default Value (optional)"
-                            value={newColumn.defaultValue}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, defaultValue: e.target.value }))
-                            }
-                            placeholder="NULL, 0, 'default', now()"
-                            helperText="Enter SQL expression for default value"
-                        />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAddColumnOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleAddColumn}
-                        disabled={!newColumn.name || !newColumn.dataType || executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <AddIcon />
-                        }
-                    >
-                        Add Column
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSubmit={handleAddColumn}
+            />
 
             {/* ============ Edit Column Dialog ============ */}
             <Dialog
