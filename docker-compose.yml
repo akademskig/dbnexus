@@ -1,105 +1,66 @@
-# Docker Compose for DB Nexus development and testing
-# Provides various database instances for testing connections and schema diff
+# Docker Compose for DB Nexus development, testing, and screenshots
+# Provides database instances with sample data
 
 services:
-    # PostgreSQL - Primary test database
-    postgres-primary:
+    # PostgreSQL - E-commerce demo database
+    postgres-ecommerce:
         image: postgres:16-alpine
-        container_name: dbnexus-postgres-primary
+        container_name: dbnexus-ecommerce-dev
         environment:
-            POSTGRES_USER: admin
-            POSTGRES_PASSWORD: admin123
-            POSTGRES_DB: testdb
+            POSTGRES_USER: demo
+            POSTGRES_PASSWORD: demo123
+            POSTGRES_DB: ecommerce
         ports:
-            - '5432:5432'
+            - '5450:5432'
         volumes:
-            - postgres-primary-data:/var/lib/postgresql/data
-            - ./docker/init/postgres-primary.sql:/docker-entrypoint-initdb.d/init.sql:ro
+            - postgres-ecommerce-data:/var/lib/postgresql/data
+            - ./docker/init/ecommerce.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
+            test: [ 'CMD-SHELL', 'pg_isready -U demo -d ecommerce' ]
             interval: 5s
             timeout: 5s
             retries: 5
 
-    # PostgreSQL - Secondary (for schema diff testing)
-    postgres-secondary:
+    # PostgreSQL - Analytics/staging (for schema diff)
+    postgres-staging:
         image: postgres:16-alpine
-        container_name: dbnexus-postgres-secondary
+        container_name: dbnexus-ecommerce-staging
         environment:
-            POSTGRES_USER: admin
-            POSTGRES_PASSWORD: admin123
-            POSTGRES_DB: testdb
+            POSTGRES_USER: demo
+            POSTGRES_PASSWORD: demo123
+            POSTGRES_DB: ecommerce_staging
         ports:
-            - '5433:5432'
+            - '5451:5432'
         volumes:
-            - postgres-secondary-data:/var/lib/postgresql/data
-            - ./docker/init/postgres-secondary.sql:/docker-entrypoint-initdb.d/init.sql:ro
+            - postgres-staging-data:/var/lib/postgresql/data
+            - ./docker/init/ecommerce-staging.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
+            test: [ 'CMD-SHELL', 'pg_isready -U demo -d ecommerce_staging' ]
             interval: 5s
             timeout: 5s
             retries: 5
 
-    # PostgreSQL - Older version for compatibility testing
-    postgres-14:
-        image: postgres:14-alpine
-        container_name: dbnexus-postgres-14
-        environment:
-            POSTGRES_USER: admin
-            POSTGRES_PASSWORD: admin123
-            POSTGRES_DB: testdb
-        ports:
-            - '5434:5432'
-        volumes:
-            - postgres-14-data:/var/lib/postgresql/data
-        healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U admin -d testdb']
-            interval: 5s
-            timeout: 5s
-            retries: 5
-
-    # MySQL - For future MySQL support
-    mysql:
+    # MySQL - Blog demo database
+    mysql-blog:
         image: mysql:8.0
-        container_name: dbnexus-mysql
+        container_name: dbnexus-blog
         environment:
             MYSQL_ROOT_PASSWORD: root123
-            MYSQL_USER: admin
-            MYSQL_PASSWORD: admin123
-            MYSQL_DATABASE: testdb
+            MYSQL_USER: demo
+            MYSQL_PASSWORD: demo123
+            MYSQL_DATABASE: blog
         ports:
-            - '3306:3306'
+            - '3350:3306'
         volumes:
-            - mysql-data:/var/lib/mysql
-            - ./docker/init/mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+            - mysql-blog-data:/var/lib/mysql
+            - ./docker/init/blog.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'admin', '-padmin123']
-            interval: 5s
-            timeout: 5s
-            retries: 5
-
-    # MariaDB - For future MariaDB support
-    mariadb:
-        image: mariadb:11
-        container_name: dbnexus-mariadb
-        environment:
-            MARIADB_ROOT_PASSWORD: root123
-            MARIADB_USER: admin
-            MARIADB_PASSWORD: admin123
-            MARIADB_DATABASE: testdb
-        ports:
-            - '3307:3306'
-        volumes:
-            - mariadb-data:/var/lib/mysql
-        healthcheck:
-            test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+            test: [ 'CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'demo', '-pdemo123' ]
             interval: 5s
             timeout: 5s
             retries: 5
 
 volumes:
-    postgres-primary-data:
-    postgres-secondary-data:
-    postgres-14-data:
-    mysql-data:
-    mariadb-data:
+    postgres-ecommerce-data:
+    postgres-staging-data:
+    mysql-blog-data:
