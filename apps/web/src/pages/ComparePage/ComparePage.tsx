@@ -10,7 +10,6 @@ import {
     Chip,
     Paper,
     IconButton,
-    Tooltip,
     Tabs,
     Tab,
     FormControl,
@@ -18,6 +17,7 @@ import {
     Select,
     MenuItem,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     CompareArrows as CompareIcon,
     SwapHoriz as SwapIcon,
@@ -375,7 +375,7 @@ export function ComparePage() {
                         />
 
                         {/* Swap Button */}
-                        <Tooltip title="Swap source and target">
+                        <StyledTooltip title="Swap source and target">
                             <IconButton
                                 onClick={handleSwap}
                                 disabled={!sourceConnectionId || !targetConnectionId}
@@ -383,7 +383,7 @@ export function ComparePage() {
                             >
                                 <SwapIcon />
                             </IconButton>
-                        </Tooltip>
+                        </StyledTooltip>
 
                         {/* Target */}
                         <ConnectionSelector

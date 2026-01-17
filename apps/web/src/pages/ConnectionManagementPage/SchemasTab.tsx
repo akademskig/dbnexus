@@ -5,7 +5,7 @@ import {
     Typography,
     Button,
     IconButton,
-    Tooltip,
+
     Skeleton,
     Dialog,
     DialogTitle,
@@ -15,6 +15,7 @@ import {
     Alert,
     CircularProgress,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -140,16 +141,16 @@ export function SchemasTab({
                 return (
                     <Box sx={{ display: 'flex', gap: 1 }}>
                         {onViewTables && (
-                            <Tooltip title="View Tables">
+                            <StyledTooltip title="View Tables">
                                 <IconButton
                                     size="small"
                                     onClick={() => onViewTables(params.row.name)}
                                 >
                                     <TableChartIcon fontSize="small" />
                                 </IconButton>
-                            </Tooltip>
+                            </StyledTooltip>
                         )}
-                        <Tooltip
+                        <StyledTooltip
                             title={isSystemSchema ? 'Cannot delete system schema' : 'Delete schema'}
                         >
                             <span>
@@ -165,7 +166,7 @@ export function SchemasTab({
                                     <DeleteIcon fontSize="small" />
                                 </IconButton>
                             </span>
-                        </Tooltip>
+                        </StyledTooltip>
                     </Box>
                 );
             },

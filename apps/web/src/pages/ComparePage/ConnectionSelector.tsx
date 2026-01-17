@@ -1,4 +1,5 @@
-import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tooltip } from '@mui/material';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import { Storage as DatabaseIcon } from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -37,24 +38,24 @@ export function ConnectionSelector({
 
         if (!health) {
             return (
-                <Tooltip title="Status unknown">
+                <StyledTooltip title="Status unknown">
                     <HelpOutlineIcon sx={{ fontSize: 14, color: 'text.disabled', ml: 'auto' }} />
-                </Tooltip>
+                </StyledTooltip>
             );
         }
 
         if (health.isOnline) {
             return (
-                <Tooltip title="Connected">
+                <StyledTooltip title="Connected">
                     <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main', ml: 'auto' }} />
-                </Tooltip>
+                </StyledTooltip>
             );
         }
 
         return (
-            <Tooltip title={health.error || 'Connection failed'}>
+            <StyledTooltip title={health.error || 'Connection failed'}>
                 <ErrorIcon sx={{ fontSize: 14, color: 'error.main', ml: 'auto' }} />
-            </Tooltip>
+            </StyledTooltip>
         );
     };
 

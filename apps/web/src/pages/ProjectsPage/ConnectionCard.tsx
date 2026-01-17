@@ -9,8 +9,8 @@ import {
     Alert,
     CircularProgress,
     Collapse,
-    Tooltip,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -266,7 +266,7 @@ export function ConnectionCard({
                 )}
 
                 {/* Connection Status Indicator */}
-                <Tooltip
+                <StyledTooltip
                     title={
                         connectionHealth?.error ||
                         `Connection is ${connectionHealth?.isOnline ? 'online' : connectionHealth ? 'offline' : 'unknown'}`
@@ -281,7 +281,7 @@ export function ConnectionCard({
                             <HelpOutlineIcon fontSize="small" color="disabled" />
                         )}
                     </Box>
-                </Tooltip>
+                </StyledTooltip>
 
                 <IconButton
                     size="small"
@@ -298,7 +298,7 @@ export function ConnectionCard({
                     )}
                 </IconButton>
 
-                <Tooltip title={isOffline ? 'Connection is offline' : ''}>
+                <StyledTooltip title={isOffline ? 'Connection is offline' : ''}>
                     <span>
                         <Button
                             size="small"
@@ -314,7 +314,7 @@ export function ConnectionCard({
                             Query
                         </Button>
                     </span>
-                </Tooltip>
+                </StyledTooltip>
             </Box>
 
             {/* Expanded content */}
@@ -385,7 +385,7 @@ export function ConnectionCard({
                         >
                             Edit
                         </Button>
-                        <Tooltip title={isOffline ? 'Connection is offline' : ''}>
+                        <StyledTooltip title={isOffline ? 'Connection is offline' : ''}>
                             <span>
                                 <Button
                                     size="small"
@@ -397,7 +397,7 @@ export function ConnectionCard({
                                     Manage
                                 </Button>
                             </span>
-                        </Tooltip>
+                        </StyledTooltip>
                         <Box sx={{ flex: 1 }} />
                         <Button
                             size="small"

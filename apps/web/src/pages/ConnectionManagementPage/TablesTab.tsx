@@ -13,7 +13,7 @@ import {
     Skeleton,
     Chip,
     IconButton,
-    Tooltip,
+
     Dialog,
     DialogTitle,
     DialogContent,
@@ -22,6 +22,7 @@ import {
     Alert,
     CircularProgress,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -227,12 +228,12 @@ export function TablesTab({
             sortable: false,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Query Table">
+                    <StyledTooltip title="Query Table">
                         <IconButton size="small" onClick={() => handleOpenInQuery(params.row)}>
                             <PlayArrowIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Manage Table">
+                    </StyledTooltip>
+                    <StyledTooltip title="Manage Table">
                         <IconButton
                             size="small"
                             color="primary"
@@ -240,8 +241,8 @@ export function TablesTab({
                         >
                             <SettingsIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Drop Table">
+                    </StyledTooltip>
+                    <StyledTooltip title="Drop Table">
                         <IconButton
                             size="small"
                             color="error"
@@ -253,7 +254,7 @@ export function TablesTab({
                         >
                             <DeleteIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             ),
         },

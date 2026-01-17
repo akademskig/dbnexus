@@ -4,7 +4,7 @@ import {
     Typography,
     IconButton,
     Chip,
-    Tooltip,
+
     Button,
     Dialog,
     DialogTitle,
@@ -18,6 +18,7 @@ import {
     TextField,
     InputAdornment,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     ContentCopy as CopyIcon,
     Check as CheckIcon,
@@ -156,7 +157,7 @@ export function QueryHistoryTab() {
             flex: 1,
             minWidth: 300,
             renderCell: (params: GridRenderCellParams) => (
-                <Tooltip title={params.value} placement="top-start">
+                <StyledTooltip title={params.value} placement="top-start">
                     <Typography
                         variant="body2"
                         sx={{
@@ -169,7 +170,7 @@ export function QueryHistoryTab() {
                     >
                         {params.value}
                     </Typography>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
         {
@@ -222,7 +223,7 @@ export function QueryHistoryTab() {
             sortable: false,
             renderCell: (params: GridRenderCellParams<QueryHistoryEntry>) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Copy SQL">
+                    <StyledTooltip title="Copy SQL">
                         <IconButton
                             size="small"
                             onClick={() => handleCopy(params.row.sql, params.row.id)}
@@ -233,17 +234,17 @@ export function QueryHistoryTab() {
                                 <CopyIcon sx={{ fontSize: 16 }} />
                             )}
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Run Again">
+                    </StyledTooltip>
+                    <StyledTooltip title="Run Again">
                         <IconButton size="small" onClick={() => handleRunQuery(params.row)}>
                             <PlayIcon sx={{ fontSize: 16 }} />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="View Details">
+                    </StyledTooltip>
+                    <StyledTooltip title="View Details">
                         <IconButton size="small" onClick={() => setSelectedEntry(params.row)}>
                             <ViewIcon sx={{ fontSize: 16 }} />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             ),
         },

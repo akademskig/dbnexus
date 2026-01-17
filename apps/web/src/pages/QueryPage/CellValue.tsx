@@ -3,7 +3,7 @@ import {
     Box,
     Typography,
     Chip,
-    Tooltip,
+
     IconButton,
     Dialog,
     DialogTitle,
@@ -12,6 +12,7 @@ import {
     Button,
     Alert,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import Editor from '@monaco-editor/react';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
@@ -160,7 +161,7 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                         {!isEditing && (
                             <>
                                 {onSaveJson && (
-                                    <Tooltip title="Edit">
+                                    <StyledTooltip title="Edit">
                                         <IconButton
                                             size="small"
                                             onClick={handleStartEdit}
@@ -168,9 +169,9 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                                         >
                                             <EditIcon fontSize="small" />
                                         </IconButton>
-                                    </Tooltip>
+                                    </StyledTooltip>
                                 )}
-                                <Tooltip title="Copy to clipboard">
+                                <StyledTooltip title="Copy to clipboard">
                                     <IconButton
                                         size="small"
                                         onClick={() => navigator.clipboard.writeText(formattedJson)}
@@ -178,7 +179,7 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                                     >
                                         <ContentCopyIcon fontSize="small" />
                                     </IconButton>
-                                </Tooltip>
+                                </StyledTooltip>
                             </>
                         )}
                         <IconButton size="small" onClick={handleClose}>
@@ -230,7 +231,7 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
     const strValue = String(value);
     if (strValue.length > 100) {
         return (
-            <Tooltip title={strValue}>
+            <StyledTooltip title={strValue}>
                 <Typography
                     variant="body2"
                     fontFamily="monospace"
@@ -239,7 +240,7 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                 >
                     {strValue.slice(0, 100)}...
                 </Typography>
-            </Tooltip>
+            </StyledTooltip>
         );
     }
 

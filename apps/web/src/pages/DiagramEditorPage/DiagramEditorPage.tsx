@@ -42,6 +42,7 @@ import {
     useTheme,
     InputAdornment,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -1069,7 +1070,7 @@ export function DiagramEditorPage() {
                         sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
                     />
 
-                    <Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                    <StyledTooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
                         <IconButton
                             size="small"
                             onClick={() => setIsFullscreen(!isFullscreen)}
@@ -1085,7 +1086,7 @@ export function DiagramEditorPage() {
                                 <FullscreenIcon fontSize="small" />
                             )}
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             </GlassCard>
 

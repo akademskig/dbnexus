@@ -3,7 +3,7 @@ import {
     Box,
     Typography,
     Chip,
-    Tooltip,
+
     IconButton,
     TextField,
     InputAdornment,
@@ -12,6 +12,7 @@ import {
     ListItemIcon,
     ListItemText,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CloseIcon from '@mui/icons-material/Close';
@@ -107,11 +108,11 @@ export function SavedQueriesPanel({
                 <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
                     Saved Queries
                 </Typography>
-                <Tooltip title="Refresh">
+                <StyledTooltip title="Refresh">
                     <IconButton size="small" onClick={onRefresh}>
                         <RefreshIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
                 <IconButton size="small" onClick={onClose}>
                     <CloseIcon fontSize="small" />
                 </IconButton>
@@ -219,7 +220,7 @@ export function SavedQueriesPanel({
                                     {formatDate(query.updatedAt)}
                                 </Typography>
                                 <Box sx={{ flex: 1 }} />
-                                <Tooltip title="Run Query">
+                                <StyledTooltip title="Run Query">
                                     <IconButton
                                         size="small"
                                         onClick={(e) => {
@@ -233,7 +234,7 @@ export function SavedQueriesPanel({
                                     >
                                         <PlayArrowIcon sx={{ fontSize: 16 }} />
                                     </IconButton>
-                                </Tooltip>
+                                </StyledTooltip>
                             </Box>
                         </Box>
                     ))

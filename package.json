@@ -13,7 +13,10 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:package": "node scripts/build-package.js",
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm --filter @dbnexus/api --filter @dbnexus/web --parallel dev",
+    "dev:all": "pnpm -r --parallel dev",
+    "dev:desktop": "pnpm --filter @dbnexus/desktop dev",
+    "dev:docs": "pnpm --filter @dbnexus/docs dev",
     "release:patch": "node scripts/release.js patch",
     "release:minor": "node scripts/release.js minor",
     "release:major": "node scripts/release.js major",

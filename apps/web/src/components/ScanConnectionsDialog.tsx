@@ -18,11 +18,12 @@ import {
     ListItemSecondaryAction,
     Chip,
     IconButton,
-    Tooltip,
+
     Divider,
     LinearProgress,
     Collapse,
 } from '@mui/material';
+import { StyledTooltip } from './StyledTooltip';
 import {
     Search as SearchIcon,
     Storage as StorageIcon,
@@ -289,11 +290,11 @@ export function ScanConnectionsDialog({
                                 Found <strong>{scanResult.connections.length}</strong> connection
                                 {scanResult.connections.length !== 1 ? 's' : ''}
                             </Typography>
-                            <Tooltip title="Scan again">
+                            <StyledTooltip title="Scan again">
                                 <IconButton size="small" onClick={handleScan}>
                                     <RefreshIcon fontSize="small" />
                                 </IconButton>
-                            </Tooltip>
+                            </StyledTooltip>
                         </Box>
 
                         {/* Errors */}
@@ -451,7 +452,7 @@ export function ScanConnectionsDialog({
                                                             size="small"
                                                             variant="outlined"
                                                         />
-                                                        <Tooltip
+                                                        <StyledTooltip
                                                             title={`${conn.confidence} confidence${conn.password ? ' • credentials found' : ''}`}
                                                         >
                                                             {conn.confidence === 'high' ? (
@@ -470,7 +471,7 @@ export function ScanConnectionsDialog({
                                                                     color="info"
                                                                 />
                                                             )}
-                                                        </Tooltip>
+                                                        </StyledTooltip>
                                                     </Box>
                                                 </ListItemSecondaryAction>
                                             </ListItem>

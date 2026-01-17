@@ -11,8 +11,9 @@ import {
     Breadcrumbs,
     Link,
     Skeleton,
-    Tooltip,
+
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StorageIcon from '@mui/icons-material/Storage';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -351,7 +352,7 @@ export function ConnectionManagementPage() {
                     </Tabs>
 
                     {/* Schema Diagram shortcut */}
-                    <Tooltip title="Open Schema Diagram">
+                    <StyledTooltip title="Open Schema Diagram">
                         <IconButton
                             onClick={() =>
                                 navigate(
@@ -372,7 +373,7 @@ export function ConnectionManagementPage() {
                         >
                             <AccountTreeIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             </GlassCard>
 

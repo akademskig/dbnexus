@@ -10,7 +10,6 @@ import {
     FormControl,
     InputLabel,
     Chip,
-    Tooltip,
     IconButton,
     TextField,
     InputAdornment,
@@ -22,6 +21,7 @@ import {
     Drawer,
     CircularProgress,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StorageIcon from '@mui/icons-material/Storage';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -1132,7 +1132,7 @@ export function QueryPage() {
 
                 <Box sx={{ flex: 1 }} />
 
-                <Tooltip title="Saved Queries">
+                <StyledTooltip title="Saved Queries">
                     <IconButton
                         size="small"
                         onClick={() => setSavedQueriesOpen(true)}
@@ -1140,9 +1140,9 @@ export function QueryPage() {
                     >
                         <BookmarkIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
 
-                <Tooltip title="Query History">
+                <StyledTooltip title="Query History">
                     <IconButton
                         size="small"
                         onClick={() => setHistoryOpen(true)}
@@ -1150,13 +1150,13 @@ export function QueryPage() {
                     >
                         <HistoryIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
 
-                <Tooltip title="Refresh">
+                <StyledTooltip title="Refresh">
                     <IconButton size="small" onClick={handleRefresh}>
                         <RefreshIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
             </Box>
 
             {/* Main Content */}
@@ -1384,7 +1384,7 @@ export function QueryPage() {
 
                                     {/* Table Actions */}
                                     {selectedTable.type !== 'view' && (
-                                        <Tooltip title="Add Row">
+                                        <StyledTooltip title="Add Row">
                                             <IconButton
                                                 size="small"
                                                 onClick={() => setAddRowOpen(true)}
@@ -1392,10 +1392,10 @@ export function QueryPage() {
                                             >
                                                 <AddIcon fontSize="small" />
                                             </IconButton>
-                                        </Tooltip>
+                                        </StyledTooltip>
                                     )}
 
-                                    <Tooltip title="Run Query (⌘+Enter)">
+                                    <StyledTooltip title="Run Query (⌘+Enter)">
                                         <span>
                                             <Button
                                                 variant="contained"
@@ -1417,7 +1417,7 @@ export function QueryPage() {
                                                 Run
                                             </Button>
                                         </span>
-                                    </Tooltip>
+                                    </StyledTooltip>
                                 </Box>
                             )}
 

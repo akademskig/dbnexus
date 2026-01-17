@@ -7,13 +7,14 @@ import {
     alpha,
     useTheme,
     IconButton,
-    Tooltip,
+
     Menu,
     MenuItem,
     ListItemIcon,
     ListItemText,
     Divider,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
@@ -254,14 +255,14 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                 {/* Icons */}
                                 <Box sx={{ width: 16, display: 'flex', justifyContent: 'center' }}>
                                     {column.isPrimaryKey && (
-                                        <Tooltip title="Primary Key">
+                                        <StyledTooltip title="Primary Key">
                                             <KeyIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                                        </Tooltip>
+                                        </StyledTooltip>
                                     )}
                                     {column.isForeignKey && !column.isPrimaryKey && (
-                                        <Tooltip title="Foreign Key">
+                                        <StyledTooltip title="Foreign Key">
                                             <LinkIcon sx={{ fontSize: 14, color: 'info.main' }} />
-                                        </Tooltip>
+                                        </StyledTooltip>
                                     )}
                                 </Box>
 
@@ -294,7 +295,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
 
                                 {/* Nullable indicator */}
                                 {!column.nullable && (
-                                    <Tooltip title="NOT NULL">
+                                    <StyledTooltip title="NOT NULL">
                                         <Typography
                                             variant="caption"
                                             sx={{
@@ -305,7 +306,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                         >
                                             NN
                                         </Typography>
-                                    </Tooltip>
+                                    </StyledTooltip>
                                 )}
 
                                 {/* Action buttons on hover */}
@@ -321,7 +322,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                             boxShadow: 1,
                                         }}
                                     >
-                                        <Tooltip title="Edit Column">
+                                        <StyledTooltip title="Edit Column">
                                             <IconButton
                                                 size="small"
                                                 onClick={(e) => {
@@ -332,9 +333,9 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                             >
                                                 <EditIcon sx={{ fontSize: 14 }} />
                                             </IconButton>
-                                        </Tooltip>
+                                        </StyledTooltip>
                                         {!column.isPrimaryKey && (
-                                            <Tooltip title="Delete Column">
+                                            <StyledTooltip title="Delete Column">
                                                 <IconButton
                                                     size="small"
                                                     onClick={(e) => {
@@ -345,7 +346,7 @@ function EditableTableNodeComponent({ id, data, selected }: NodeProps) {
                                                 >
                                                     <DeleteIcon sx={{ fontSize: 14 }} />
                                                 </IconButton>
-                                            </Tooltip>
+                                            </StyledTooltip>
                                         )}
                                     </Box>
                                 )}

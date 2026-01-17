@@ -1,4 +1,5 @@
-import { Box, Typography, Chip, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, Chip, IconButton } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import HistoryIcon from '@mui/icons-material/History';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
@@ -73,12 +74,12 @@ export function HistoryPanel({
                 <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
                     Query History
                 </Typography>
-                <Tooltip title="Refresh">
+                <StyledTooltip title="Refresh">
                     <IconButton size="small" onClick={onRefresh}>
                         <RefreshIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
-                <Tooltip title="Clear All">
+                </StyledTooltip>
+                <StyledTooltip title="Clear All">
                     <IconButton
                         size="small"
                         onClick={onClear}
@@ -87,7 +88,7 @@ export function HistoryPanel({
                     >
                         <DeleteSweepIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
                 <IconButton size="small" onClick={onClose}>
                     <CloseIcon fontSize="small" />
                 </IconButton>
@@ -189,7 +190,7 @@ export function HistoryPanel({
                                     </Typography>
                                 )}
                                 <Box sx={{ flex: 1 }} />
-                                <Tooltip title="Run Again">
+                                <StyledTooltip title="Run Again">
                                     <IconButton
                                         size="small"
                                         onClick={(e) => {
@@ -203,7 +204,7 @@ export function HistoryPanel({
                                     >
                                         <ReplayIcon sx={{ fontSize: 16 }} />
                                     </IconButton>
-                                </Tooltip>
+                                </StyledTooltip>
                             </Box>
                         </Box>
                     ))

@@ -10,7 +10,7 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Tooltip,
+
     Avatar,
     Dialog,
     DialogTitle,
@@ -19,6 +19,7 @@ import {
     Button,
     Alert,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     Search as SearchIcon,
     Clear as ClearIcon,
@@ -237,7 +238,7 @@ export function ActivityLogTab() {
             flex: 1,
             minWidth: 300,
             renderCell: (params: GridRenderCellParams<ActivityItem>) => (
-                <Tooltip title={params.value} placement="top-start">
+                <StyledTooltip title={params.value} placement="top-start">
                     <Typography
                         variant="body2"
                         sx={{
@@ -250,7 +251,7 @@ export function ActivityLogTab() {
                     >
                         {params.value}
                     </Typography>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
         {
@@ -265,7 +266,7 @@ export function ActivityLogTab() {
                 return '-';
             },
             renderCell: (params: GridRenderCellParams) => (
-                <Tooltip title={params.value}>
+                <StyledTooltip title={params.value}>
                     <Typography
                         variant="body2"
                         sx={{
@@ -277,7 +278,7 @@ export function ActivityLogTab() {
                     >
                         {params.value}
                     </Typography>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
         {
@@ -335,11 +336,11 @@ export function ActivityLogTab() {
             width: 60,
             sortable: false,
             renderCell: (params: GridRenderCellParams<ActivityItem>) => (
-                <Tooltip title="View Details">
+                <StyledTooltip title="View Details">
                     <IconButton size="small" onClick={() => setSelectedActivity(params.row)}>
                         <ViewIcon sx={{ fontSize: 16 }} />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
     ];

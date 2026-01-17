@@ -9,7 +9,7 @@ import {
     MenuItem,
     Chip,
     IconButton,
-    Tooltip,
+
     Button,
     Dialog,
     DialogTitle,
@@ -25,6 +25,7 @@ import {
     FormControlLabel,
     Autocomplete,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -499,9 +500,9 @@ export function TableDetailsTab({
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {params.row.isPrimaryKey && (
-                        <Tooltip title="Primary Key">
+                        <StyledTooltip title="Primary Key">
                             <KeyIcon fontSize="small" sx={{ color: 'warning.main' }} />
-                        </Tooltip>
+                        </StyledTooltip>
                     )}
                     <Typography fontFamily="monospace">{params.value}</Typography>
                 </Box>
@@ -567,7 +568,7 @@ export function TableDetailsTab({
             sortable: false,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Edit Column">
+                    <StyledTooltip title="Edit Column">
                         <IconButton
                             size="small"
                             onClick={() => {
@@ -584,8 +585,8 @@ export function TableDetailsTab({
                         >
                             <EditIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip
+                    </StyledTooltip>
+                    <StyledTooltip
                         title={
                             params.row.isPrimaryKey
                                 ? 'Cannot delete primary key column'
@@ -605,7 +606,7 @@ export function TableDetailsTab({
                                 <DeleteIcon fontSize="small" />
                             </IconButton>
                         </span>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             ),
         },
@@ -622,9 +623,9 @@ export function TableDetailsTab({
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {params.row.isPrimary && (
-                        <Tooltip title="Primary Key Index">
+                        <StyledTooltip title="Primary Key Index">
                             <KeyIcon fontSize="small" sx={{ color: 'warning.main' }} />
-                        </Tooltip>
+                        </StyledTooltip>
                     )}
                     <Typography fontFamily="monospace">{params.value}</Typography>
                 </Box>
@@ -688,7 +689,7 @@ export function TableDetailsTab({
             width: 80,
             sortable: false,
             renderCell: (params) => (
-                <Tooltip
+                <StyledTooltip
                     title={
                         params.row.isPrimary ? 'Cannot delete primary key index' : 'Delete Index'
                     }
@@ -706,7 +707,7 @@ export function TableDetailsTab({
                             <DeleteIcon fontSize="small" />
                         </IconButton>
                     </span>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
     ];
@@ -782,7 +783,7 @@ export function TableDetailsTab({
             width: 80,
             sortable: false,
             renderCell: (params) => (
-                <Tooltip title="Delete Foreign Key">
+                <StyledTooltip title="Delete Foreign Key">
                     <IconButton
                         size="small"
                         color="error"
@@ -794,7 +795,7 @@ export function TableDetailsTab({
                     >
                         <DeleteIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
             ),
         },
     ];

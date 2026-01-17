@@ -11,8 +11,9 @@ import {
     LinearProgress,
     CircularProgress,
     Button,
-    Tooltip,
+
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import Editor from '@monaco-editor/react';
 import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
@@ -369,7 +370,7 @@ export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     {onSave && (
-                        <Tooltip title="Save Query (⌘+S)">
+                        <StyledTooltip title="Save Query (⌘+S)">
                             <Button
                                 variant="outlined"
                                 size="small"
@@ -379,7 +380,7 @@ export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading
                             >
                                 Save
                             </Button>
-                        </Tooltip>
+                        </StyledTooltip>
                     )}
                     <Button
                         variant="contained"

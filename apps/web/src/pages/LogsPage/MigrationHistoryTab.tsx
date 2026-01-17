@@ -4,7 +4,7 @@ import {
     Typography,
     IconButton,
     Chip,
-    Tooltip,
+
     Button,
     Dialog,
     DialogTitle,
@@ -14,6 +14,7 @@ import {
     TextField,
     InputAdornment,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     ContentCopy as CopyIcon,
     Check as CheckIcon,
@@ -197,7 +198,7 @@ export function MigrationHistoryTab() {
             sortable: false,
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Copy SQL">
+                    <StyledTooltip title="Copy SQL">
                         <IconButton
                             size="small"
                             onClick={() => handleCopy(params.row.sqlStatements, params.row.id)}
@@ -208,13 +209,13 @@ export function MigrationHistoryTab() {
                                 <CopyIcon sx={{ fontSize: 16 }} />
                             )}
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="View Details">
+                    </StyledTooltip>
+                    <StyledTooltip title="View Details">
                         <IconButton size="small" onClick={() => setSelectedMigration(params.row)}>
                             <ViewIcon sx={{ fontSize: 16 }} />
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
+                    </StyledTooltip>
+                    <StyledTooltip title="Delete">
                         <IconButton
                             size="small"
                             onClick={() => handleDelete(params.row.id)}
@@ -222,7 +223,7 @@ export function MigrationHistoryTab() {
                         >
                             <DeleteIcon sx={{ fontSize: 16 }} />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             ),
         },

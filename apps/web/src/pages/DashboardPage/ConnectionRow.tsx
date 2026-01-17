@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton, Chip, CircularProgress, Tooltip } from '@mui/material';
+import { Box, Typography, IconButton, Chip, CircularProgress } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     Storage as StorageIcon,
     MoreHoriz as MoreHorizIcon,
@@ -110,9 +111,9 @@ export function ConnectionRow({
 
     if (isOffline) {
         return (
-            <Tooltip title="Connection is offline. Test the connection to check status.">
+            <StyledTooltip title="Connection is offline. Test the connection to check status.">
                 {rowContent}
-            </Tooltip>
+            </StyledTooltip>
         );
     }
 

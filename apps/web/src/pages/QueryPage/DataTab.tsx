@@ -8,13 +8,13 @@ import {
     TextField,
     InputAdornment,
     IconButton,
-    Tooltip,
     LinearProgress,
     Menu,
     MenuItem,
     ListItemIcon,
     ListItemText,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     DataGrid,
     type GridColDef,
@@ -231,7 +231,7 @@ export function DataTab({
                       // If this is a FK column and we have a click handler, make it clickable
                       if (fkInfo && onForeignKeyClick && params.value !== null) {
                           return (
-                              <Tooltip title={`Click to view in ${fkInfo.referencedTable}`}>
+                              <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
                                   <Box
                                       onClick={(e) => {
                                           e.stopPropagation();
@@ -257,7 +257,7 @@ export function DataTab({
                                       {cellValue}
                                       <LinkIcon sx={{ fontSize: 12 }} />
                                   </Box>
-                              </Tooltip>
+                              </StyledTooltip>
                           );
                       }
 
@@ -270,11 +270,11 @@ export function DataTab({
                                   {col.name}
                               </Typography>
                               {fkInfo && (
-                                  <Tooltip
+                                  <StyledTooltip
                                       title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
                                   >
                                       <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                                  </Tooltip>
+                                  </StyledTooltip>
                               )}
                           </Box>
                           <Typography variant="caption" color="text.secondary">
@@ -533,7 +533,7 @@ export function DataTab({
                                     color="primary"
                                     onDelete={() => setSelectedRowIds([])}
                                 />
-                                <Tooltip
+                                <StyledTooltip
                                     title={
                                         !canEditRows
                                             ? 'No primary key'
@@ -555,8 +555,8 @@ export function DataTab({
                                             <EditIcon fontSize="small" />
                                         </IconButton>
                                     </span>
-                                </Tooltip>
-                                <Tooltip
+                                </StyledTooltip>
+                                <StyledTooltip
                                     title={
                                         !canEditRows
                                             ? 'No primary key'
@@ -580,8 +580,8 @@ export function DataTab({
                                             <DeleteIcon fontSize="small" />
                                         </IconButton>
                                     </span>
-                                </Tooltip>
-                                <Tooltip
+                                </StyledTooltip>
+                                <StyledTooltip
                                     title={
                                         !canEditRows
                                             ? 'No primary key'
@@ -598,7 +598,7 @@ export function DataTab({
                                             <SyncIcon fontSize="small" />
                                         </IconButton>
                                     </span>
-                                </Tooltip>
+                                </StyledTooltip>
                             </>
                         ) : (
                             <>
@@ -650,7 +650,7 @@ export function DataTab({
                         {/* Export button */}
                         {result.rows.length > 0 && (
                             <>
-                                <Tooltip
+                                <StyledTooltip
                                     title={
                                         selectedRowIds.length > 0
                                             ? `Export ${selectedRowIds.length} selected row(s)`
@@ -663,7 +663,7 @@ export function DataTab({
                                     >
                                         <DownloadIcon fontSize="small" />
                                     </IconButton>
-                                </Tooltip>
+                                </StyledTooltip>
                                 <Menu
                                     anchorEl={exportMenuAnchor}
                                     open={Boolean(exportMenuAnchor)}

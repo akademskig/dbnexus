@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Grid, Button, IconButton } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     Add as AddIcon,
     Refresh as RefreshIcon,
@@ -161,7 +162,7 @@ export function DashboardPage() {
                     >
                         Scan
                     </Button>
-                    <Tooltip title="Refresh">
+                    <StyledTooltip title="Refresh">
                         <IconButton
                             onClick={handleRefresh}
                             disabled={refreshing}
@@ -174,7 +175,7 @@ export function DashboardPage() {
                                 }}
                             />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             </Box>
 

@@ -14,13 +14,14 @@ import {
     Select,
     MenuItem,
     Chip,
-    Tooltip,
+
     IconButton,
     Alert,
     CircularProgress,
     FormControlLabel,
     Checkbox,
 } from '@mui/material';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyIcon from '@mui/icons-material/Key';
@@ -54,22 +55,22 @@ function TargetConnectionSelect({
         const health = healthStatus[conn.id];
         if (!health) {
             return (
-                <Tooltip title="Status unknown">
+                <StyledTooltip title="Status unknown">
                     <HelpOutlineIcon sx={{ fontSize: 14, color: 'text.disabled', ml: 'auto' }} />
-                </Tooltip>
+                </StyledTooltip>
             );
         }
         if (health.isOnline) {
             return (
-                <Tooltip title="Connected">
+                <StyledTooltip title="Connected">
                     <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main', ml: 'auto' }} />
-                </Tooltip>
+                </StyledTooltip>
             );
         }
         return (
-            <Tooltip title={health.error || 'Connection failed'}>
+            <StyledTooltip title={health.error || 'Connection failed'}>
                 <ErrorIcon sx={{ fontSize: 14, color: 'error.main', ml: 'auto' }} />
-            </Tooltip>
+            </StyledTooltip>
         );
     };
 
@@ -338,7 +339,7 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                                     ))}
                                 </Select>
                             </FormControl>
-                            <Tooltip title="Primary Key">
+                            <StyledTooltip title="Primary Key">
                                 <IconButton
                                     size="small"
                                     onClick={() =>
@@ -348,8 +349,8 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                                 >
                                     <KeyIcon fontSize="small" />
                                 </IconButton>
-                            </Tooltip>
-                            <Tooltip title={col.nullable ? 'Nullable' : 'Not Null'}>
+                            </StyledTooltip>
+                            <StyledTooltip title={col.nullable ? 'Nullable' : 'Not Null'}>
                                 <Chip
                                     label={col.nullable ? 'NULL' : 'NOT NULL'}
                                     size="small"
@@ -359,7 +360,7 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                                     color={col.nullable ? 'default' : 'warning'}
                                     sx={{ minWidth: 80 }}
                                 />
-                            </Tooltip>
+                            </StyledTooltip>
                             <IconButton
                                 size="small"
                                 onClick={() => handleRemoveColumn(index)}
