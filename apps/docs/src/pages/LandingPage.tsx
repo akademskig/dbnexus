@@ -47,7 +47,7 @@ const HeroContent = styled.div`
 const Badge = styled(motion.div)`
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     padding: 0.5rem 1rem;
     background: rgba(99, 102, 241, 0.1);
     border: 1px solid rgba(99, 102, 241, 0.3);
@@ -55,6 +55,13 @@ const Badge = styled(motion.div)`
     font-size: 0.875rem;
     color: var(--color-primary-light);
     margin-bottom: 2rem;
+
+    .logo-text {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--color-primary-light);
+        font-family: var(--jetbrains-mono);
+    }
 `;
 
 const Title = styled(motion.h1)`
@@ -95,15 +102,14 @@ const PrimaryButton = styled(Link)`
     align-items: center;
     gap: 0.5rem;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    background:var(--color-primary-light);
     color: white;
     font-weight: 600;
-    border-radius: 12px;
     transition: transform 0.2s, box-shadow 0.2s;
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
     }
 `;
 
@@ -115,7 +121,6 @@ const SecondaryButton = styled.a`
     background: var(--color-bg-tertiary);
     color: var(--color-text);
     font-weight: 600;
-    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: background 0.2s, border-color 0.2s;
 
@@ -134,7 +139,6 @@ const InstallCommand = styled(motion.div)`
     padding: 1rem 1.5rem;
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
     font-family: var(--font-mono);
     font-size: 0.95rem;
 
@@ -174,7 +178,6 @@ const FeaturesGrid = styled.div`
 const FeatureCard = styled(motion.div)`
     background: var(--color-bg);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
     padding: 2rem;
     transition: border-color 0.2s, transform 0.2s;
 
@@ -320,7 +323,13 @@ export function LandingPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        ✨ Version 0.1.7 released
+                        <img
+                            src="/logo-light.svg"
+                            alt="DB Nexus logo"
+                            width={58}
+                            height={58}
+                        />
+                        <span className="logo-text">DB Nexus</span>
                     </Badge>
                     <Title
                         initial={{ opacity: 0, y: 20 }}

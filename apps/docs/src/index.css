@@ -5,8 +5,8 @@
     --color-text: #f0f0f5;
     --color-text-secondary: #9090a0;
     --color-primary: #6366f1;
-    --color-primary-light: #818cf8;
-    --color-accent: #22d3ee;
+    --color-primary-light: #6f71ec;
+    --color-accent: #a5b4fc;
     --color-accent-green: #22c55e;
     --color-accent-orange: #f59e0b;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -49,7 +49,6 @@ pre {
     font-family: var(--font-mono);
     background: var(--color-bg-secondary);
     padding: 1.5rem;
-    border-radius: 12px;
     overflow-x: auto;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -81,4 +80,24 @@ pre code {
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    h2 {
+        font-size: 1.5rem !important;
+    }
+
+    pre {
+        padding: 1rem;
+        font-size: 0.85rem;
+    }
 }

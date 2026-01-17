@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = styled.header`
     position: fixed;
@@ -8,7 +9,7 @@ const Header = styled.header`
     left: 0;
     right: 0;
     z-index: 100;
-    background: rgba(10, 10, 15, 0.8);
+    background: var(--color-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 `;
@@ -20,20 +21,37 @@ const Nav = styled.nav`
     display: flex;
     align-items: center;
     justify-content: space-between;
+
+    @media (max-width: 768px) {
+        padding: 0.75rem 1rem;
+    }
 `;
 
 const Logo = styled(Link)`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    font-size: 1.25rem;
+    gap: 0.25rem;
 
-    span:first-of-type {
-        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    img {
+        height: 42px;
+        width: auto;
+        display: block;
+    }
+
+    .logo-text {
+        color: var(--color-primary-light);
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 1.4rem;
+    }
+
+    @media (max-width: 768px) {
+        img {
+            height: 36px;
+        }
+        .logo-text {
+            font-size: 1.2rem;
+        }
     }
 `;
 
@@ -41,9 +59,13 @@ const NavLinks = styled.div`
     display: flex;
     align-items: center;
     gap: 2rem;
+
+    @media (max-width: 768px) {
+        display: none;
+    }
 `;
 
-const NavLink = styled(Link)<{ $active?: boolean }>`
+const NavLink = styled(Link) <{ $active?: boolean }>`
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     font-weight: 500;
     font-size: 0.95rem;
@@ -60,13 +82,67 @@ const GitHubLink = styled.a`
     gap: 0.5rem;
     padding: 0.5rem 1rem;
     background: var(--color-bg-tertiary);
-    border-radius: 8px;
     font-weight: 500;
     font-size: 0.9rem;
     transition: background 0.2s;
 
     &:hover {
         background: rgba(255, 255, 255, 0.1);
+    }
+`;
+
+const MobileMenuButton = styled.button`
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-text);
+    padding: 0.5rem;
+    cursor: pointer;
+
+    @media (max-width: 768px) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+`;
+
+const MobileMenu = styled(motion.div)`
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: var(--color-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 99;
+`;
+
+const MobileNavLink = styled(Link) <{ $active?: boolean }>`
+    display: block;
+    padding: 0.75rem 1rem;
+    color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
+    background: ${(props) => (props.$active ? 'rgba(99, 102, 241, 0.1)' : 'transparent')};
+    font-weight: 500;
+    font-size: 1rem;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+`;
+
+const MobileExternalLink = styled.a`
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--color-text-secondary);
+    background: transparent;
+    font-weight: 500;
+    font-size: 1rem;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.05);
     }
 `;
 
@@ -113,14 +189,17 @@ const FooterLinks = styled.div`
 
 export function Layout() {
     const location = useLocation();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const closeMobileMenu = () => setMobileMenuOpen(false);
 
     return (
         <>
             <Header>
                 <Nav>
-                    <Logo to="/">
-                        <span>DB</span>
-                        <span>Nexus</span>
+                    <Logo to="/" onClick={closeMobileMenu}>
+                        <img src="/logo-light.svg" alt="DB Nexus" />
+                        <span className="logo-text">Nexus</span>
                     </Logo>
                     <NavLinks>
                         <NavLink to="/docs" $active={location.pathname.startsWith('/docs')}>
@@ -143,7 +222,53 @@ export function Layout() {
                             GitHub
                         </GitHubLink>
                     </NavLinks>
+                    <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        {mobileMenuOpen ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        )}
+                    </MobileMenuButton>
                 </Nav>
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <MobileMenu
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <MobileNavLink to="/docs" $active={location.pathname === '/docs'} onClick={closeMobileMenu}>
+                                Documentation
+                            </MobileNavLink>
+                            <MobileNavLink to="/docs/getting-started" $active={location.pathname === '/docs/getting-started'} onClick={closeMobileMenu}>
+                                Getting Started
+                            </MobileNavLink>
+                            <MobileNavLink to="/docs/features" $active={location.pathname === '/docs/features'} onClick={closeMobileMenu}>
+                                Features
+                            </MobileNavLink>
+                            <MobileNavLink to="/docs/cli" $active={location.pathname === '/docs/cli'} onClick={closeMobileMenu}>
+                                CLI Reference
+                            </MobileNavLink>
+                            <MobileNavLink to="/docs/shortcuts" $active={location.pathname === '/docs/shortcuts'} onClick={closeMobileMenu}>
+                                Keyboard Shortcuts
+                            </MobileNavLink>
+                            <MobileNavLink to="/changelog" $active={location.pathname === '/changelog'} onClick={closeMobileMenu}>
+                                Changelog
+                            </MobileNavLink>
+                            <MobileExternalLink href="https://github.com/akademskig/dbnexus" target="_blank" rel="noopener noreferrer">
+                                GitHub ↗
+                            </MobileExternalLink>
+                        </MobileMenu>
+                    )}
+                </AnimatePresence>
             </Header>
             <Main>
                 <motion.div

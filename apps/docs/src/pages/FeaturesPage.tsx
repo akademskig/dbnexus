@@ -1,11 +1,6 @@
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-
-const Container = styled.div`
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 4rem 2rem;
-`;
+import { DocsLayout } from '../components/DocsLayout';
 
 const Title = styled.h1`
     font-size: 3rem;
@@ -16,14 +11,13 @@ const Title = styled.h1`
 const Subtitle = styled.p`
     color: var(--color-text-secondary);
     font-size: 1.25rem;
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
 `;
 
 const FeatureSection = styled(motion.section)`
-    margin-bottom: 4rem;
-    padding: 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
     background: var(--color-bg-secondary);
-    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.05);
 `;
 
@@ -184,7 +178,7 @@ const features = [
 
 export function FeaturesPage() {
     return (
-        <Container>
+        <DocsLayout>
             <Title>Features</Title>
             <Subtitle>
                 Explore all the capabilities that make DB Nexus a complete database management
@@ -211,6 +205,6 @@ export function FeaturesPage() {
                     </FeatureList>
                 </FeatureSection>
             ))}
-        </Container>
+        </DocsLayout>
     );
 }

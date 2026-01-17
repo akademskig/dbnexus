@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const Container = styled.div`
     max-width: 1000px;
     margin: 0 auto;
-    padding: 4rem 2rem;
+    padding: 2.5rem 2rem;
 `;
 
 const Title = styled.h1`
@@ -17,7 +17,7 @@ const Title = styled.h1`
 const Subtitle = styled.p`
     color: var(--color-text-secondary);
     font-size: 1.25rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 `;
 
 const Grid = styled.div`
@@ -29,7 +29,6 @@ const Grid = styled.div`
 const Card = styled(motion(Link))`
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
     padding: 2rem;
     transition: border-color 0.2s, transform 0.2s;
 
@@ -73,7 +72,19 @@ const sections = [
         icon: '⌨️',
         title: 'CLI Reference',
         description: 'Command-line options and configuration for power users.',
-        link: '/docs/getting-started#cli',
+        link: '/docs/cli',
+    },
+    {
+        icon: '🎹',
+        title: 'Keyboard Shortcuts',
+        description: 'Master DB Nexus with keyboard shortcuts for faster workflows.',
+        link: '/docs/shortcuts',
+    },
+    {
+        icon: '📋',
+        title: 'Changelog',
+        description: "See what's new in each release of DB Nexus.",
+        link: '/changelog',
     },
     {
         icon: '🔧',

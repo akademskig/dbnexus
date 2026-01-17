@@ -1,10 +1,7 @@
 import styled from '@emotion/styled';
-
-const Container = styled.div`
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 4rem 2rem;
-`;
+import { Link } from 'react-router-dom';
+import { CodeBlock } from '../components/CodeBlock';
+import { DocsLayout } from '../components/DocsLayout';
 
 const Title = styled.h1`
     font-size: 3rem;
@@ -15,11 +12,11 @@ const Title = styled.h1`
 const Subtitle = styled.p`
     color: var(--color-text-secondary);
     font-size: 1.25rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 `;
 
 const Section = styled.section`
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 `;
 
 const SectionTitle = styled.h2`
@@ -36,8 +33,14 @@ const Paragraph = styled.p`
     margin-bottom: 1rem;
 `;
 
-const CodeBlock = styled.pre`
-    margin: 1.5rem 0;
+const InlineLink = styled(Link)`
+    color: var(--color-primary-light);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+        color: var(--color-accent);
+    }
 `;
 
 const List = styled.ul`
@@ -65,7 +68,7 @@ const Note = styled.div`
 
 export function GettingStartedPage() {
     return (
-        <Container>
+        <DocsLayout>
             <Title>Getting Started</Title>
             <Subtitle>Get up and running with DB Nexus in minutes.</Subtitle>
 
@@ -74,13 +77,10 @@ export function GettingStartedPage() {
                 <Paragraph>
                     The easiest way to run DB Nexus is using npx, which requires no installation:
                 </Paragraph>
-                <CodeBlock>
-                    <code>npx dbnexus</code>
-                </CodeBlock>
+                <CodeBlock language="bash">npx dbnexus</CodeBlock>
                 <Paragraph>Or install it globally for faster startup:</Paragraph>
-                <CodeBlock>
-                    <code>npm install -g dbnexus{'\n'}dbnexus</code>
-                </CodeBlock>
+                <CodeBlock language="bash">{`npm install -g dbnexus
+dbnexus`}</CodeBlock>
                 <Paragraph>
                     This will start the API server and open the web UI in your default browser.
                 </Paragraph>
@@ -89,21 +89,21 @@ export function GettingStartedPage() {
             <Section id="cli">
                 <SectionTitle>CLI Options</SectionTitle>
                 <Paragraph>DB Nexus provides several CLI commands:</Paragraph>
-                <CodeBlock>
-                    <code>
-                        {`# Start the UI (default)
+                <CodeBlock language="bash">{`# Start the UI (default)
 dbnexus
 
 # Start with a custom port
 dbnexus --port 4000
 
-# Connect directly to a database
-dbnexus connect postgres://user:pass@localhost:5432/mydb
+# Add a connection
+dbnexus connect add --name mydb --host localhost --database myapp
 
 # Execute a query
-dbnexus query "SELECT * FROM users" --connection mydb`}
-                    </code>
-                </CodeBlock>
+dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
+                <Paragraph>
+                    See the full <InlineLink to="/docs/cli">CLI Reference</InlineLink> for all
+                    available commands.
+                </Paragraph>
             </Section>
 
             <Section>
@@ -158,6 +158,6 @@ dbnexus query "SELECT * FROM users" --connection mydb`}
                     <li>Organize connections into projects and groups</li>
                 </List>
             </Section>
-        </Container>
+        </DocsLayout>
     );
 }
