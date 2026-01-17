@@ -5,6 +5,9 @@ import { initCommand } from './commands/init.js';
 import { uiCommand } from './commands/ui.js';
 import { connectCommand } from './commands/connect.js';
 import { queryCommand } from './commands/query.js';
+import { scanCommand } from './commands/scan.js';
+import { exportCommand } from './commands/export.js';
+import { schemaCommand } from './commands/schema.js';
 
 const program = new Command();
 
@@ -73,6 +76,50 @@ program
     .option('-f, --file <file>', 'SQL file to execute')
     .option('--confirm', 'Confirm dangerous queries')
     .action(queryCommand);
+
+// Scan command
+program
+    .command('scan')
+    .description('Scan for databases on your machine')
+    .option('--add', 'Automatically add discovered connections')
+    .option('--env-dirs <dirs>', 'Comma-separated directories to scan for .env files')
+    .action(scanCommand);
+
+// Export command
+program
+    .command('export')
+    .description('Export data to CSV or JSON')
+    .requiredOption('-c, --conn <name>', 'Connection name')
+    .option('-t, --table <table>', 'Table to export')
+    .option('-s, --sql <sql>', 'SQL query to export results from')
+    .option('-f, --format <format>', 'Output format (csv, json)', 'csv')
+    .requiredOption('-o, --output <file>', 'Output file path')
+    .action(exportCommand);
+
+// Schema commands
+const schema = program.command('schema').description('View and compare database schemas');
+
+schema
+    .command('show')
+    .description('Show schema for a connection')
+    .requiredOption('-c, --conn <name>', 'Connection name')
+    .option('-t, --table <table>', 'Show specific table details')
+    .action(schemaCommand.show);
+
+schema
+    .command('compare')
+    .description('Compare schemas between two connections')
+    .requiredOption('--source <name>', 'Source connection name')
+    .requiredOption('--target <name>', 'Target connection name')
+    .action(schemaCommand.compare);
+
+schema
+    .command('diff')
+    .description('Generate migration SQL between two schemas')
+    .requiredOption('--source <name>', 'Source connection name')
+    .requiredOption('--target <name>', 'Target connection name')
+    .option('-o, --output <file>', 'Output file for migration SQL')
+    .action(schemaCommand.diff);
 
 // Parse arguments
 program.parse();

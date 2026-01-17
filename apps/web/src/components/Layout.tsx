@@ -34,7 +34,9 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
-import { themeColors } from '../theme';
+import { colorSchemes } from '../theme';
+import { useColorSchemeStore } from '../stores/colorSchemeStore';
+import { DynamicLogo } from './DynamicLogo';
 // Types are inferred from React Query
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
@@ -91,7 +93,8 @@ export function Layout() {
     const { collapsed, syncExpanded, connectionsExpanded, toggle, toggleSync, toggleConnections } =
         useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
-    const colors = themeColors[theme.palette.mode];
+    const colorScheme = useColorSchemeStore((state) => state.colorScheme);
+    const colors = colorSchemes[colorScheme];
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
@@ -252,16 +255,7 @@ export function Layout() {
                         justifyContent: collapsed ? 'center' : 'flex-start',
                     }}
                 >
-                    <Box
-                        component="img"
-                        src={theme.palette.mode === 'dark' ? '/logo-dark.svg' : '/logo-light.svg'}
-                        alt="DB Nexus"
-                        sx={{
-                            width: collapsed ? 40 : 66,
-                            height: collapsed ? 40 : 66,
-                            transition: 'all 0.2s ease',
-                        }}
-                    />
+                    <DynamicLogo size={collapsed ? 40 : 50} />
                     {!collapsed && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Typography

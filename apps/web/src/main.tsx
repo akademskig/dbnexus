@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createAppTheme } from './theme';
 import { useThemeModeStore } from './stores/themeModeStore';
+import { useColorSchemeStore } from './stores/colorSchemeStore';
 import { ToastProvider } from './components/ToastProvider';
 import App from './App';
 import './index.css';
@@ -21,7 +22,8 @@ const queryClient = new QueryClient({
 
 function ThemedApp() {
     const mode = useThemeModeStore((state) => state.mode);
-    const theme = createAppTheme(mode);
+    const colorScheme = useColorSchemeStore((state) => state.colorScheme);
+    const theme = createAppTheme(mode, colorScheme);
 
     return (
         <ThemeProvider theme={theme}>

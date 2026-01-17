@@ -35,6 +35,8 @@ import {
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
 import { useThemeModeStore } from '../stores/themeModeStore';
+import { useColorSchemeStore } from '../stores/colorSchemeStore';
+import { colorSchemes, type ColorScheme } from '../theme';
 import { KEYBOARD_SHORTCUTS, formatShortcut } from '../hooks/useKeyboardShortcuts';
 import { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour';
 import { useToastStore } from '../stores/toastStore';
@@ -89,19 +91,20 @@ function ColorPicker({
     );
 }
 
+// Color scheme labels
+const colorSchemeLabels: Record<ColorScheme, string> = {
+    teal: 'Teal',
+    indigo: 'Indigo',
+    violet: 'Violet',
+    blue: 'Blue',
+    emerald: 'Emerald',
+    rose: 'Rose',
+};
+
 // Appearance Tab Content
 function AppearanceTab() {
     const { mode, toggleMode } = useThemeModeStore();
-    const toast = useToastStore();
-
-    const handleRestartTutorial = () => {
-        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        localStorage.removeItem('dbnexus:onboarding:step');
-        localStorage.removeItem('dbnexus:onboarding:minimized');
-        toast.success('Tutorial reset! Redirecting to start...');
-        // Navigate to projects page to start the tour
-        globalThis.location.href = '/projects';
-    };
+    const { colorScheme, setColorScheme } = useColorSchemeStore();
 
     return (
         <>
@@ -159,30 +162,64 @@ function AppearanceTab() {
                 </Box>
             </GlassCard>
 
-            <GlassCard>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                    }}
-                >
-                    <Box>
-                        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                            Tutorial
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                            Restart the welcome walkthrough to learn about features
-                        </Typography>
-                    </Box>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SchoolIcon />}
-                        onClick={handleRestartTutorial}
-                        sx={{ textTransform: 'none' }}
-                    >
-                        Restart Tutorial
-                    </Button>
+            <GlassCard sx={{ mb: 3 }}>
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                        Accent Color
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                        Choose your preferred color scheme
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
+                    {(Object.keys(colorSchemes) as ColorScheme[]).map((scheme) => {
+                        const colors = colorSchemes[scheme];
+                        const isSelected = colorScheme === scheme;
+                        return (
+                            <Box
+                                key={scheme}
+                                onClick={() => setColorScheme(scheme)}
+                                sx={{
+                                    width: 72,
+                                    height: 72,
+                                    borderRadius: 1,
+                                    bgcolor: isSelected ? `${colors.primary}20` : 'action.hover',
+                                    border: 2,
+                                    borderColor: isSelected ? colors.primary : 'transparent',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 0.5,
+                                    transition: 'all 0.15s',
+                                    '&:hover': {
+                                        borderColor: colors.primary,
+                                        bgcolor: `${colors.primary}15`,
+                                    },
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: '50%',
+                                        background: `linear-gradient(135deg, ${colors.primaryLight} 0%, ${colors.primary} 100%)`,
+                                    }}
+                                />
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: isSelected ? colors.primary : 'text.secondary',
+                                        fontWeight: isSelected ? 600 : 400,
+                                        fontSize: 11,
+                                    }}
+                                >
+                                    {colorSchemeLabels[scheme]}
+                                </Typography>
+                            </Box>
+                        );
+                    })}
                 </Box>
             </GlassCard>
         </>
@@ -711,6 +748,43 @@ function KeyboardShortcutsTab() {
     );
 }
 
+// Help Tab Content
+function HelpTab() {
+    const toast = useToastStore();
+
+    const handleRestartTutorial = () => {
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        localStorage.removeItem('dbnexus:onboarding:step');
+        localStorage.removeItem('dbnexus:onboarding:minimized');
+        toast.success('Tutorial reset! Redirecting to start...');
+        // Navigate to projects page to start the tour
+        globalThis.location.href = '/projects';
+    };
+
+    return (
+        <GlassCard>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                <SchoolIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    Tutorial
+                </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+                New to DB Nexus? The interactive tutorial will guide you through the main features
+                and help you get started.
+            </Typography>
+            <Button
+                variant="contained"
+                startIcon={<SchoolIcon />}
+                onClick={handleRestartTutorial}
+                sx={{ textTransform: 'none' }}
+            >
+                Start Tutorial
+            </Button>
+        </GlassCard>
+    );
+}
+
 // Main Settings Page
 export function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -722,13 +796,14 @@ export function SettingsPage() {
         if (tabParam === 'appearance') setTab(0);
         else if (tabParam === 'tags') setTab(1);
         else if (tabParam === 'shortcuts') setTab(2);
-        else if (tabParam === 'about') setTab(3);
+        else if (tabParam === 'help') setTab(3);
+        else if (tabParam === 'about') setTab(4);
     }, [searchParams]);
 
     // Update URL when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setTab(newValue);
-        const tabNames = ['appearance', 'tags', 'shortcuts', 'about'];
+        const tabNames = ['appearance', 'tags', 'shortcuts', 'help', 'about'];
         const tabName = tabNames[newValue];
         if (tabName) {
             setSearchParams({ tab: tabName });
@@ -777,6 +852,7 @@ export function SettingsPage() {
                     <Tab label="Appearance" />
                     <Tab label="Tags" />
                     <Tab label="Keyboard Shortcuts" />
+                    <Tab label="Help" />
                     <Tab label="About" />
                 </Tabs>
 
@@ -784,7 +860,8 @@ export function SettingsPage() {
                 {tab === 0 && <AppearanceTab />}
                 {tab === 1 && <TagsTab />}
                 {tab === 2 && <KeyboardShortcutsTab />}
-                {tab === 3 && <AboutTab />}
+                {tab === 3 && <HelpTab />}
+                {tab === 4 && <AboutTab />}
             </Box>
         </Box>
     );

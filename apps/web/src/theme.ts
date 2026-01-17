@@ -1,24 +1,56 @@
 import { createTheme, type PaletteMode } from '@mui/material/styles';
 
-// Theme colors per mode
-const themeColors = {
-    dark: {
-        primary: '#14b8a6', // Teal
+// Available color schemes
+export const colorSchemes = {
+    teal: {
+        primary: '#14b8a6',
         primaryLight: '#2dd4bf',
         primaryDark: '#0d9488',
         primaryRgb: '20, 184, 166',
     },
-    light: {
-        primary: '#6366f1', // Indigo
+    indigo: {
+        primary: '#6366f1',
         primaryLight: '#818cf8',
         primaryDark: '#4f46e5',
         primaryRgb: '99, 102, 241',
     },
+    violet: {
+        primary: '#8b5cf6',
+        primaryLight: '#a78bfa',
+        primaryDark: '#7c3aed',
+        primaryRgb: '139, 92, 246',
+    },
+    blue: {
+        primary: '#3b82f6',
+        primaryLight: '#60a5fa',
+        primaryDark: '#2563eb',
+        primaryRgb: '59, 130, 246',
+    },
+    emerald: {
+        primary: '#10b981',
+        primaryLight: '#34d399',
+        primaryDark: '#059669',
+        primaryRgb: '16, 185, 129',
+    },
+    rose: {
+        primary: '#f43f5e',
+        primaryLight: '#fb7185',
+        primaryDark: '#e11d48',
+        primaryRgb: '244, 63, 94',
+    },
 };
 
+export type ColorScheme = keyof typeof colorSchemes;
+
+// Get theme colors for a specific color scheme
+export const getThemeColors = (scheme: ColorScheme) => ({
+    dark: colorSchemes[scheme],
+    light: colorSchemes[scheme],
+});
+
 // Common component overrides
-const getComponentOverrides = (mode: PaletteMode) => {
-    const colors = themeColors[mode];
+const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
+    const colors = colorSchemes[scheme];
     return {
         MuiButton: {
             styleOverrides: {
@@ -171,8 +203,8 @@ const getComponentOverrides = (mode: PaletteMode) => {
     };
 };
 
-export const createAppTheme = (mode: PaletteMode) => {
-    const colors = themeColors[mode];
+export const createAppTheme = (mode: PaletteMode, scheme: ColorScheme = 'indigo') => {
+    const colors = colorSchemes[scheme];
     return createTheme({
         palette: {
             mode,
@@ -205,23 +237,23 @@ export const createAppTheme = (mode: PaletteMode) => {
             background:
                 mode === 'dark'
                     ? {
-                          default: '#09090b',
-                          paper: 'rgb(20, 25, 27)',
-                      }
+                        default: '#09090b',
+                        paper: 'rgb(20, 25, 27)',
+                    }
                     : {
-                          default: '#fafafa',
-                          paper: '#ffffff',
-                      },
+                        default: '#fafafa',
+                        paper: '#ffffff',
+                    },
             text:
                 mode === 'dark'
                     ? {
-                          primary: '#fafafa',
-                          secondary: '#a1a1aa',
-                      }
+                        primary: '#fafafa',
+                        secondary: '#a1a1aa',
+                    }
                     : {
-                          primary: '#18181b',
-                          secondary: '#71717a',
-                      },
+                        primary: '#18181b',
+                        secondary: '#71717a',
+                    },
             divider: mode === 'dark' ? '#27272a' : '#e4e4e7',
         },
         typography: {
@@ -236,12 +268,9 @@ export const createAppTheme = (mode: PaletteMode) => {
         shape: {
             borderRadius: 0,
         },
-        components: getComponentOverrides(mode),
+        components: getComponentOverrides(mode, scheme),
     });
 };
-
-// Export theme colors for use in components
-export { themeColors };
 
 // Default dark theme for backwards compatibility
 export const theme = createAppTheme('dark');
