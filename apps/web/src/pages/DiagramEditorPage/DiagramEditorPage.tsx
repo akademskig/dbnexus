@@ -33,9 +33,6 @@ import {
     Alert,
     CircularProgress,
     Chip,
-    Switch,
-    FormControlLabel,
-    Autocomplete,
     Divider,
     Paper,
     alpha,
@@ -47,7 +44,6 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import WarningIcon from '@mui/icons-material/Warning';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
@@ -64,7 +60,11 @@ import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
-import { AddColumnDialog, type NewColumnState } from '../../components/AddColumnDialog';
+import {
+    AddColumnDialog,
+    EditColumnDialog,
+    type NewColumnState,
+} from '../../components/AddColumnDialog';
 import {
     EditableTableNode,
     type EditableColumn,
@@ -220,6 +220,17 @@ export function DiagramEditorPage() {
         retry: 1,
     });
 
+    const { data: editTableSchema } = useQuery({
+        queryKey: ['tableSchema', selectedConnectionId, selectedSchema, currentTableId],
+        queryFn: () => {
+            if (!currentTableId) {
+                throw new Error('No table selected');
+            }
+            return schemaApi.getTableSchema(selectedConnectionId, selectedSchema, currentTableId);
+        },
+        enabled: isValidConnection && !!selectedSchema && !!currentTableId && editColumnOpen,
+    });
+
     // Connection error state
     const connectionError = schemasError || tablesError;
 
@@ -340,13 +351,36 @@ export function DiagramEditorPage() {
             dataType: column.dataType,
             nullable: column.nullable,
             isPrimaryKey: column.isPrimaryKey,
-            isForeignKey: false,
+            isForeignKey: Boolean(column.isForeignKey),
             foreignKeyTable: '',
             foreignKeyColumn: '',
             defaultValue: column.defaultValue || '',
         });
         setEditColumnOpen(true);
     }, []);
+
+    useEffect(() => {
+        if (!editColumnOpen || !currentColumn || !editTableSchema) return;
+
+        const existingFk = editTableSchema.foreignKeys.find((fk) => {
+            const columns = parseColumnArray(fk.columns);
+            return columns.length === 1 && columns[0] === currentColumn.name;
+        });
+        if (!existingFk) return;
+
+        const referencedColumn = parseColumnArray(existingFk.referencedColumns)[0] || '';
+        setNewColumn((prev) => {
+            if (prev.foreignKeyTable || prev.foreignKeyColumn) {
+                return prev;
+            }
+            return {
+                ...prev,
+                isForeignKey: true,
+                foreignKeyTable: existingFk.referencedTable,
+                foreignKeyColumn: referencedColumn,
+            };
+        });
+    }, [editColumnOpen, currentColumn, editTableSchema]);
 
     const handleOpenDeleteColumn = useCallback((tableId: string, column: EditableColumn) => {
         setCurrentTableId(tableId);
@@ -701,6 +735,82 @@ export function DiagramEditorPage() {
             newColumn,
             currentColumn
         );
+
+        if (
+            newColumn.isForeignKey &&
+            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
+        ) {
+            toast.error('Select a reference table and column for the foreign key');
+            return;
+        }
+
+        const existingFk = editTableSchema?.foreignKeys.find((fk) => {
+            const columns = parseColumnArray(fk.columns);
+            return columns.length === 1 && columns[0] === currentColumn.name;
+        });
+        const existingFkRefColumn = existingFk
+            ? parseColumnArray(existingFk.referencedColumns)[0] || ''
+            : '';
+        const fkReferenceChanged =
+            newColumn.isForeignKey &&
+            existingFk &&
+            (newColumn.foreignKeyTable !== existingFk.referencedTable ||
+                newColumn.foreignKeyColumn !== existingFkRefColumn);
+        const shouldDropFk = existingFk && (!newColumn.isForeignKey || fkReferenceChanged);
+        const shouldAddFk = newColumn.isForeignKey && (!existingFk || fkReferenceChanged);
+
+        if (newColumn.isPrimaryKey !== currentColumn.isPrimaryKey) {
+            if (newColumn.isPrimaryKey) {
+                statements.push(
+                    `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`
+                );
+            } else if (connection?.engine === 'postgres') {
+                const primaryIndex = editTableSchema?.indexes.find((idx) => idx.isPrimary);
+                if (!primaryIndex?.name) {
+                    toast.error('Primary key constraint not found');
+                    return;
+                }
+                statements.push(
+                    `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifier(
+                        primaryIndex.name,
+                        connection?.engine
+                    )}`
+                );
+            } else {
+                statements.push(`ALTER TABLE ${fullTableName} DROP PRIMARY KEY`);
+            }
+        }
+
+        if (shouldDropFk && existingFk) {
+            const dropFkSql =
+                connection?.engine === 'postgres'
+                    ? `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifier(
+                        existingFk.name,
+                        connection?.engine
+                    )}`
+                    : `ALTER TABLE ${fullTableName} DROP FOREIGN KEY ${quoteIdentifier(
+                        existingFk.name,
+                        connection?.engine
+                    )}`;
+            statements.push(dropFkSql);
+        }
+
+        if (shouldAddFk) {
+            const fkName = `fk_${currentTableId}_${currentColumn.name}`;
+            const fullTargetTable = buildTableName(
+                selectedSchema,
+                newColumn.foreignKeyTable,
+                connection?.engine
+            );
+            const fkSql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quoteIdentifier(
+                fkName,
+                connection?.engine
+            )} FOREIGN KEY (${quotedColumn}) REFERENCES ${fullTargetTable} (${quoteIdentifier(
+                newColumn.foreignKeyColumn,
+                connection?.engine
+            )})`;
+            statements.push(fkSql);
+        }
 
         if (statements.length === 0) {
             toast.info('No changes to apply');
@@ -1171,7 +1281,7 @@ export function DiagramEditorPage() {
                         helperText="Table will be created with a default 'id' serial primary key column"
                     />
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setCreateTableOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1199,74 +1309,18 @@ export function DiagramEditorPage() {
                 onSubmit={handleAddColumn}
             />
 
-            {/* Edit Column Dialog */}
-            <Dialog
+            <EditColumnDialog
                 open={editColumnOpen}
+                tableName={currentTableId}
+                dataTypes={dataTypes}
+                tables={tables}
+                getColumnsForTable={getColumnsForTable}
+                isSubmitting={executeSql.isPending}
+                newColumn={newColumn}
+                setNewColumn={setNewColumn}
                 onClose={() => setEditColumnOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <EditIcon color="primary" />
-                    Edit Column: {currentColumn?.name}
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Alert severity="info">
-                            Column name cannot be changed here. Use SQL to rename columns.
-                        </Alert>
-                        <Autocomplete
-                            freeSolo
-                            options={dataTypes}
-                            value={newColumn.dataType}
-                            onChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value || '' }))
-                            }
-                            onInputChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value }))
-                            }
-                            renderInput={(params) => <TextField {...params} label="Data Type" />}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newColumn.nullable}
-                                    onChange={(e) =>
-                                        setNewColumn((prev) => ({
-                                            ...prev,
-                                            nullable: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Nullable"
-                        />
-                        <TextField
-                            fullWidth
-                            label="Default Value"
-                            value={newColumn.defaultValue}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, defaultValue: e.target.value }))
-                            }
-                            placeholder="NULL, 0, 'default', now()"
-                            helperText="Enter SQL expression for default value, or leave empty to drop default"
-                        />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEditColumnOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleEditColumn}
-                        disabled={executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <EditIcon />
-                        }
-                    >
-                        Save Changes
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSubmit={handleEditColumn}
+            />
 
             {/* Delete Column Dialog */}
             <Dialog
@@ -1291,7 +1345,7 @@ export function DiagramEditorPage() {
                         <Typography variant="body2">This action cannot be undone.</Typography>
                     </Alert>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1336,7 +1390,7 @@ export function DiagramEditorPage() {
                         sx={{ mt: 2 }}
                     />
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button
                         onClick={() => {
                             setDeleteTableOpen(false);
@@ -1375,7 +1429,7 @@ export function DiagramEditorPage() {
                         )}
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button
                         onClick={() => {
                             setCreateFkOpen(false);

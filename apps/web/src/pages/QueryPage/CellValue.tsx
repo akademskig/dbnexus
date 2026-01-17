@@ -216,7 +216,7 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                         </Box>
                     </DialogContent>
                     {isEditing && (
-                        <DialogActions>
+                        <DialogActions sx={{ p: 2 }}>
                             <Button onClick={handleCancelEdit}>Cancel</Button>
                             <Button variant="contained" onClick={handleSave}>
                                 Save

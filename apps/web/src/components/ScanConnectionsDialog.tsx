@@ -496,7 +496,7 @@ export function ScanConnectionsDialog({
 
                 {addingConnections && <LinearProgress sx={{ mt: 2 }} />}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={handleClose}>Cancel</Button>
                 {scanResult && newConnectionIndices.length > 0 && (
                     <Button

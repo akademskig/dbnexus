@@ -147,7 +147,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
                         </Box>
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={onClose}>Cancel</Button>
                     <Button
                         type="submit"
@@ -300,7 +300,7 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                         )}
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={onClose}>Cancel</Button>
                     <Button
                         type="submit"
@@ -765,7 +765,7 @@ export function ConnectionFormDialog({
                         )}
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={onClose}>Cancel</Button>
                     <Button
                         onClick={handleTest}

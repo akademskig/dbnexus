@@ -278,7 +278,7 @@ export function DataSyncDialog({
 
                 {syncing && <LinearProgress sx={{ mt: 2 }} />}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onClose}>Close</Button>
                 {results.length === 0 && (
                     <Button

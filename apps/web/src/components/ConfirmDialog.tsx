@@ -34,7 +34,7 @@ export function ConfirmDialog({
             <DialogContent>
                 <DialogContentText>{message}</DialogContentText>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onCancel}>{cancelLabel}</Button>
                 <Button onClick={onConfirm} color={confirmColor} variant="contained" autoFocus>
                     {confirmLabel}

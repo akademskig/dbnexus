@@ -368,7 +368,7 @@ export function QueryHistoryTab() {
                         ? This action cannot be undone.
                     </Typography>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setClearDialogOpen(false)}>Cancel</Button>
                     <Button
                         color="error"
@@ -480,7 +480,7 @@ export function QueryHistoryTab() {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setSelectedEntry(null)}>Close</Button>
                     {selectedEntry && (
                         <>

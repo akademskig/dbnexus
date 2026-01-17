@@ -616,7 +616,7 @@ export function ActivityLogTab() {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setSelectedActivity(null)}>Close</Button>
                 </DialogActions>
             </Dialog>

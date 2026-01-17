@@ -174,7 +174,7 @@ export function GroupSettingsDialog({
                     </Box>
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button
                     variant="contained"

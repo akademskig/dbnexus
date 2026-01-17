@@ -303,7 +303,7 @@ export function MigrationHistoryTab() {
                         history entry, not the actual database changes.
                     </Typography>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
                     <Button
                         color="error"
@@ -444,7 +444,7 @@ export function MigrationHistoryTab() {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setSelectedMigration(null)}>Close</Button>
                     {selectedMigration && (
                         <Button

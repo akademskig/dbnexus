@@ -43,7 +43,11 @@ import { LoadingState } from '../../components/LoadingState';
 import { schemaApi, queriesApi } from '../../lib/api';
 import { buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
-import { AddColumnDialog, type NewColumnState } from '../../components/AddColumnDialog';
+import {
+    AddColumnDialog,
+    EditColumnDialog,
+    type NewColumnState,
+} from '../../components/AddColumnDialog';
 
 interface TableDetailsTabProps {
     connectionId: string;
@@ -260,7 +264,7 @@ export function TableDetailsTab({
             !!connectionId &&
             !!selectedSchema &&
             !!newColumn.foreignKeyTable &&
-            addColumnOpen,
+            (addColumnOpen || editColumnOpen),
     });
 
     const quoteIdentifierForEngine = useCallback(
@@ -401,6 +405,76 @@ export function TableDetailsTab({
                 sql += ` DEFAULT ${newColumn.defaultValue}`;
             }
             statements.push(sql);
+        }
+
+        if (
+            newColumn.isForeignKey &&
+            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
+        ) {
+            toast.error('Select a reference table and column for the foreign key');
+            return;
+        }
+
+        const existingFk = tableSchema?.foreignKeys.find((fk) => {
+            const columns = parseColumnArray(fk.columns);
+            return columns.length === 1 && columns[0] === columnToEdit.name;
+        });
+        const existingFkRefColumn = existingFk
+            ? parseColumnArray(existingFk.referencedColumns)[0] || ''
+            : '';
+        const fkReferenceChanged =
+            newColumn.isForeignKey &&
+            existingFk &&
+            (newColumn.foreignKeyTable !== existingFk.referencedTable ||
+                newColumn.foreignKeyColumn !== existingFkRefColumn);
+        const shouldDropFk = existingFk && (!newColumn.isForeignKey || fkReferenceChanged);
+        const shouldAddFk = newColumn.isForeignKey && (!existingFk || fkReferenceChanged);
+
+        if (newColumn.isPrimaryKey !== columnToEdit.isPrimaryKey) {
+            if (newColumn.isPrimaryKey) {
+                statements.push(
+                    `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`
+                );
+            } else if (connection?.engine === 'postgres') {
+                const primaryIndex = tableSchema?.indexes.find((idx) => idx.isPrimary);
+                if (!primaryIndex?.name) {
+                    toast.error('Primary key constraint not found');
+                    return;
+                }
+                statements.push(
+                    `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifierForEngine(
+                        primaryIndex.name
+                    )}`
+                );
+            } else {
+                statements.push(`ALTER TABLE ${fullTableName} DROP PRIMARY KEY`);
+            }
+        }
+
+        if (shouldDropFk && existingFk) {
+            const dropFkSql =
+                connection?.engine === 'postgres'
+                    ? `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifierForEngine(
+                        existingFk.name
+                    )}`
+                    : `ALTER TABLE ${fullTableName} DROP FOREIGN KEY ${quoteIdentifierForEngine(
+                        existingFk.name
+                    )}`;
+            statements.push(dropFkSql);
+        }
+
+        if (shouldAddFk) {
+            const fkName = `fk_${selectedTable}_${columnToEdit.name}`;
+            const fullTargetTable = buildTableNameForEngine(
+                selectedSchema,
+                newColumn.foreignKeyTable
+            );
+            const fkSql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quoteIdentifierForEngine(
+                fkName
+            )} FOREIGN KEY (${quotedColumn}) REFERENCES ${fullTargetTable} (${quoteIdentifierForEngine(
+                newColumn.foreignKeyColumn
+            )})`;
+            statements.push(fkSql);
         }
 
         try {
@@ -638,15 +712,23 @@ export function TableDetailsTab({
                         <IconButton
                             size="small"
                             onClick={() => {
+                                const existingFk = tableSchema?.foreignKeys.find((fk) => {
+                                    const columns = parseColumnArray(fk.columns);
+                                    return columns.length === 1 && columns[0] === params.row.name;
+                                });
+                                const referencedColumn = existingFk
+                                    ? parseColumnArray(existingFk.referencedColumns)[0] || ''
+                                    : '';
+
                                 setColumnToEdit(params.row);
                                 setNewColumn({
                                     name: params.row.name,
                                     dataType: params.row.dataType,
                                     nullable: params.row.nullable,
                                     isPrimaryKey: params.row.isPrimaryKey ?? false,
-                                    isForeignKey: false,
-                                    foreignKeyTable: '',
-                                    foreignKeyColumn: '',
+                                    isForeignKey: Boolean(existingFk),
+                                    foreignKeyTable: existingFk?.referencedTable || '',
+                                    foreignKeyColumn: referencedColumn,
                                     defaultValue: params.row.defaultValue || '',
                                 });
                                 setEditColumnOpen(true);
@@ -1135,74 +1217,18 @@ export function TableDetailsTab({
                 onSubmit={handleAddColumn}
             />
 
-            {/* ============ Edit Column Dialog ============ */}
-            <Dialog
+            <EditColumnDialog
                 open={editColumnOpen}
+                tableName={selectedTable}
+                dataTypes={dataTypes}
+                tables={tables}
+                getColumnsForTable={getColumnsForTable}
+                isSubmitting={executeSql.isPending}
+                newColumn={newColumn}
+                setNewColumn={setNewColumn}
                 onClose={() => setEditColumnOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <EditIcon color="primary" />
-                    Edit Column: {columnToEdit?.name}
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Alert severity="info">
-                            Column name cannot be changed here. Use SQL to rename columns.
-                        </Alert>
-                        <Autocomplete
-                            freeSolo
-                            options={dataTypes}
-                            value={newColumn.dataType}
-                            onChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value || '' }))
-                            }
-                            onInputChange={(_, value) =>
-                                setNewColumn((prev) => ({ ...prev, dataType: value }))
-                            }
-                            renderInput={(params) => <TextField {...params} label="Data Type" />}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newColumn.nullable}
-                                    onChange={(e) =>
-                                        setNewColumn((prev) => ({
-                                            ...prev,
-                                            nullable: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Nullable"
-                        />
-                        <TextField
-                            fullWidth
-                            label="Default Value"
-                            value={newColumn.defaultValue}
-                            onChange={(e) =>
-                                setNewColumn((prev) => ({ ...prev, defaultValue: e.target.value }))
-                            }
-                            placeholder="NULL, 0, 'default', now()"
-                            helperText="Enter SQL expression for default value, or leave empty to drop default"
-                        />
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEditColumnOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleEditColumn}
-                        disabled={executeSql.isPending}
-                        startIcon={
-                            executeSql.isPending ? <CircularProgress size={16} /> : <EditIcon />
-                        }
-                    >
-                        Save Changes
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onSubmit={handleEditColumn}
+            />
 
             {/* ============ Delete Column Dialog ============ */}
             <Dialog
@@ -1227,7 +1253,7 @@ export function TableDetailsTab({
                         <Typography variant="body2">This action cannot be undone.</Typography>
                     </Alert>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1297,7 +1323,7 @@ export function TableDetailsTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setAddIndexOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1336,7 +1362,7 @@ export function TableDetailsTab({
                         <Typography variant="body2">This may affect query performance.</Typography>
                     </Alert>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteIndexOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1493,7 +1519,7 @@ export function TableDetailsTab({
                         </Box>
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setAddFkOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -1539,7 +1565,7 @@ export function TableDetailsTab({
                         </Typography>
                     </Alert>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteFkOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"

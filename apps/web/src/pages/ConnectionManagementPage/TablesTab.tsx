@@ -406,7 +406,7 @@ export function TablesTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={handleCloseCreateDialog} disabled={creating}>
                         Cancel
                     </Button>
@@ -462,7 +462,7 @@ export function TablesTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={handleCloseDropDialog} disabled={dropping}>
                         Cancel
                     </Button>

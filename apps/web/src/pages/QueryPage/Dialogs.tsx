@@ -190,7 +190,7 @@ export function ConfirmDialog({
                     )}
                 </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onClose} disabled={loading}>
                     Cancel
                 </Button>
@@ -381,7 +381,7 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
                     </Button>
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={handleClose}>Cancel</Button>
                 <Button
                     variant="contained"
@@ -472,7 +472,7 @@ export function AddRowDialog({ open, onClose, onSubmit, columns, tableName }: Ad
                     ))}
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={handleClose}>Cancel</Button>
                 <Button variant="contained" onClick={handleSubmit}>
                     Add Row
@@ -757,7 +757,7 @@ export function SyncRowDialog({
                     )}
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={handleClose}>{result ? 'Close' : 'Cancel'}</Button>
                 {!result && isInGroup && targetConnections.length > 0 && (
                     <Button
@@ -927,7 +927,7 @@ export function SaveQueryDialog({
                     )}
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={handleClose}>Cancel</Button>
                 <Button
                     variant="contained"
@@ -1018,7 +1018,7 @@ export function CreateSchemaDialog({
                     />
                 </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onClose} disabled={loading}>
                     Cancel
                 </Button>

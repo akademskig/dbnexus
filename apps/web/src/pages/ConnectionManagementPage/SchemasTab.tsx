@@ -308,7 +308,7 @@ export function SchemasTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={handleCloseCreateDialog} disabled={createMutation.isPending}>
                         Cancel
                     </Button>
@@ -369,7 +369,7 @@ export function SchemasTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={handleCloseDeleteDialog} disabled={deleteMutation.isPending}>
                         Cancel
                     </Button>

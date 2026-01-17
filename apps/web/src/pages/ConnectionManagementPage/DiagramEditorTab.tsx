@@ -795,7 +795,7 @@ export function DiagramEditorTab({
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setCreateTableOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -846,7 +846,7 @@ export function DiagramEditorTab({
                         <Typography variant="body2">This action cannot be undone.</Typography>
                     </Alert>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -898,7 +898,7 @@ export function DiagramEditorTab({
                         sx={{ mt: 2 }}
                     />
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button
                         onClick={() => {
                             setDeleteTableOpen(false);
@@ -945,7 +945,7 @@ export function DiagramEditorTab({
                         )}
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button
                         onClick={() => {
                             setCreateFkOpen(false);
