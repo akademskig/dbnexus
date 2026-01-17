@@ -89,7 +89,6 @@ const navItems = [
 export function Layout() {
     const location = useLocation();
     const navigate = useNavigate();
-    const theme = useTheme();
     const { collapsed, syncExpanded, connectionsExpanded, toggle, toggleSync, toggleConnections } =
         useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
@@ -261,23 +260,9 @@ export function Layout() {
                             <Typography
                                 sx={{
                                     fontFamily: "'JetBrains Mono', monospace",
-                                    fontWeight: 700,
-                                    fontSize: '1.2rem',
-                                    color: colors.primary,
-                                    bgcolor: `rgba(${colors.primaryRgb}, 0.1)`,
-                                    paddingX: 0.75,
-                                    py: 0.25,
-                                    borderRadius: 0.5,
-                                }}
-                            >
-                                DB
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    fontFamily: "'JetBrains Mono', monospace",
                                     fontWeight: 600,
-                                    fontSize: '1.2rem',
-                                    color: 'text.primary',
+                                    fontSize: '1.5rem',
+                                    color: 'primary.main',
                                 }}
                             >
                                 Nexus
@@ -299,8 +284,8 @@ export function Layout() {
                                 ? `${label} (No connections)`
                                 : label
                             : isDisabled
-                              ? 'No connections available'
-                              : '';
+                                ? 'No connections available'
+                                : '';
 
                         return (
                             <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
@@ -324,8 +309,8 @@ export function Layout() {
                                                 color: isActive
                                                     ? 'primary.main'
                                                     : isDisabled
-                                                      ? 'text.disabled'
-                                                      : 'text.secondary',
+                                                        ? 'text.disabled'
+                                                        : 'text.secondary',
                                             }}
                                         >
                                             {icon}
@@ -569,8 +554,8 @@ export function Layout() {
                                                                     bgcolor: isOnline
                                                                         ? 'success.main'
                                                                         : isOffline
-                                                                          ? 'error.main'
-                                                                          : 'text.disabled',
+                                                                            ? 'error.main'
+                                                                            : 'text.disabled',
                                                                     ml: 1,
                                                                     mr: 2,
                                                                     flexShrink: 0,
@@ -674,8 +659,8 @@ export function Layout() {
                                                             bgcolor: isOnline
                                                                 ? 'success.main'
                                                                 : isOffline
-                                                                  ? 'error.main'
-                                                                  : 'text.disabled',
+                                                                    ? 'error.main'
+                                                                    : 'text.disabled',
                                                             ml: 1,
                                                             mr: 2,
                                                             flexShrink: 0,

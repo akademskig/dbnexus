@@ -19,7 +19,6 @@ import {
     TableRow,
 } from '@mui/material';
 import {
-    RestartAlt as ResetIcon,
     Add as AddIcon,
     Delete as DeleteIcon,
     Edit as EditIcon,
@@ -320,7 +319,7 @@ function TagRow({
                     bgcolor: `rgba(${tag.color}, 0.15)`,
                     color: `rgb(${tag.color})`,
                     border: `1px solid rgba(${tag.color}, 0.3)`,
-                    borderRadius: 0.5,
+                    borderRadius: '16px',
                     fontWeight: 500,
                 }}
             />
@@ -351,7 +350,7 @@ function TagRow({
 
 // Tags Tab Content
 function TagsTab() {
-    const { tags, addTag, updateTag, deleteTag, resetTags } = useTagsStore();
+    const { tags, addTag, updateTag, deleteTag } = useTagsStore();
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState('');
     const [newColor, setNewColor] = useState(TAG_COLORS.blue);
@@ -385,25 +384,13 @@ function TagsTab() {
                     Connection Tags
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                        size="small"
-                        startIcon={<ResetIcon />}
-                        onClick={resetTags}
-                        sx={{
-                            color: 'text.secondary',
-                            textTransform: 'none',
-                            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-                        }}
-                    >
-                        Reset
-                    </Button>
                     {!adding && (
                         <Button
                             size="small"
                             startIcon={<AddIcon />}
                             onClick={() => setAdding(true)}
                             sx={{
-                                color: 'success.main',
+                                color: 'primary.main',
                                 textTransform: 'none',
                                 '&:hover': { bgcolor: 'action.hover' },
                             }}
@@ -519,7 +506,7 @@ function TagsTab() {
                                 bgcolor: `rgba(${tag.color}, 0.15)`,
                                 color: `rgb(${tag.color})`,
                                 border: `1px solid rgba(${tag.color}, 0.3)`,
-                                borderRadius: 0.5,
+                                borderRadius: '16px',
                                 fontWeight: 500,
                             }}
                         />

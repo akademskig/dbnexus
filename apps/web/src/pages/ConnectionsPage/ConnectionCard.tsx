@@ -237,6 +237,7 @@ export function ConnectionCard({
                                     fontSize: 10,
                                     fontWeight: 500,
                                     border: '1px solid',
+                                    borderRadius: '16px',
                                 }}
                             />
                         ))}

@@ -707,7 +707,7 @@ export function ConnectionFormDialog({
                                             }}
                                             sx={{
                                                 cursor: 'pointer',
-                                                borderRadius: 0.5,
+                                                borderRadius: '16px',
                                                 fontWeight: 500,
                                                 bgcolor: isSelected
                                                     ? `rgba(${tag.color}, 0.25)`
