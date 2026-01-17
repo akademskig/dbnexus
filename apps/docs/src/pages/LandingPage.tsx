@@ -206,6 +206,13 @@ const FeaturesGrid = styled.div`
     gap: 2rem;
 `;
 
+const FeatureHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+`;
+
 const FeatureCard = styled(motion.div)`
     background: var(--color-bg);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -218,22 +225,17 @@ const FeatureCard = styled(motion.div)`
     }
 `;
 
-const FeatureIcon = styled.div<{ color: string }>`
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: ${(props) => props.color}20;
-    display: flex;
+const FeatureIcon = styled.span`
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
+    font-size: 2rem;
+    color: var(--color-text);
 `;
 
 const FeatureTitle = styled.h3`
     font-size: 1.25rem;
     font-weight: 600;
-    margin-bottom: 0.75rem;
 `;
 
 const FeatureDescription = styled.p`
@@ -294,42 +296,42 @@ const CTASection = styled.section`
 
 const features = [
     {
-        icon: '⚡',
+        icon: <span className="material-symbols-outlined">terminal</span>,
         color: '#f59e0b',
         title: 'Query Editor',
         description:
             'Write and execute SQL with syntax highlighting, auto-completion, and instant results. Support for multiple tabs and query history.',
     },
     {
-        icon: '🗺️',
+        icon: <span className="material-symbols-outlined">schema</span>,
         color: '#6366f1',
         title: 'Schema Diagram',
         description:
             'Visualize your database structure with an interactive diagram. Drag tables, see relationships, and modify schema directly.',
     },
     {
-        icon: '🔄',
+        icon: <span className="material-symbols-outlined">compare_arrows</span>,
         color: '#22c55e',
         title: 'Compare & Sync',
         description:
             'Compare schemas across environments and generate migration scripts. Keep dev, staging, and production in sync.',
     },
     {
-        icon: '🔍',
+        icon: <span className="material-symbols-outlined">travel_explore</span>,
         color: '#22d3ee',
         title: 'Auto-Discovery',
         description:
             'Automatically find databases via port scanning, Docker inspection, and environment files. No manual configuration needed.',
     },
     {
-        icon: '📁',
+        icon: <span className="material-symbols-outlined">folder_open</span>,
         color: '#ec4899',
         title: 'Projects & Groups',
         description:
             'Organize connections by project and instance groups. Drag and drop to reorganize. Perfect for multi-environment setups.',
     },
     {
-        icon: '🔗',
+        icon: <span className="material-symbols-outlined">link</span>,
         color: '#8b5cf6',
         title: 'FK Navigation',
         description:
@@ -454,8 +456,10 @@ export function LandingPage() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <FeatureIcon color={feature.color}>{feature.icon}</FeatureIcon>
-                            <FeatureTitle>{feature.title}</FeatureTitle>
+                            <FeatureHeader>
+                                <FeatureIcon>{feature.icon}</FeatureIcon>
+                                <FeatureTitle>{feature.title}</FeatureTitle>
+                            </FeatureHeader>
                             <FeatureDescription>{feature.description}</FeatureDescription>
                         </FeatureCard>
                     ))}

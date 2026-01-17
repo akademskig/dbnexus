@@ -122,7 +122,10 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                 </List>
                 <Note>
                     <Paragraph>
-                        💡 The scanner checks common ports (5432 for PostgreSQL, 3306 for MySQL),
+                        <span className="material-symbols-outlined" style={{ marginRight: 6 }}>
+                            lightbulb
+                        </span>
+                        The scanner checks common ports (5432 for PostgreSQL, 3306 for MySQL),
                         inspects Docker containers, and parses .env files automatically.
                     </Paragraph>
                 </Note>

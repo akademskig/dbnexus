@@ -28,15 +28,17 @@ const FeatureHeader = styled.div`
     margin-bottom: 1.5rem;
 `;
 
-const FeatureIcon = styled.div<{ color: string }>`
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: ${(props) => props.color}20;
-    display: flex;
+const FeatureIcon = styled.span`
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.75rem;
+    font-size: 2rem;
+    color: var(--color-text);
+
+    .material-symbols-outlined {
+        font-size: 2rem;
+        line-height: 1;
+    }
 `;
 
 const FeatureTitle = styled.h2`
@@ -79,7 +81,7 @@ const FeatureItem = styled.li`
 
 const features = [
     {
-        icon: '⚡',
+        icon: <span className="material-symbols-outlined">terminal</span>,
         color: '#f59e0b',
         title: 'Query Editor',
         description:
@@ -97,7 +99,7 @@ const features = [
         ],
     },
     {
-        icon: '🗺️',
+        icon: <span className="material-symbols-outlined">schema</span>,
         color: '#6366f1',
         title: 'Schema Diagram',
         description:
@@ -115,7 +117,7 @@ const features = [
         ],
     },
     {
-        icon: '🔄',
+        icon: <span className="material-symbols-outlined">compare_arrows</span>,
         color: '#22c55e',
         title: 'Compare & Sync',
         description:
@@ -133,12 +135,12 @@ const features = [
         ],
     },
     {
-        icon: '🔍',
+        icon: <span className="material-symbols-outlined">travel_explore</span>,
         color: '#22d3ee',
         title: 'Auto-Discovery',
         description:
             'Automatically find and connect to databases without manual configuration.',
-        screenshot: '/screenshots/connectionmanagement.png',
+        screenshot: '/screenshots/scanconnections.png',
         items: [
             'Port scanning (5432, 3306, etc.)',
             'Docker container inspection',
@@ -151,7 +153,25 @@ const features = [
         ],
     },
     {
-        icon: '📁',
+        icon: <span className="material-symbols-outlined">tune</span>,
+        color: '#38bdf8',
+        title: 'Manage your connections',
+        description:
+            'Keep all your database connections organized with powerful management tools.',
+        screenshot: '/screenshots/connectionmanagement.png',
+        items: [
+            'Add, edit, and remove connections',
+            'Test connectivity and health status',
+            'Set default schema and read-only mode',
+            'Tag connections for quick filtering',
+            'Organize by project and environment',
+            'Securely store credentials locally',
+            'Quick actions from the sidebar',
+            'Offline indicators and warnings',
+        ],
+    },
+    {
+        icon: <span className="material-symbols-outlined">folder_open</span>,
         color: '#ec4899',
         title: 'Projects & Groups',
         description:
@@ -169,7 +189,7 @@ const features = [
         ],
     },
     {
-        icon: '🔗',
+        icon: <span className="material-symbols-outlined">link</span>,
         color: '#8b5cf6',
         title: 'Foreign Key Navigation',
         description:
@@ -206,7 +226,7 @@ export function FeaturesPage() {
                     transition={{ delay: index * 0.1 }}
                 >
                     <FeatureHeader>
-                        <FeatureIcon color={feature.color}>{feature.icon}</FeatureIcon>
+                        <FeatureIcon>{feature.icon}</FeatureIcon>
                         <FeatureTitle>{feature.title}</FeatureTitle>
                     </FeatureHeader>
                     <FeatureDescription>{feature.description}</FeatureDescription>

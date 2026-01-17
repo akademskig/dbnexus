@@ -9,7 +9,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: var(--color-text-secondary);
+    color: var(--color-text);
     font-size: 1.25rem;
     margin-bottom: 2rem;
 `;
@@ -19,10 +19,17 @@ const Section = styled.section`
 `;
 
 const SectionTitle = styled.h2`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 1rem;
-    color: var(--color-primary-light);
+    color: var(--color-text);
+
+    .material-symbols-outlined {
+        font-size: 1.75rem;
+    }
 `;
 
 const ShortcutGrid = styled.div`
@@ -113,7 +120,10 @@ export function KeyboardShortcutsPage() {
             <Subtitle>Master DB Nexus with these keyboard shortcuts.</Subtitle>
 
             <Section>
-                <SectionTitle>⌨️ Global</SectionTitle>
+                <SectionTitle>
+                    <span className="material-symbols-outlined">keyboard</span>
+                    Global
+                </SectionTitle>
                 <ShortcutGrid>
                     {shortcuts.global.map((shortcut, i) => (
                         <ShortcutRow
@@ -134,7 +144,10 @@ export function KeyboardShortcutsPage() {
             </Section>
 
             <Section>
-                <SectionTitle>📝 Query Editor</SectionTitle>
+                <SectionTitle>
+                    <span className="material-symbols-outlined">terminal</span>
+                    Query Editor
+                </SectionTitle>
                 <ShortcutGrid>
                     {shortcuts.query.map((shortcut, i) => (
                         <ShortcutRow
@@ -155,7 +168,10 @@ export function KeyboardShortcutsPage() {
             </Section>
 
             <Section>
-                <SectionTitle>📊 Data Grid</SectionTitle>
+                <SectionTitle>
+                    <span className="material-symbols-outlined">table_chart</span>
+                    Data Grid
+                </SectionTitle>
                 <ShortcutGrid>
                     {shortcuts.dataGrid.map((shortcut, i) => (
                         <ShortcutRow
@@ -176,7 +192,10 @@ export function KeyboardShortcutsPage() {
             </Section>
 
             <Section>
-                <SectionTitle>🗺️ Schema Diagram</SectionTitle>
+                <SectionTitle>
+                    <span className="material-symbols-outlined">schema</span>
+                    Schema Diagram
+                </SectionTitle>
                 <ShortcutGrid>
                     {shortcuts.diagram.map((shortcut, i) => (
                         <ShortcutRow

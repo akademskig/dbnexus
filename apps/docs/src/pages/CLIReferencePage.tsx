@@ -9,7 +9,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-    color: var(--color-text-secondary);
+    color: var(--color-text);
     font-size: 1.25rem;
     margin-bottom: 2rem;
 `;
@@ -22,11 +22,11 @@ const SectionTitle = styled.h2`
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
-    color: var(--color-primary-light);
+    color: var(--color-text);
 `;
 
 const Paragraph = styled.p`
-    color: var(--color-text-secondary);
+    color: var(--color-text);
     font-size: 1rem;
     line-height: 1.7;
     margin-bottom: 1rem;
@@ -51,7 +51,7 @@ const OptionTable = styled.table`
     }
 
     td {
-        color: var(--color-text-secondary);
+        color: var(--color-text);
         font-size: 0.9rem;
     }
 

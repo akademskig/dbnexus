@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const Container = styled.div`
-    max-width: 1000px;
+    max-width: 2000px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
 `;
@@ -38,15 +38,26 @@ const Card = styled(motion(Link))`
     }
 `;
 
+const CardHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+`;
+
 const CardIcon = styled.div`
-    font-size: 2rem;
-    margin-bottom: 1rem;
+    font-size: 3rem;
+    line-height: 1;
+
+    .material-symbols-outlined {
+        font-size: 3rem;
+        line-height: 1;
+    }
 `;
 
 const CardTitle = styled.h3`
     font-size: 1.25rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
 `;
 
 const CardDescription = styled.p`
@@ -57,37 +68,37 @@ const CardDescription = styled.p`
 
 const sections = [
     {
-        icon: '🚀',
+        icon: <span className="material-symbols-outlined">rocket_launch</span>,
         title: 'Getting Started',
         description: 'Install DB Nexus and connect your first database in under 5 minutes.',
         link: '/docs/getting-started',
     },
     {
-        icon: '✨',
+        icon: <span className="material-symbols-outlined">auto_awesome</span>,
         title: 'Features',
         description: 'Explore all the features: query editor, schema diagram, compare & sync.',
         link: '/docs/features',
     },
     {
-        icon: '⌨️',
+        icon: <span className="material-symbols-outlined">keyboard</span>,
         title: 'CLI Reference',
         description: 'Command-line options and configuration for power users.',
         link: '/docs/cli',
     },
     {
-        icon: '🎹',
+        icon: <span className="material-symbols-outlined">shortcut</span>,
         title: 'Keyboard Shortcuts',
         description: 'Master DB Nexus with keyboard shortcuts for faster workflows.',
         link: '/docs/shortcuts',
     },
     {
-        icon: '📋',
+        icon: <span className="material-symbols-outlined">receipt_long</span>,
         title: 'Changelog',
         description: "See what's new in each release of DB Nexus.",
         link: '/changelog',
     },
     {
-        icon: '🔧',
+        icon: <span className="material-symbols-outlined">tune</span>,
         title: 'Configuration',
         description: 'Customize themes, shortcuts, and connection settings.',
         link: '/docs/getting-started#configuration',
@@ -108,8 +119,10 @@ export function DocsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                     >
-                        <CardIcon>{section.icon}</CardIcon>
-                        <CardTitle>{section.title}</CardTitle>
+                        <CardHeader>
+                            <CardIcon>{section.icon}</CardIcon>
+                            <CardTitle>{section.title}</CardTitle>
+                        </CardHeader>
                         <CardDescription>{section.description}</CardDescription>
                     </Card>
                 ))}

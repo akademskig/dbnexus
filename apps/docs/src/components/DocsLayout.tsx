@@ -2,8 +2,8 @@ import { ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { DocsSidebar } from './DocsSidebar';
 
-const Container = styled.div`
-    max-width: 1100px;
+const LayoutRow = styled.div`
+    max-width: 2000px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
     display: flex;
@@ -26,9 +26,9 @@ interface DocsLayoutProps {
 
 export function DocsLayout({ children }: DocsLayoutProps) {
     return (
-        <Container>
+        <LayoutRow>
             <DocsSidebar />
             <Content>{children}</Content>
-        </Container>
+        </LayoutRow>
     );
 }
