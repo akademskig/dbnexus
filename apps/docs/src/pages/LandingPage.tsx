@@ -147,6 +147,37 @@ const InstallCommand = styled(motion.div)`
     }
 `;
 
+const ScreenshotsSection = styled.section`
+    padding: 5rem 2rem;
+`;
+
+const ScreenshotsGrid = styled.div`
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem;
+`;
+
+const ScreenshotCard = styled(motion.div)`
+    background: var(--color-bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+`;
+
+const ScreenshotImage = styled.img`
+    width: 100%;
+    height: auto;
+    display: block;
+`;
+
+const ScreenshotCaption = styled.div`
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 0.95rem;
+`;
+
 const FeaturesSection = styled.section`
     padding: 6rem 2rem;
     background: var(--color-bg-secondary);
@@ -380,6 +411,33 @@ export function LandingPage() {
                     </InstallCommand>
                 </HeroContent>
             </Hero>
+
+            <ScreenshotsSection>
+                <SectionTitle>See it in action</SectionTitle>
+                <SectionSubtitle>
+                    A quick look at the query editor, schema tools, compare view, and projects
+                    dashboard.
+                </SectionSubtitle>
+                <ScreenshotsGrid>
+                    {[
+                        { src: '/screenshots/querypage.png', label: 'Query Editor' },
+                        { src: '/screenshots/schemadiagrampage.png', label: 'Schema Diagram' },
+                        { src: '/screenshots/comparepage-schema.png', label: 'Compare & Sync' },
+                        { src: '/screenshots/projectspage.png', label: 'Projects & Groups' },
+                    ].map((shot, index) => (
+                        <ScreenshotCard
+                            key={shot.label}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.1 }}
+                        >
+                            <ScreenshotImage src={shot.src} alt={`${shot.label} screenshot`} />
+                            <ScreenshotCaption>{shot.label}</ScreenshotCaption>
+                        </ScreenshotCard>
+                    ))}
+                </ScreenshotsGrid>
+            </ScreenshotsSection>
 
             <FeaturesSection>
                 <SectionTitle>Everything you need</SectionTitle>

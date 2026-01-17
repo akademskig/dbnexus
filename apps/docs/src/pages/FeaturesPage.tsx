@@ -57,6 +57,12 @@ const FeatureList = styled.ul`
     gap: 0.75rem;
 `;
 
+const FeatureImage = styled.img`
+    width: 100%;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+`;
+
 const FeatureItem = styled.li`
     display: flex;
     align-items: flex-start;
@@ -78,6 +84,7 @@ const features = [
         title: 'Query Editor',
         description:
             'A powerful SQL editor with everything you need to write and execute queries efficiently.',
+        screenshot: '/screenshots/querypage.png',
         items: [
             'Syntax highlighting for SQL',
             'Auto-completion for tables & columns',
@@ -95,6 +102,7 @@ const features = [
         title: 'Schema Diagram',
         description:
             'Visualize your database structure with an interactive, editable diagram.',
+        screenshot: '/screenshots/schemadiagrampage.png',
         items: [
             'Drag and drop table positioning',
             'Foreign key relationship lines',
@@ -112,6 +120,7 @@ const features = [
         title: 'Compare & Sync',
         description:
             'Compare database schemas across environments and keep them in sync.',
+        screenshot: '/screenshots/comparepage-schema.png',
         items: [
             'Side-by-side schema comparison',
             'Highlight added/removed/modified',
@@ -129,6 +138,7 @@ const features = [
         title: 'Auto-Discovery',
         description:
             'Automatically find and connect to databases without manual configuration.',
+        screenshot: '/screenshots/connectionmanagement.png',
         items: [
             'Port scanning (5432, 3306, etc.)',
             'Docker container inspection',
@@ -146,6 +156,7 @@ const features = [
         title: 'Projects & Groups',
         description:
             'Organize your connections into logical projects and instance groups.',
+        screenshot: '/screenshots/projectspage.png',
         items: [
             'Create projects for apps',
             'Instance groups (dev/staging/prod)',
@@ -163,6 +174,7 @@ const features = [
         title: 'Foreign Key Navigation',
         description:
             'Follow relationships in your data with clickable foreign key values.',
+        screenshot: '/screenshots/querypage.png',
         items: [
             'Click FK values to navigate',
             'Jump to referenced row',
@@ -203,6 +215,12 @@ export function FeaturesPage() {
                             <FeatureItem key={item}>{item}</FeatureItem>
                         ))}
                     </FeatureList>
+                    {feature.screenshot && (
+                        <FeatureImage
+                            src={feature.screenshot}
+                            alt={`${feature.title} screenshot`}
+                        />
+                    )}
                 </FeatureSection>
             ))}
         </DocsLayout>
