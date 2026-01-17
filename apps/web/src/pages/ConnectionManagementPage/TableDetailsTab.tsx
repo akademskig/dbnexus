@@ -21,6 +21,9 @@ import {
     Tabs,
     Tab,
     Divider,
+    Switch,
+    FormControlLabel,
+    Autocomplete,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
@@ -31,6 +34,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import WarningIcon from '@mui/icons-material/Warning';
 import type { ConnectionConfig, ColumnInfo, IndexInfo, ForeignKeyInfo } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
@@ -406,7 +410,16 @@ export function TableDetailsTab({
             toast.success(`Column "${columnToEdit.name}" updated`);
             setEditColumnOpen(false);
             setColumnToEdit(null);
-            setNewColumn({ name: '', dataType: '', nullable: true, defaultValue: '' });
+            setNewColumn({
+                name: '',
+                dataType: '',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                foreignKeyTable: '',
+                foreignKeyColumn: '',
+                defaultValue: '',
+            });
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to update column');
         }
@@ -630,6 +643,10 @@ export function TableDetailsTab({
                                     name: params.row.name,
                                     dataType: params.row.dataType,
                                     nullable: params.row.nullable,
+                                    isPrimaryKey: params.row.isPrimaryKey ?? false,
+                                    isForeignKey: false,
+                                    foreignKeyTable: '',
+                                    foreignKeyColumn: '',
                                     defaultValue: params.row.defaultValue || '',
                                 });
                                 setEditColumnOpen(true);
@@ -865,6 +882,182 @@ export function TableDetailsTab({
         );
     }
 
+    let tableDetailsContent: JSX.Element | null = null;
+    if (!selectedTable) {
+        tableDetailsContent = (
+            <GlassCard>
+                <EmptyState
+                    icon={<TableChartIcon />}
+                    title="Select a table"
+                    description="Choose a schema and table above to view and manage its structure."
+                />
+            </GlassCard>
+        );
+    } else if (loadingSchema) {
+        tableDetailsContent = (
+            <GlassCard>
+                <LoadingState message="Loading table structure..." size="large" />
+            </GlassCard>
+        );
+    } else if (tableSchema) {
+        tableDetailsContent = (
+            <GlassCard sx={{ p: 0 }}>
+                {/* Details Tabs */}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Tabs
+                        value={detailsTab}
+                        onChange={(_, v) => setDetailsTab(v)}
+                        sx={{
+                            px: 2,
+                            '& .MuiTab-root': {
+                                textTransform: 'none',
+                                minHeight: 48,
+                            },
+                        }}
+                    >
+                        <Tab
+                            icon={<ListAltIcon fontSize="small" />}
+                            iconPosition="start"
+                            label={`Columns (${tableSchema.columns.length})`}
+                        />
+                        <Tab
+                            icon={<KeyIcon fontSize="small" />}
+                            iconPosition="start"
+                            label={`Indexes (${tableSchema.indexes.length})`}
+                        />
+                        <Tab
+                            icon={<LinkIcon fontSize="small" />}
+                            iconPosition="start"
+                            label={`Foreign Keys (${tableSchema.foreignKeys.length})`}
+                        />
+                    </Tabs>
+                </Box>
+                {detailsTab === 0 && (
+                    <Box>
+                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => setAddColumnOpen(true)}
+                                disabled={connection?.readOnly}
+                            >
+                                Add Column
+                            </Button>
+                        </Box>
+                        <DataGrid
+                            rows={tableSchema.columns.map((col, idx) => ({ id: idx, ...col }))}
+                            columns={columnColumns}
+                            autoHeight
+                            disableRowSelectionOnClick
+                            pageSizeOptions={[10, 25, 50]}
+                            initialState={{
+                                pagination: { paginationModel: { pageSize: 25 } },
+                            }}
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-cell': {
+                                    borderColor: 'divider',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                },
+                                '& .MuiDataGrid-columnHeaders': {
+                                    bgcolor: 'background.default',
+                                    borderColor: 'divider',
+                                },
+                            }}
+                        />
+                    </Box>
+                )}
+                {detailsTab === 1 && (
+                    <Box>
+                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => setAddIndexOpen(true)}
+                                disabled={connection?.readOnly}
+                            >
+                                Add Index
+                            </Button>
+                        </Box>
+                        <DataGrid
+                            rows={tableSchema.indexes.map((idx, i) => ({ id: i, ...idx }))}
+                            columns={indexColumns}
+                            autoHeight
+                            disableRowSelectionOnClick
+                            pageSizeOptions={[10, 25]}
+                            initialState={{
+                                pagination: { paginationModel: { pageSize: 10 } },
+                            }}
+                            sx={{
+                                border: 'none',
+                                '& .MuiDataGrid-cell': {
+                                    borderColor: 'divider',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                },
+                                '& .MuiDataGrid-columnHeaders': {
+                                    bgcolor: 'background.default',
+                                    borderColor: 'divider',
+                                },
+                            }}
+                        />
+                    </Box>
+                )}
+                {detailsTab === 2 && (
+                    <Box>
+                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => setAddFkOpen(true)}
+                                disabled={connection?.readOnly}
+                            >
+                                Add Foreign Key
+                            </Button>
+                        </Box>
+                        {tableSchema.foreignKeys.length === 0 ? (
+                            <EmptyState
+                                icon={<LinkIcon />}
+                                title="No foreign keys"
+                                description="Add a foreign key to define relationships between tables."
+                            />
+                        ) : (
+                            <DataGrid
+                                rows={tableSchema.foreignKeys.map((fk, i) => ({
+                                    id: i,
+                                    ...fk,
+                                }))}
+                                columns={fkColumns}
+                                autoHeight
+                                disableRowSelectionOnClick
+                                pageSizeOptions={[10, 25]}
+                                initialState={{
+                                    pagination: { paginationModel: { pageSize: 10 } },
+                                }}
+                                sx={{
+                                    border: 'none',
+                                    '& .MuiDataGrid-cell': {
+                                        borderColor: 'divider',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    },
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        bgcolor: 'background.default',
+                                        borderColor: 'divider',
+                                    },
+                                }}
+                            />
+                        )}
+                    </Box>
+                )}
+            </GlassCard>
+        );
+    }
+
     return (
         <Box>
             {/* Table Selection */}
@@ -927,198 +1120,7 @@ export function TableDetailsTab({
             </GlassCard>
 
             {/* Table Details */}
-            {!selectedTable ? (
-                <GlassCard>
-                    <EmptyState
-                        icon={<TableChartIcon />}
-                        title="Select a table"
-                        description="Choose a schema and table above to view and manage its structure."
-                    />
-                </GlassCard>
-            ) : loadingSchema ? (
-                <GlassCard>
-                    <LoadingState message="Loading table structure..." size="large" />
-                </GlassCard>
-            ) : tableSchema ? (
-                <GlassCard sx={{ p: 0 }}>
-                    {/* Details Tabs */}
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Tabs
-                            value={detailsTab}
-                            onChange={(_, v) => setDetailsTab(v)}
-                            sx={{
-                                px: 2,
-                                '& .MuiTab-root': {
-                                    textTransform: 'none',
-                                    minHeight: 48,
-                                },
-                            }}
-                        >
-                            <Tab
-                                icon={<ListAltIcon fontSize="small" />}
-                                iconPosition="start"
-                                label={`Columns (${tableSchema.columns.length})`}
-                            />
-                            <Tab
-                                icon={<KeyIcon fontSize="small" />}
-                                iconPosition="start"
-                                label={`Indexes (${tableSchema.indexes.length})`}
-                            />
-                            <Tab
-                                icon={<LinkIcon fontSize="small" />}
-                                iconPosition="start"
-                                label={`Foreign Keys (${tableSchema.foreignKeys.length})`}
-                            />
-                        </Tabs>
-                    </Box>
-
-                    {/* Columns Tab */}
-                    {detailsTab === 0 && (
-                        <Box>
-                            <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => setAddColumnOpen(true)}
-                                    disabled={connection?.readOnly}
-                                >
-                                    Add Column
-                                </Button>
-                            </Box>
-                            <DataGrid
-                                rows={tableSchema.columns.map((col, idx) => ({ id: idx, ...col }))}
-                                columns={columnColumns}
-                                autoHeight
-                                disableRowSelectionOnClick
-                                pageSizeOptions={[10, 25, 50]}
-                                initialState={{
-                                    pagination: { paginationModel: { pageSize: 25 } },
-                                }}
-                                sx={{
-                                    border: 'none',
-                                    '& .MuiDataGrid-cell': {
-                                        borderColor: 'divider',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    },
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        bgcolor: 'background.default',
-                                        borderColor: 'divider',
-                                    },
-                                }}
-                            />
-                        </Box>
-                    )}
-
-                    {/* Indexes Tab */}
-                    {detailsTab === 1 && (
-                        <Box>
-                            <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => setAddIndexOpen(true)}
-                                    disabled={connection?.readOnly}
-                                >
-                                    Add Index
-                                </Button>
-                            </Box>
-                            {tableSchema.indexes.length === 0 ? (
-                                <Box sx={{ p: 4 }}>
-                                    <EmptyState
-                                        icon={<KeyIcon />}
-                                        title="No indexes"
-                                        description="This table has no indexes defined."
-                                    />
-                                </Box>
-                            ) : (
-                                <DataGrid
-                                    rows={tableSchema.indexes.map((idx, i) => ({ id: i, ...idx }))}
-                                    columns={indexColumns}
-                                    autoHeight
-                                    disableRowSelectionOnClick
-                                    pageSizeOptions={[10, 25]}
-                                    initialState={{
-                                        pagination: { paginationModel: { pageSize: 10 } },
-                                    }}
-                                    sx={{
-                                        border: 'none',
-                                        '& .MuiDataGrid-cell': {
-                                            borderColor: 'divider',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                        },
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            bgcolor: 'background.default',
-                                            borderColor: 'divider',
-                                        },
-                                    }}
-                                />
-                            )}
-                        </Box>
-                    )}
-
-                    {/* Foreign Keys Tab */}
-                    {detailsTab === 2 && (
-                        <Box>
-                            <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => {
-                                        setNewFk((prev) => ({
-                                            ...prev,
-                                            referencedSchema: selectedSchema,
-                                        }));
-                                        setAddFkOpen(true);
-                                    }}
-                                    disabled={connection?.readOnly}
-                                >
-                                    Add Foreign Key
-                                </Button>
-                            </Box>
-                            {tableSchema.foreignKeys.length === 0 ? (
-                                <Box sx={{ p: 4 }}>
-                                    <EmptyState
-                                        icon={<LinkIcon />}
-                                        title="No foreign keys"
-                                        description="This table has no foreign key constraints defined."
-                                    />
-                                </Box>
-                            ) : (
-                                <DataGrid
-                                    rows={tableSchema.foreignKeys.map((fk, i) => ({
-                                        id: i,
-                                        ...fk,
-                                    }))}
-                                    columns={fkColumns}
-                                    autoHeight
-                                    disableRowSelectionOnClick
-                                    pageSizeOptions={[10, 25]}
-                                    initialState={{
-                                        pagination: { paginationModel: { pageSize: 10 } },
-                                    }}
-                                    sx={{
-                                        border: 'none',
-                                        '& .MuiDataGrid-cell': {
-                                            borderColor: 'divider',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                        },
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            bgcolor: 'background.default',
-                                            borderColor: 'divider',
-                                        },
-                                    }}
-                                />
-                            )}
-                        </Box>
-                    )}
-                </GlassCard>
-            ) : null}
+            {tableDetailsContent}
 
             <AddColumnDialog
                 open={addColumnOpen}
