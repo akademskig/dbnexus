@@ -10,6 +10,11 @@ interface ExportOptions {
     output: string;
 }
 
+interface QueryResult {
+    rows: Record<string, unknown>[];
+    columns: { name: string }[];
+}
+
 export async function exportCommand(options: ExportOptions) {
     if (!options.table && !options.sql) {
         console.error(chalk.red('Error: Either --table or --sql is required'));
@@ -33,11 +38,11 @@ export async function exportCommand(options: ExportOptions) {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = (await response.json()) as { message?: string };
             throw new Error(error.message || 'Query failed');
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as QueryResult;
 
         if (!result.rows || result.rows.length === 0) {
             spinner.warn('No data to export');

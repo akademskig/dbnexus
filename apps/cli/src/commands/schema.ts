@@ -18,23 +18,44 @@ interface DiffOptions {
     output?: string;
 }
 
-async function fetchSchema(connectionId: string) {
+interface ColumnInfo {
+    name: string;
+    dataType: string;
+    isNullable: boolean;
+    isPrimaryKey: boolean;
+    defaultValue?: string | null;
+}
+
+interface TableInfo {
+    name: string;
+    schema?: string;
+}
+
+interface CompareResult {
+    migrationSql?: string[];
+}
+
+async function fetchSchema(connectionId: string): Promise<TableInfo[]> {
     const response = await fetch(`http://localhost:3001/api/connections/${connectionId}/tables`);
     if (!response.ok) {
         throw new Error(`Failed to fetch schema: ${response.statusText}`);
     }
-    return response.json();
+    return response.json() as Promise<TableInfo[]>;
 }
 
-async function fetchTableDetails(connectionId: string, tableName: string, schema?: string) {
+async function fetchTableDetails(
+    connectionId: string,
+    tableName: string,
+    schema?: string
+): Promise<ColumnInfo[]> {
     const params = new URLSearchParams({ table: tableName });
     if (schema) params.set('schema', schema);
-    
+
     const response = await fetch(`http://localhost:3001/api/connections/${connectionId}/columns?${params}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);
     }
-    return response.json();
+    return response.json() as Promise<ColumnInfo[]>;
 }
 
 export const schemaCommand = {
@@ -54,7 +75,7 @@ export const schemaCommand = {
                     const nullable = col.isNullable ? chalk.gray('NULL') : chalk.yellow('NOT NULL');
                     const pk = col.isPrimaryKey ? chalk.green(' PK') : '';
                     const def = col.defaultValue ? chalk.gray(` = ${col.defaultValue}`) : '';
-                    
+
                     console.log(
                         `  ${chalk.cyan(col.name.padEnd(25))} ${col.dataType.padEnd(15)} ${nullable}${pk}${def}`
                     );
@@ -70,8 +91,9 @@ export const schemaCommand = {
                 const grouped: Record<string, string[]> = {};
                 for (const table of tables) {
                     const schema = table.schema || 'default';
-                    if (!grouped[schema]) grouped[schema] = [];
-                    grouped[schema].push(table.name);
+                    const entries = grouped[schema] ?? [];
+                    entries.push(table.name);
+                    grouped[schema] = entries;
                 }
 
                 for (const [schema, tableNames] of Object.entries(grouped)) {
@@ -156,7 +178,7 @@ export const schemaCommand = {
                 throw new Error(`Compare failed: ${response.statusText}`);
             }
 
-            const result = await response.json();
+            const result = (await response.json()) as CompareResult;
             spinner.stop();
 
             if (!result.migrationSql || result.migrationSql.length === 0) {

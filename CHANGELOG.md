@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Accent color selector in Settings (with dynamic logo color)
+
+### Changed
+
+- Standardized tooltips across the app with StyledTooltip
+
+### Fixed
+
+- Tag chips now render with rounded corners consistently
+
 ## [0.1.7] - 2026-01-16
 
 ### Added

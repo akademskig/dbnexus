@@ -6,6 +6,18 @@ interface ScanOptions {
     envDirs?: string;
 }
 
+interface ScanResult {
+    connections: Array<{
+        name: string;
+        engine: string;
+        host: string;
+        port: number;
+        database?: string;
+        source?: string;
+        connectionType: 'local' | 'docker' | 'remote';
+    }>;
+}
+
 export async function scanCommand(options: ScanOptions) {
     const spinner = ora('Scanning for databases...').start();
 
@@ -20,7 +32,7 @@ export async function scanCommand(options: ScanOptions) {
             throw new Error(`Scanner failed: ${response.statusText}`);
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as ScanResult;
         spinner.stop();
 
         if (result.connections.length === 0) {
@@ -32,15 +44,15 @@ export async function scanCommand(options: ScanOptions) {
         console.log(chalk.green(`\n✓ Found ${result.connections.length} database(s):\n`));
 
         for (const conn of result.connections) {
-            const typeLabel = conn.connectionType === 'docker' 
-                ? chalk.blue('[Docker]') 
+            const typeLabel = conn.connectionType === 'docker'
+                ? chalk.blue('[Docker]')
                 : conn.connectionType === 'remote'
                     ? chalk.yellow('[Remote]')
                     : chalk.gray('[Local]');
 
             console.log(`  ${typeLabel} ${chalk.bold(conn.name)}`);
             console.log(chalk.gray(`    ${conn.engine} @ ${conn.host}:${conn.port}/${conn.database || ''}`));
-            
+
             if (conn.source) {
                 console.log(chalk.gray(`    Source: ${conn.source}`));
             }
@@ -49,7 +61,7 @@ export async function scanCommand(options: ScanOptions) {
 
         if (options.add) {
             const addSpinner = ora('Adding connections...').start();
-            
+
             for (const conn of result.connections) {
                 try {
                     await fetch('http://localhost:3001/api/connections', {
@@ -61,7 +73,7 @@ export async function scanCommand(options: ScanOptions) {
                     // Ignore errors for individual connections
                 }
             }
-            
+
             addSpinner.succeed(`Added ${result.connections.length} connection(s)`);
         } else {
             console.log(chalk.gray('Run with --add to automatically add these connections.'));
