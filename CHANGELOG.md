@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-01-18
+
+### Added
+
+- Connection details tooltip in navigation sidebar (shows host, port, database, status)
+- Reusable OperationResult component for consistent operation feedback UI
+- CLI and API test suites
+
+### Changed
+
+- Unified operation results styling across Maintenance, Sync, and Compare pages
+
 ## [0.1.9] - 2026-01-18
 
 ### Added
@@ -148,7 +160,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark/Light theme support
 - Keyboard shortcuts for common actions
 
-[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.9...HEAD
+[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.10...HEAD
+[0.1.10]: https://github.com/yourusername/db-manager/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/yourusername/db-manager/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/yourusername/db-manager/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/yourusername/db-manager/compare/v0.1.6...v0.1.7
