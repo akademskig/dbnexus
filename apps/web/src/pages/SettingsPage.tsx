@@ -30,6 +30,8 @@ import {
     Info as InfoIcon,
     Email as EmailIcon,
     School as SchoolIcon,
+    Palette as PaletteIcon,
+    Label as LabelIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
@@ -819,29 +821,57 @@ export function SettingsPage() {
                 </Box>
 
                 {/* Tabs */}
-                <Tabs
-                    value={tab}
-                    onChange={handleTabChange}
-                    sx={{
-                        '& .MuiTabs-indicator': {
-                            bgcolor: 'primary.main',
-                        },
-                        '& .MuiTab-root': {
-                            color: 'text.secondary',
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            '&.Mui-selected': {
-                                color: 'primary.main',
-                            },
-                        },
-                    }}
-                >
-                    <Tab label="Appearance" />
-                    <Tab label="Tags" />
-                    <Tab label="Keyboard Shortcuts" />
-                    <Tab label="Help" />
-                    <Tab label="About" />
-                </Tabs>
+                <GlassCard sx={{ mb: 3, p: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Tabs
+                            value={tab}
+                            onChange={handleTabChange}
+                            sx={{
+                                flex: 1,
+                                px: 2,
+                                '& .MuiTabs-indicator': {
+                                    bgcolor: 'primary.main',
+                                },
+                                '& .MuiTab-root': {
+                                    color: 'text.secondary',
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    gap: 1,
+                                    minHeight: 56,
+                                    '&.Mui-selected': {
+                                        color: 'primary.main',
+                                    },
+                                },
+                            }}
+                        >
+                            <Tab
+                                icon={<PaletteIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="Appearance"
+                            />
+                            <Tab
+                                icon={<LabelIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="Tags"
+                            />
+                            <Tab
+                                icon={<KeyboardIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="Keyboard Shortcuts"
+                            />
+                            <Tab
+                                icon={<SchoolIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="Help"
+                            />
+                            <Tab
+                                icon={<InfoIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="About"
+                            />
+                        </Tabs>
+                    </Box>
+                </GlassCard>
 
                 {/* Tab Content */}
                 {tab === 0 && <AppearanceTab />}
