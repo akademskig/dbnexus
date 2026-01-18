@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Accent color selector in Settings (with dynamic logo color)
+- Dynamic app version display in Settings About section
+- Shared Add/Edit Column dialog with Primary Key and Foreign Key options
+- Settings page now shows icons on tabs (matching Connection Management style)
 
 ### Changed
 
 - Standardized tooltips across the app with StyledTooltip
+- Standardized dialog actions padding across all dialogs
+- Settings tabs restyled to match Connection Management page
 
 ### Fixed
 
