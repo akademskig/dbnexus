@@ -34,7 +34,8 @@ export async function uiCommand(options: UiOptions) {
     const spinner = ora('Starting DB Nexus...').start();
 
     // Set environment variables
-    process.env['PORT'] = options.port;
+    process.env['DBNEXUS_PORT'] = options.port;
+    process.env['PORT'] = options.port; // Also set PORT for backward compatibility
     process.env['NODE_ENV'] = 'production';
 
     // Find the API server entry point

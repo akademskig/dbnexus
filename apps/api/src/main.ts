@@ -71,7 +71,7 @@ async function bootstrap() {
         }
     }
 
-    const port = process.env['PORT'] ?? 3001;
+    const port = process.env['DBNEXUS_PORT'] ?? process.env['PORT'] ?? 3001;
     await app.listen(port);
 
     logger.log(`🚀 DB Nexus running on http://localhost:${port}`);
