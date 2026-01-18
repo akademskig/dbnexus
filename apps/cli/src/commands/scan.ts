@@ -23,10 +23,7 @@ export async function scanCommand(options: ScanOptions) {
 
     try {
         // Make request to the API scanner endpoint
-        const response = await fetch('http://localhost:3001/api/scanner/scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
+        const response = await fetch('http://localhost:3001/api/scanner/scan');
 
         if (!response.ok) {
             throw new Error(`Scanner failed: ${response.statusText}`);
