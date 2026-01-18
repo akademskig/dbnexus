@@ -521,7 +521,7 @@ function TagsTab() {
 
 // About Tab Content
 function AboutTab() {
-    const version = '0.1.0';
+    const version = __APP_VERSION__;
 
     return (
         <>
