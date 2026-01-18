@@ -8,7 +8,8 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "declaration": false,
-        "declarationMap": false
+        "declarationMap": false,
+        "isolatedModules": true
     },
     "include": ["src/**/*"]
 }

@@ -53,8 +53,9 @@ async function bootstrap() {
         }
 
         if (webDistPath) {
-            logger.log(`📦 Serving static files from ${webDistPath}`);
-            app.useStaticAssets(webDistPath, {
+            const staticPath = webDistPath; // Capture for closure
+            logger.log(`📦 Serving static files from ${staticPath}`);
+            app.useStaticAssets(staticPath, {
                 index: false, // Don't serve index.html for all routes
             });
 
@@ -63,7 +64,7 @@ async function bootstrap() {
                 if (req.path.startsWith('/api')) {
                     next();
                 } else {
-                    res.sendFile(path.join(webDistPath, 'index.html'));
+                    res.sendFile(path.join(staticPath, 'index.html'));
                 }
             });
         } else {

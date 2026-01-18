@@ -26,6 +26,7 @@
     "test": "pnpm -r test:run",
     "test:web": "pnpm --filter @dbnexus/web test",
     "test:api": "pnpm --filter @dbnexus/api test",
+    "test:cli": "pnpm --filter dbnexus test",
     "test:coverage": "pnpm -r test:coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

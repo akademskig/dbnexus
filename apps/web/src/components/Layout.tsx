@@ -243,6 +243,7 @@ export function Layout() {
                     sx={{
                         px: collapsed ? 1 : 1,
                         py: 1,
+                        ml: 1,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1,
