@@ -458,10 +458,7 @@ export function DiagramEditorTab({
     // Add column
     const handleAddColumn = async () => {
         if (!currentTableId || !newColumn.name || !newColumn.dataType) return;
-        if (
-            newColumn.isForeignKey &&
-            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
-        ) {
+        if (newColumn.isForeignKey && (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)) {
             toast.error('Select a reference table and column for the foreign key');
             return;
         }

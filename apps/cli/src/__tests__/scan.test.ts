@@ -71,9 +71,7 @@ describe('scanCommand', () => {
         const { scanCommand } = await import('../commands/scan.js');
         await scanCommand({});
 
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/api/scanner/scan')
-        );
+        expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/scanner/scan'));
     });
 
     it('should handle no connections found', async () => {

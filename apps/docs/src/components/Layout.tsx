@@ -15,7 +15,7 @@ const Header = styled.header`
 `;
 
 const Nav = styled.nav`
-      max-width: 2000px;
+    max-width: 2000px;
     margin: 0 auto;
     padding: 1rem 2rem;
     display: flex;
@@ -65,7 +65,7 @@ const NavLinks = styled.div`
     }
 `;
 
-const NavLink = styled(Link) <{ $active?: boolean }>`
+const NavLink = styled(Link)<{ $active?: boolean }>`
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     font-weight: 500;
     font-size: 0.95rem;
@@ -120,7 +120,7 @@ const MobileMenu = styled(motion.div)`
     z-index: 99;
 `;
 
-const MobileNavLink = styled(Link) <{ $active?: boolean }>`
+const MobileNavLink = styled(Link)<{ $active?: boolean }>`
     display: block;
     padding: 0.75rem 1rem;
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
@@ -224,12 +224,26 @@ export function Layout() {
                     </NavLinks>
                     <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                         {mobileMenuOpen ? (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                            >
                                 <line x1="18" y1="6" x2="6" y2="18" />
                                 <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         ) : (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                            >
                                 <line x1="3" y1="12" x2="21" y2="12" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
                                 <line x1="3" y1="18" x2="21" y2="18" />
@@ -245,25 +259,53 @@ export function Layout() {
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <MobileNavLink to="/docs" $active={location.pathname === '/docs'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/docs"
+                                $active={location.pathname === '/docs'}
+                                onClick={closeMobileMenu}
+                            >
                                 Documentation
                             </MobileNavLink>
-                            <MobileNavLink to="/docs/getting-started" $active={location.pathname === '/docs/getting-started'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/docs/getting-started"
+                                $active={location.pathname === '/docs/getting-started'}
+                                onClick={closeMobileMenu}
+                            >
                                 Getting Started
                             </MobileNavLink>
-                            <MobileNavLink to="/docs/features" $active={location.pathname === '/docs/features'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/docs/features"
+                                $active={location.pathname === '/docs/features'}
+                                onClick={closeMobileMenu}
+                            >
                                 Features
                             </MobileNavLink>
-                            <MobileNavLink to="/docs/cli" $active={location.pathname === '/docs/cli'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/docs/cli"
+                                $active={location.pathname === '/docs/cli'}
+                                onClick={closeMobileMenu}
+                            >
                                 CLI Reference
                             </MobileNavLink>
-                            <MobileNavLink to="/docs/shortcuts" $active={location.pathname === '/docs/shortcuts'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/docs/shortcuts"
+                                $active={location.pathname === '/docs/shortcuts'}
+                                onClick={closeMobileMenu}
+                            >
                                 Keyboard Shortcuts
                             </MobileNavLink>
-                            <MobileNavLink to="/changelog" $active={location.pathname === '/changelog'} onClick={closeMobileMenu}>
+                            <MobileNavLink
+                                to="/changelog"
+                                $active={location.pathname === '/changelog'}
+                                onClick={closeMobileMenu}
+                            >
                                 Changelog
                             </MobileNavLink>
-                            <MobileExternalLink href="https://github.com/akademskig/dbnexus" target="_blank" rel="noopener noreferrer">
+                            <MobileExternalLink
+                                href="https://github.com/akademskig/dbnexus"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
                                 GitHub ↗
                             </MobileExternalLink>
                         </MobileMenu>

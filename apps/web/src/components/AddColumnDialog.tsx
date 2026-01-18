@@ -88,9 +88,7 @@ function ColumnDialog({
                         label="Column Name"
                         fullWidth
                         value={newColumn.name}
-                        onChange={(e) =>
-                            setNewColumn({ ...newColumn, name: e.target.value })
-                        }
+                        onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
                         disabled={nameFieldDisabled}
                     />
                     <Autocomplete

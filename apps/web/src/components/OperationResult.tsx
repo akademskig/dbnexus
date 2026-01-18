@@ -70,7 +70,11 @@ export function OperationResultItem({ result, showTimestamp = false }: Operation
                     {result.message}
                 </Typography>
                 {result.details && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', mt: 0.5 }}
+                    >
                         {result.details}
                     </Typography>
                 )}

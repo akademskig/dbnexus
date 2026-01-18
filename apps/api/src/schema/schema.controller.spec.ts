@@ -298,12 +298,12 @@ describe('SchemaController', () => {
 
                 await controller.getMigrationHistory('target-conn');
 
-                expect(
-                    mockMetadataService.migrationHistoryRepository.findAll
-                ).toHaveBeenCalledWith({
-                    targetConnectionId: 'target-conn',
-                    limit: undefined,
-                });
+                expect(mockMetadataService.migrationHistoryRepository.findAll).toHaveBeenCalledWith(
+                    {
+                        targetConnectionId: 'target-conn',
+                        limit: undefined,
+                    }
+                );
             });
 
             it('should limit results', async () => {
@@ -311,12 +311,12 @@ describe('SchemaController', () => {
 
                 await controller.getMigrationHistory(undefined, '10');
 
-                expect(
-                    mockMetadataService.migrationHistoryRepository.findAll
-                ).toHaveBeenCalledWith({
-                    targetConnectionId: undefined,
-                    limit: 10,
-                });
+                expect(mockMetadataService.migrationHistoryRepository.findAll).toHaveBeenCalledWith(
+                    {
+                        targetConnectionId: undefined,
+                        limit: 10,
+                    }
+                );
             });
         });
 

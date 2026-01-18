@@ -16,7 +16,7 @@ services:
             - postgres-ecommerce-data:/var/lib/postgresql/data
             - ./docker/init/ecommerce.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: [ 'CMD-SHELL', 'pg_isready -U demo -d ecommerce' ]
+            test: ['CMD-SHELL', 'pg_isready -U demo -d ecommerce']
             interval: 5s
             timeout: 5s
             retries: 5
@@ -35,7 +35,7 @@ services:
             - postgres-staging-data:/var/lib/postgresql/data
             - ./docker/init/ecommerce-staging.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: [ 'CMD-SHELL', 'pg_isready -U demo -d ecommerce_staging' ]
+            test: ['CMD-SHELL', 'pg_isready -U demo -d ecommerce_staging']
             interval: 5s
             timeout: 5s
             retries: 5
@@ -55,7 +55,7 @@ services:
             - mysql-blog-data:/var/lib/mysql
             - ./docker/init/blog.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
         healthcheck:
-            test: [ 'CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'demo', '-pdemo123' ]
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'demo', '-pdemo123']
             interval: 5s
             timeout: 5s
             retries: 5

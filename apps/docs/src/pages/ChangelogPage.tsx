@@ -104,7 +104,10 @@ const changelog = [
             { type: 'added' as const, text: 'Drag and drop connections into projects and groups' },
             { type: 'added' as const, text: 'Multi-row delete in query results' },
             { type: 'added' as const, text: 'Auto-select first connection and table' },
-            { type: 'changed' as const, text: 'Disabled navigation items when no connections exist' },
+            {
+                type: 'changed' as const,
+                text: 'Disabled navigation items when no connections exist',
+            },
             { type: 'fixed' as const, text: 'Drag state persisting after drop' },
         ],
     },
@@ -112,7 +115,10 @@ const changelog = [
         version: '0.1.6',
         date: 'January 2026',
         changes: [
-            { type: 'added' as const, text: 'Foreign key navigation - click FK values to jump to referenced rows' },
+            {
+                type: 'added' as const,
+                text: 'Foreign key navigation - click FK values to jump to referenced rows',
+            },
             { type: 'added' as const, text: 'Page not found handling with redirect to dashboard' },
             { type: 'fixed' as const, text: 'Connection switching on query page' },
             { type: 'fixed' as const, text: 'Schema diagram infinite loop when no connections' },
@@ -133,7 +139,10 @@ const changelog = [
         version: '0.1.4',
         date: 'January 2026',
         changes: [
-            { type: 'added' as const, text: 'Auto-discovery of databases (port scanning, Docker, .env files)' },
+            {
+                type: 'added' as const,
+                text: 'Auto-discovery of databases (port scanning, Docker, .env files)',
+            },
             { type: 'added' as const, text: 'SQLite file scanning' },
             { type: 'added' as const, text: 'Duplicate connection detection in scanner' },
             { type: 'changed' as const, text: 'Improved scanner to prioritize Docker sources' },

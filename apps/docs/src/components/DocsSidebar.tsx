@@ -48,7 +48,7 @@ const NavItemBase = `
     }
 `;
 
-const NavItem = styled(Link) <{ $active?: boolean }>`
+const NavItem = styled(Link)<{ $active?: boolean }>`
     ${NavItemBase}
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     background: ${(props) => (props.$active ? 'rgba(99, 102, 241, 0.1)' : 'transparent')};

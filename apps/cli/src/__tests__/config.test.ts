@@ -37,7 +37,7 @@ describe('config', () => {
             delete process.env['DBNEXUS_PORT'];
             process.env['PORT'] = '5000';
 
-            const { getApiUrl, API_BASE_URL } = await import('../config.js');
+            const { API_BASE_URL } = await import('../config.js');
 
             expect(API_BASE_URL).toBe('http://localhost:5000/api');
         });
@@ -46,7 +46,7 @@ describe('config', () => {
             process.env['DBNEXUS_PORT'] = '4000';
             process.env['PORT'] = '5000';
 
-            const { getApiUrl, API_BASE_URL } = await import('../config.js');
+            const { API_BASE_URL } = await import('../config.js');
 
             expect(API_BASE_URL).toBe('http://localhost:4000/api');
         });

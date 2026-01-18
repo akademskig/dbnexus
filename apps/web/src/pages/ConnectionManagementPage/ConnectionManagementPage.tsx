@@ -11,7 +11,6 @@ import {
     Breadcrumbs,
     Link,
     Skeleton,
-
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

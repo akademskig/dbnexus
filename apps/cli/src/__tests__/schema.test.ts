@@ -40,8 +40,8 @@ describe('schemaCommand', () => {
         global.fetch = mockFetch;
         mockFetch.mockReset();
         vi.mocked(fs.writeFileSync).mockReset();
-        vi.spyOn(console, 'log').mockImplementation(() => { });
-        vi.spyOn(console, 'error').mockImplementation(() => { });
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -117,9 +117,7 @@ describe('schemaCommand', () => {
 
             const { schemaCommand } = await import('../commands/schema.js');
 
-            await expect(schemaCommand.show({ conn: 'test-conn' })).rejects.toThrow(
-                'process.exit'
-            );
+            await expect(schemaCommand.show({ conn: 'test-conn' })).rejects.toThrow('process.exit');
             expect(mockExit).toHaveBeenCalledWith(1);
         });
     });
@@ -162,10 +160,7 @@ describe('schemaCommand', () => {
 
         it('should identify tables only in source', async () => {
             const consoleSpy = vi.spyOn(console, 'log');
-            const sourceTables = [
-                { name: 'users' },
-                { name: 'new_table' },
-            ];
+            const sourceTables = [{ name: 'users' }, { name: 'new_table' }];
             const targetTables = [{ name: 'users' }];
 
             mockFetch
@@ -285,7 +280,7 @@ describe('schemaCommand', () => {
                 statusText: 'Internal Server Error',
             });
 
-            const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+            vi.spyOn(process, 'exit').mockImplementation(() => {
                 throw new Error('process.exit');
             });
 

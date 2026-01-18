@@ -121,9 +121,7 @@ describe('ScannerService', () => {
             // Check for unique host:port combinations
             const seen = new Set<string>();
             for (const conn of result.connections) {
-                const key = conn.filepath
-                    ? `sqlite:${conn.filepath}`
-                    : `${conn.host}:${conn.port}`;
+                const key = conn.filepath ? `sqlite:${conn.filepath}` : `${conn.host}:${conn.port}`;
 
                 // Each key should be unique
                 expect(seen.has(key)).toBe(false);

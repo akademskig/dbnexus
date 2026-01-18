@@ -328,91 +328,91 @@ export function DataDiffDisplay({
         },
         ...(compact
             ? [
-                {
-                    field: 'actions',
-                    headerName: 'Actions',
-                    width: 120,
-                    sortable: false,
-                    renderCell: (params: { row: TableDataDiff }) => {
-                        const row = params.row;
-                        const isOutOfSync =
-                            row.sourceCount !== row.targetCount || row.missingInTarget > 0;
-                        const result = results.find((r) => r.table === row.table);
+                  {
+                      field: 'actions',
+                      headerName: 'Actions',
+                      width: 120,
+                      sortable: false,
+                      renderCell: (params: { row: TableDataDiff }) => {
+                          const row = params.row;
+                          const isOutOfSync =
+                              row.sourceCount !== row.targetCount || row.missingInTarget > 0;
+                          const result = results.find((r) => r.table === row.table);
 
-                        if (result) {
-                            return (
-                                <Typography
-                                    variant="caption"
-                                    color={result.errors.length > 0 ? 'error' : 'success.main'}
-                                >
-                                    +{result.inserted} ~{result.updated}
-                                </Typography>
-                            );
-                        }
+                          if (result) {
+                              return (
+                                  <Typography
+                                      variant="caption"
+                                      color={result.errors.length > 0 ? 'error' : 'success.main'}
+                                  >
+                                      +{result.inserted} ~{result.updated}
+                                  </Typography>
+                              );
+                          }
 
-                        if (isOutOfSync) {
-                            return (
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSyncSingleTable(row.table);
-                                    }}
-                                    disabled={syncing}
-                                >
-                                    Sync
-                                </Button>
-                            );
-                        }
+                          if (isOutOfSync) {
+                              return (
+                                  <Button
+                                      size="small"
+                                      variant="outlined"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSyncSingleTable(row.table);
+                                      }}
+                                      disabled={syncing}
+                                  >
+                                      Sync
+                                  </Button>
+                              );
+                          }
 
-                        return (
-                            <Chip
-                                label="In sync"
-                                size="small"
-                                color="success"
-                                variant="outlined"
-                            />
-                        );
-                    },
-                } as GridColDef<TableDataDiff>,
-            ]
+                          return (
+                              <Chip
+                                  label="In sync"
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                              />
+                          );
+                      },
+                  } as GridColDef<TableDataDiff>,
+              ]
             : [
-                {
-                    field: 'difference',
-                    headerName: 'Status',
-                    width: 120,
-                    align: 'center',
-                    headerAlign: 'center',
-                    valueGetter: (_: unknown, row: TableDataDiff) =>
-                        row.sourceCount - row.targetCount,
-                    renderCell: (params: { value: unknown }) => {
-                        const diff = params.value as number;
-                        if (diff === 0) {
-                            return (
-                                <Chip
-                                    icon={<CheckIcon />}
-                                    label="In Sync"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                    sx={{ height: 24 }}
-                                />
-                            );
-                        }
-                        return (
-                            <Typography
-                                variant="body2"
-                                fontWeight={500}
-                                color={diff > 0 ? 'warning.main' : 'error.main'}
-                            >
-                                {diff > 0 ? '+' : ''}
-                                {diff}
-                            </Typography>
-                        );
-                    },
-                } as GridColDef<TableDataDiff>,
-            ]),
+                  {
+                      field: 'difference',
+                      headerName: 'Status',
+                      width: 120,
+                      align: 'center',
+                      headerAlign: 'center',
+                      valueGetter: (_: unknown, row: TableDataDiff) =>
+                          row.sourceCount - row.targetCount,
+                      renderCell: (params: { value: unknown }) => {
+                          const diff = params.value as number;
+                          if (diff === 0) {
+                              return (
+                                  <Chip
+                                      icon={<CheckIcon />}
+                                      label="In Sync"
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                      sx={{ height: 24 }}
+                                  />
+                              );
+                          }
+                          return (
+                              <Typography
+                                  variant="body2"
+                                  fontWeight={500}
+                                  color={diff > 0 ? 'warning.main' : 'error.main'}
+                              >
+                                  {diff > 0 ? '+' : ''}
+                                  {diff}
+                              </Typography>
+                          );
+                      },
+                  } as GridColDef<TableDataDiff>,
+              ]),
     ];
 
     // Loading state (only when fetching own data)

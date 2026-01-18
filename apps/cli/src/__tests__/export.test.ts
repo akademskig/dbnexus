@@ -37,8 +37,8 @@ describe('exportCommand', () => {
         global.fetch = mockFetch;
         mockFetch.mockReset();
         vi.mocked(fs.writeFileSync).mockReset();
-        vi.spyOn(console, 'log').mockImplementation(() => { });
-        vi.spyOn(console, 'error').mockImplementation(() => { });
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -103,10 +103,7 @@ describe('exportCommand', () => {
             output: 'output.csv',
         });
 
-        expect(fs.writeFileSync).toHaveBeenCalledWith(
-            'output.csv',
-            'id,name\n1,Alice\n2,Bob'
-        );
+        expect(fs.writeFileSync).toHaveBeenCalledWith('output.csv', 'id,name\n1,Alice\n2,Bob');
     });
 
     it('should escape CSV values with commas', async () => {
@@ -203,7 +200,7 @@ describe('exportCommand', () => {
             json: () => Promise.resolve({ message: 'Query failed' }),
         });
 
-        const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+        vi.spyOn(process, 'exit').mockImplementation(() => {
             throw new Error('process.exit');
         });
 

@@ -79,7 +79,9 @@ export async function exportCommand(options: ExportOptions) {
         spinner.succeed(`Exported ${result.rows.length} rows to ${options.output}`);
     } catch (error) {
         spinner.fail('Export failed');
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+            chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         process.exit(1);
     }
 }

@@ -168,11 +168,7 @@ export function DataSyncDialog({
                         <CircularProgress />
                     </Box>
                 ) : results.length > 0 ? (
-                    <OperationResultsList
-                        results={results}
-                        title="Sync Results"
-                        maxResults={50}
-                    />
+                    <OperationResultsList results={results} title="Sync Results" maxResults={50} />
                 ) : (
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2 }}>

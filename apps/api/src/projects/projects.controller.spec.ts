@@ -70,9 +70,7 @@ describe('ProjectsController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [ProjectsController],
-            providers: [
-                { provide: MetadataService, useValue: mockMetadataService },
-            ],
+            providers: [{ provide: MetadataService, useValue: mockMetadataService }],
         }).compile();
 
         controller = module.get<ProjectsController>(ProjectsController);
@@ -306,9 +304,7 @@ describe('GroupsController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [GroupsController],
-            providers: [
-                { provide: MetadataService, useValue: mockMetadataService },
-            ],
+            providers: [{ provide: MetadataService, useValue: mockMetadataService }],
         }).compile();
 
         controller = module.get<GroupsController>(GroupsController);

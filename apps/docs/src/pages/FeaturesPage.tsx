@@ -102,8 +102,7 @@ const features = [
         icon: <span className="material-symbols-outlined">schema</span>,
         color: '#6366f1',
         title: 'Schema Diagram',
-        description:
-            'Visualize your database structure with an interactive, editable diagram.',
+        description: 'Visualize your database structure with an interactive, editable diagram.',
         screenshot: '/screenshots/schemadiagrampage.png',
         items: [
             'Drag and drop table positioning',
@@ -120,8 +119,7 @@ const features = [
         icon: <span className="material-symbols-outlined">compare_arrows</span>,
         color: '#22c55e',
         title: 'Compare & Sync',
-        description:
-            'Compare database schemas across environments and keep them in sync.',
+        description: 'Compare database schemas across environments and keep them in sync.',
         screenshot: '/screenshots/comparepage-schema.png',
         items: [
             'Side-by-side schema comparison',
@@ -138,8 +136,7 @@ const features = [
         icon: <span className="material-symbols-outlined">travel_explore</span>,
         color: '#22d3ee',
         title: 'Auto-Discovery',
-        description:
-            'Automatically find and connect to databases without manual configuration.',
+        description: 'Automatically find and connect to databases without manual configuration.',
         screenshot: '/screenshots/scanconnections.png',
         items: [
             'Port scanning (5432, 3306, etc.)',
@@ -156,8 +153,7 @@ const features = [
         icon: <span className="material-symbols-outlined">tune</span>,
         color: '#38bdf8',
         title: 'Manage your connections',
-        description:
-            'Keep all your database connections organized with powerful management tools.',
+        description: 'Keep all your database connections organized with powerful management tools.',
         screenshot: '/screenshots/connectionmanagement.png',
         items: [
             'Add, edit, and remove connections',
@@ -174,8 +170,7 @@ const features = [
         icon: <span className="material-symbols-outlined">folder_open</span>,
         color: '#ec4899',
         title: 'Projects & Groups',
-        description:
-            'Organize your connections into logical projects and instance groups.',
+        description: 'Organize your connections into logical projects and instance groups.',
         screenshot: '/screenshots/projectspage.png',
         items: [
             'Create projects for apps',
@@ -192,8 +187,7 @@ const features = [
         icon: <span className="material-symbols-outlined">link</span>,
         color: '#8b5cf6',
         title: 'Foreign Key Navigation',
-        description:
-            'Follow relationships in your data with clickable foreign key values.',
+        description: 'Follow relationships in your data with clickable foreign key values.',
         screenshot: '/screenshots/querypage.png',
         items: [
             'Click FK values to navigate',

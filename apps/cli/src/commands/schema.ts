@@ -109,7 +109,9 @@ export const schemaCommand = {
             }
         } catch (error) {
             spinner.fail('Failed to fetch schema');
-            console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            console.error(
+                chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            );
             process.exit(1);
         }
     },
@@ -156,7 +158,9 @@ export const schemaCommand = {
             }
         } catch (error) {
             spinner.fail('Comparison failed');
-            console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            console.error(
+                chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            );
             process.exit(1);
         }
     },
@@ -200,7 +204,9 @@ export const schemaCommand = {
             }
         } catch (error) {
             spinner.fail('Diff generation failed');
-            console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            console.error(
+                chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            );
             process.exit(1);
         }
     },

@@ -591,10 +591,7 @@ export function DiagramEditorPage() {
     // Add column handler
     const handleAddColumn = async () => {
         if (!currentTableId || !newColumn.name || !newColumn.dataType) return;
-        if (
-            newColumn.isForeignKey &&
-            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
-        ) {
+        if (newColumn.isForeignKey && (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)) {
             toast.error('Select a reference table and column for the foreign key');
             return;
         }
@@ -673,7 +670,8 @@ export function DiagramEditorPage() {
         }
         if (updates.nullable !== current.nullable) {
             statements.push(
-                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} ${updates.nullable ? 'DROP NOT NULL' : 'SET NOT NULL'
+                `ALTER TABLE ${fullTableName} ALTER COLUMN ${quotedColumn} ${
+                    updates.nullable ? 'DROP NOT NULL' : 'SET NOT NULL'
                 }`
             );
         }
@@ -697,8 +695,9 @@ export function DiagramEditorPage() {
         updates: typeof newColumn,
         current: EditableColumn
     ) => {
-        let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${updates.dataType || current.dataType
-            }`;
+        let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${
+            updates.dataType || current.dataType
+        }`;
         if (!updates.nullable) {
             sql += ' NOT NULL';
         }
@@ -736,10 +735,7 @@ export function DiagramEditorPage() {
             currentColumn
         );
 
-        if (
-            newColumn.isForeignKey &&
-            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
-        ) {
+        if (newColumn.isForeignKey && (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)) {
             toast.error('Select a reference table and column for the foreign key');
             return;
         }
@@ -761,9 +757,7 @@ export function DiagramEditorPage() {
 
         if (newColumn.isPrimaryKey !== currentColumn.isPrimaryKey) {
             if (newColumn.isPrimaryKey) {
-                statements.push(
-                    `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`
-                );
+                statements.push(`ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`);
             } else if (connection?.engine === 'postgres') {
                 const primaryIndex = editTableSchema?.indexes.find((idx) => idx.isPrimary);
                 if (!primaryIndex?.name) {
@@ -785,13 +779,13 @@ export function DiagramEditorPage() {
             const dropFkSql =
                 connection?.engine === 'postgres'
                     ? `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifier(
-                        existingFk.name,
-                        connection?.engine
-                    )}`
+                          existingFk.name,
+                          connection?.engine
+                      )}`
                     : `ALTER TABLE ${fullTableName} DROP FOREIGN KEY ${quoteIdentifier(
-                        existingFk.name,
-                        connection?.engine
-                    )}`;
+                          existingFk.name,
+                          connection?.engine
+                      )}`;
             statements.push(dropFkSql);
         }
 

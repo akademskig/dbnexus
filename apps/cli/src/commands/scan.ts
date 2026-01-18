@@ -35,21 +35,28 @@ export async function scanCommand(options: ScanOptions) {
 
         if (result.connections.length === 0) {
             console.log(chalk.yellow('\n⚠ No databases found.'));
-            console.log(chalk.gray('Make sure databases are running on standard ports or in Docker containers.'));
+            console.log(
+                chalk.gray(
+                    'Make sure databases are running on standard ports or in Docker containers.'
+                )
+            );
             return;
         }
 
         console.log(chalk.green(`\n✓ Found ${result.connections.length} database(s):\n`));
 
         for (const conn of result.connections) {
-            const typeLabel = conn.connectionType === 'docker'
-                ? chalk.blue('[Docker]')
-                : conn.connectionType === 'remote'
-                    ? chalk.yellow('[Remote]')
-                    : chalk.gray('[Local]');
+            const typeLabel =
+                conn.connectionType === 'docker'
+                    ? chalk.blue('[Docker]')
+                    : conn.connectionType === 'remote'
+                      ? chalk.yellow('[Remote]')
+                      : chalk.gray('[Local]');
 
             console.log(`  ${typeLabel} ${chalk.bold(conn.name)}`);
-            console.log(chalk.gray(`    ${conn.engine} @ ${conn.host}:${conn.port}/${conn.database || ''}`));
+            console.log(
+                chalk.gray(`    ${conn.engine} @ ${conn.host}:${conn.port}/${conn.database || ''}`)
+            );
 
             if (conn.source) {
                 console.log(chalk.gray(`    Source: ${conn.source}`));
@@ -78,7 +85,9 @@ export async function scanCommand(options: ScanOptions) {
         }
     } catch (error) {
         spinner.fail('Scan failed');
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+            chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         console.log(chalk.gray('\nMake sure DB Nexus server is running (dbnexus start)'));
         process.exit(1);
     }

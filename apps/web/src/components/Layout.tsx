@@ -280,8 +280,8 @@ export function Layout() {
                                 ? `${label} (No connections)`
                                 : label
                             : isDisabled
-                                ? 'No connections available'
-                                : '';
+                              ? 'No connections available'
+                              : '';
 
                         return (
                             <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
@@ -305,8 +305,8 @@ export function Layout() {
                                                 color: isActive
                                                     ? 'primary.main'
                                                     : isDisabled
-                                                        ? 'text.disabled'
-                                                        : 'text.secondary',
+                                                      ? 'text.disabled'
+                                                      : 'text.secondary',
                                             }}
                                         >
                                             {icon}
@@ -525,28 +525,63 @@ export function Layout() {
                                             const isOnline = connHealth?.isOnline ?? false;
 
                                             const isSqlite = conn.engine === 'sqlite';
-                                            const statusColor = isOnline ? 'success.main' : isOffline ? 'error.main' : 'text.disabled';
-                                            const statusText = isOnline ? 'Online' : isOffline ? 'Offline' : 'Unknown';
+                                            const statusColor = isOnline
+                                                ? 'success.main'
+                                                : isOffline
+                                                  ? 'error.main'
+                                                  : 'text.disabled';
+                                            const statusText = isOnline
+                                                ? 'Online'
+                                                : isOffline
+                                                  ? 'Offline'
+                                                  : 'Unknown';
 
                                             const tooltipContent = (
                                                 <Box sx={{ p: 0.5 }}>
-                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                    <Typography
+                                                        variant="subtitle2"
+                                                        fontWeight={600}
+                                                    >
                                                         {conn.name}
                                                     </Typography>
-                                                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            display: 'block',
+                                                            color: 'text.secondary',
+                                                        }}
+                                                    >
                                                         {conn.engine.toUpperCase()}
                                                     </Typography>
                                                     {!isSqlite && conn.host && (
-                                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{ display: 'block' }}
+                                                        >
                                                             {conn.host}:{conn.port}
                                                         </Typography>
                                                     )}
                                                     {conn.database && (
-                                                        <Typography variant="caption" sx={{ display: 'block', wordBreak: 'break-all' }}>
-                                                            {isSqlite ? conn.database : `DB: ${conn.database}`}
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{
+                                                                display: 'block',
+                                                                wordBreak: 'break-all',
+                                                            }}
+                                                        >
+                                                            {isSqlite
+                                                                ? conn.database
+                                                                : `DB: ${conn.database}`}
                                                         </Typography>
                                                     )}
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.5,
+                                                            mt: 0.5,
+                                                        }}
+                                                    >
                                                         <Box
                                                             sx={{
                                                                 width: 6,
@@ -555,7 +590,10 @@ export function Layout() {
                                                                 bgcolor: statusColor,
                                                             }}
                                                         />
-                                                        <Typography variant="caption" color={statusColor}>
+                                                        <Typography
+                                                            variant="caption"
+                                                            color={statusColor}
+                                                        >
                                                             {statusText}
                                                         </Typography>
                                                     </Box>
@@ -588,8 +626,8 @@ export function Layout() {
                                                                     bgcolor: isOnline
                                                                         ? 'success.main'
                                                                         : isOffline
-                                                                            ? 'error.main'
-                                                                            : 'text.disabled',
+                                                                          ? 'error.main'
+                                                                          : 'text.disabled',
                                                                     ml: 1,
                                                                     mr: 2,
                                                                     flexShrink: 0,
@@ -667,13 +705,24 @@ export function Layout() {
                                     const menuTooltipContent = (
                                         <Box sx={{ p: 0.5 }}>
                                             {!isSqliteMenu && conn.host && (
-                                                <Typography variant="caption" sx={{ display: 'block' }}>
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{ display: 'block' }}
+                                                >
                                                     {conn.host}:{conn.port}
                                                 </Typography>
                                             )}
                                             {conn.database && (
-                                                <Typography variant="caption" sx={{ display: 'block', wordBreak: 'break-all' }}>
-                                                    {isSqliteMenu ? conn.database : `DB: ${conn.database}`}
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        display: 'block',
+                                                        wordBreak: 'break-all',
+                                                    }}
+                                                >
+                                                    {isSqliteMenu
+                                                        ? conn.database
+                                                        : `DB: ${conn.database}`}
                                                 </Typography>
                                             )}
                                         </Box>
@@ -709,8 +758,8 @@ export function Layout() {
                                                             bgcolor: isOnline
                                                                 ? 'success.main'
                                                                 : isOffline
-                                                                    ? 'error.main'
-                                                                    : 'text.disabled',
+                                                                  ? 'error.main'
+                                                                  : 'text.disabled',
                                                             ml: 1,
                                                             mr: 2,
                                                             flexShrink: 0,

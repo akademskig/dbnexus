@@ -9,7 +9,6 @@ import {
     MenuItem,
     Chip,
     IconButton,
-
     Button,
     Dialog,
     DialogTitle,
@@ -300,10 +299,7 @@ export function TableDetailsTab({
 
     const handleAddColumn = async () => {
         if (!newColumn.name || !newColumn.dataType) return;
-        if (
-            newColumn.isForeignKey &&
-            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
-        ) {
+        if (newColumn.isForeignKey && (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)) {
             toast.error('Select a reference table and column for the foreign key');
             return;
         }
@@ -407,10 +403,7 @@ export function TableDetailsTab({
             statements.push(sql);
         }
 
-        if (
-            newColumn.isForeignKey &&
-            (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)
-        ) {
+        if (newColumn.isForeignKey && (!newColumn.foreignKeyTable || !newColumn.foreignKeyColumn)) {
             toast.error('Select a reference table and column for the foreign key');
             return;
         }
@@ -432,9 +425,7 @@ export function TableDetailsTab({
 
         if (newColumn.isPrimaryKey !== columnToEdit.isPrimaryKey) {
             if (newColumn.isPrimaryKey) {
-                statements.push(
-                    `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`
-                );
+                statements.push(`ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumn})`);
             } else if (connection?.engine === 'postgres') {
                 const primaryIndex = tableSchema?.indexes.find((idx) => idx.isPrimary);
                 if (!primaryIndex?.name) {
@@ -455,11 +446,11 @@ export function TableDetailsTab({
             const dropFkSql =
                 connection?.engine === 'postgres'
                     ? `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quoteIdentifierForEngine(
-                        existingFk.name
-                    )}`
+                          existingFk.name
+                      )}`
                     : `ALTER TABLE ${fullTableName} DROP FOREIGN KEY ${quoteIdentifierForEngine(
-                        existingFk.name
-                    )}`;
+                          existingFk.name
+                      )}`;
             statements.push(dropFkSql);
         }
 

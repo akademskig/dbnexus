@@ -36,17 +36,60 @@ export function DynamicLogo({ size = 64, className }: DynamicLogoProps) {
             />
 
             {/* Circuit lines from D */}
-            <line x1="46" y1="32" x2="56" y2="32" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" />
-            <line x1="56" y1="32" x2="56" y2="18" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" />
-            <line x1="56" y1="32" x2="56" y2="46" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" />
+            <line
+                x1="46"
+                y1="32"
+                x2="56"
+                y2="32"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+            />
+            <line
+                x1="56"
+                y1="32"
+                x2="56"
+                y2="18"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+            />
+            <line
+                x1="56"
+                y1="32"
+                x2="56"
+                y2="46"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+            />
 
             {/* Connection nodes */}
-            <circle cx="56" cy="18" r="3" fill="none" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" />
-            <circle cx="56" cy="46" r="3" fill="none" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" />
+            <circle
+                cx="56"
+                cy="18"
+                r="3"
+                fill="none"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+            />
+            <circle
+                cx="56"
+                cy="46"
+                r="3"
+                fill="none"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+            />
             <circle cx="56" cy="32" r="2" fill={`url(#grad-${colorScheme})`} />
 
             {/* Inner accent */}
-            <circle cx="28" cy="32" r="6" fill="none" stroke={`url(#grad-${colorScheme})`} strokeWidth="2" opacity="0.5" />
+            <circle
+                cx="28"
+                cy="32"
+                r="6"
+                fill="none"
+                stroke={`url(#grad-${colorScheme})`}
+                strokeWidth="2"
+                opacity="0.5"
+            />
             <circle cx="28" cy="32" r="2" fill={`url(#grad-${colorScheme})`} />
         </svg>
     );
@@ -58,7 +101,10 @@ export function DynamicLogoFull({ size = 40, className }: DynamicLogoProps) {
     const colors = getColorSchemeColors(colorScheme);
 
     return (
-        <div className={className} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div
+            className={className}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+        >
             <DynamicLogo size={size} />
             <span
                 style={{

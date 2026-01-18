@@ -30,7 +30,9 @@ const Card = styled(motion(Link))`
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
     padding: 2rem;
-    transition: border-color 0.2s, transform 0.2s;
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
 
     &:hover {
         border-color: var(--color-primary);
