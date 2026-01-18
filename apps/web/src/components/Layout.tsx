@@ -524,10 +524,48 @@ export function Layout() {
                                                 : false;
                                             const isOnline = connHealth?.isOnline ?? false;
 
+                                            const isSqlite = conn.engine === 'sqlite';
+                                            const statusColor = isOnline ? 'success.main' : isOffline ? 'error.main' : 'text.disabled';
+                                            const statusText = isOnline ? 'Online' : isOffline ? 'Offline' : 'Unknown';
+
+                                            const tooltipContent = (
+                                                <Box sx={{ p: 0.5 }}>
+                                                    <Typography variant="subtitle2" fontWeight={600}>
+                                                        {conn.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                                                        {conn.engine.toUpperCase()}
+                                                    </Typography>
+                                                    {!isSqlite && conn.host && (
+                                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                                            {conn.host}:{conn.port}
+                                                        </Typography>
+                                                    )}
+                                                    {conn.database && (
+                                                        <Typography variant="caption" sx={{ display: 'block', wordBreak: 'break-all' }}>
+                                                            {isSqlite ? conn.database : `DB: ${conn.database}`}
+                                                        </Typography>
+                                                    )}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                                        <Box
+                                                            sx={{
+                                                                width: 6,
+                                                                height: 6,
+                                                                borderRadius: '50%',
+                                                                bgcolor: statusColor,
+                                                            }}
+                                                        />
+                                                        <Typography variant="caption" color={statusColor}>
+                                                            {statusText}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                            );
+
                                             return (
                                                 <StyledTooltip
                                                     key={conn.id}
-                                                    title={isOffline ? 'Offline' : ''}
+                                                    title={tooltipContent}
                                                     placement="right"
                                                     arrow
                                                 >
@@ -625,10 +663,26 @@ export function Layout() {
                                     const isOffline = connHealth ? !connHealth.isOnline : false;
                                     const isOnline = connHealth?.isOnline ?? false;
 
+                                    const isSqliteMenu = conn.engine === 'sqlite';
+                                    const menuTooltipContent = (
+                                        <Box sx={{ p: 0.5 }}>
+                                            {!isSqliteMenu && conn.host && (
+                                                <Typography variant="caption" sx={{ display: 'block' }}>
+                                                    {conn.host}:{conn.port}
+                                                </Typography>
+                                            )}
+                                            {conn.database && (
+                                                <Typography variant="caption" sx={{ display: 'block', wordBreak: 'break-all' }}>
+                                                    {isSqliteMenu ? conn.database : `DB: ${conn.database}`}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    );
+
                                     return (
                                         <StyledTooltip
                                             key={conn.id}
-                                            title={isOffline ? 'Offline' : ''}
+                                            title={menuTooltipContent}
                                             placement="right"
                                             arrow
                                         >
