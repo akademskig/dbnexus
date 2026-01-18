@@ -4,7 +4,6 @@ import {
     Typography,
     Button,
     CircularProgress,
-    Alert,
     Chip,
     Paper,
     Accordion,
@@ -19,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import type { SchemaDiff, SchemaDiffItem } from '@dbnexus/shared';
 import { DiffTypeBadge } from './DiffTypeBadge';
+import { OperationResultItem } from '@/components/OperationResult';
 
 interface SchemaDiffDisplayProps {
     diff: SchemaDiff;
@@ -69,9 +69,13 @@ export function SchemaDiffDisplay({
 
     if (diff.items.length === 0) {
         return (
-            <Alert severity="success" icon={<CheckIcon />}>
-                Schemas are identical - no differences found.
-            </Alert>
+            <OperationResultItem
+                result={{
+                    id: 'schema-diff',
+                    success: true,
+                    message: 'Schemas are identical - no differences found.',
+                }}
+            />
         );
     }
 

@@ -17,6 +17,7 @@ import {
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { Sync as SyncIcon } from '@mui/icons-material';
 import { syncApi } from '../../lib/api';
+import { OperationResultsList, type OperationResultData } from '../../components/OperationResult';
 import type { TableDataDiff } from '@dbnexus/shared';
 
 interface DataSyncDialogProps {
@@ -44,9 +45,7 @@ export function DataSyncDialog({
         deleteExtra: false,
     });
     const [syncing, setSyncing] = useState(false);
-    const [results, setResults] = useState<
-        { table: string; inserted: number; updated: number; deleted: number; errors: string[] }[]
-    >([]);
+    const [results, setResults] = useState<OperationResultData[]>([]);
 
     const { data: tableDiffs = [], isLoading } = useQuery({
         queryKey: ['tableDiffs', sourceConnectionId, targetConnectionId, schema],
@@ -86,16 +85,25 @@ export function DataSyncDialog({
                         ...syncOptions,
                     }
                 );
-                setResults((prev) => [...prev, result]);
+                const hasErrors = result.errors && result.errors.length > 0;
+                setResults((prev) => [
+                    ...prev,
+                    {
+                        id: table,
+                        success: !hasErrors,
+                        message: `${table}: ${result.inserted} inserted, ${result.updated} updated, ${result.deleted} deleted`,
+                        details: hasErrors ? result.errors.join(', ') : undefined,
+                        severity: hasErrors ? 'warning' : 'success',
+                    },
+                ]);
             } catch (error) {
                 setResults((prev) => [
                     ...prev,
                     {
-                        table,
-                        inserted: 0,
-                        updated: 0,
-                        deleted: 0,
-                        errors: [error instanceof Error ? error.message : String(error)],
+                        id: table,
+                        success: false,
+                        message: `${table}: Sync failed`,
+                        details: error instanceof Error ? error.message : String(error),
                     },
                 ]);
             }
@@ -160,35 +168,11 @@ export function DataSyncDialog({
                         <CircularProgress />
                     </Box>
                 ) : results.length > 0 ? (
-                    <Box>
-                        <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                            Sync Results
-                        </Typography>
-                        {results.map((result, idx) => (
-                            <Box
-                                key={idx}
-                                sx={{
-                                    p: 2,
-                                    mb: 1,
-                                    bgcolor:
-                                        result.errors.length > 0 ? 'error.dark' : 'success.dark',
-                                    borderRadius: 1,
-                                    opacity: 0.9,
-                                }}
-                            >
-                                <Typography fontWeight={600}>{result.table}</Typography>
-                                <Typography variant="body2">
-                                    Inserted: {result.inserted}, Updated: {result.updated}, Deleted:{' '}
-                                    {result.deleted}
-                                </Typography>
-                                {result.errors.map((err, i) => (
-                                    <Typography key={i} variant="caption" color="error.light">
-                                        {err}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        ))}
-                    </Box>
+                    <OperationResultsList
+                        results={results}
+                        title="Sync Results"
+                        maxResults={50}
+                    />
                 ) : (
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2 }}>

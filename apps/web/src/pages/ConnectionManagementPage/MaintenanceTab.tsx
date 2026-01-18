@@ -16,9 +16,9 @@ import BuildIcon from '@mui/icons-material/Build';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import SpeedIcon from '@mui/icons-material/Speed';
 import StorageIcon from '@mui/icons-material/Storage';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
+import { OperationResultsList, type OperationResultData } from '../../components/OperationResult';
 import { queriesApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 
@@ -113,13 +113,6 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
     },
 ];
 
-interface OperationResult {
-    operationId: string;
-    success: boolean;
-    message: string;
-    duration?: number;
-}
-
 export function MaintenanceTab({
     connectionId,
     connection,
@@ -131,7 +124,7 @@ export function MaintenanceTab({
     // Use external schema if provided, otherwise use local state
     const [localSchema, setLocalSchema] = useState<string>(externalSchema || '');
     const selectedSchema = externalSchema ?? localSchema;
-    const [results, setResults] = useState<OperationResult[]>([]);
+    const [results, setResults] = useState<OperationResultData[]>([]);
     const [runningOperation, setRunningOperation] = useState<string | null>(null);
 
     const handleSchemaChange = (schema: string) => {
@@ -159,8 +152,8 @@ export function MaintenanceTab({
             return { duration: Date.now() - startTime };
         },
         onSuccess: (data, { operation }) => {
-            const result: OperationResult = {
-                operationId: operation.id,
+            const result: OperationResultData = {
+                id: operation.id,
                 success: true,
                 message: `${operation.name} completed successfully`,
                 duration: data.duration,
@@ -170,8 +163,8 @@ export function MaintenanceTab({
             setRunningOperation(null);
         },
         onError: (error, { operation }) => {
-            const result: OperationResult = {
-                operationId: operation.id,
+            const result: OperationResultData = {
+                id: operation.id,
                 success: false,
                 message: error instanceof Error ? error.message : 'Operation failed',
             };
@@ -338,46 +331,7 @@ export function MaintenanceTab({
             {/* Results History */}
             {results.length > 0 && (
                 <GlassCard>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
-                        Recent Operations
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        {results.map((result, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                    p: 1.5,
-                                    bgcolor: result.success
-                                        ? 'rgba(34, 197, 94, 0.1)'
-                                        : 'rgba(220, 38, 38, 0.1)',
-                                    borderRadius: 1,
-                                    border: 1,
-                                    borderColor: result.success
-                                        ? 'rgba(34, 197, 94, 0.3)'
-                                        : 'rgba(220, 38, 38, 0.3)',
-                                }}
-                            >
-                                {result.success ? (
-                                    <CheckCircleIcon sx={{ color: 'success.main' }} />
-                                ) : (
-                                    <BuildIcon sx={{ color: 'error.main' }} />
-                                )}
-                                <Box sx={{ flex: 1 }}>
-                                    <Typography variant="body2">{result.message}</Typography>
-                                </Box>
-                                {result.duration && (
-                                    <Chip
-                                        label={`${(result.duration / 1000).toFixed(2)}s`}
-                                        size="small"
-                                        sx={{ height: 22, fontSize: 11 }}
-                                    />
-                                )}
-                            </Box>
-                        ))}
-                    </Box>
+                    <OperationResultsList results={results} />
                 </GlassCard>
             )}
         </Box>

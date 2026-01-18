@@ -40,8 +40,8 @@ describe('schemaCommand', () => {
         global.fetch = mockFetch;
         mockFetch.mockReset();
         vi.mocked(fs.writeFileSync).mockReset();
-        vi.spyOn(console, 'log').mockImplementation(() => {});
-        vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(console, 'log').mockImplementation(() => { });
+        vi.spyOn(console, 'error').mockImplementation(() => { });
     });
 
     afterEach(() => {

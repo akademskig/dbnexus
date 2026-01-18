@@ -22,6 +22,7 @@ import { syncApi } from '../lib/api';
 import type { TableDataDiff } from '@dbnexus/shared';
 import { LoadingState } from './LoadingState';
 import { useToastStore } from '../stores/toastStore';
+import { OperationResultItem } from './OperationResult';
 
 interface DataDiffDisplayProps {
     /** Source connection ID */
@@ -327,91 +328,91 @@ export function DataDiffDisplay({
         },
         ...(compact
             ? [
-                  {
-                      field: 'actions',
-                      headerName: 'Actions',
-                      width: 120,
-                      sortable: false,
-                      renderCell: (params: { row: TableDataDiff }) => {
-                          const row = params.row;
-                          const isOutOfSync =
-                              row.sourceCount !== row.targetCount || row.missingInTarget > 0;
-                          const result = results.find((r) => r.table === row.table);
+                {
+                    field: 'actions',
+                    headerName: 'Actions',
+                    width: 120,
+                    sortable: false,
+                    renderCell: (params: { row: TableDataDiff }) => {
+                        const row = params.row;
+                        const isOutOfSync =
+                            row.sourceCount !== row.targetCount || row.missingInTarget > 0;
+                        const result = results.find((r) => r.table === row.table);
 
-                          if (result) {
-                              return (
-                                  <Typography
-                                      variant="caption"
-                                      color={result.errors.length > 0 ? 'error' : 'success.main'}
-                                  >
-                                      +{result.inserted} ~{result.updated}
-                                  </Typography>
-                              );
-                          }
+                        if (result) {
+                            return (
+                                <Typography
+                                    variant="caption"
+                                    color={result.errors.length > 0 ? 'error' : 'success.main'}
+                                >
+                                    +{result.inserted} ~{result.updated}
+                                </Typography>
+                            );
+                        }
 
-                          if (isOutOfSync) {
-                              return (
-                                  <Button
-                                      size="small"
-                                      variant="outlined"
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleSyncSingleTable(row.table);
-                                      }}
-                                      disabled={syncing}
-                                  >
-                                      Sync
-                                  </Button>
-                              );
-                          }
+                        if (isOutOfSync) {
+                            return (
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSyncSingleTable(row.table);
+                                    }}
+                                    disabled={syncing}
+                                >
+                                    Sync
+                                </Button>
+                            );
+                        }
 
-                          return (
-                              <Chip
-                                  label="In sync"
-                                  size="small"
-                                  color="success"
-                                  variant="outlined"
-                              />
-                          );
-                      },
-                  } as GridColDef<TableDataDiff>,
-              ]
+                        return (
+                            <Chip
+                                label="In sync"
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                            />
+                        );
+                    },
+                } as GridColDef<TableDataDiff>,
+            ]
             : [
-                  {
-                      field: 'difference',
-                      headerName: 'Status',
-                      width: 120,
-                      align: 'center',
-                      headerAlign: 'center',
-                      valueGetter: (_: unknown, row: TableDataDiff) =>
-                          row.sourceCount - row.targetCount,
-                      renderCell: (params: { value: unknown }) => {
-                          const diff = params.value as number;
-                          if (diff === 0) {
-                              return (
-                                  <Chip
-                                      icon={<CheckIcon />}
-                                      label="In Sync"
-                                      size="small"
-                                      color="success"
-                                      variant="outlined"
-                                      sx={{ height: 24 }}
-                                  />
-                              );
-                          }
-                          return (
-                              <Typography
-                                  variant="body2"
-                                  fontWeight={500}
-                                  color={diff > 0 ? 'warning.main' : 'error.main'}
-                              >
-                                  {diff > 0 ? '+' : ''}
-                                  {diff}
-                              </Typography>
-                          );
-                      },
-                  } as GridColDef<TableDataDiff>,
-              ]),
+                {
+                    field: 'difference',
+                    headerName: 'Status',
+                    width: 120,
+                    align: 'center',
+                    headerAlign: 'center',
+                    valueGetter: (_: unknown, row: TableDataDiff) =>
+                        row.sourceCount - row.targetCount,
+                    renderCell: (params: { value: unknown }) => {
+                        const diff = params.value as number;
+                        if (diff === 0) {
+                            return (
+                                <Chip
+                                    icon={<CheckIcon />}
+                                    label="In Sync"
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    sx={{ height: 24 }}
+                                />
+                            );
+                        }
+                        return (
+                            <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                color={diff > 0 ? 'warning.main' : 'error.main'}
+                            >
+                                {diff > 0 ? '+' : ''}
+                                {diff}
+                            </Typography>
+                        );
+                    },
+                } as GridColDef<TableDataDiff>,
+            ]),
     ];
 
     // Loading state (only when fetching own data)
@@ -468,33 +469,41 @@ export function DataDiffDisplay({
                     <Box
                         key={result.table}
                         sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
                             p: 1.5,
                             mb: 0.5,
-                            bgcolor: result.error ? 'error.dark' : 'background.paper',
+                            bgcolor: result.error
+                                ? 'rgba(220, 38, 38, 0.1)'
+                                : 'rgba(34, 197, 94, 0.1)',
                             borderRadius: 1,
                             border: 1,
-                            borderColor: result.error ? 'error.main' : 'divider',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            borderColor: result.error
+                                ? 'rgba(220, 38, 38, 0.3)'
+                                : 'rgba(34, 197, 94, 0.3)',
                         }}
                     >
-                        <Typography variant="body2" fontFamily="monospace">
-                            {result.table}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                                label={`${result.rows} rows`}
-                                size="small"
-                                color={result.rows > 0 ? 'success' : 'default'}
-                                variant="outlined"
-                            />
+                        {result.error ? (
+                            <CopyIcon sx={{ color: 'error.main' }} />
+                        ) : (
+                            <CheckIcon sx={{ color: 'success.main' }} />
+                        )}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="body2" fontFamily="monospace">
+                                {result.table}
+                            </Typography>
                             {result.error && (
-                                <Typography variant="caption" color="error">
+                                <Typography variant="caption" color="text.secondary">
                                     {result.error}
                                 </Typography>
                             )}
                         </Box>
+                        <Chip
+                            label={`${result.rows} rows`}
+                            size="small"
+                            sx={{ height: 22, fontSize: 11 }}
+                        />
                     </Box>
                 ))}
 
@@ -600,16 +609,19 @@ export function DataDiffDisplay({
                             <Box
                                 key={result.table}
                                 sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
                                     p: 1.5,
                                     mb: 0.5,
-                                    bgcolor: 'success.dark',
+                                    bgcolor: 'rgba(34, 197, 94, 0.1)',
                                     borderRadius: 1,
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
+                                    border: 1,
+                                    borderColor: 'rgba(34, 197, 94, 0.3)',
                                 }}
                             >
-                                <Typography variant="body2" fontFamily="monospace">
+                                <CheckIcon sx={{ color: 'success.main' }} />
+                                <Typography variant="body2" fontFamily="monospace" sx={{ flex: 1 }}>
                                     {result.table}
                                 </Typography>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -617,21 +629,21 @@ export function DataDiffDisplay({
                                         <Chip
                                             label={`+${result.inserted}`}
                                             size="small"
-                                            color="success"
+                                            sx={{ height: 22, fontSize: 11 }}
                                         />
                                     )}
                                     {result.updated > 0 && (
                                         <Chip
                                             label={`~${result.updated}`}
                                             size="small"
-                                            color="info"
+                                            sx={{ height: 22, fontSize: 11 }}
                                         />
                                     )}
                                     {result.deleted > 0 && (
                                         <Chip
                                             label={`-${result.deleted}`}
                                             size="small"
-                                            color="warning"
+                                            sx={{ height: 22, fontSize: 11 }}
                                         />
                                     )}
                                     {result.inserted === 0 &&
@@ -641,6 +653,7 @@ export function DataDiffDisplay({
                                                 label="No changes"
                                                 size="small"
                                                 variant="outlined"
+                                                sx={{ height: 22, fontSize: 11 }}
                                             />
                                         )}
                                 </Box>
@@ -665,11 +678,16 @@ export function DataDiffDisplay({
     if (tableDiffs.length > 0 && outOfSyncTables.length === 0) {
         return (
             <Box>
-                <Alert severity="success" icon={<CheckIcon />} sx={{ mb: 2 }}>
-                    All {inSyncTables.length} tables are in sync between source and target.
-                </Alert>
+                <OperationResultItem
+                    result={{
+                        id: 'data-diff',
+                        success: true,
+                        message: `All ${inSyncTables.length} tables are in sync between source and target.`,
+                    }}
+                />
                 {shouldFetch && (
                     <Button
+                        sx={{ mt: 2 }}
                         variant="outlined"
                         startIcon={isFetching ? <CircularProgress size={16} /> : <RefreshIcon />}
                         onClick={handleRefresh}
@@ -686,11 +704,16 @@ export function DataDiffDisplay({
     if (tableDiffs.length === 0) {
         return (
             <Box>
-                <Alert severity="info" sx={{ mb: 2 }}>
-                    No tables found in the selected schema, or unable to compare data.
-                </Alert>
+                <OperationResultItem
+                    result={{
+                        id: 'data-diff',
+                        success: false,
+                        message: `No tables found in the selected schema, or unable to compare data.`,
+                    }}
+                />
                 {shouldFetch && (
                     <Button
+                        sx={{ mt: 2 }}
                         variant="outlined"
                         startIcon={isFetching ? <CircularProgress size={16} /> : <RefreshIcon />}
                         onClick={handleRefresh}
