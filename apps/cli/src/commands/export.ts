@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs';
+import { getApiUrl } from '../config.js';
 
 interface ExportOptions {
     conn: string;
@@ -28,7 +29,7 @@ export async function exportCommand(options: ExportOptions) {
         const query = options.sql || `SELECT * FROM ${options.table}`;
 
         // Execute the query via API
-        const response = await fetch('http://localhost:3001/api/query', {
+        const response = await fetch(getApiUrl('/query'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

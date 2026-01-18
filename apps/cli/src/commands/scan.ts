@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
+import { getApiUrl } from '../config.js';
 
 interface ScanOptions {
     add?: boolean;
@@ -23,7 +24,7 @@ export async function scanCommand(options: ScanOptions) {
 
     try {
         // Make request to the API scanner endpoint
-        const response = await fetch('http://localhost:3001/api/scanner/scan');
+        const response = await fetch(getApiUrl('/scanner/scan'));
 
         if (!response.ok) {
             throw new Error(`Scanner failed: ${response.statusText}`);
@@ -61,7 +62,7 @@ export async function scanCommand(options: ScanOptions) {
 
             for (const conn of result.connections) {
                 try {
-                    await fetch('http://localhost:3001/api/connections', {
+                    await fetch(getApiUrl('/connections'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(conn),

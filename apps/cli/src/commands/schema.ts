@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs';
+import { getApiUrl } from '../config.js';
 
 interface ShowOptions {
     conn: string;
@@ -36,7 +37,7 @@ interface CompareResult {
 }
 
 async function fetchSchema(connectionId: string): Promise<TableInfo[]> {
-    const response = await fetch(`http://localhost:3001/api/connections/${connectionId}/tables`);
+    const response = await fetch(getApiUrl(`/connections/${connectionId}/tables`));
     if (!response.ok) {
         throw new Error(`Failed to fetch schema: ${response.statusText}`);
     }
@@ -51,7 +52,7 @@ async function fetchTableDetails(
     const params = new URLSearchParams({ table: tableName });
     if (schema) params.set('schema', schema);
 
-    const response = await fetch(`http://localhost:3001/api/connections/${connectionId}/columns?${params}`);
+    const response = await fetch(getApiUrl(`/connections/${connectionId}/columns?${params}`));
     if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);
     }
@@ -165,7 +166,7 @@ export const schemaCommand = {
 
         try {
             // Use the compare API to get the diff
-            const response = await fetch('http://localhost:3001/api/compare', {
+            const response = await fetch(getApiUrl('/compare'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
