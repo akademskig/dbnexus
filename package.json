@@ -13,6 +13,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:package": "node scripts/build-package.js",
+    "cli": "cd apps/cli && pnpm exec tsx src/index.ts",
     "dev": "pnpm --filter @dbnexus/api --filter @dbnexus/web --parallel dev",
     "dev:all": "pnpm -r --parallel dev",
     "dev:desktop": "pnpm --filter @dbnexus/desktop dev",

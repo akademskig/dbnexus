@@ -39,9 +39,10 @@ export async function uiCommand(options: UiOptions) {
 
     // Find the API server entry point
     const possibleApiPaths = [
-        path.join(__dirname, '..', '..', '..', 'api', 'dist', 'main.js'), // When running from built CLI
-        path.join(__dirname, '..', '..', 'api', 'dist', 'main.js'), // Alternative structure
-        path.join(process.cwd(), 'dist', 'api', 'main.js'), // When packaged
+        path.join(__dirname, 'api.js'), // When bundled (cli.js and api.js in same dir)
+        path.join(__dirname, '..', 'api.js'), // Alternative bundled structure
+        path.join(__dirname, '..', '..', '..', 'api', 'dist', 'main.js'), // When running from built CLI in monorepo
+        path.join(__dirname, '..', '..', 'api', 'dist', 'main.js'), // Alternative monorepo structure
     ];
 
     let apiPath: string | null = null;
