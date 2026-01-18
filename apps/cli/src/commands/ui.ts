@@ -35,7 +35,6 @@ export async function uiCommand(options: UiOptions) {
 
     // Set environment variables
     process.env['DBNEXUS_PORT'] = options.port;
-    process.env['PORT'] = options.port; // Also set PORT for backward compatibility
     process.env['NODE_ENV'] = 'production';
 
     // Find the API server entry point

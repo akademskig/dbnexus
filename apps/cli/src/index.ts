@@ -16,27 +16,12 @@ program
     .description('A local-first database management CLI with web UI')
     .version('0.1.0');
 
-// Default action - start the UI
-program
-    .option('-p, --port <port>', 'Port to run on', '3001')
-    .option('--no-open', 'Do not open browser automatically')
-    .option('--data-dir <path>', 'Custom data directory for metadata')
-    .action((options) => {
-        // If no command is specified, start the UI
-        if (
-            process.argv.length === 2 ||
-            process.argv.slice(2).every((arg) => arg.startsWith('-'))
-        ) {
-            uiCommand(options);
-        }
-    });
-
 // Init command
 program.command('init').description('Initialize a new DB Nexus workspace').action(initCommand);
 
-// Start/UI command (explicit)
+// Start/UI command - also the default when no command is specified
 program
-    .command('start')
+    .command('start', { isDefault: true })
     .alias('ui')
     .description('Start DB Nexus (default command)')
     .option('-p, --port <port>', 'Port to run on', '3001')
