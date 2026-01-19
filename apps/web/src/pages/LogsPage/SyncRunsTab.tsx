@@ -518,20 +518,7 @@ export function SyncRunsTab() {
                                             borderRadius: 1,
                                         }}
                                     >
-                                        {selectedRun.sqlStatements.map((sql, i) => (
-                                            <Box
-                                                key={i}
-                                                sx={{
-                                                    py: 0.5,
-                                                    borderBottom:
-                                                        i < selectedRun.sqlStatements.length - 1
-                                                            ? '1px solid rgba(255,255,255,0.1)'
-                                                            : 'none',
-                                                }}
-                                            >
-                                                {sql};
-                                            </Box>
-                                        ))}
+                                        {selectedRun.sqlStatements.join('\n\n')}
                                     </Box>
                                 </Box>
                             )}
