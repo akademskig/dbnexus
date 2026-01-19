@@ -17,11 +17,35 @@ import {
     Refresh as RefreshIcon,
     ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-import { syncApi } from '../lib/api';
+import { syncApi, schemaApi } from '../lib/api';
 import type { TableDataDiff } from '@dbnexus/shared';
 import { LoadingState } from './LoadingState';
 import { useToastStore } from '../stores/toastStore';
 import { StatusAlert } from './StatusAlert';
+
+// Cache for table primary keys to avoid repeated API calls
+const primaryKeyCache = new Map<string, string[]>();
+
+async function getTablePrimaryKeys(
+    connectionId: string,
+    schema: string,
+    table: string
+): Promise<string[]> {
+    const cacheKey = `${connectionId}:${schema}:${table}`;
+    if (primaryKeyCache.has(cacheKey)) {
+        return primaryKeyCache.get(cacheKey)!;
+    }
+
+    try {
+        const tableSchema = await schemaApi.getTableSchema(connectionId, schema, table);
+        const pks = tableSchema.primaryKey || ['id'];
+        primaryKeyCache.set(cacheKey, pks);
+        return pks;
+    } catch {
+        // Fallback to 'id' if schema fetch fails
+        return ['id'];
+    }
+}
 
 interface DataDiffDisplayProps {
     /** Source connection ID */
@@ -150,13 +174,19 @@ export function DataDiffDisplay({
 
         for (const table of tablesToSync) {
             try {
+                // Fetch actual primary keys for this table
+                const primaryKeys = await getTablePrimaryKeys(
+                    sourceConnectionId,
+                    sourceSchema,
+                    table
+                );
                 const result = await syncApi.syncTableData(
                     sourceConnectionId,
                     targetConnectionId,
                     sourceSchema,
                     table,
                     {
-                        primaryKeys: ['id'], // Primary keys should be fetched from schema in future
+                        primaryKeys,
                         ...syncOptions,
                     }
                 );
@@ -198,13 +228,19 @@ export function DataDiffDisplay({
     const handleSyncSingleTable = async (tableName: string) => {
         setSyncing(true);
         try {
+            // Fetch actual primary keys for this table
+            const primaryKeys = await getTablePrimaryKeys(
+                sourceConnectionId,
+                sourceSchema,
+                tableName
+            );
             const result = await syncApi.syncTableData(
                 sourceConnectionId,
                 targetConnectionId,
                 sourceSchema,
                 tableName,
                 {
-                    primaryKeys: ['id'],
+                    primaryKeys,
                     insertMissing: true,
                     updateDifferent: true,
                     deleteExtra: false,

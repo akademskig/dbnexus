@@ -32,6 +32,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import type { DatabaseGroup } from '@dbnexus/shared';
 import { StatusAlert } from '@/components/StatusAlert';
+import { useToastStore } from '../../stores/toastStore';
 
 type CompareTab = 'schema' | 'data';
 
@@ -40,6 +41,7 @@ const COMPARE_CACHE_TIME = 10 * 60 * 1000;
 
 export function ComparePage() {
     const queryClient = useQueryClient();
+    const toast = useToastStore();
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [sourceConnectionId, setSourceConnectionId] = useState<string>('');
     const [targetConnectionId, setTargetConnectionId] = useState<string>('');
@@ -219,19 +221,27 @@ export function ComparePage() {
 
         setApplying(true);
         try {
-            await schemaApi.applyMigration(
+            const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 targetConnectionId,
                 sourceSchema,
                 targetSchema,
                 'Applied from Compare page'
             );
+            // Check if migration actually succeeded
+            if (!result.success) {
+                console.error('Migration failed:', result.error);
+                toast.error(`Migration failed: ${result.error || 'Unknown error'}`);
+                return;
+            }
             // Refresh the diff
             queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
             queryClient.invalidateQueries({ queryKey: ['migrationSql'] });
             refetchDiff();
+            toast.success('Migration applied successfully');
         } catch (error) {
             console.error('Failed to apply migration:', error);
+            toast.error('Failed to apply migration');
         } finally {
             setApplying(false);
         }

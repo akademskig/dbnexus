@@ -84,13 +84,19 @@ export function TargetRow({
     const handleApplyMigration = async () => {
         setApplying(true);
         try {
-            await schemaApi.applyMigration(
+            const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 target.connectionId,
                 sourceSchema,
                 targetSchema,
                 'Applied from Instance Group Sync'
             );
+            // Check if migration actually succeeded
+            if (!result.success) {
+                console.error('Migration failed:', result.error);
+                toast.error(`Migration failed: ${result.error || 'Unknown error'}`);
+                return;
+            }
             // Recheck after applying migration
             recheckMutation.mutate();
             toast.success('Migration applied successfully');

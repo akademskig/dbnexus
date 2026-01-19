@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- About page with Bitcoin donation option in docs
+- Screenshot lightbox (click to enlarge) in docs
+
+### Changed
+
+- Consistent border-radius styling across all docs cards
+
 ## [0.1.11] - 2026-01-19
 
 ### Added
@@ -73,8 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Drag and drop connections between projects and groups on Projects page
-    - Visual feedback with dashed border on drag over
-    - Drop zones on projects, groups, and ungrouped section
+  - Visual feedback with dashed border on drag over
+  - Drop zones on projects, groups, and ungrouped section
 
 ### Fixed
 
@@ -85,10 +94,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Interactive onboarding tour for new users
-    - Step-by-step walkthrough of main features
-    - Minimizable floating panel
-    - Progress tracking with localStorage persistence
-    - Spotlight indicators for target elements
+  - Step-by-step walkthrough of main features
+  - Minimizable floating panel
+  - Progress tracking with localStorage persistence
+  - Spotlight indicators for target elements
 - Auto-select first connection and default schema when adding connections
 - Auto-select first table on Query page when none is selected
 - Redirect from connection-required pages when no connections exist
@@ -127,11 +136,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Connection scanning feature to auto-discover databases
-    - Port scanning for common database ports
-    - Docker container inspection
-    - Environment file parsing (.env)
-    - Docker Compose file parsing
-    - SQLite file discovery
+  - Port scanning for common database ports
+  - Docker container inspection
+  - Environment file parsing (.env)
+  - Docker Compose file parsing
+  - SQLite file discovery
 - Connection type classification (local, Docker, remote)
 - Edit column functionality in Schema Diagram
 - Centralized SQL utilities for consistent identifier quoting

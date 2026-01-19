@@ -6,6 +6,10 @@ import {
     MigrationHistoryRepository,
     ProjectRepository,
     DatabaseGroupRepository,
+    SyncConfigRepository,
+    SyncRunRepository,
+    SchemaSnapshotRepository,
+    AuditLogRepository,
 } from '@dbnexus/metadata';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -19,6 +23,10 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _migrationHistoryRepository!: MigrationHistoryRepository;
     private _projectRepository!: ProjectRepository;
     private _databaseGroupRepository!: DatabaseGroupRepository;
+    private _syncConfigRepository!: SyncConfigRepository;
+    private _syncRunRepository!: SyncRunRepository;
+    private _schemaSnapshotRepository!: SchemaSnapshotRepository;
+    private _auditLogRepository!: AuditLogRepository;
 
     onModuleInit() {
         // Get data directory path
@@ -56,6 +64,10 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this._migrationHistoryRepository = new MigrationHistoryRepository(this.db);
         this._projectRepository = new ProjectRepository(this.db);
         this._databaseGroupRepository = new DatabaseGroupRepository(this.db);
+        this._syncConfigRepository = new SyncConfigRepository(this.db);
+        this._syncRunRepository = new SyncRunRepository(this.db);
+        this._schemaSnapshotRepository = new SchemaSnapshotRepository(this.db);
+        this._auditLogRepository = new AuditLogRepository(this.db);
 
         this.logger.log(`📦 Metadata database initialized at ${dbPath}`);
     }
@@ -82,6 +94,22 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get databaseGroupRepository(): DatabaseGroupRepository {
         return this._databaseGroupRepository;
+    }
+
+    get syncConfigRepository(): SyncConfigRepository {
+        return this._syncConfigRepository;
+    }
+
+    get syncRunRepository(): SyncRunRepository {
+        return this._syncRunRepository;
+    }
+
+    get schemaSnapshotRepository(): SchemaSnapshotRepository {
+        return this._schemaSnapshotRepository;
+    }
+
+    get auditLogRepository(): AuditLogRepository {
+        return this._auditLogRepository;
     }
 
     get database(): MetadataDatabase {

@@ -113,7 +113,7 @@ export class SyncService {
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService,
         private readonly schemaDiffService: SchemaDiffService
-    ) {}
+    ) { }
 
     /**
      * Get sync status for an instance group
@@ -430,15 +430,62 @@ export class SyncService {
 
         const targetConnection = this.connectionsService.findById(targetConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
+
+        // Auto-detect primary keys if not provided or only default 'id' is passed
+        let effectivePkColumns = primaryKeyColumns;
+        if (
+            !primaryKeyColumns ||
+            primaryKeyColumns.length === 0 ||
+            (primaryKeyColumns.length === 1 && primaryKeyColumns[0] === 'id')
+        ) {
+            const tableSchema = await targetConnector.getTableSchema(schema, table);
+            if (tableSchema.primaryKey && tableSchema.primaryKey.length > 0) {
+                effectivePkColumns = tableSchema.primaryKey;
+                this.logger.debug(
+                    `Auto-detected primary keys for ${schema}.${table}: ${effectivePkColumns.join(', ')}`
+                );
+            } else {
+                // Fall back to 'id' if no PK detected
+                effectivePkColumns = ['id'];
+                this.logger.warn(
+                    `No primary key found for ${schema}.${table}, falling back to 'id'`
+                );
+            }
+        }
+
+        // Create sync run record
+        const syncRun = this.metadataService.syncRunRepository.createAdHoc({
+            sourceConnectionId,
+            targetConnectionId,
+            sourceTable: table,
+            targetTable: table,
+            schema,
+        });
+
+        // Log sync start to audit
+        this.metadataService.auditLogRepository.create({
+            action: 'data_sync_started',
+            entityType: 'sync_run',
+            entityId: syncRun.id,
+            connectionId: targetConnectionId,
+            details: {
+                sourceConnectionId,
+                targetConnectionId,
+                schema,
+                table,
+                primaryKeyColumns: effectivePkColumns,
+                options,
+            },
+        });
         const diff = await this.getTableDataDiff(
             sourceConnectionId,
             targetConnectionId,
             schema,
             table,
-            primaryKeyColumns
+            effectivePkColumns
         );
 
-        // Get column info
+        // Get column info (may have been fetched already for PK detection, but needed for columns)
         const tableSchema = await targetConnector.getTableSchema(schema, table);
         const columns = tableSchema.columns.map((c) => c.name);
         const columnTypes = new Map(tableSchema.columns.map((c) => [c.name, c.dataType]));
@@ -483,14 +530,14 @@ export class SyncService {
         if (options.updateDifferent && diff.different.length > 0) {
             for (const { source } of diff.different) {
                 try {
-                    const nonPkColumns = columns.filter((c) => !primaryKeyColumns.includes(c));
+                    const nonPkColumns = columns.filter((c) => !effectivePkColumns.includes(c));
                     const setClause = nonPkColumns
                         .map(
                             (c, i) =>
                                 `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`
                         )
                         .join(', ');
-                    const whereClause = primaryKeyColumns
+                    const whereClause = effectivePkColumns
                         .map(
                             (c, i) =>
                                 `${quoteIdentifier(c, engine)} = ${getPlaceholder(nonPkColumns.length + i + 1, engine)}`
@@ -498,7 +545,7 @@ export class SyncService {
                         .join(' AND ');
                     const values = [
                         ...nonPkColumns.map((c) => serializeValue(c, source[c])),
-                        ...primaryKeyColumns.map((c) => serializeValue(c, source[c])),
+                        ...effectivePkColumns.map((c) => serializeValue(c, source[c])),
                     ];
 
                     await targetConnector.execute(
@@ -518,13 +565,13 @@ export class SyncService {
         if (options.deleteExtra && diff.missingInSource.length > 0) {
             for (const row of diff.missingInSource) {
                 try {
-                    const whereClause = primaryKeyColumns
+                    const whereClause = effectivePkColumns
                         .map(
                             (c, i) =>
                                 `${quoteIdentifier(c, engine)} = ${getPlaceholder(i + 1, engine)}`
                         )
                         .join(' AND ');
-                    const values = primaryKeyColumns.map((c) => row[c]);
+                    const values = effectivePkColumns.map((c) => row[c]);
 
                     await targetConnector.execute(
                         `DELETE FROM ${tableRef} WHERE ${whereClause}`,
@@ -538,6 +585,32 @@ export class SyncService {
                 }
             }
         }
+
+        // Complete the sync run record
+        this.metadataService.syncRunRepository.complete(syncRun.id, {
+            inserts: result.inserted,
+            updates: result.updated,
+            deletes: result.deleted,
+            errors: result.errors,
+        });
+
+        // Log sync completion to audit
+        this.metadataService.auditLogRepository.create({
+            action: result.errors.length > 0 ? 'data_sync_failed' : 'data_sync_completed',
+            entityType: 'sync_run',
+            entityId: syncRun.id,
+            connectionId: targetConnectionId,
+            details: {
+                sourceConnectionId,
+                table,
+                schema,
+                primaryKeyColumns: effectivePkColumns,
+                inserted: result.inserted,
+                updated: result.updated,
+                deleted: result.deleted,
+                errors: result.errors,
+            },
+        });
 
         return result;
     }
@@ -805,6 +878,21 @@ export class SyncService {
             tableResults: [] as { table: string; rows: number; error?: string }[],
         };
 
+        // Log sync start to audit
+        this.metadataService.auditLogRepository.create({
+            action: 'data_sync_started',
+            entityType: 'sync_run',
+            connectionId: targetConnectionId,
+            details: {
+                type: 'dump_and_restore',
+                sourceConnectionId,
+                targetConnectionId,
+                schema,
+                tables: options.tables,
+                truncateTarget: options.truncateTarget,
+            },
+        });
+
         const sourceConnection = this.connectionsService.findById(sourceConnectionId);
         const targetConnection = this.connectionsService.findById(targetConnectionId);
         const sourceConnector = await this.connectionsService.getConnector(sourceConnectionId);
@@ -946,6 +1034,22 @@ export class SyncService {
             // Re-enable FK checks
             await this.setForeignKeyChecks(targetConnector, targetEngine, true);
         }
+
+        // Log sync completion to audit
+        this.metadataService.auditLogRepository.create({
+            action: result.errors.length > 0 ? 'data_sync_failed' : 'data_sync_completed',
+            entityType: 'sync_run',
+            connectionId: targetConnectionId,
+            details: {
+                type: 'dump_and_restore',
+                sourceConnectionId,
+                schema,
+                success: result.success,
+                tablesProcessed: result.tablesProcessed,
+                rowsCopied: result.rowsCopied,
+                errors: result.errors,
+            },
+        });
 
         return result;
     }
