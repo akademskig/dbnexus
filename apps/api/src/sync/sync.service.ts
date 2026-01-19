@@ -438,16 +438,19 @@ export class SyncService {
         const targetConnection = this.connectionsService.findById(targetConnectionId);
         const targetConnector = await this.connectionsService.getConnector(targetConnectionId);
 
+        // Parse primaryKeyColumns in case it's a PostgreSQL array string
+        const parsedPkColumns = parseColumnArray(primaryKeyColumns);
+
         // Auto-detect primary keys if not provided or only default 'id' is passed
-        let effectivePkColumns = primaryKeyColumns;
+        let effectivePkColumns = parsedPkColumns;
         if (
-            !primaryKeyColumns ||
-            primaryKeyColumns.length === 0 ||
-            (primaryKeyColumns.length === 1 && primaryKeyColumns[0] === 'id')
+            parsedPkColumns.length === 0 ||
+            (parsedPkColumns.length === 1 && parsedPkColumns[0] === 'id')
         ) {
             const tableSchema = await targetConnector.getTableSchema(schema, table);
-            if (tableSchema.primaryKey && tableSchema.primaryKey.length > 0) {
-                effectivePkColumns = tableSchema.primaryKey;
+            const schemaPks = parseColumnArray(tableSchema.primaryKey);
+            if (schemaPks.length > 0) {
+                effectivePkColumns = schemaPks;
                 this.logger.debug(
                     `Auto-detected primary keys for ${schema}.${table}: ${effectivePkColumns.join(', ')}`
                 );
