@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import { createRequire } from 'module';
 import { initCommand } from './commands/init.js';
 import { uiCommand } from './commands/ui.js';
 import { connectCommand } from './commands/connect.js';
@@ -7,16 +6,14 @@ import { queryCommand } from './commands/query.js';
 import { scanCommand } from './commands/scan.js';
 import { exportCommand } from './commands/export.js';
 import { schemaCommand } from './commands/schema.js';
-
-const require = createRequire(import.meta.url);
-const packageJson = require('../package.json');
+import { VERSION } from './version.js';
 
 const program = new Command();
 
 program
     .name('dbnexus')
     .description('A local-first database management CLI with web UI')
-    .version(packageJson.version);
+    .version(VERSION);
 
 // Init command
 program.command('init').description('Initialize a new DB Nexus workspace').action(initCommand);
