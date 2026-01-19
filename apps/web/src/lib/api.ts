@@ -483,6 +483,7 @@ export interface SyncRun {
     updates: number;
     deletes: number;
     errors: string[];
+    sqlStatements: string[];
     sourceConnectionName?: string;
     targetConnectionName?: string;
     groupName?: string;

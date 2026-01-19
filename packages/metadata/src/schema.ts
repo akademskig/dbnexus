@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 export const MIGRATIONS: string[] = [
   // Version 1: Initial schema
@@ -267,5 +267,12 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_sync_runs_started ON sync_runs(started_at DESC);
 
   UPDATE schema_version SET version = 10;
+  `,
+
+    // Version 11: Add sql_statements to sync_runs for tracking executed SQL
+    `
+  ALTER TABLE sync_runs ADD COLUMN sql_statements TEXT;
+
+  UPDATE schema_version SET version = 11;
   `,
 ];

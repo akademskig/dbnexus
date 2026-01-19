@@ -496,6 +496,9 @@ export class SyncService {
             return serializeValueForInsert(value, dataType);
         };
 
+        // Track executed SQL statements
+        const executedSql: string[] = [];
+
         // Insert missing rows
         if (options.insertMissing && diff.missingInTarget.length > 0) {
             for (const row of diff.missingInTarget) {
@@ -507,10 +510,9 @@ export class SyncService {
                     const quotedColumns = insertableColumns
                         .map((c) => quoteIdentifier(c, engine))
                         .join(', ');
-                    await targetConnector.execute(
-                        `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`,
-                        values
-                    );
+                    const sql = `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`;
+                    executedSql.push(sql);
+                    await targetConnector.execute(sql, values);
                     result.inserted++;
                 } catch (error) {
                     result.errors.push(
@@ -542,10 +544,9 @@ export class SyncService {
                         ...effectivePkColumns.map((c) => serializeValue(c, source[c])),
                     ];
 
-                    await targetConnector.execute(
-                        `UPDATE ${tableRef} SET ${setClause} WHERE ${whereClause}`,
-                        values
-                    );
+                    const sql = `UPDATE ${tableRef} SET ${setClause} WHERE ${whereClause}`;
+                    executedSql.push(sql);
+                    await targetConnector.execute(sql, values);
                     result.updated++;
                 } catch (error) {
                     result.errors.push(
@@ -567,10 +568,9 @@ export class SyncService {
                         .join(' AND ');
                     const values = effectivePkColumns.map((c) => row[c]);
 
-                    await targetConnector.execute(
-                        `DELETE FROM ${tableRef} WHERE ${whereClause}`,
-                        values
-                    );
+                    const sql = `DELETE FROM ${tableRef} WHERE ${whereClause}`;
+                    executedSql.push(sql);
+                    await targetConnector.execute(sql, values);
                     result.deleted++;
                 } catch (error) {
                     result.errors.push(
@@ -580,12 +580,14 @@ export class SyncService {
             }
         }
 
-        // Complete sync run with results
-        this.metadataService.syncRunRepository.complete(syncRun.id, {
+        // Complete sync run with results and SQL statements
+        this.metadataService.syncRunRepository.update(syncRun.id, {
+            status: result.errors.length > 0 ? 'failed' : 'completed',
             inserts: result.inserted,
             updates: result.updated,
             deletes: result.deleted,
             errors: result.errors,
+            sqlStatements: executedSql,
         });
 
         return result;

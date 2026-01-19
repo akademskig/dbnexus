@@ -20,6 +20,7 @@ export interface SyncRun {
     updates: number;
     deletes: number;
     errors: string[];
+    sqlStatements: string[];
     // Joined fields
     sourceConnectionName?: string;
     targetConnectionName?: string;
@@ -40,6 +41,7 @@ interface SyncRunRow {
     updates: number;
     deletes: number;
     errors_json: string | null;
+    sql_statements: string | null;
     source_connection_name?: string;
     target_connection_name?: string;
     group_name?: string;
@@ -59,6 +61,7 @@ export interface SyncRunUpdateInput {
     updates?: number;
     deletes?: number;
     errors?: string[];
+    sqlStatements?: string[];
 }
 
 export class SyncRunRepository {
@@ -249,6 +252,10 @@ export class SyncRunRepository {
             updates.push('errors_json = ?');
             params.push(JSON.stringify(input.errors));
         }
+        if (input.sqlStatements !== undefined) {
+            updates.push('sql_statements = ?');
+            params.push(JSON.stringify(input.sqlStatements));
+        }
 
         if (updates.length === 0) {
             return this.findById(id);
@@ -324,6 +331,7 @@ export class SyncRunRepository {
             updates: row.updates,
             deletes: row.deletes,
             errors: row.errors_json ? (JSON.parse(row.errors_json) as string[]) : [],
+            sqlStatements: row.sql_statements ? (JSON.parse(row.sql_statements) as string[]) : [],
             sourceConnectionName: row.source_connection_name,
             targetConnectionName: row.target_connection_name,
             groupName: row.group_name,

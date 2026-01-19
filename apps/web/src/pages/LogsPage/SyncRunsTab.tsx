@@ -498,6 +498,43 @@ export function SyncRunsTab() {
                                     </Box>
                                 </StatusAlert>
                             )}
+
+                            {/* SQL Statements */}
+                            {selectedRun.sqlStatements.length > 0 && (
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                        Executed SQL ({selectedRun.sqlStatements.length} statements)
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            fontFamily: 'monospace',
+                                            fontSize: 12,
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            maxHeight: 300,
+                                            overflow: 'auto',
+                                            bgcolor: 'background.default',
+                                            p: 2,
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {selectedRun.sqlStatements.map((sql, i) => (
+                                            <Box
+                                                key={i}
+                                                sx={{
+                                                    py: 0.5,
+                                                    borderBottom:
+                                                        i < selectedRun.sqlStatements.length - 1
+                                                            ? '1px solid rgba(255,255,255,0.1)'
+                                                            : 'none',
+                                                }}
+                                            >
+                                                {sql};
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
                         </Box>
                     )}
                 </DialogContent>
