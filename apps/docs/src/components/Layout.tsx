@@ -64,7 +64,7 @@ const NavLinks = styled.div`
     }
 `;
 
-const NavLink = styled(Link) <{ $active?: boolean }>`
+const NavLink = styled(Link)<{ $active?: boolean }>`
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     font-weight: 500;
     font-size: 1.05rem;
@@ -121,7 +121,7 @@ const MobileMenu = styled(motion.div)`
     z-index: 99;
 `;
 
-const MobileNavLink = styled(Link) <{ $active?: boolean }>`
+const MobileNavLink = styled(Link)<{ $active?: boolean }>`
     display: block;
     padding: 0.9rem 1.1rem;
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};

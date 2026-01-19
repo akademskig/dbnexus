@@ -235,7 +235,10 @@ describe('Queries Integration Tests', () => {
 
             // Get history - signature is (limit, connectionId?)
             const metadataService = app.get(MetadataService);
-            const history = metadataService.queryRepository.findRecentHistory(10, postgresConnectionId!);
+            const history = metadataService.queryRepository.findRecentHistory(
+                10,
+                postgresConnectionId!
+            );
 
             expect(history).toBeDefined();
             expect(Array.isArray(history)).toBe(true);

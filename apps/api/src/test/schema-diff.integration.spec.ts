@@ -128,7 +128,6 @@ describe('Schema Diff Integration Tests', () => {
                 expect(itemsWithSql.length).toBeGreaterThanOrEqual(0);
             }
         });
-
     });
 
     describe('Same Schema Comparison', () => {

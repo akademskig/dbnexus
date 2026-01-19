@@ -59,12 +59,12 @@ describe('Data Sync Integration Tests', () => {
         if (sourceConnector) {
             try {
                 await sourceConnector.query(`DROP TABLE IF EXISTS ${TEST_TABLE}`);
-            } catch { }
+            } catch {}
         }
         if (targetConnector) {
             try {
                 await targetConnector.query(`DROP TABLE IF EXISTS ${TEST_TABLE}`);
-            } catch { }
+            } catch {}
         }
 
         // Cleanup connections
@@ -73,7 +73,7 @@ describe('Data Sync Integration Tests', () => {
                 try {
                     await connectionsService.disconnect(id);
                     await connectionsService.delete(id);
-                } catch { }
+                } catch {}
             }
         }
         if (app) {
@@ -116,7 +116,7 @@ describe('Data Sync Integration Tests', () => {
             try {
                 await sourceConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
                 await targetConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
-            } catch { }
+            } catch {}
         });
 
         it('should detect rows missing in target', async () => {
@@ -257,7 +257,7 @@ describe('Data Sync Integration Tests', () => {
             try {
                 await sourceConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
                 await targetConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
-            } catch { }
+            } catch {}
         });
 
         it('should sync missing rows to target (INSERT)', async () => {
@@ -412,7 +412,9 @@ describe('Data Sync Integration Tests', () => {
             expect(result).toBeDefined();
 
             // Log for debugging
-            console.log(`Full sync result: inserted=${result.inserted}, updated=${result.updated}, deleted=${result.deleted}`);
+            console.log(
+                `Full sync result: inserted=${result.inserted}, updated=${result.updated}, deleted=${result.deleted}`
+            );
 
             // Verify some operations were performed
             const totalOps = result.inserted + result.updated + result.deleted;
@@ -493,8 +495,8 @@ describe('Data Sync Integration Tests', () => {
             expect(runsAfter.length).toBeGreaterThan(countBefore);
 
             // Find the run that has our unique value in SQL
-            const matchingRun = runsAfter.find(
-                (run) => run.sqlStatements?.some((sql) => sql.includes(uniqueValue))
+            const matchingRun = runsAfter.find((run) =>
+                run.sqlStatements?.some((sql) => sql.includes(uniqueValue))
             );
 
             if (matchingRun) {
@@ -537,7 +539,9 @@ describe('Data Sync Integration Tests', () => {
             expect(diff.different).toBeDefined();
 
             // Log actual state for debugging
-            console.log(`Categories diff: ${diff.missingInTarget.length} missing in target, ${diff.missingInSource.length} missing in source, ${diff.different.length} different`);
+            console.log(
+                `Categories diff: ${diff.missingInTarget.length} missing in target, ${diff.missingInSource.length} missing in source, ${diff.different.length} different`
+            );
         });
     });
 });

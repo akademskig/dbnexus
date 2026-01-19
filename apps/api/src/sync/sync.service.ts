@@ -66,11 +66,7 @@ function formatValueForSql(value: unknown): string {
 }
 
 // Helper to build readable SQL with actual values (for logging/display)
-function buildReadableSql(
-    template: string,
-    values: unknown[],
-    engine: DatabaseEngine
-): string {
+function buildReadableSql(template: string, values: unknown[], engine: DatabaseEngine): string {
     let sql = template;
     // Replace placeholders with actual values
     if (engine === 'mysql' || engine === 'mariadb') {
@@ -161,7 +157,7 @@ export class SyncService {
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService,
         private readonly schemaDiffService: SchemaDiffService
-    ) { }
+    ) {}
 
     /**
      * Get sync status for an instance group

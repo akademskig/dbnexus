@@ -187,7 +187,8 @@ export function ActivityLogTab() {
                     ? `Sync ${s.schemaName}.${s.tableName}`
                     : `Sync schema ${s.schemaName || 'unknown'}`,
                 timestamp: new Date(s.startedAt),
-                status: s.status === 'failed' ? 'error' : s.status === 'completed' ? 'success' : 'info',
+                status:
+                    s.status === 'failed' ? 'error' : s.status === 'completed' ? 'success' : 'info',
                 details: {
                     sourceConnection: s.sourceConnectionName,
                     targetConnection: s.targetConnectionName,

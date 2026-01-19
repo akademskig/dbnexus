@@ -27,7 +27,7 @@ export interface SchemaSnapshotCreateInput {
 }
 
 export class SchemaSnapshotRepository {
-    constructor(private readonly db: MetadataDatabase) { }
+    constructor(private readonly db: MetadataDatabase) {}
 
     /**
      * Create a new schema snapshot
@@ -140,10 +140,7 @@ export class SchemaSnapshotRepository {
      * Delete a snapshot
      */
     delete(id: string): boolean {
-        const result = this.db
-            .getDb()
-            .prepare('DELETE FROM schema_snapshots WHERE id = ?')
-            .run(id);
+        const result = this.db.getDb().prepare('DELETE FROM schema_snapshots WHERE id = ?').run(id);
 
         return result.changes > 0;
     }

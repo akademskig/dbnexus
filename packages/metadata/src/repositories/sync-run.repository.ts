@@ -65,7 +65,7 @@ export interface SyncRunUpdateInput {
 }
 
 export class SyncRunRepository {
-    constructor(private readonly db: MetadataDatabase) { }
+    constructor(private readonly db: MetadataDatabase) {}
 
     /**
      * Create a new sync run (starts in 'running' status)

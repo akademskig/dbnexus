@@ -372,13 +372,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                            schemas.includes(selectedConnection.database)
+                        schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                            schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1404,7 +1404,9 @@ export function QueryPage() {
                                             onClick={() => {
                                                 navigate(
                                                     `/connections/${selectedConnectionId}?tab=management&schema=${encodeURIComponent(
-                                                        selectedTable.schema || selectedSchema || 'public'
+                                                        selectedTable.schema ||
+                                                            selectedSchema ||
+                                                            'public'
                                                     )}&table=${encodeURIComponent(selectedTable.name)}`
                                                 );
                                             }}

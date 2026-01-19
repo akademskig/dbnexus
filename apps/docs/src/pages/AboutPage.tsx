@@ -173,8 +173,7 @@ const CloseButton = styled.button`
     }
 `;
 
-const DONATION_ADDRESS =
-    'bc1qhrg37apup3dkdmxmmy2kt0xcrufxjekxnd7x9jm3k0lv5lyzyrjqecryqh';
+const DONATION_ADDRESS = 'bc1qhrg37apup3dkdmxmmy2kt0xcrufxjekxnd7x9jm3k0lv5lyzyrjqecryqh';
 const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=bitcoin:${DONATION_ADDRESS}`;
 
 export function AboutPage() {
@@ -194,13 +193,15 @@ export function AboutPage() {
     return (
         <DocsLayout>
             <Title>About DB Nexus</Title>
-            <Subtitle>A local-first database manager built for speed, safety, and clarity.</Subtitle>
+            <Subtitle>
+                A local-first database manager built for speed, safety, and clarity.
+            </Subtitle>
 
             <Section>
                 <SectionTitle>Why DB Nexus</SectionTitle>
                 <Paragraph>
-                    DB Nexus was created to make everyday database work feel fast and delightful.
-                    It brings query editing, schema visualization, syncing, and safety guardrails
+                    DB Nexus was created to make everyday database work feel fast and delightful. It
+                    brings query editing, schema visualization, syncing, and safety guardrails
                     together in one modern experience.
                 </Paragraph>
                 <Paragraph>
@@ -211,9 +212,7 @@ export function AboutPage() {
 
             <Section>
                 <SectionTitle>Support Development</SectionTitle>
-                <Paragraph>
-                    If DB Nexus helps you, consider supporting its development.
-                </Paragraph>
+                <Paragraph>If DB Nexus helps you, consider supporting its development.</Paragraph>
                 <DonateButton type="button" onClick={() => setOpen(true)}>
                     <BitcoinIcon
                         src={`${import.meta.env.BASE_URL}Bitcoin.svg.webp`}
@@ -262,11 +261,21 @@ export function AboutPage() {
                                     title={copied ? 'Copied!' : 'Copy address'}
                                 >
                                     {copied ? (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                        >
                                             <path d="M20 6L9 17l-5-5" />
                                         </svg>
                                     ) : (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                        >
                                             <rect x="9" y="9" width="13" height="13" rx="2" />
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                                         </svg>

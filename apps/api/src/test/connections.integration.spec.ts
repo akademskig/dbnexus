@@ -57,7 +57,9 @@ describe('Connections Integration Tests', () => {
                 return;
             }
 
-            const result = await connectionsService.testSettings(TEST_CONNECTIONS.postgresEcommerce);
+            const result = await connectionsService.testSettings(
+                TEST_CONNECTIONS.postgresEcommerce
+            );
 
             expect(result.success).toBe(true);
             expect(result.message).toContain('successful');
@@ -138,7 +140,7 @@ describe('Connections Integration Tests', () => {
 
             // Delete
             await connectionsService.delete(created.id);
-            
+
             // Verify deleted - findById throws NotFoundException
             let afterDelete = null;
             try {

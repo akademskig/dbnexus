@@ -116,11 +116,7 @@ export function DataSyncDialog({
         for (const table of tablesToSync) {
             try {
                 // Fetch actual primary keys for this table
-                const primaryKeys = await getTablePrimaryKeys(
-                    sourceConnectionId,
-                    schema,
-                    table
-                );
+                const primaryKeys = await getTablePrimaryKeys(sourceConnectionId, schema, table);
                 const result = await syncApi.syncTableData(
                     sourceConnectionId,
                     targetConnectionId,

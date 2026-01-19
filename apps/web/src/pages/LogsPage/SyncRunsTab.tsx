@@ -375,7 +375,10 @@ export function SyncRunsTab() {
                                         Duration
                                     </Typography>
                                     <Typography variant="body2">
-                                        {formatDuration(selectedRun.startedAt, selectedRun.completedAt)}
+                                        {formatDuration(
+                                            selectedRun.startedAt,
+                                            selectedRun.completedAt
+                                        )}
                                     </Typography>
                                 </Box>
                                 <Chip

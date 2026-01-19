@@ -142,9 +142,7 @@ describe('Schema Integration Tests', () => {
             expect(schema.indexes.length).toBeGreaterThan(0);
 
             // Check for the category index defined in ecommerce.sql
-            const categoryIndex = schema.indexes.find((i) =>
-                i.columns.includes('category_id')
-            );
+            const categoryIndex = schema.indexes.find((i) => i.columns.includes('category_id'));
             expect(categoryIndex).toBeDefined();
         });
 
@@ -161,13 +159,10 @@ describe('Schema Integration Tests', () => {
             expect(Array.isArray(schema.foreignKeys)).toBe(true);
 
             // Products should have FK to categories
-            const categoryFk = schema.foreignKeys.find(
-                (fk) => fk.referencedTable === 'categories'
-            );
+            const categoryFk = schema.foreignKeys.find((fk) => fk.referencedTable === 'categories');
             expect(categoryFk).toBeDefined();
             expect(categoryFk?.columns).toContain('category_id');
         });
-
     });
 
     describe('Schema Differences', () => {
@@ -202,14 +197,18 @@ describe('Schema Integration Tests', () => {
             expect(stagingSchema.columns.length).toBeGreaterThan(0);
 
             // Log for debugging
-            console.log(`Prod products columns: ${prodSchema.columns.map((c) => c.name).join(', ')}`);
-            console.log(`Staging products columns: ${stagingSchema.columns.map((c) => c.name).join(', ')}`);
+            console.log(
+                `Prod products columns: ${prodSchema.columns.map((c) => c.name).join(', ')}`
+            );
+            console.log(
+                `Staging products columns: ${stagingSchema.columns.map((c) => c.name).join(', ')}`
+            );
 
             // If staging has different columns, test the differences
             // Note: If DBs were synced, they might be identical - that's OK
             const prodColumnNames = prodSchema.columns.map((c) => c.name);
             const stagingColumnNames = stagingSchema.columns.map((c) => c.name);
-            
+
             // Check if staging has any extra columns (may vary based on Docker state)
             const extraInStaging = stagingColumnNames.filter((c) => !prodColumnNames.includes(c));
             console.log(`Extra columns in staging: ${extraInStaging.join(', ') || 'none'}`);
@@ -254,9 +253,7 @@ describe('Schema Integration Tests', () => {
             // The view should exist in the database
             // Let's verify by querying it directly
             const connector = await connectionsService.getConnector(postgresConnectionId!);
-            const result = await connector.query(
-                'SELECT * FROM order_summary LIMIT 1'
-            );
+            const result = await connector.query('SELECT * FROM order_summary LIMIT 1');
 
             expect(result.rows).toBeDefined();
         });

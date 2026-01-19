@@ -13,6 +13,7 @@ docker compose up -d
 ```
 
 This starts:
+
 - **PostgreSQL Ecommerce** (port 5450) - Full e-commerce schema with sample data
 - **PostgreSQL Staging** (port 5451) - Similar schema with differences for testing schema diff
 - **MySQL Blog** (port 3350) - Blog schema for MySQL testing
@@ -29,24 +30,27 @@ pnpm --filter @dbnexus/api test:integration
 
 ## Test Files
 
-| File | Description |
-|------|-------------|
-| `setup.ts` | Test utilities, DB configs, app creation |
-| `connections.integration.spec.ts` | Connection CRUD, test, connect/disconnect |
-| `queries.integration.spec.ts` | Query execution, data modification |
-| `schema.integration.spec.ts` | Schema extraction (tables, columns, indexes, FKs) |
-| `schema-diff.integration.spec.ts` | Schema comparison between databases |
-| `sync.integration.spec.ts` | Data diff and sync operations |
+| File                              | Description                                       |
+| --------------------------------- | ------------------------------------------------- |
+| `setup.ts`                        | Test utilities, DB configs, app creation          |
+| `connections.integration.spec.ts` | Connection CRUD, test, connect/disconnect         |
+| `queries.integration.spec.ts`     | Query execution, data modification                |
+| `schema.integration.spec.ts`      | Schema extraction (tables, columns, indexes, FKs) |
+| `schema-diff.integration.spec.ts` | Schema comparison between databases               |
+| `sync.integration.spec.ts`        | Data diff and sync operations                     |
 
 ## Test Database Schemas
 
 ### PostgreSQL Ecommerce (Production)
+
 - `categories`, `products`, `customers`, `addresses`
 - `orders`, `order_items`, `reviews`
 - Includes sample data and foreign key relationships
 
 ### PostgreSQL Staging
+
 Same as production but with:
+
 - **Extra columns**: `products.sale_price`, `products.is_featured`, `products.weight_kg`
 - **Extra columns**: `orders.billing_address_id`, `orders.payment_status`, etc.
 - **Extra tables**: `coupons`, `wishlists`
@@ -102,6 +106,7 @@ describe('My Integration Tests', () => {
 ## Troubleshooting
 
 ### Tests timing out
+
 Increase timeout in `jest.integration.config.cjs` or individual tests:
 
 ```typescript
@@ -111,6 +116,7 @@ it('should do something', async () => {
 ```
 
 ### Database connection refused
+
 Check Docker containers are running and healthy:
 
 ```bash
@@ -119,4 +125,5 @@ docker compose logs postgres-ecommerce
 ```
 
 ### Data conflicts between tests
+
 Each test should clean up its own data. Use unique table names or `TRUNCATE` in `afterEach`.
