@@ -17,7 +17,7 @@ import {
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { Sync as SyncIcon } from '@mui/icons-material';
 import { syncApi } from '../../lib/api';
-import { OperationResultsList, type OperationResultData } from '../../components/OperationResult';
+import { OperationResultsList, type OperationResultData } from '../../components/StatusAlert';
 import type { TableDataDiff } from '@dbnexus/shared';
 
 interface DataSyncDialogProps {

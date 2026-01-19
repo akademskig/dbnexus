@@ -29,7 +29,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert,
     CircularProgress,
     Chip,
     Divider,
@@ -38,6 +37,7 @@ import {
     useTheme,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -834,14 +834,14 @@ export function DiagramEditorTab({
                     Delete Column
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="error" sx={{ mt: 1 }}>
+                    <StatusAlert severity="error" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             <strong>Warning:</strong> This will permanently delete the column{' '}
                             <strong>&quot;{currentColumn?.name}&quot;</strong> and ALL data within
                             it.
                         </Typography>
                         <Typography variant="body2">This action cannot be undone.</Typography>
-                    </Alert>
+                    </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
@@ -876,7 +876,7 @@ export function DiagramEditorTab({
                     Drop Table
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="error" sx={{ mt: 1 }}>
+                    <StatusAlert severity="error" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             <strong>Warning:</strong> This will permanently drop the table{' '}
                             <strong>&quot;{currentTableId}&quot;</strong> and ALL its data.
@@ -885,7 +885,7 @@ export function DiagramEditorTab({
                             CASCADE will be used to drop dependent objects. This action cannot be
                             undone.
                         </Typography>
-                    </Alert>
+                    </StatusAlert>
                     <TextField
                         fullWidth
                         size="small"
@@ -931,9 +931,9 @@ export function DiagramEditorTab({
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
-                        <Alert severity="info" sx={{ mb: 2 }}>
+                        <StatusAlert severity="info" sx={{ mb: 2 }}>
                             Create a foreign key relationship between the connected columns?
-                        </Alert>
+                        </StatusAlert>
                         {pendingConnection && (
                             <Typography variant="body2" color="text.secondary">
                                 From: <strong>{pendingConnection.source}</strong> → To:{' '}

@@ -15,12 +15,12 @@ import {
     MenuItem,
     Chip,
     IconButton,
-    Alert,
     CircularProgress,
     FormControlLabel,
     Checkbox,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyIcon from '@mui/icons-material/Key';
@@ -608,7 +608,7 @@ export function SyncRowDialog({
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     {/* Source info */}
-                    <Alert severity="info" icon={false}>
+                    <StatusAlert severity="info" showIcon={false}>
                         <Typography variant="body2">
                             <strong>Source:</strong> {sourceConnection?.name || 'Unknown'} →{' '}
                             {schema}.{table}
@@ -634,23 +634,23 @@ export function SyncRowDialog({
                                     : `(row keys: ${Object.keys(rows[0] as object).join(', ')})`}
                             </Typography>
                         )}
-                    </Alert>
+                    </StatusAlert>
 
                     {/* Warning if no primary keys */}
                     {primaryKeys.length === 0 && (
-                        <Alert severity="error">
+                        <StatusAlert severity="error">
                             <Typography variant="body2">
                                 No primary keys detected for this table.
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Cannot sync rows without primary keys to identify them.
                             </Typography>
-                        </Alert>
+                        </StatusAlert>
                     )}
 
                     {/* Warning if not in a group */}
                     {!isInGroup && (
-                        <Alert severity="warning">
+                        <StatusAlert severity="warning">
                             <Typography variant="body2">
                                 This connection is not part of an Instance Group.
                             </Typography>
@@ -659,12 +659,12 @@ export function SyncRowDialog({
                                 Group. Add this connection to a group on the Connections page to
                                 enable syncing.
                             </Typography>
-                        </Alert>
+                        </StatusAlert>
                     )}
 
                     {/* No other connections in group */}
                     {isInGroup && targetConnections.length === 0 && (
-                        <Alert severity="warning">
+                        <StatusAlert severity="warning">
                             <Typography variant="body2">
                                 No other connections in this Instance Group.
                             </Typography>
@@ -672,7 +672,7 @@ export function SyncRowDialog({
                                 Add more connections to the same group to enable syncing between
                                 them.
                             </Typography>
-                        </Alert>
+                        </StatusAlert>
                     )}
 
                     {/* Target connection */}
@@ -738,7 +738,7 @@ export function SyncRowDialog({
 
                     {/* Result */}
                     {result && (
-                        <Alert severity={result.errors.length > 0 ? 'warning' : 'success'}>
+                        <StatusAlert severity={result.errors.length > 0 ? 'warning' : 'success'}>
                             <Typography variant="body2">
                                 {result.inserted > 0 && `Inserted: ${result.inserted} `}
                                 {result.updated > 0 && `Updated: ${result.updated} `}
@@ -752,7 +752,7 @@ export function SyncRowDialog({
                                     Errors: {result.errors.join(', ')}
                                 </Typography>
                             )}
-                        </Alert>
+                        </StatusAlert>
                     )}
                 </Box>
             </DialogContent>

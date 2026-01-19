@@ -9,7 +9,6 @@ import {
     Box,
     Typography,
     CircularProgress,
-    Alert,
     Checkbox,
     List,
     ListItem,
@@ -23,6 +22,7 @@ import {
     Collapse,
 } from '@mui/material';
 import { StyledTooltip } from './StyledTooltip';
+import { StatusAlert } from './StatusAlert';
 import {
     Search as SearchIcon,
     Storage as StorageIcon,
@@ -309,13 +309,13 @@ export function ScanConnectionsDialog({
                                     {scanResult.errors.length > 1 ? 's' : ''}
                                 </Button>
                                 <Collapse in={showErrors}>
-                                    <Alert severity="warning" sx={{ mt: 1 }}>
+                                    <StatusAlert severity="warning" sx={{ mt: 1 }}>
                                         {scanResult.errors.map((err, i) => (
                                             <Typography key={i} variant="body2">
                                                 • {err}
                                             </Typography>
                                         ))}
-                                    </Alert>
+                                    </StatusAlert>
                                 </Collapse>
                             </Box>
                         )}
@@ -479,10 +479,10 @@ export function ScanConnectionsDialog({
                                 </List>
                             </>
                         ) : (
-                            <Alert severity="info">
+                            <StatusAlert severity="info">
                                 No database connections were found. Make sure your databases are
                                 running and accessible.
-                            </Alert>
+                            </StatusAlert>
                         )}
 
                         {/* Scanned Sources */}

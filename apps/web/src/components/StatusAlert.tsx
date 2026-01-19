@@ -1,23 +1,12 @@
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip, Typography, IconButton } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
+import { ReactNode } from 'react';
 
-export interface OperationResultData {
-    id?: string;
-    success: boolean;
-    message: string;
-    duration?: number;
-    timestamp?: Date;
-    details?: string;
-    severity?: 'success' | 'error' | 'warning' | 'info';
-}
-
-interface OperationResultItemProps {
-    readonly result: OperationResultData;
-    readonly showTimestamp?: boolean;
-}
+type Severity = 'success' | 'error' | 'warning' | 'info';
 
 const severityConfig = {
     success: {
@@ -45,6 +34,78 @@ const severityConfig = {
         iconColor: 'info.main',
     },
 };
+
+// ============================================================================
+// StatusAlert - Simple alert with message
+// ============================================================================
+interface StatusAlertProps {
+    readonly severity: Severity;
+    readonly children: ReactNode;
+    readonly onClose?: () => void;
+    readonly showIcon?: boolean;
+    readonly sx?: object;
+}
+
+export function StatusAlert({
+    severity,
+    children,
+    onClose,
+    showIcon = true,
+    sx,
+}: StatusAlertProps) {
+    const config = severityConfig[severity];
+    const { Icon } = config;
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                p: 1.5,
+                bgcolor: config.bgcolor,
+                borderRadius: 1,
+                border: 1,
+                borderColor: config.borderColor,
+                ...sx,
+            }}
+        >
+            {showIcon && <Icon sx={{ color: config.iconColor, mt: 0.25 }} />}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                {typeof children === 'string' ? (
+                    <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                        {children}
+                    </Typography>
+                ) : (
+                    children
+                )}
+            </Box>
+            {onClose && (
+                <IconButton size="small" onClick={onClose} sx={{ mt: -0.5, mr: -0.5 }}>
+                    <CloseIcon fontSize="small" />
+                </IconButton>
+            )}
+        </Box>
+    );
+}
+
+// ============================================================================
+// OperationResultData - For operation feedback
+// ============================================================================
+export interface OperationResultData {
+    id?: string;
+    success: boolean;
+    message: string;
+    duration?: number;
+    timestamp?: Date;
+    details?: string;
+    severity?: Severity;
+}
+
+interface OperationResultItemProps {
+    readonly result: OperationResultData;
+    readonly showTimestamp?: boolean;
+}
 
 export function OperationResultItem({ result, showTimestamp = false }: OperationResultItemProps) {
     const severity = result.severity ?? (result.success ? 'success' : 'error');

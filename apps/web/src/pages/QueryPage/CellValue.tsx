@@ -9,9 +9,9 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    Alert,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import Editor from '@monaco-editor/react';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
@@ -189,9 +189,9 @@ export function CellValue({ value, onSaveJson }: CellValueProps) {
                         sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
                     >
                         {jsonError && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
+                            <StatusAlert severity="error" sx={{ mb: 2 }}>
                                 {jsonError}
-                            </Alert>
+                            </StatusAlert>
                         )}
                         <Box sx={{ flex: 1, minHeight: 0 }}>
                             <Editor

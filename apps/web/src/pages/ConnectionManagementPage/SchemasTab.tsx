@@ -11,10 +11,10 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert,
     CircularProgress,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -219,10 +219,10 @@ export function SchemasTab({
             </Box>
 
             {isSqlite && (
-                <Alert severity="info" sx={{ mb: 2 }}>
+                <StatusAlert severity="info" sx={{ mb: 2 }}>
                     SQLite does not support multiple schemas. The database file acts as a single
                     schema.
-                </Alert>
+                </StatusAlert>
             )}
 
             {/* Schemas Table */}
@@ -283,9 +283,9 @@ export function SchemasTab({
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
                         {createError && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
+                            <StatusAlert severity="error" sx={{ mb: 2 }}>
                                 {createError}
-                            </Alert>
+                            </StatusAlert>
                         )}
                         <TextField
                             autoFocus
@@ -339,14 +339,14 @@ export function SchemasTab({
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
-                        <Alert severity="error" sx={{ mb: 2 }}>
+                        <StatusAlert severity="error" sx={{ mb: 2 }}>
                             <Typography variant="body2" gutterBottom>
                                 <strong>Warning:</strong> This will permanently delete the schema{' '}
                                 <strong>&quot;{schemaToDelete}&quot;</strong> and ALL tables, data,
                                 and objects within it.
                             </Typography>
                             <Typography variant="body2">This action cannot be undone.</Typography>
-                        </Alert>
+                        </StatusAlert>
                         <Typography variant="body2" sx={{ mb: 2 }}>
                             To confirm, type the schema name: <strong>{schemaToDelete}</strong>
                         </Typography>

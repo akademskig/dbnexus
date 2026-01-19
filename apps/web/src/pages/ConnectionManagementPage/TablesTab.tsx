@@ -18,10 +18,10 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert,
     CircularProgress,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -384,10 +384,10 @@ export function TablesTab({
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
-                        <Alert severity="info" sx={{ mb: 2 }}>
+                        <StatusAlert severity="info" sx={{ mb: 2 }}>
                             Creates a simple table with an auto-increment ID column. You can add
                             more columns using the Query Editor.
-                        </Alert>
+                        </StatusAlert>
                         <TextField
                             autoFocus
                             fullWidth
@@ -430,14 +430,14 @@ export function TablesTab({
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
-                        <Alert severity="error" sx={{ mb: 2 }}>
+                        <StatusAlert severity="error" sx={{ mb: 2 }}>
                             <Typography variant="body2" gutterBottom>
                                 <strong>Warning:</strong> This will permanently delete the table{' '}
                                 <strong>&quot;{tableToDelete?.name}&quot;</strong> and ALL data
                                 within it.
                             </Typography>
                             <Typography variant="body2">This action cannot be undone.</Typography>
-                        </Alert>
+                        </StatusAlert>
                         <Typography variant="body2" sx={{ mb: 2 }}>
                             To confirm, type the table name: <strong>{tableToDelete?.name}</strong>
                         </Typography>

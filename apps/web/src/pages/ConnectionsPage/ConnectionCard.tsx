@@ -6,11 +6,11 @@ import {
     Button,
     IconButton,
     Chip,
-    Alert,
     CircularProgress,
     Collapse,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -336,13 +336,13 @@ export function ConnectionCard({
                     </Box>
 
                     {testResult && (
-                        <Alert
+                        <StatusAlert
                             severity={testResult.success ? 'success' : 'error'}
                             onClose={() => setTestResult(null)}
                             sx={{ mb: 2 }}
                         >
                             {testResult.message}
-                        </Alert>
+                        </StatusAlert>
                     )}
 
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

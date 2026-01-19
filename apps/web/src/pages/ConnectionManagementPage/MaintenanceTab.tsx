@@ -18,7 +18,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import StorageIcon from '@mui/icons-material/Storage';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
-import { OperationResultsList, type OperationResultData } from '../../components/OperationResult';
+import { OperationResultsList, type OperationResultData } from '../../components/StatusAlert';
 import { queriesApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 

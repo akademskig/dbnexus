@@ -6,7 +6,6 @@ import {
     Button,
     CircularProgress,
     Chip,
-    Alert,
     FormControlLabel,
     Checkbox,
     LinearProgress,
@@ -22,7 +21,7 @@ import { syncApi } from '../lib/api';
 import type { TableDataDiff } from '@dbnexus/shared';
 import { LoadingState } from './LoadingState';
 import { useToastStore } from '../stores/toastStore';
-import { OperationResultItem } from './OperationResult';
+import { OperationResultItem, StatusAlert } from './StatusAlert';
 
 interface DataDiffDisplayProps {
     /** Source connection ID */
@@ -459,11 +458,11 @@ export function DataDiffDisplay({
                     </Box>
                 </Box>
 
-                <Alert severity={dumpRestoreResult.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
+                <StatusAlert severity={dumpRestoreResult.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
                     {dumpRestoreResult.success
                         ? `Successfully copied all data from source to target.`
                         : `Completed with some errors. Check the details below.`}
-                </Alert>
+                </StatusAlert>
 
                 {dumpRestoreResult.tableResults.map((result) => (
                     <Box
@@ -508,7 +507,7 @@ export function DataDiffDisplay({
                 ))}
 
                 {dumpRestoreResult.errors.length > 0 && (
-                    <Alert severity="error" sx={{ mt: 2 }}>
+                    <StatusAlert severity="error" sx={{ mt: 2 }}>
                         <Typography variant="subtitle2" gutterBottom>
                             Errors:
                         </Typography>
@@ -517,7 +516,7 @@ export function DataDiffDisplay({
                                 • {err}
                             </Typography>
                         ))}
-                    </Alert>
+                    </StatusAlert>
                 )}
 
                 <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
@@ -572,7 +571,7 @@ export function DataDiffDisplay({
 
                 {/* Show errors first and prominently */}
                 {failedResults.length > 0 && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
+                    <StatusAlert severity="error" sx={{ mb: 2 }}>
                         <Typography variant="subtitle2" gutterBottom>
                             {failedResults.length} table(s) failed to sync:
                         </Typography>
@@ -596,7 +595,7 @@ export function DataDiffDisplay({
                                 ))}
                             </Box>
                         ))}
-                    </Alert>
+                    </StatusAlert>
                 )}
 
                 {/* Show successful syncs */}
@@ -893,7 +892,7 @@ export function DataDiffDisplay({
                         />
                     </Box>
 
-                    <Alert severity="info" sx={{ mt: 2 }}>
+                    <StatusAlert severity="info" sx={{ mt: 2 }}>
                         <Typography variant="body2">
                             <strong>Sync Tables:</strong> Incrementally sync selected tables (may
                             fail with FK constraints).
@@ -902,7 +901,7 @@ export function DataDiffDisplay({
                             <strong>Dump & Restore:</strong> Truncates target and copies all data in
                             dependency order (handles FK constraints properly).
                         </Typography>
-                    </Alert>
+                    </StatusAlert>
 
                     {(syncing || dumpRestoring) && <LinearProgress sx={{ mt: 2 }} />}
                 </>

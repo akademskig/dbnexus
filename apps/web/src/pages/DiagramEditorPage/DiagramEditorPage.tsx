@@ -30,7 +30,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert,
     CircularProgress,
     Chip,
     Divider,
@@ -40,6 +39,7 @@ import {
     InputAdornment,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -1330,14 +1330,14 @@ export function DiagramEditorPage() {
                     Delete Column
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="error" sx={{ mt: 1 }}>
+                    <StatusAlert severity="error" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             <strong>Warning:</strong> This will permanently delete the column{' '}
                             <strong>&quot;{currentColumn?.name}&quot;</strong> and ALL data within
                             it.
                         </Typography>
                         <Typography variant="body2">This action cannot be undone.</Typography>
-                    </Alert>
+                    </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
@@ -1368,10 +1368,10 @@ export function DiagramEditorPage() {
                     Drop Table
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="error" sx={{ mb: 2 }}>
+                    <StatusAlert severity="error" sx={{ mb: 2 }}>
                         This will permanently delete the table and all its data. This action cannot
                         be undone.
-                    </Alert>
+                    </StatusAlert>
                     <Typography>
                         Are you sure you want to drop table &quot;{currentTableId}&quot;?
                     </Typography>
@@ -1412,9 +1412,9 @@ export function DiagramEditorPage() {
                 <DialogTitle>Create Foreign Key</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1 }}>
-                        <Alert severity="info" sx={{ mb: 2 }}>
+                        <StatusAlert severity="info" sx={{ mb: 2 }}>
                             Create a foreign key relationship between the connected columns?
-                        </Alert>
+                        </StatusAlert>
                         {pendingConnection && (
                             <Typography variant="body2" color="text.secondary">
                                 From: <strong>{pendingConnection.source}</strong> → To:{' '}

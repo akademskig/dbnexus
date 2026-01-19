@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import type { SchemaDiff, SchemaDiffItem } from '@dbnexus/shared';
 import { DiffTypeBadge } from './DiffTypeBadge';
-import { OperationResultItem } from '@/components/OperationResult';
+import { OperationResultItem } from '@/components/StatusAlert';
 
 interface SchemaDiffDisplayProps {
     diff: SchemaDiff;

@@ -15,7 +15,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert,
     CircularProgress,
     Tabs,
     Tab,
@@ -25,6 +24,7 @@ import {
     Autocomplete,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '../../components/StatusAlert';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -1235,14 +1235,14 @@ export function TableDetailsTab({
                     Delete Column
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="error" sx={{ mt: 1 }}>
+                    <StatusAlert severity="error" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             <strong>Warning:</strong> This will permanently delete the column{' '}
                             <strong>&quot;{columnToDelete?.name}&quot;</strong> and ALL data within
                             it.
                         </Typography>
                         <Typography variant="body2">This action cannot be undone.</Typography>
-                    </Alert>
+                    </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteColumnOpen(false)}>Cancel</Button>
@@ -1345,13 +1345,13 @@ export function TableDetailsTab({
                     Delete Index
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="warning" sx={{ mt: 1 }}>
+                    <StatusAlert severity="warning" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             Are you sure you want to delete the index{' '}
                             <strong>&quot;{indexToDelete?.name}&quot;</strong>?
                         </Typography>
                         <Typography variant="body2">This may affect query performance.</Typography>
-                    </Alert>
+                    </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteIndexOpen(false)}>Cancel</Button>
@@ -1546,7 +1546,7 @@ export function TableDetailsTab({
                     Delete Foreign Key
                 </DialogTitle>
                 <DialogContent>
-                    <Alert severity="warning" sx={{ mt: 1 }}>
+                    <StatusAlert severity="warning" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
                             Are you sure you want to delete the foreign key constraint{' '}
                             <strong>&quot;{fkToDelete?.name}&quot;</strong>?
@@ -1554,7 +1554,7 @@ export function TableDetailsTab({
                         <Typography variant="body2">
                             This will remove the referential integrity constraint between tables.
                         </Typography>
-                    </Alert>
+                    </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setDeleteFkOpen(false)}>Cancel</Button>
