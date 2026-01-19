@@ -438,6 +438,20 @@ export function QueryPage() {
                 }
             }
 
+            // Invalidate table counts if this was a data-modifying query
+            const queryUpper = lastExecutedQueryRef.current.toUpperCase().trim();
+            if (
+                queryUpper.startsWith('INSERT') ||
+                queryUpper.startsWith('UPDATE') ||
+                queryUpper.startsWith('DELETE') ||
+                queryUpper.startsWith('TRUNCATE') ||
+                queryUpper.startsWith('CREATE') ||
+                queryUpper.startsWith('DROP') ||
+                queryUpper.startsWith('ALTER')
+            ) {
+                refetchTables();
+            }
+
             if (historyOpen) {
                 refetchHistory();
             }
