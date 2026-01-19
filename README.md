@@ -119,25 +119,96 @@ pnpm dev
 
 ## 💻 CLI Usage
 
+### Start the UI (default command)
+
 ```bash
-# Initialize a workspace
-dbnexus init
+# Start DB Nexus (default)
+dbnexus
 
-# Add a database connection
-dbnexus connect add
+# Custom port
+dbnexus --port 4000
 
-# List connections
+# Don't open browser
+dbnexus --no-open
+
+# Custom data directory
+dbnexus --data-dir ~/my-data
+```
+
+### Connection Management
+
+```bash
+# Add a new connection
+dbnexus connect add \
+  --name prod-db \
+  --host db.example.com \
+  --port 5432 \
+  --database myapp \
+  --user admin \
+  --password secret \
+  --ssl \
+  --tags prod,main
+
+# List all connections
 dbnexus connect list
 
 # Test a connection
-dbnexus connect test <name>
+dbnexus connect test prod-db
 
-# Start the web UI
-dbnexus ui
+# Remove a connection
+dbnexus connect remove prod-db
+```
 
+### Query Execution
+
+```bash
 # Run a query
-dbnexus query --conn <name> --sql "SELECT * FROM users"
-dbnexus query --conn <name> --file ./query.sql
+dbnexus query --conn prod-db --sql "SELECT * FROM users LIMIT 10"
+
+# Execute from file
+dbnexus query --conn prod-db --file ./query.sql
+
+# Dangerous queries require --confirm
+dbnexus query --conn prod-db --sql "DROP TABLE temp" --confirm
+```
+
+### Database Scanning
+
+```bash
+# Scan for databases (ports, Docker, .env files, SQLite)
+dbnexus scan
+
+# Auto-add discovered connections
+dbnexus scan --add
+
+# Scan specific directories for .env files
+dbnexus scan --env-dirs ~/projects,/var/www
+```
+
+### Data Export
+
+```bash
+# Export table to CSV
+dbnexus export --conn prod-db --table users --format csv --output users.csv
+
+# Export query results to JSON
+dbnexus export --conn prod-db --sql "SELECT * FROM orders" --format json --output orders.json
+```
+
+### Schema Tools
+
+```bash
+# Show schema for a connection
+dbnexus schema show --conn prod-db
+
+# Show specific table schema
+dbnexus schema show --conn prod-db --table users
+
+# Compare schemas between connections
+dbnexus schema compare --source dev-db --target prod-db
+
+# Generate migration SQL
+dbnexus schema diff --source dev-db --target prod-db --output migration.sql
 ```
 
 ## 🔧 Scripts
@@ -215,4 +286,4 @@ For detailed architecture and design decisions, see [DESIGN.md](./DESIGN.md).
 
 ## 📄 License
 
-MIT
+AGPL-3.0 - See [LICENSE](./LICENSE) for details.
