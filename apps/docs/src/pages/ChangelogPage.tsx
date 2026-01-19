@@ -98,9 +98,19 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.1.11',
+        version: '0.1.12',
         date: 'January 2026',
         latest: true,
+        changes: [
+            { type: 'added' as const, text: 'Data Sync Logs tab in Logs page for tracking sync operations' },
+            { type: 'added' as const, text: 'SQL statement logging for sync operations with actual values' },
+            { type: 'added' as const, text: 'Auto-refresh of sync logs when operations complete' },
+            { type: 'changed' as const, text: 'Sync runs now tracked in Activity log alongside queries' },
+        ],
+    },
+    {
+        version: '0.1.11',
+        date: 'January 2026',
         changes: [
             { type: 'added' as const, text: 'StatusAlert component for consistent alert styling' },
             { type: 'added' as const, text: 'Dynamic CLI version from package.json' },

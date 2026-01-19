@@ -38,7 +38,7 @@ const DonateButton = styled.button`
     gap: 0.75rem;
     background: rgba(247, 147, 26, 0.1);
     border: 1px solid rgba(247, 147, 26, 0.25);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.75rem 1.25rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -76,7 +76,7 @@ const DialogOverlay = styled(motion.div)`
 const DialogCard = styled(motion.div)`
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border-radius: 8px;
     padding: 2rem;
     width: min(90vw, 400px);
     text-align: center;
@@ -100,7 +100,7 @@ const DialogTitle = styled.h3`
 const QrWrapper = styled.div`
     background: white;
     padding: 1rem;
-    border-radius: 12px;
+    border-radius: 8px;
     display: inline-block;
     margin-bottom: 1.5rem;
 `;
