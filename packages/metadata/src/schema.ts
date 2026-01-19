@@ -269,8 +269,8 @@ export const MIGRATIONS: string[] = [
   UPDATE schema_version SET version = 10;
   `,
 
-    // Version 11: Add sql_statements to sync_runs for tracking executed SQL
-    `
+  // Version 11: Add sql_statements to sync_runs for tracking executed SQL
+  `
   ALTER TABLE sync_runs ADD COLUMN sql_statements TEXT;
 
   UPDATE schema_version SET version = 11;

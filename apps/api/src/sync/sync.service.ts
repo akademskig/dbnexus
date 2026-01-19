@@ -40,6 +40,53 @@ function isJsonColumn(dataType: string): boolean {
     return typeLower === 'json' || typeLower === 'jsonb';
 }
 
+// Helper to format a value for SQL display (not for execution)
+function formatValueForSql(value: unknown): string {
+    if (value === null || value === undefined) {
+        return 'NULL';
+    }
+    if (typeof value === 'string') {
+        // Escape single quotes and wrap in quotes
+        return `'${value.replace(/'/g, "''")}'`;
+    }
+    if (typeof value === 'number' || typeof value === 'bigint') {
+        return String(value);
+    }
+    if (typeof value === 'boolean') {
+        return value ? 'TRUE' : 'FALSE';
+    }
+    if (value instanceof Date) {
+        return `'${value.toISOString()}'`;
+    }
+    if (typeof value === 'object') {
+        // JSON objects
+        return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+    }
+    return String(value);
+}
+
+// Helper to build readable SQL with actual values (for logging/display)
+function buildReadableSql(
+    template: string,
+    values: unknown[],
+    engine: DatabaseEngine
+): string {
+    let sql = template;
+    // Replace placeholders with actual values
+    if (engine === 'mysql' || engine === 'mariadb') {
+        // MySQL uses ? placeholders
+        for (const value of values) {
+            sql = sql.replace('?', formatValueForSql(value));
+        }
+    } else {
+        // PostgreSQL uses $1, $2, etc.
+        for (let i = values.length; i >= 1; i--) {
+            sql = sql.replace(`$${i}`, formatValueForSql(values[i - 1]));
+        }
+    }
+    return sql;
+}
+
 // Helper to serialize a value for insertion, handling JSON columns
 function serializeValueForInsert(value: unknown, dataType: string): unknown {
     if (value === null || value === undefined) {
@@ -510,9 +557,9 @@ export class SyncService {
                     const quotedColumns = insertableColumns
                         .map((c) => quoteIdentifier(c, engine))
                         .join(', ');
-                    const sql = `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`;
-                    executedSql.push(sql);
-                    await targetConnector.execute(sql, values);
+                    const sqlTemplate = `INSERT INTO ${tableRef} (${quotedColumns}) VALUES (${placeholders})`;
+                    executedSql.push(buildReadableSql(sqlTemplate, values, engine));
+                    await targetConnector.execute(sqlTemplate, values);
                     result.inserted++;
                 } catch (error) {
                     result.errors.push(
@@ -544,9 +591,9 @@ export class SyncService {
                         ...effectivePkColumns.map((c) => serializeValue(c, source[c])),
                     ];
 
-                    const sql = `UPDATE ${tableRef} SET ${setClause} WHERE ${whereClause}`;
-                    executedSql.push(sql);
-                    await targetConnector.execute(sql, values);
+                    const sqlTemplate = `UPDATE ${tableRef} SET ${setClause} WHERE ${whereClause}`;
+                    executedSql.push(buildReadableSql(sqlTemplate, values, engine));
+                    await targetConnector.execute(sqlTemplate, values);
                     result.updated++;
                 } catch (error) {
                     result.errors.push(
@@ -568,9 +615,9 @@ export class SyncService {
                         .join(' AND ');
                     const values = effectivePkColumns.map((c) => row[c]);
 
-                    const sql = `DELETE FROM ${tableRef} WHERE ${whereClause}`;
-                    executedSql.push(sql);
-                    await targetConnector.execute(sql, values);
+                    const sqlTemplate = `DELETE FROM ${tableRef} WHERE ${whereClause}`;
+                    executedSql.push(buildReadableSql(sqlTemplate, values, engine));
+                    await targetConnector.execute(sqlTemplate, values);
                     result.deleted++;
                 } catch (error) {
                     result.errors.push(
