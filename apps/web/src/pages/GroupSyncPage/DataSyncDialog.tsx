@@ -157,6 +157,7 @@ export function DataSyncDialog({
 
         setSyncing(false);
         queryClient.invalidateQueries({ queryKey: ['groupSyncStatus'] });
+        queryClient.invalidateQueries({ queryKey: ['syncRuns'] });
     };
 
     // DataGrid columns for table selection

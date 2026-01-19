@@ -174,6 +174,8 @@ export function DataDiffDisplay({
             });
             refetch();
         }
+        // Refresh sync runs log
+        queryClient.invalidateQueries({ queryKey: ['syncRuns'] });
         onSyncComplete?.();
     };
 
@@ -288,6 +290,8 @@ export function DataDiffDisplay({
             ]);
         } finally {
             setSyncing(false);
+            // Refresh sync runs log
+            queryClient.invalidateQueries({ queryKey: ['syncRuns'] });
         }
     };
 
