@@ -86,7 +86,7 @@ const features = [
         title: 'Query Editor',
         description:
             'A powerful SQL editor with everything you need to write and execute queries efficiently.',
-        screenshot: '/screenshots/querypage.png',
+        screenshot: 'screenshots/querypage.png',
         items: [
             'Syntax highlighting for SQL',
             'Auto-completion for tables & columns',
@@ -103,7 +103,7 @@ const features = [
         color: '#6366f1',
         title: 'Schema Diagram',
         description: 'Visualize your database structure with an interactive, editable diagram.',
-        screenshot: '/screenshots/schemadiagrampage.png',
+        screenshot: 'screenshots/schemadiagrampage.png',
         items: [
             'Drag and drop table positioning',
             'Foreign key relationship lines',
@@ -120,7 +120,7 @@ const features = [
         color: '#22c55e',
         title: 'Compare & Sync',
         description: 'Compare database schemas across environments and keep them in sync.',
-        screenshot: '/screenshots/comparepage-schema.png',
+        screenshot: 'screenshots/comparepage-schema.png',
         items: [
             'Side-by-side schema comparison',
             'Highlight added/removed/modified',
@@ -137,7 +137,7 @@ const features = [
         color: '#22d3ee',
         title: 'Auto-Discovery',
         description: 'Automatically find and connect to databases without manual configuration.',
-        screenshot: '/screenshots/scanconnections.png',
+        screenshot: 'screenshots/scanconnections.png',
         items: [
             'Port scanning (5432, 3306, etc.)',
             'Docker container inspection',
@@ -154,7 +154,7 @@ const features = [
         color: '#38bdf8',
         title: 'Manage your connections',
         description: 'Keep all your database connections organized with powerful management tools.',
-        screenshot: '/screenshots/connectionmanagement.png',
+        screenshot: 'screenshots/connectionmanagement.png',
         items: [
             'Add, edit, and remove connections',
             'Test connectivity and health status',
@@ -171,7 +171,7 @@ const features = [
         color: '#ec4899',
         title: 'Projects & Groups',
         description: 'Organize your connections into logical projects and instance groups.',
-        screenshot: '/screenshots/projectspage.png',
+        screenshot: 'screenshots/projectspage.png',
         items: [
             'Create projects for apps',
             'Instance groups (dev/staging/prod)',
@@ -188,7 +188,7 @@ const features = [
         color: '#8b5cf6',
         title: 'Foreign Key Navigation',
         description: 'Follow relationships in your data with clickable foreign key values.',
-        screenshot: '/screenshots/querypage.png',
+        screenshot: 'screenshots/querypage.png',
         items: [
             'Click FK values to navigate',
             'Jump to referenced row',
@@ -231,7 +231,7 @@ export function FeaturesPage() {
                     </FeatureList>
                     {feature.screenshot && (
                         <FeatureImage
-                            src={feature.screenshot}
+                            src={`${import.meta.env.BASE_URL}${feature.screenshot}`}
                             alt={`${feature.title} screenshot`}
                         />
                     )}

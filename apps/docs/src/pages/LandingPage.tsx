@@ -418,10 +418,10 @@ export function LandingPage() {
                 </SectionSubtitle>
                 <ScreenshotsGrid>
                     {[
-                        { src: '/screenshots/querypage.png', label: 'Query Editor' },
-                        { src: '/screenshots/schemadiagrampage.png', label: 'Schema Diagram' },
-                        { src: '/screenshots/comparepage-schema.png', label: 'Compare & Sync' },
-                        { src: '/screenshots/projectspage.png', label: 'Projects & Groups' },
+                        { src: `${import.meta.env.BASE_URL}screenshots/querypage.png`, label: 'Query Editor' },
+                        { src: 'screenshots/schemadiagrampage.png', label: 'Schema Diagram' },
+                        { src: 'screenshots/comparepage-schema.png', label: 'Compare & Sync' },
+                        { src: 'screenshots/projectspage.png', label: 'Projects & Groups' },
                     ].map((shot, index) => (
                         <ScreenshotCard
                             key={shot.label}
@@ -430,7 +430,7 @@ export function LandingPage() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <ScreenshotImage src={shot.src} alt={`${shot.label} screenshot`} />
+                            <ScreenshotImage src={`${import.meta.env.BASE_URL}${shot.src}`} alt={`${shot.label} screenshot`} />
                             <ScreenshotCaption>{shot.label}</ScreenshotCaption>
                         </ScreenshotCard>
                     ))}
