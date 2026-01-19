@@ -1,8 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { createRequire } from 'module';
 import chalk from 'chalk';
 import ora from 'ora';
 import { MetadataDatabase } from '@dbnexus/metadata';
+
+const require = createRequire(import.meta.url);
+const packageJson = require('../../package.json');
 
 export async function initCommand() {
     const spinner = ora('Initializing DB Nexus workspace...').start();
@@ -30,7 +34,7 @@ export async function initCommand() {
 
         // Create config file
         const config = {
-            version: '0.1.0',
+            version: packageJson.version,
             name: path.basename(cwd),
             createdAt: new Date().toISOString(),
         };
