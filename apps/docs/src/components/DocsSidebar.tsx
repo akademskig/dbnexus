@@ -38,8 +38,8 @@ const NavList = styled.ul`
 
 const NavItemBase = `
     display: block;
-    padding: 0.6rem 0.875rem;
-    font-size: 0.95rem;
+    padding: 0.85rem 1.1rem;
+    font-size: 1.1rem;
     transition: all 0.15s;
 
     &:hover {

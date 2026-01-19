@@ -3,7 +3,7 @@ import styled from '@emotion/styled';
 import { DocsSidebar } from './DocsSidebar';
 
 const LayoutRow = styled.div`
-    max-width: 2000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
     display: flex;

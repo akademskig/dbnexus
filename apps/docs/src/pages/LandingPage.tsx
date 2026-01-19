@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { ImageLightbox } from '../components/ImageLightbox';
 
 const Hero = styled.section`
     min-height: calc(100vh - 72px);
@@ -169,7 +170,7 @@ const ScreenshotCard = styled(motion.div)`
     overflow: hidden;
 `;
 
-const ScreenshotImage = styled.img`
+const ScreenshotImage = styled(ImageLightbox)`
     width: 100%;
     height: auto;
     display: block;

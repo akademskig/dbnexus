@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const Container = styled.div`
-    max-width: 2000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
 `;

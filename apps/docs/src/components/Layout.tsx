@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ const Header = styled.header`
 `;
 
 const Nav = styled.nav`
-    max-width: 2000px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 1rem 2rem;
     display: flex;
@@ -33,7 +33,7 @@ const Logo = styled(Link)`
     gap: 0.25rem;
 
     img {
-        height: 42px;
+        height: 52px;
         width: auto;
         display: block;
     }
@@ -42,7 +42,7 @@ const Logo = styled(Link)`
         color: var(--color-primary-light);
         font-family: var(--font-mono);
         font-weight: 700;
-        font-size: 1.4rem;
+        font-size: 1.8rem;
     }
 
     @media (max-width: 768px) {
@@ -58,7 +58,7 @@ const Logo = styled(Link)`
 const NavLinks = styled.div`
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 2.5rem;
 
     @media (max-width: 768px) {
         display: none;
@@ -68,7 +68,7 @@ const NavLinks = styled.div`
 const NavLink = styled(Link)<{ $active?: boolean }>`
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     transition: color 0.2s;
 
     &:hover {
@@ -80,14 +80,13 @@ const GitHubLink = styled.a`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-bg-tertiary);
+    padding: 0.65rem 1.1rem;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 1rem;
     transition: background 0.2s;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.1);
+        color: var(--color-primary);
     }
 `;
 
@@ -122,11 +121,11 @@ const MobileMenu = styled(motion.div)`
 
 const MobileNavLink = styled(Link)<{ $active?: boolean }>`
     display: block;
-    padding: 0.75rem 1rem;
+    padding: 0.9rem 1.1rem;
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     background: ${(props) => (props.$active ? 'rgba(99, 102, 241, 0.1)' : 'transparent')};
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 1.05rem;
 
     &:hover {
         background: rgba(255, 255, 255, 0.05);
@@ -135,11 +134,11 @@ const MobileNavLink = styled(Link)<{ $active?: boolean }>`
 
 const MobileExternalLink = styled.a`
     display: block;
-    padding: 0.75rem 1rem;
+    padding: 0.9rem 1.1rem;
     color: var(--color-text-secondary);
     background: transparent;
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 1.05rem;
 
     &:hover {
         background: rgba(255, 255, 255, 0.05);
@@ -190,6 +189,10 @@ const FooterLinks = styled.div`
 export function Layout() {
     const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, [location.pathname]);
 
     const closeMobileMenu = () => setMobileMenuOpen(false);
 
