@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
-import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
+import { connectionsApi, queriesApi, schemaApi, syncApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
 
 interface ActivityDetails {
@@ -47,6 +47,10 @@ interface ActivityDetails {
     sourceSchema?: string;
     targetSchema?: string;
     statementCount?: number;
+    // Sync-specific
+    inserts?: number;
+    updates?: number;
+    deletes?: number;
 }
 
 interface ActivityItem {
@@ -120,12 +124,17 @@ export function ActivityLogTab() {
         queryFn: () => schemaApi.getMigrationHistory({ limit: 500 }),
     });
 
+    const { data: syncRuns = [], isLoading: loadingSyncRuns } = useQuery({
+        queryKey: ['syncRuns'],
+        queryFn: () => syncApi.getSyncRuns(500),
+    });
+
     const { data: connections = [] } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
 
-    const isLoading = loadingQueries || loadingMigrations;
+    const isLoading = loadingQueries || loadingMigrations || loadingSyncRuns;
 
     // Build unified activity list
     const activities: ActivityItem[] = [
@@ -165,6 +174,30 @@ export function ActivityLogTab() {
                     targetSchema: m.targetSchema,
                     statementCount: m.sqlStatements.length,
                     error: m.error,
+                },
+            })
+        ),
+        // Sync run activities
+        ...syncRuns.map(
+            (s): ActivityItem => ({
+                id: `sync-${s.id}`,
+                type: 'sync',
+                action: s.tableName ? 'table-sync' : 'schema-sync',
+                description: s.tableName
+                    ? `Sync ${s.schemaName}.${s.tableName}`
+                    : `Sync schema ${s.schemaName || 'unknown'}`,
+                timestamp: new Date(s.startedAt),
+                status: s.status === 'failed' ? 'error' : s.status === 'completed' ? 'success' : 'info',
+                details: {
+                    sourceConnection: s.sourceConnectionName,
+                    targetConnection: s.targetConnectionName,
+                    sourceSchema: s.schemaName,
+                    targetSchema: s.schemaName,
+                    rowCount: s.inserts + s.updates + s.deletes,
+                    error: s.errors.length > 0 ? s.errors.join('\n') : undefined,
+                    inserts: s.inserts,
+                    updates: s.updates,
+                    deletes: s.deletes,
                 },
             })
         ),

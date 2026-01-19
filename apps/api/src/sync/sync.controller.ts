@@ -1,10 +1,22 @@
 import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { SyncService, TableDataDiff, DataSyncResult } from './sync.service.js';
+import { MetadataService } from '../metadata/metadata.service.js';
 import type { InstanceGroupSyncStatus, InstanceGroupTargetStatus } from '@dbnexus/shared';
 
 @Controller('sync')
 export class SyncController {
-    constructor(private readonly syncService: SyncService) {}
+    constructor(
+        private readonly syncService: SyncService,
+        private readonly metadataService: MetadataService
+    ) {}
+
+    /**
+     * Get recent sync runs (for activity log)
+     */
+    @Get('runs')
+    getSyncRuns(@Query('limit') limit?: string) {
+        return this.metadataService.syncRunRepository.findRecent(limit ? parseInt(limit, 10) : 500);
+    }
 
     /**
      * Get sync status for an instance group

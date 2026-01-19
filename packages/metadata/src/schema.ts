@@ -5,8 +5,8 @@
 export const SCHEMA_VERSION = 10;
 
 export const MIGRATIONS: string[] = [
-    // Version 1: Initial schema
-    `
+  // Version 1: Initial schema
+  `
   -- Connections table with encrypted password
   CREATE TABLE IF NOT EXISTS connections (
     id TEXT PRIMARY KEY,
@@ -126,14 +126,14 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at DESC);
   `,
 
-    // Version 2: Add encrypted_password column (for existing databases)
-    `
+  // Version 2: Add encrypted_password column (for existing databases)
+  `
   ALTER TABLE connections ADD COLUMN encrypted_password TEXT;
   UPDATE schema_version SET version = 2;
   `,
 
-    // Version 3: Add migration_history table for tracking applied migrations
-    `
+  // Version 3: Add migration_history table for tracking applied migrations
+  `
   DROP TABLE IF EXISTS schema_diffs;
 
   CREATE TABLE IF NOT EXISTS migration_history (
@@ -157,8 +157,8 @@ export const MIGRATIONS: string[] = [
   UPDATE schema_version SET version = 3;
   `,
 
-    // Version 4: Add projects and database_groups for organizing connections
-    `
+  // Version 4: Add projects and database_groups for organizing connections
+  `
   -- Projects (top-level grouping)
   CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
@@ -192,8 +192,8 @@ export const MIGRATIONS: string[] = [
   UPDATE schema_version SET version = 4;
   `,
 
-    // Version 5: Add sync settings to instance groups
-    `
+  // Version 5: Add sync settings to instance groups
+  `
   -- Add source connection and sync settings to database_groups
   ALTER TABLE database_groups ADD COLUMN source_connection_id TEXT REFERENCES connections(id) ON DELETE SET NULL;
   ALTER TABLE database_groups ADD COLUMN sync_schema INTEGER NOT NULL DEFAULT 0;
@@ -202,36 +202,36 @@ export const MIGRATIONS: string[] = [
   UPDATE schema_version SET version = 5;
   `,
 
-    // Version 6: Add default_schema to connections
-    `
+  // Version 6: Add default_schema to connections
+  `
   ALTER TABLE connections ADD COLUMN default_schema TEXT;
 
   UPDATE schema_version SET version = 6;
   `,
 
-    // Version 7: Add sync_target_schema to database_groups
-    `
+  // Version 7: Add sync_target_schema to database_groups
+  `
   ALTER TABLE database_groups ADD COLUMN sync_target_schema TEXT;
 
   UPDATE schema_version SET version = 7;
   `,
 
-    // Version 8: Add database_engine to database_groups
-    `
+  // Version 8: Add database_engine to database_groups
+  `
   ALTER TABLE database_groups ADD COLUMN database_engine TEXT NOT NULL DEFAULT 'postgres' CHECK(database_engine IN ('postgres', 'mysql', 'mariadb', 'sqlite'));
 
   UPDATE schema_version SET version = 8;
   `,
 
-    // Version 9: Add connection_type to connections (local, docker, remote)
-    `
+  // Version 9: Add connection_type to connections (local, docker, remote)
+  `
   ALTER TABLE connections ADD COLUMN connection_type TEXT NOT NULL DEFAULT 'local' CHECK(connection_type IN ('local', 'docker', 'remote'));
 
   UPDATE schema_version SET version = 9;
   `,
 
-    // Version 10: Refactor sync_runs to work without sync_configs (add direct connection/table info)
-    `
+  // Version 10: Refactor sync_runs to work without sync_configs (add direct connection/table info)
+  `
   -- Create new sync_runs table without FK constraint
   CREATE TABLE IF NOT EXISTS sync_runs_new (
     id TEXT PRIMARY KEY,

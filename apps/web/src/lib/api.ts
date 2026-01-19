@@ -462,7 +462,31 @@ export const syncApi = {
                 body: JSON.stringify(options || {}),
             }
         ),
+
+    // Get sync run history
+    getSyncRuns: (limit?: number) =>
+        fetchApi<SyncRun[]>(`/sync/runs${limit ? `?limit=${limit}` : ''}`),
 };
+
+// SyncRun type for the activity log
+export interface SyncRun {
+    id: string;
+    sourceConnectionId?: string;
+    targetConnectionId?: string;
+    schemaName?: string;
+    tableName?: string;
+    groupId?: string;
+    startedAt: string;
+    completedAt?: string;
+    status: 'running' | 'completed' | 'failed' | 'cancelled';
+    inserts: number;
+    updates: number;
+    deletes: number;
+    errors: string[];
+    sourceConnectionName?: string;
+    targetConnectionName?: string;
+    groupName?: string;
+}
 
 // ============ Scanner ============
 
