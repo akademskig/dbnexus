@@ -10,6 +10,7 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: write
+            id-token: write
         steps:
             - uses: actions/checkout@v4
 
@@ -29,7 +30,7 @@ jobs:
               run: pnpm build:package
 
             - name: Publish to npm
-              run: cd dist-package && npm publish
+              run: cd dist-package && npm publish --provenance --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
