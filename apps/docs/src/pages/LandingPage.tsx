@@ -362,7 +362,7 @@ export function LandingPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <img src="/logo-light.svg" alt="DB Nexus logo" width={58} height={58} />
+                        <img src={`${import.meta.env.BASE_URL}logo-light.svg`} alt="DB Nexus logo" width={58} height={58} />
                         <span className="logo-text">DB Nexus</span>
                     </Badge>
                     <Title

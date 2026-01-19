@@ -198,7 +198,7 @@ export function Layout() {
             <Header>
                 <Nav>
                     <Logo to="/" onClick={closeMobileMenu}>
-                        <img src="/logo-light.svg" alt="DB Nexus" />
+                        <img src={`${import.meta.env.BASE_URL}logo-light.svg`} alt="DB Nexus" />
                         <span className="logo-text">Nexus</span>
                     </Logo>
                     <NavLinks>
