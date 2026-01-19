@@ -26,188 +26,45 @@ const SectionTitle = styled.h2`
 `;
 
 const Paragraph = styled.p`
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: var(--color-text-secondary);
     line-height: 1.7;
     margin-bottom: 1rem;
 `;
 
-const DonateCard = styled.div`
-    background: linear-gradient(135deg, rgba(129, 90, 213, 0.08) 0%, rgba(129, 90, 213, 0.02) 100%);
-    border: 1px solid rgba(129, 90, 213, 0.2);
-    padding: 2rem;
-    border-radius: 8px;
-`;
-
-const DonateHeader = styled.div`
-    display: flex;
+const DonateButton = styled.button`
+    display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
-`;
-
-const BitcoinLogo = styled.img`
-    width: 32px;
-    height: 32px;
-`;
-
-const DonateTitle = styled.h3`
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin: 0;
-`;
-
-const DonateContent = styled.div`
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 1.5rem;
-    align-items: start;
-
-    @media (max-width: 600px) {
-        grid-template-columns: 1fr;
-        justify-items: center;
-        text-align: center;
-    }
-`;
-
-const QrWrapper = styled.div`
-    background: white;
-    padding: 0.5rem;
+    background: rgba(247, 147, 26, 0.1);
+    border: 1px solid rgba(247, 147, 26, 0.25);
     border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-
-    &:hover {
-        transform: scale(1.03);
-        box-shadow: 0 8px 30px rgba(129, 90, 213, 0.25);
-    }
-`;
-
-const QrImage = styled.img`
-    width: 120px;
-    height: 120px;
-    display: block;
-    border-radius: 8px;
-`;
-
-const AddressSection = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-`;
-
-const AddressLabel = styled.span`
-    font-size: 0.85rem;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-`;
-
-const AddressWrapper = styled.div`
-    position: relative;
-    display: flex;
-    align-items: stretch;
-`;
-
-const Address = styled.code`
-    flex: 1;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.75rem 1rem;
-    border-radius: 8px 0 0 8px;
-    word-break: break-all;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-right: none;
-    line-height: 1.5;
-`;
-
-const AddressCopyButton = styled.button<{ $copied?: boolean }>`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.2)' : 'rgba(129, 90, 213, 0.15)')};
-    color: ${(p) => (p.$copied ? '#22c55e' : 'var(--color-primary)')};
-    border: 1px solid ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.3)' : 'rgba(129, 90, 213, 0.3)')};
-    border-left: none;
-    border-radius: 0 8px 8px 0;
-    padding: 0 1rem;
+    padding: 0.75rem 1.25rem;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-        background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.25)' : 'rgba(129, 90, 213, 0.25)')};
-    }
-
-    svg {
-        width: 18px;
-        height: 18px;
-    }
-`;
-
-const ButtonGroup = styled.div`
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-`;
-
-const CopyButton = styled.button<{ $copied?: boolean }>`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.2)' : 'rgba(129, 90, 213, 0.15)')};
-    color: ${(p) => (p.$copied ? '#22c55e' : 'var(--color-primary)')};
-    border: 1px solid ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.3)' : 'rgba(129, 90, 213, 0.3)')};
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-        background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.25)' : 'rgba(129, 90, 213, 0.25)')};
+        background: rgba(247, 147, 26, 0.15);
+        border-color: rgba(247, 147, 26, 0.4);
         transform: translateY(-1px);
     }
-
-    svg {
-        width: 16px;
-        height: 16px;
-    }
 `;
 
-const QrButton = styled.button`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: transparent;
-    color: var(--color-text);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
+const BitcoinIcon = styled.img`
+    width: 28px;
+    height: 28px;
+`;
+
+const DonateLabel = styled.span`
+    font-size: 0.95rem;
     font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-        border-color: rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-1px);
-    }
-
-    svg {
-        width: 16px;
-        height: 16px;
-    }
+    color: #f7931a;
 `;
 
 const DialogOverlay = styled(motion.div)`
     position: fixed;
     inset: 0;
-    background: rgba(3, 5, 18, 0.9);
+    background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -217,13 +74,12 @@ const DialogOverlay = styled(motion.div)`
 `;
 
 const DialogCard = styled(motion.div)`
-    background: linear-gradient(180deg, rgba(30, 30, 40, 1) 0%, rgba(20, 20, 28, 1) 100%);
-    border: 1px solid rgba(129, 90, 213, 0.2);
-    border-radius: 20px;
+    background: var(--color-bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
     padding: 2rem;
     width: min(90vw, 400px);
     text-align: center;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 80px rgba(129, 90, 213, 0.1);
 `;
 
 const DialogHeader = styled.div`
@@ -231,62 +87,89 @@ const DialogHeader = styled.div`
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
 `;
 
 const DialogTitle = styled.h3`
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-text);
     margin: 0;
 `;
 
-const DialogSubtitle = styled.p`
-    color: var(--color-text-secondary);
-    font-size: 0.95rem;
+const QrWrapper = styled.div`
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    display: inline-block;
     margin-bottom: 1.5rem;
 `;
 
-const DialogQrWrapper = styled.div`
-    background: white;
-    padding: 1rem;
-    border-radius: 16px;
-    display: inline-block;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+const QrImage = styled.img`
+    width: 200px;
+    height: 200px;
+    display: block;
+    border-radius: 4px;
 `;
 
-const DialogQrImage = styled.img`
-    width: min(60vw, 280px);
-    height: auto;
-    display: block;
+const AddressWrapper = styled.div`
+    display: flex;
+    align-items: stretch;
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
 `;
 
-const DialogAddress = styled.code`
-    display: block;
+const AddressInput = styled.input`
+    flex: 1;
     font-family: var(--font-mono);
     font-size: 0.75rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: none;
     color: var(--color-text-secondary);
-    margin-top: 1.25rem;
-    word-break: break-all;
-    line-height: 1.5;
+    outline: none;
+    min-width: 0;
 `;
 
-const DialogClose = styled.button`
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--color-text);
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
+const CopyButton = styled.button<{ $copied?: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)')};
+    color: ${(p) => (p.$copied ? '#22c55e' : 'var(--color-text-secondary)')};
+    border: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.75rem 1rem;
     cursor: pointer;
-    margin-top: 1.5rem;
     transition: all 0.2s;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: rgba(255, 255, 255, 0.2);
+        background: ${(p) => (p.$copied ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.1)')};
+        color: ${(p) => (p.$copied ? '#22c55e' : 'var(--color-text)')};
+    }
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+`;
+
+const CloseButton = styled.button`
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--color-text);
     }
 `;
 
@@ -296,7 +179,7 @@ const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&da
 
 export function AboutPage() {
     const [copied, setCopied] = useState(false);
-    const [qrOpen, setQrOpen] = useState(false);
+    const [open, setOpen] = useState(false);
 
     const handleCopy = async () => {
         try {
@@ -329,113 +212,70 @@ export function AboutPage() {
             <Section>
                 <SectionTitle>Support Development</SectionTitle>
                 <Paragraph>
-                    If DB Nexus helps you, consider supporting its development. Donations go toward
-                    development time and future features.
+                    If DB Nexus helps you, consider supporting its development.
                 </Paragraph>
-                <DonateCard>
-                    <DonateHeader>
-                        <BitcoinLogo
-                            src={`${import.meta.env.BASE_URL}Bitcoin.svg.webp`}
-                            alt="Bitcoin"
-                        />
-                        <DonateTitle>Bitcoin</DonateTitle>
-                    </DonateHeader>
-                    <DonateContent>
-                        <QrWrapper onClick={() => setQrOpen(true)} title="Click to enlarge">
-                            <QrImage src={QR_CODE_URL} alt="Bitcoin donation QR code" />
-                        </QrWrapper>
-                        <AddressSection>
-                            <div>
-                                <AddressLabel>Wallet Address</AddressLabel>
-                                <AddressWrapper>
-                                    <Address>{DONATION_ADDRESS}</Address>
-                                    <AddressCopyButton
-                                        type="button"
-                                        onClick={handleCopy}
-                                        $copied={copied}
-                                        title={copied ? 'Copied!' : 'Copy address'}
-                                    >
-                                        {copied ? (
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M20 6L9 17l-5-5" />
-                                            </svg>
-                                        ) : (
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <rect x="9" y="9" width="13" height="13" rx="2" />
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                            </svg>
-                                        )}
-                                    </AddressCopyButton>
-                                </AddressWrapper>
-                            </div>
-                            <ButtonGroup>
-                                <CopyButton type="button" onClick={handleCopy} $copied={copied}>
-                                    {copied ? (
-                                        <>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M20 6L9 17l-5-5" />
-                                            </svg>
-                                            Copied!
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <rect x="9" y="9" width="13" height="13" rx="2" />
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                            </svg>
-                                            Copy Address
-                                        </>
-                                    )}
-                                </CopyButton>
-                                <QrButton type="button" onClick={() => setQrOpen(true)}>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <rect x="3" y="3" width="7" height="7" />
-                                        <rect x="14" y="3" width="7" height="7" />
-                                        <rect x="3" y="14" width="7" height="7" />
-                                        <rect x="14" y="14" width="3" height="3" />
-                                        <rect x="18" y="14" width="3" height="3" />
-                                        <rect x="14" y="18" width="3" height="3" />
-                                        <rect x="18" y="18" width="3" height="3" />
-                                    </svg>
-                                    Enlarge QR
-                                </QrButton>
-                            </ButtonGroup>
-                        </AddressSection>
-                    </DonateContent>
-                </DonateCard>
+                <DonateButton type="button" onClick={() => setOpen(true)}>
+                    <BitcoinIcon
+                        src={`${import.meta.env.BASE_URL}Bitcoin.svg.webp`}
+                        alt="Bitcoin"
+                    />
+                    <DonateLabel>Donate Bitcoin</DonateLabel>
+                </DonateButton>
             </Section>
 
             <AnimatePresence>
-                {qrOpen && (
+                {open && (
                     <DialogOverlay
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setQrOpen(false)}
+                        onClick={() => setOpen(false)}
                     >
                         <DialogCard
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            transition={{ duration: 0.15 }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <DialogHeader>
-                                <BitcoinLogo
+                                <BitcoinIcon
                                     src={`${import.meta.env.BASE_URL}Bitcoin.svg.webp`}
                                     alt="Bitcoin"
-                                    style={{ width: 28, height: 28 }}
                                 />
                                 <DialogTitle>Donate Bitcoin</DialogTitle>
                             </DialogHeader>
-                            <DialogSubtitle>Scan with your wallet app</DialogSubtitle>
-                            <DialogQrWrapper>
-                                <DialogQrImage src={QR_CODE_URL} alt="Bitcoin donation QR code" />
-                            </DialogQrWrapper>
-                            <DialogAddress>{DONATION_ADDRESS}</DialogAddress>
-                            <DialogClose type="button" onClick={() => setQrOpen(false)}>
+                            <QrWrapper>
+                                <QrImage src={QR_CODE_URL} alt="Bitcoin QR code" />
+                            </QrWrapper>
+                            <AddressWrapper>
+                                <AddressInput
+                                    type="text"
+                                    value={DONATION_ADDRESS}
+                                    readOnly
+                                    onClick={(e) => e.currentTarget.select()}
+                                />
+                                <CopyButton
+                                    type="button"
+                                    onClick={handleCopy}
+                                    $copied={copied}
+                                    title={copied ? 'Copied!' : 'Copy address'}
+                                >
+                                    {copied ? (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <path d="M20 6L9 17l-5-5" />
+                                        </svg>
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg>
+                                    )}
+                                </CopyButton>
+                            </AddressWrapper>
+                            <CloseButton type="button" onClick={() => setOpen(false)}>
                                 Close
-                            </DialogClose>
+                            </CloseButton>
                         </DialogCard>
                     </DialogOverlay>
                 )}
