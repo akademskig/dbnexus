@@ -10,7 +10,8 @@
         "start:dev": "nest start --watch",
         "start:prod": "node dist/main.js",
         "test": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.cjs",
-        "test:run": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.cjs",
+        "test:unit": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.cjs --testPathIgnorePatterns=integration",
+        "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.integration.config.cjs",
         "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch --config jest.config.cjs",
         "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage --config jest.config.cjs",
         "clean": "rm -rf dist"

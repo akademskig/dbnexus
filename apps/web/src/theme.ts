@@ -1,4 +1,4 @@
-import { createTheme, type PaletteMode } from '@mui/material/styles';
+import { createTheme, responsiveFontSizes, type PaletteMode } from '@mui/material/styles';
 
 // Available color schemes
 export const colorSchemes = {
@@ -53,11 +53,24 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
     const colors = colorSchemes[scheme];
     return {
         MuiButton: {
+            defaultProps: {
+                size: 'small' as const,
+            },
             styleOverrides: {
                 root: {
                     textTransform: 'none' as const,
                     fontWeight: 500,
                     borderRadius: 0,
+                    padding: '5px 12px', // Slightly smaller padding
+                },
+                sizeSmall: {
+                    padding: '3px 8px',
+                },
+                sizeMedium: {
+                    padding: '5px 12px',
+                },
+                sizeLarge: {
+                    padding: '7px 16px',
                 },
             },
         },
@@ -101,10 +114,18 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
             },
         },
         MuiChip: {
+            defaultProps: {
+                size: 'small' as const,
+            },
             styleOverrides: {
                 root: {
                     fontWeight: 500,
                     borderRadius: 16,
+                    height: 26, // Slightly smaller
+                },
+                sizeSmall: {
+                    height: 22,
+                    fontSize: '0.75rem',
                 },
             },
         },
@@ -112,13 +133,23 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
             styleOverrides: {
                 root: {
                     borderRadius: '50%',
+                    width: 32, // Reduced from default 40px
+                    height: 32,
+                    fontSize: '1rem',
                 },
             },
         },
         MuiIconButton: {
+            defaultProps: {
+                size: 'small' as const,
+            },
             styleOverrides: {
                 root: {
                     borderRadius: '50%',
+                    padding: 7, // Slightly smaller
+                },
+                sizeSmall: {
+                    padding: 5,
                 },
             },
         },
@@ -126,10 +157,13 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
             styleOverrides: {
                 root: {
                     borderColor: mode === 'dark' ? '#27272a' : '#e4e4e7',
+                    padding: '10px 12px', // Reduced from default 16px
+                    fontSize: '0.8125rem',
                 },
                 head: {
                     fontWeight: 600,
                     backgroundColor: mode === 'dark' ? '#18181b' : '#f4f4f5',
+                    padding: '10px 12px',
                 },
             },
         },
@@ -146,6 +180,8 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
                 root: {
                     borderRadius: 0,
                     marginBottom: 4,
+                    paddingTop: 6, // Reduced from default 8px
+                    paddingBottom: 6,
                     '&.Mui-selected': {
                         backgroundColor: `rgba(${colors.primaryRgb}, 0.15)`,
                         '&:hover': {
@@ -197,6 +233,9 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
             styleOverrides: {
                 root: {
                     borderRadius: 0,
+                    minHeight: 42, // Reduced from default 48px
+                    padding: '8px 14px', // Reduced padding
+                    fontSize: '0.8125rem',
                 },
             },
         },
@@ -205,7 +244,8 @@ const getComponentOverrides = (mode: PaletteMode, scheme: ColorScheme) => {
 
 export const createAppTheme = (mode: PaletteMode, scheme: ColorScheme = 'indigo') => {
     const colors = colorSchemes[scheme];
-    return createTheme({
+    const baseTheme = createTheme({
+        spacing: 7, // Reduced from default 8px to 7px (12.5% smaller)
         palette: {
             mode,
             primary: {
@@ -237,38 +277,52 @@ export const createAppTheme = (mode: PaletteMode, scheme: ColorScheme = 'indigo'
             background:
                 mode === 'dark'
                     ? {
-                          default: '#09090b',
-                          paper: 'rgb(20, 25, 27)',
-                      }
+                        default: '#09090b',
+                        paper: 'rgb(20, 25, 27)',
+                    }
                     : {
-                          default: '#fafafa',
-                          paper: '#ffffff',
-                      },
+                        default: '#fafafa',
+                        paper: '#ffffff',
+                    },
             text:
                 mode === 'dark'
                     ? {
-                          primary: '#fafafa',
-                          secondary: '#a1a1aa',
-                      }
+                        primary: '#fafafa',
+                        secondary: '#a1a1aa',
+                    }
                     : {
-                          primary: '#18181b',
-                          secondary: '#71717a',
-                      },
+                        primary: '#18181b',
+                        secondary: '#71717a',
+                    },
             divider: mode === 'dark' ? '#27272a' : '#e4e4e7',
         },
         typography: {
             fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-            h1: { fontWeight: 600 },
-            h2: { fontWeight: 600 },
-            h3: { fontWeight: 600 },
-            h4: { fontWeight: 600 },
-            h5: { fontWeight: 600 },
-            h6: { fontWeight: 600 },
+            // Slightly smaller base font size (default is 14px)
+            fontSize: 13,
+            htmlFontSize: 16,
+            h1: { fontWeight: 600, fontSize: '2rem' },
+            h2: { fontWeight: 600, fontSize: '1.75rem' },
+            h3: { fontWeight: 600, fontSize: '1.5rem' },
+            h4: { fontWeight: 600, fontSize: '1.25rem' },
+            h5: { fontWeight: 600, fontSize: '1.1rem' },
+            h6: { fontWeight: 600, fontSize: '1rem' },
+            body1: { fontSize: '0.875rem' },
+            body2: { fontSize: '0.8125rem' },
+            button: { fontSize: '0.8125rem' },
+            caption: { fontSize: '0.75rem' },
+            overline: { fontSize: '0.6875rem' },
         },
         shape: {
             borderRadius: 0,
         },
         components: getComponentOverrides(mode, scheme),
+    });
+
+    // Apply responsive font sizes - scales typography based on viewport
+    return responsiveFontSizes(baseTheme, {
+        breakpoints: ['sm', 'md', 'lg'],
+        factor: 2, // How much to scale (lower = more scaling)
     });
 };
 

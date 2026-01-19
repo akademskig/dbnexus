@@ -20,8 +20,23 @@
 }
 
 html {
-    zoom: 0.85;
     scroll-behavior: smooth;
+    /* Base font size - 16px is browser default, use 15px for slightly smaller UI */
+    font-size: 15px;
+}
+
+/* HD screens - slightly smaller */
+@media (max-width: 1920px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+/* 2K+ screens - full size */
+@media (min-width: 2560px) {
+    html {
+        font-size: 16px;
+    }
 }
 
 body {

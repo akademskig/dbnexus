@@ -24,6 +24,8 @@
         "release:version": "node scripts/release.js",
         "publish:package": "pnpm build:package && cd dist-package && npm publish",
         "test": "pnpm -r test:run",
+        "test:unit": "pnpm --filter @dbnexus/api test:unit",
+        "test:integration": "pnpm --filter @dbnexus/api test:integration",
         "test:web": "pnpm --filter @dbnexus/web test",
         "test:api": "pnpm --filter @dbnexus/api test",
         "test:cli": "pnpm --filter dbnexus test",

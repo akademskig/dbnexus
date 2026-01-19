@@ -1,8 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html {
-    zoom: 0.9;
-}
 
 * {
     margin: 0;
@@ -20,6 +17,8 @@ body {
         sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Use rem units throughout the app for consistent scaling */
+    font-size: 1rem;
 }
 
 /* Custom scrollbar */
