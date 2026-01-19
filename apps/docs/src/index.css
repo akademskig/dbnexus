@@ -20,7 +20,7 @@
 }
 
 html {
-    font-size: 90%;
+    zoom: 0.85;
     scroll-behavior: smooth;
 }
 
