@@ -8,7 +8,11 @@ export type SyncRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface SyncRun {
     id: string;
-    syncConfigId: string;
+    sourceConnectionId?: string;
+    targetConnectionId?: string;
+    schemaName?: string;
+    tableName?: string;
+    groupId?: string;
     startedAt: Date;
     completedAt?: Date;
     status: SyncRunStatus;
@@ -17,14 +21,18 @@ export interface SyncRun {
     deletes: number;
     errors: string[];
     // Joined fields
-    syncConfigName?: string;
     sourceConnectionName?: string;
     targetConnectionName?: string;
+    groupName?: string;
 }
 
 interface SyncRunRow {
     id: string;
-    sync_config_id: string;
+    source_connection_id: string | null;
+    target_connection_id: string | null;
+    schema_name: string | null;
+    table_name: string | null;
+    group_id: string | null;
     started_at: string;
     completed_at: string | null;
     status: string;
@@ -32,13 +40,17 @@ interface SyncRunRow {
     updates: number;
     deletes: number;
     errors_json: string | null;
-    sync_config_name?: string;
     source_connection_name?: string;
     target_connection_name?: string;
+    group_name?: string;
 }
 
 export interface SyncRunCreateInput {
-    syncConfigId: string;
+    sourceConnectionId: string;
+    targetConnectionId: string;
+    schemaName?: string;
+    tableName?: string;
+    groupId?: string;
 }
 
 export interface SyncRunUpdateInput {
@@ -50,7 +62,7 @@ export interface SyncRunUpdateInput {
 }
 
 export class SyncRunRepository {
-    constructor(private readonly db: MetadataDatabase) { }
+    constructor(private readonly db: MetadataDatabase) {}
 
     /**
      * Create a new sync run (starts in 'running' status)
@@ -62,40 +74,18 @@ export class SyncRunRepository {
             .getDb()
             .prepare(
                 `
-            INSERT INTO sync_runs (id, sync_config_id, status)
-            VALUES (?, ?, 'running')
+            INSERT INTO sync_runs (id, source_connection_id, target_connection_id, schema_name, table_name, group_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'running')
         `
             )
-            .run(id, input.syncConfigId);
-
-        return this.findById(id)!;
-    }
-
-    /**
-     * Start a sync run without a config (for ad-hoc syncs)
-     * Creates a temporary config-less run
-     */
-    createAdHoc(details: {
-        sourceConnectionId: string;
-        targetConnectionId: string;
-        sourceTable: string;
-        targetTable: string;
-        schema: string;
-    }): SyncRun {
-        const id = crypto.randomUUID();
-
-        // For ad-hoc syncs, we store details in errors_json temporarily
-        const detailsJson = JSON.stringify(details);
-
-        this.db
-            .getDb()
-            .prepare(
-                `
-            INSERT INTO sync_runs (id, sync_config_id, status, errors_json)
-            VALUES (?, '', 'running', ?)
-        `
-            )
-            .run(id, detailsJson);
+            .run(
+                id,
+                input.sourceConnectionId,
+                input.targetConnectionId,
+                input.schemaName || null,
+                input.tableName || null,
+                input.groupId || null
+            );
 
         return this.findById(id)!;
     }
@@ -110,13 +100,13 @@ export class SyncRunRepository {
                 `
             SELECT 
                 sr.*,
-                sc.name as sync_config_name,
                 src.name as source_connection_name,
-                tgt.name as target_connection_name
+                tgt.name as target_connection_name,
+                dg.name as group_name
             FROM sync_runs sr
-            LEFT JOIN sync_configs sc ON sr.sync_config_id = sc.id
-            LEFT JOIN connections src ON sc.source_connection_id = src.id
-            LEFT JOIN connections tgt ON sc.target_connection_id = tgt.id
+            LEFT JOIN connections src ON sr.source_connection_id = src.id
+            LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
+            LEFT JOIN database_groups dg ON sr.group_id = dg.id
             WHERE sr.id = ?
         `
             )
@@ -126,20 +116,20 @@ export class SyncRunRepository {
     }
 
     /**
-     * Find sync runs by config ID
+     * Find sync runs by group ID
      */
-    findByConfigId(syncConfigId: string, limit?: number): SyncRun[] {
+    findByGroupId(groupId: string, limit?: number): SyncRun[] {
         let query = `
             SELECT 
                 sr.*,
-                sc.name as sync_config_name,
                 src.name as source_connection_name,
-                tgt.name as target_connection_name
+                tgt.name as target_connection_name,
+                dg.name as group_name
             FROM sync_runs sr
-            LEFT JOIN sync_configs sc ON sr.sync_config_id = sc.id
-            LEFT JOIN connections src ON sc.source_connection_id = src.id
-            LEFT JOIN connections tgt ON sc.target_connection_id = tgt.id
-            WHERE sr.sync_config_id = ?
+            LEFT JOIN connections src ON sr.source_connection_id = src.id
+            LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
+            LEFT JOIN database_groups dg ON sr.group_id = dg.id
+            WHERE sr.group_id = ?
             ORDER BY sr.started_at DESC
         `;
 
@@ -147,7 +137,33 @@ export class SyncRunRepository {
             query += ` LIMIT ${limit}`;
         }
 
-        const rows = this.db.getDb().prepare(query).all(syncConfigId) as SyncRunRow[];
+        const rows = this.db.getDb().prepare(query).all(groupId) as SyncRunRow[];
+        return rows.map((row) => this.rowToRun(row));
+    }
+
+    /**
+     * Find sync runs by connection ID (either source or target)
+     */
+    findByConnectionId(connectionId: string, limit?: number): SyncRun[] {
+        let query = `
+            SELECT 
+                sr.*,
+                src.name as source_connection_name,
+                tgt.name as target_connection_name,
+                dg.name as group_name
+            FROM sync_runs sr
+            LEFT JOIN connections src ON sr.source_connection_id = src.id
+            LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
+            LEFT JOIN database_groups dg ON sr.group_id = dg.id
+            WHERE sr.source_connection_id = ? OR sr.target_connection_id = ?
+            ORDER BY sr.started_at DESC
+        `;
+
+        if (limit) {
+            query += ` LIMIT ${limit}`;
+        }
+
+        const rows = this.db.getDb().prepare(query).all(connectionId, connectionId) as SyncRunRow[];
         return rows.map((row) => this.rowToRun(row));
     }
 
@@ -161,13 +177,13 @@ export class SyncRunRepository {
                 `
             SELECT 
                 sr.*,
-                sc.name as sync_config_name,
                 src.name as source_connection_name,
-                tgt.name as target_connection_name
+                tgt.name as target_connection_name,
+                dg.name as group_name
             FROM sync_runs sr
-            LEFT JOIN sync_configs sc ON sr.sync_config_id = sc.id
-            LEFT JOIN connections src ON sc.source_connection_id = src.id
-            LEFT JOIN connections tgt ON sc.target_connection_id = tgt.id
+            LEFT JOIN connections src ON sr.source_connection_id = src.id
+            LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
+            LEFT JOIN database_groups dg ON sr.group_id = dg.id
             ORDER BY sr.started_at DESC
             LIMIT ?
         `
@@ -186,13 +202,13 @@ export class SyncRunRepository {
                 `
             SELECT 
                 sr.*,
-                sc.name as sync_config_name,
                 src.name as source_connection_name,
-                tgt.name as target_connection_name
+                tgt.name as target_connection_name,
+                dg.name as group_name
             FROM sync_runs sr
-            LEFT JOIN sync_configs sc ON sr.sync_config_id = sc.id
-            LEFT JOIN connections src ON sc.source_connection_id = src.id
-            LEFT JOIN connections tgt ON sc.target_connection_id = tgt.id
+            LEFT JOIN connections src ON sr.source_connection_id = src.id
+            LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
+            LEFT JOIN database_groups dg ON sr.group_id = dg.id
             WHERE sr.status = 'running'
             ORDER BY sr.started_at DESC
         `
@@ -268,10 +284,7 @@ export class SyncRunRepository {
      * Delete a sync run
      */
     delete(id: string): boolean {
-        const result = this.db
-            .getDb()
-            .prepare('DELETE FROM sync_runs WHERE id = ?')
-            .run(id);
+        const result = this.db.getDb().prepare('DELETE FROM sync_runs WHERE id = ?').run(id);
 
         return result.changes > 0;
     }
@@ -299,7 +312,11 @@ export class SyncRunRepository {
     private rowToRun(row: SyncRunRow): SyncRun {
         return {
             id: row.id,
-            syncConfigId: row.sync_config_id,
+            sourceConnectionId: row.source_connection_id || undefined,
+            targetConnectionId: row.target_connection_id || undefined,
+            schemaName: row.schema_name || undefined,
+            tableName: row.table_name || undefined,
+            groupId: row.group_id || undefined,
             startedAt: new Date(row.started_at),
             completedAt: row.completed_at ? new Date(row.completed_at) : undefined,
             status: row.status as SyncRunStatus,
@@ -307,9 +324,9 @@ export class SyncRunRepository {
             updates: row.updates,
             deletes: row.deletes,
             errors: row.errors_json ? (JSON.parse(row.errors_json) as string[]) : [],
-            syncConfigName: row.sync_config_name,
             sourceConnectionName: row.source_connection_name,
             targetConnectionName: row.target_connection_name,
+            groupName: row.group_name,
         };
     }
 }

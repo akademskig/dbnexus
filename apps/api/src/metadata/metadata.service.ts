@@ -6,7 +6,6 @@ import {
     MigrationHistoryRepository,
     ProjectRepository,
     DatabaseGroupRepository,
-    SyncConfigRepository,
     SyncRunRepository,
     SchemaSnapshotRepository,
     AuditLogRepository,
@@ -23,7 +22,6 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _migrationHistoryRepository!: MigrationHistoryRepository;
     private _projectRepository!: ProjectRepository;
     private _databaseGroupRepository!: DatabaseGroupRepository;
-    private _syncConfigRepository!: SyncConfigRepository;
     private _syncRunRepository!: SyncRunRepository;
     private _schemaSnapshotRepository!: SchemaSnapshotRepository;
     private _auditLogRepository!: AuditLogRepository;
@@ -64,7 +62,6 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this._migrationHistoryRepository = new MigrationHistoryRepository(this.db);
         this._projectRepository = new ProjectRepository(this.db);
         this._databaseGroupRepository = new DatabaseGroupRepository(this.db);
-        this._syncConfigRepository = new SyncConfigRepository(this.db);
         this._syncRunRepository = new SyncRunRepository(this.db);
         this._schemaSnapshotRepository = new SchemaSnapshotRepository(this.db);
         this._auditLogRepository = new AuditLogRepository(this.db);
@@ -94,10 +91,6 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get databaseGroupRepository(): DatabaseGroupRepository {
         return this._databaseGroupRepository;
-    }
-
-    get syncConfigRepository(): SyncConfigRepository {
-        return this._syncConfigRepository;
     }
 
     get syncRunRepository(): SyncRunRepository {

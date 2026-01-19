@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -228,5 +228,44 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE connections ADD COLUMN connection_type TEXT NOT NULL DEFAULT 'local' CHECK(connection_type IN ('local', 'docker', 'remote'));
 
   UPDATE schema_version SET version = 9;
+  `,
+
+    // Version 10: Refactor sync_runs to work without sync_configs (add direct connection/table info)
+    `
+  -- Create new sync_runs table without FK constraint
+  CREATE TABLE IF NOT EXISTS sync_runs_new (
+    id TEXT PRIMARY KEY,
+    source_connection_id TEXT,
+    target_connection_id TEXT,
+    schema_name TEXT,
+    table_name TEXT,
+    group_id TEXT,
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    status TEXT NOT NULL DEFAULT 'running',
+    inserts INTEGER NOT NULL DEFAULT 0,
+    updates INTEGER NOT NULL DEFAULT 0,
+    deletes INTEGER NOT NULL DEFAULT 0,
+    errors_json TEXT,
+    FOREIGN KEY (source_connection_id) REFERENCES connections(id) ON DELETE SET NULL,
+    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE SET NULL,
+    FOREIGN KEY (group_id) REFERENCES database_groups(id) ON DELETE SET NULL
+  );
+
+  -- Copy existing data (old sync_config_id will be lost, but that's ok)
+  INSERT INTO sync_runs_new (id, started_at, completed_at, status, inserts, updates, deletes, errors_json)
+  SELECT id, started_at, completed_at, status, inserts, updates, deletes, errors_json FROM sync_runs;
+
+  -- Drop old table and rename
+  DROP TABLE sync_runs;
+  ALTER TABLE sync_runs_new RENAME TO sync_runs;
+
+  -- Create indexes
+  CREATE INDEX IF NOT EXISTS idx_sync_runs_source ON sync_runs(source_connection_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_runs_target ON sync_runs(target_connection_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_runs_group ON sync_runs(group_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_runs_started ON sync_runs(started_at DESC);
+
+  UPDATE schema_version SET version = 10;
   `,
 ];

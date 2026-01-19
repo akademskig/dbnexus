@@ -463,21 +463,14 @@ export class SyncService {
             }
         }
 
-        // Log sync start to audit (sync_runs table requires a sync_config, so for ad-hoc syncs we only use audit log)
-        const syncStartEntry = this.metadataService.auditLogRepository.create({
-            action: 'data_sync_started',
-            entityType: 'table',
-            entityId: `${schema}.${table}`,
-            connectionId: targetConnectionId,
-            details: {
-                sourceConnectionId,
-                targetConnectionId,
-                schema,
-                table,
-                primaryKeyColumns: effectivePkColumns,
-                options,
-            },
+        // Create sync run entry
+        const syncRun = this.metadataService.syncRunRepository.create({
+            sourceConnectionId,
+            targetConnectionId,
+            schemaName: schema,
+            tableName: table,
         });
+
         const diff = await this.getTableDataDiff(
             sourceConnectionId,
             targetConnectionId,
@@ -587,23 +580,12 @@ export class SyncService {
             }
         }
 
-        // Log sync completion to audit
-        this.metadataService.auditLogRepository.create({
-            action: result.errors.length > 0 ? 'data_sync_failed' : 'data_sync_completed',
-            entityType: 'table',
-            entityId: `${schema}.${table}`,
-            connectionId: targetConnectionId,
-            details: {
-                syncStartId: syncStartEntry.id,
-                sourceConnectionId,
-                table,
-                schema,
-                primaryKeyColumns: effectivePkColumns,
-                inserted: result.inserted,
-                updated: result.updated,
-                deleted: result.deleted,
-                errors: result.errors,
-            },
+        // Complete sync run with results
+        this.metadataService.syncRunRepository.complete(syncRun.id, {
+            inserts: result.inserted,
+            updates: result.updated,
+            deletes: result.deleted,
+            errors: result.errors,
         });
 
         return result;
@@ -872,19 +854,11 @@ export class SyncService {
             tableResults: [] as { table: string; rows: number; error?: string }[],
         };
 
-        // Log sync start to audit
-        this.metadataService.auditLogRepository.create({
-            action: 'data_sync_started',
-            entityType: 'sync_run',
-            connectionId: targetConnectionId,
-            details: {
-                type: 'dump_and_restore',
-                sourceConnectionId,
-                targetConnectionId,
-                schema,
-                tables: options.tables,
-                truncateTarget: options.truncateTarget,
-            },
+        // Create sync run entry for dump & restore
+        const syncRun = this.metadataService.syncRunRepository.create({
+            sourceConnectionId,
+            targetConnectionId,
+            schemaName: schema,
         });
 
         const sourceConnection = this.connectionsService.findById(sourceConnectionId);
@@ -1029,20 +1003,12 @@ export class SyncService {
             await this.setForeignKeyChecks(targetConnector, targetEngine, true);
         }
 
-        // Log sync completion to audit
-        this.metadataService.auditLogRepository.create({
-            action: result.errors.length > 0 ? 'data_sync_failed' : 'data_sync_completed',
-            entityType: 'sync_run',
-            connectionId: targetConnectionId,
-            details: {
-                type: 'dump_and_restore',
-                sourceConnectionId,
-                schema,
-                success: result.success,
-                tablesProcessed: result.tablesProcessed,
-                rowsCopied: result.rowsCopied,
-                errors: result.errors,
-            },
+        // Complete sync run with results
+        this.metadataService.syncRunRepository.complete(syncRun.id, {
+            inserts: result.rowsCopied,
+            updates: 0,
+            deletes: 0,
+            errors: result.errors,
         });
 
         return result;

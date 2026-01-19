@@ -3,8 +3,6 @@ export { QueryRepository } from './query.repository.js';
 export { MigrationHistoryRepository } from './migration-history.repository.js';
 export { ProjectRepository } from './project.repository.js';
 export { DatabaseGroupRepository } from './database-group.repository.js';
-export { SyncConfigRepository } from './sync-config.repository.js';
-export type { SyncConfigCreateInput, SyncConfigUpdateInput } from './sync-config.repository.js';
 export { SyncRunRepository } from './sync-run.repository.js';
 export type { SyncRun, SyncRunStatus, SyncRunCreateInput, SyncRunUpdateInput } from './sync-run.repository.js';
 export { SchemaSnapshotRepository } from './schema-snapshot.repository.js';
