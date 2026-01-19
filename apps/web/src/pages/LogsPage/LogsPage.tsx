@@ -5,10 +5,12 @@ import { Box, Typography, Tabs, Tab, Paper } from '@mui/material';
 import {
     History as HistoryIcon,
     CompareArrows as MigrationIcon,
+    Sync as SyncIcon,
     Timeline as ActivityIcon,
 } from '@mui/icons-material';
 import { QueryHistoryTab } from './QueryHistoryTab';
 import { MigrationHistoryTab } from './MigrationHistoryTab';
+import { SyncRunsTab } from './SyncRunsTab';
 import { ActivityLogTab } from './ActivityLogTab';
 import { connectionsApi } from '../../lib/api';
 
@@ -96,6 +98,11 @@ export function LogsPage() {
                         label="Migrations"
                     />
                     <Tab
+                        icon={<SyncIcon sx={{ fontSize: 18 }} />}
+                        iconPosition="start"
+                        label="Data Sync"
+                    />
+                    <Tab
                         icon={<ActivityIcon sx={{ fontSize: 18 }} />}
                         iconPosition="start"
                         label="Activity"
@@ -119,6 +126,9 @@ export function LogsPage() {
                         <MigrationHistoryTab />
                     </TabPanel>
                     <TabPanel value={activeTab} index={2}>
+                        <SyncRunsTab />
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={3}>
                         <ActivityLogTab />
                     </TabPanel>
                 </Box>
