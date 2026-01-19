@@ -453,20 +453,11 @@ export class SyncService {
             }
         }
 
-        // Create sync run record
-        const syncRun = this.metadataService.syncRunRepository.createAdHoc({
-            sourceConnectionId,
-            targetConnectionId,
-            sourceTable: table,
-            targetTable: table,
-            schema,
-        });
-
-        // Log sync start to audit
-        this.metadataService.auditLogRepository.create({
+        // Log sync start to audit (sync_runs table requires a sync_config, so for ad-hoc syncs we only use audit log)
+        const syncStartEntry = this.metadataService.auditLogRepository.create({
             action: 'data_sync_started',
-            entityType: 'sync_run',
-            entityId: syncRun.id,
+            entityType: 'table',
+            entityId: `${schema}.${table}`,
             connectionId: targetConnectionId,
             details: {
                 sourceConnectionId,
@@ -586,21 +577,14 @@ export class SyncService {
             }
         }
 
-        // Complete the sync run record
-        this.metadataService.syncRunRepository.complete(syncRun.id, {
-            inserts: result.inserted,
-            updates: result.updated,
-            deletes: result.deleted,
-            errors: result.errors,
-        });
-
         // Log sync completion to audit
         this.metadataService.auditLogRepository.create({
             action: result.errors.length > 0 ? 'data_sync_failed' : 'data_sync_completed',
-            entityType: 'sync_run',
-            entityId: syncRun.id,
+            entityType: 'table',
+            entityId: `${schema}.${table}`,
             connectionId: targetConnectionId,
             details: {
+                syncStartId: syncStartEntry.id,
                 sourceConnectionId,
                 table,
                 schema,
