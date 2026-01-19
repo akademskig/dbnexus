@@ -66,29 +66,29 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
     &::before {
         content: ${(props) => {
-            switch (props.type) {
-                case 'added':
-                    return '"+"';
-                case 'changed':
-                    return '"~"';
-                case 'fixed':
-                    return '"✓"';
-                case 'removed':
-                    return '"-"';
-            }
-        }};
+        switch (props.type) {
+            case 'added':
+                return '"+"';
+            case 'changed':
+                return '"~"';
+            case 'fixed':
+                return '"✓"';
+            case 'removed':
+                return '"-"';
+        }
+    }};
         color: ${(props) => {
-            switch (props.type) {
-                case 'added':
-                    return 'var(--color-accent-green)';
-                case 'changed':
-                    return 'var(--color-accent-orange)';
-                case 'fixed':
-                    return 'var(--color-primary-light)';
-                case 'removed':
-                    return '#ef4444';
-            }
-        }};
+        switch (props.type) {
+            case 'added':
+                return 'var(--color-accent-green)';
+            case 'changed':
+                return 'var(--color-accent-orange)';
+            case 'fixed':
+                return 'var(--color-primary-light)';
+            case 'removed':
+                return '#ef4444';
+        }
+    }};
         font-weight: 700;
         font-family: var(--font-mono);
     }
@@ -96,9 +96,21 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.1.10',
+        version: '0.1.11',
         date: 'January 2026',
         latest: true,
+        changes: [
+            { type: 'added' as const, text: 'StatusAlert component for consistent alert styling' },
+            { type: 'added' as const, text: 'Dynamic CLI version from package.json' },
+            { type: 'changed' as const, text: 'License changed from MIT to AGPL-3.0' },
+            { type: 'changed' as const, text: 'Docs site configured for GitHub Pages deployment' },
+            { type: 'fixed' as const, text: 'CLI bundle duplicate createRequire error' },
+            { type: 'fixed' as const, text: 'CLI --port option now correctly passed to server' },
+        ],
+    },
+    {
+        version: '0.1.10',
+        date: 'January 2026',
         changes: [
             { type: 'added' as const, text: 'Connection details tooltip in navigation sidebar' },
             { type: 'added' as const, text: 'Reusable OperationResult component for operation feedback' },

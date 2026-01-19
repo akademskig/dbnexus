@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-01-19
+
+### Added
+
+- StatusAlert component for consistent alert styling across the app
+- Dynamic CLI version from package.json (no more hardcoded versions)
+
+### Changed
+
+- License changed from MIT to AGPL-3.0
+- Replaced MUI Alert with custom StatusAlert component in major files
+- Docs site configured for GitHub Pages deployment (base path, asset paths)
+
+### Fixed
+
+- CLI bundle duplicate `createRequire` error
+- Docs logo and screenshot paths on GitHub Pages
+- CLI `--port` option now correctly passed to server
+
 ## [0.1.10] - 2026-01-18
 
 ### Added
