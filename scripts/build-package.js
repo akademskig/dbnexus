@@ -138,7 +138,7 @@ const packageJson = {
         url: 'https://github.com/akademskig/dbnexus/issues',
     },
     author: 'DB Nexus Team',
-    license: 'MIT',
+    license: 'AGPL-3.0-or-later',
     type: 'module',
     bin: {
         dbnexus: './dist/cli.js',
@@ -172,7 +172,7 @@ const licenseDest = path.join(distPackage, 'LICENSE');
 if (fs.existsSync(licenseSrc)) {
     fs.copyFileSync(licenseSrc, licenseDest);
 } else {
-    fs.writeFileSync(licenseDest, 'MIT License\n');
+    fs.writeFileSync(licenseDest, 'AGPL-3.0-or-later License\n');
 }
 
 // Make the CLI executable

@@ -406,7 +406,7 @@ export function LandingPage() {
                         }}
                     >
                         <Typography variant="body2" color="text.secondary">
-                            © 2026 DB Nexus. Open source under MIT license.
+                            © 2026 DB Nexus. Open source under AGPL-3.0 license.
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 3 }}>
                             <Typography

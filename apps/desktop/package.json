@@ -4,7 +4,7 @@
     "private": true,
     "description": "DB Nexus Desktop Application",
     "author": "DB Nexus Team",
-    "license": "MIT",
+    "license": "AGPL-3.0-or-later",
     "main": "dist/main.js",
     "type": "module",
     "scripts": {

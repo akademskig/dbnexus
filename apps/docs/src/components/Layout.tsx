@@ -324,7 +324,7 @@ export function Layout() {
             </Main>
             <Footer>
                 <FooterContent>
-                    <FooterText>© 2026 DB Nexus. Open source under MIT License.</FooterText>
+                    <FooterText>© 2026 DB Nexus. Open source under AGPL-3.0 License.</FooterText>
                     <FooterLinks>
                         <a
                             href="https://github.com/akademskig/dbnexus"

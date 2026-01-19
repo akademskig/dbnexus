@@ -25,7 +25,7 @@
         "url": "https://github.com/akademskig/dbnexus/issues"
     },
     "author": "DB Nexus Team",
-    "license": "MIT",
+    "license": "AGPL-3.0-or-later",
     "bin": {
         "dbnexus": "./dist/index.js"
     },

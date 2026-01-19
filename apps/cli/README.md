@@ -3,7 +3,7 @@
 > Database management tool with web UI
 
 [![npm version](https://img.shields.io/npm/v/dbnexus.svg)](https://www.npmjs.com/package/dbnexus)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 ## Features
 
@@ -150,7 +150,7 @@ Contributions are welcome! Please see our [Contributing Guide](https://github.co
 
 ## License
 
-MIT © DB Nexus Team
+AGPL-3.0 © DB Nexus Team
 
 ## Support
 

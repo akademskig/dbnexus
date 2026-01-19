@@ -141,7 +141,7 @@ dist-package/
 ├── node_modules/     # Native modules only (~14MB)
 ├── package.json      # npm package config
 ├── README.md         # Package documentation
-└── LICENSE           # MIT license
+└── LICENSE           # AGPL-3.0 license
 
 Total package size: ~22MB
 ```
