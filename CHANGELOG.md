@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Consistent border-radius styling across all docs cards
 
+## [0.1.12] - 2026-01-19
+
+### Added
+
+- **Data Sync Logs tab** in Logs page - dedicated view for sync operations
+- Sync run tracking with full details (source/target connections, schema, table)
+- SQL statement logging for sync operations (shows actual executed SQL with values)
+- Auto-refresh of sync logs when operations complete
+
+### Changed
+
+- Removed unused `sync_configs` table (sync config is on database groups)
+- Sync runs now tracked in Activity log alongside queries and migrations
+
 ## [0.1.11] - 2026-01-19
 
 ### Added
