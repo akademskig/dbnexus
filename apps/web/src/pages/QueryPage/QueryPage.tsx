@@ -38,6 +38,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import SettingsIcon from '@mui/icons-material/Settings';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
@@ -1397,6 +1398,21 @@ export function QueryPage() {
                                     <Box sx={{ flex: 1 }} />
 
                                     {/* Table Actions */}
+                                    <StyledTooltip title="Manage Table">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                navigate(
+                                                    `/connections/${selectedConnectionId}?tab=3&schema=${encodeURIComponent(
+                                                        selectedTable.schema || selectedSchema || 'public'
+                                                    )}&table=${encodeURIComponent(selectedTable.name)}`
+                                                );
+                                            }}
+                                        >
+                                            <SettingsIcon fontSize="small" />
+                                        </IconButton>
+                                    </StyledTooltip>
+
                                     {selectedTable.type !== 'view' && (
                                         <StyledTooltip title="Add Row">
                                             <IconButton
