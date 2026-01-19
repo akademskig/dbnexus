@@ -9,7 +9,6 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Alert,
 } from '@mui/material';
 import {
     ExpandMore as ExpandIcon,
@@ -19,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { DiffTypeBadge } from './StatusComponents';
 import type { SchemaDiff, SchemaDiffItem } from '@dbnexus/shared';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface SchemaDiffDisplayProps {
     readonly diff: SchemaDiff;
@@ -68,7 +68,9 @@ export function SchemaDiffDisplay({
         diff.summary.columnsModified + diff.summary.indexesModified + diff.summary.fksModified;
 
     if (diff.items.length === 0) {
-        return <Alert severity="success">Schemas are in sync! No differences found.</Alert>;
+        return (
+            <StatusAlert severity="success">Schemas are in sync! No differences found.</StatusAlert>
+        );
     }
 
     return (

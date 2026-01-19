@@ -362,7 +362,12 @@ export function LandingPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <img src={`${import.meta.env.BASE_URL}logo-light.svg`} alt="DB Nexus logo" width={58} height={58} />
+                        <img
+                            src={`${import.meta.env.BASE_URL}logo-light.svg`}
+                            alt="DB Nexus logo"
+                            width={58}
+                            height={58}
+                        />
                         <span className="logo-text">DB Nexus</span>
                     </Badge>
                     <Title
@@ -418,7 +423,10 @@ export function LandingPage() {
                 </SectionSubtitle>
                 <ScreenshotsGrid>
                     {[
-                        { src: `${import.meta.env.BASE_URL}screenshots/querypage.png`, label: 'Query Editor' },
+                        {
+                            src: `${import.meta.env.BASE_URL}screenshots/querypage.png`,
+                            label: 'Query Editor',
+                        },
                         { src: 'screenshots/schemadiagrampage.png', label: 'Schema Diagram' },
                         { src: 'screenshots/comparepage-schema.png', label: 'Compare & Sync' },
                         { src: 'screenshots/projectspage.png', label: 'Projects & Groups' },
@@ -430,7 +438,10 @@ export function LandingPage() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <ScreenshotImage src={`${import.meta.env.BASE_URL}${shot.src}`} alt={`${shot.label} screenshot`} />
+                            <ScreenshotImage
+                                src={`${import.meta.env.BASE_URL}${shot.src}`}
+                                alt={`${shot.label} screenshot`}
+                            />
                             <ScreenshotCaption>{shot.label}</ScreenshotCaption>
                         </ScreenshotCard>
                     ))}

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-    Alert,
     Autocomplete,
     Box,
     Button,
@@ -19,6 +18,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import { StatusAlert } from './StatusAlert';
 
 export interface NewColumnState {
     name: string;
@@ -82,7 +82,7 @@ function ColumnDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                    {notice ? <Alert severity="info">{notice}</Alert> : null}
+                    {notice ? <StatusAlert severity="info">{notice}</StatusAlert> : null}
                     <TextField
                         autoFocus={!nameFieldDisabled}
                         label="Column Name"

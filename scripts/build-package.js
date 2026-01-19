@@ -37,7 +37,9 @@ execSync('pnpm -r build', { cwd: rootDir, stdio: 'inherit' });
 
 // Bundle CLI
 console.log('\n📦 Bundling CLI...');
-const cliPackageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'apps/cli/package.json'), 'utf-8'));
+const cliPackageJson = JSON.parse(
+    fs.readFileSync(path.join(rootDir, 'apps/cli/package.json'), 'utf-8')
+);
 await esbuild.build({
     entryPoints: [path.join(rootDir, 'apps/cli/dist/index.js')],
     bundle: true,
@@ -56,7 +58,7 @@ await esbuild.build({
     ],
     define: {
         'process.env.NODE_ENV': '"production"',
-        '__CLI_VERSION__': JSON.stringify(cliPackageJson.version),
+        __CLI_VERSION__: JSON.stringify(cliPackageJson.version),
     },
     minify: false,
     sourcemap: false,
@@ -131,7 +133,7 @@ const packageJson = {
         'database-tool',
         'cli',
     ],
-    homepage: 'https://github.com/akademskig/dbnexus',
+    homepage: 'https://akademskig.github.io/dbnexus',
     repository: {
         type: 'git',
         url: 'https://github.com/akademskig/dbnexus.git',

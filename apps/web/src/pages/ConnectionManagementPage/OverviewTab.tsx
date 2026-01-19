@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Box, Typography, Skeleton, Button, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, Skeleton, Button, CircularProgress } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import EditIcon from '@mui/icons-material/Edit';
 import { useState } from 'react';
@@ -15,13 +13,14 @@ import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { connectionsApi, schemaApi, projectsApi, groupsApi } from '../../lib/api';
 import { ConnectionFormDialog } from '../ProjectsPage/Dialogs';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface StatCardProps {
-    icon: React.ReactNode;
-    label: string;
-    value: string | number;
-    isLoading?: boolean;
-    color?: string;
+    readonly icon: React.ReactNode;
+    readonly label: string;
+    readonly value: string | number;
+    readonly isLoading?: boolean;
+    readonly color?: string;
 }
 
 function StatCard({ icon, label, value, isLoading, color = 'primary.main' }: StatCardProps) {
@@ -68,10 +67,10 @@ function StatCard({ icon, label, value, isLoading, color = 'primary.main' }: Sta
 }
 
 interface OverviewTabProps {
-    connection: ConnectionConfig | undefined;
-    schemas: string[];
-    serverVersion: string | undefined;
-    isLoading: boolean;
+    readonly connection: ConnectionConfig | undefined;
+    readonly schemas: string[];
+    readonly serverVersion: string | undefined;
+    readonly isLoading: boolean;
 }
 
 export function OverviewTab({ connection, schemas, serverVersion, isLoading }: OverviewTabProps) {
@@ -173,16 +172,18 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                         mt: 2,
                     }}
                 >
-                    {isLoading ? (
+                    {isLoading && (
                         <>
                             <Skeleton height={40} />
                             <Skeleton height={40} />
                             <Skeleton height={40} />
                             <Skeleton height={40} />
                         </>
-                    ) : connection?.engine === 'sqlite' ? (
+                    )}
+                    {!isLoading && connection?.engine === 'sqlite' && (
                         <DetailItem label="Database File" value={connection.database} />
-                    ) : (
+                    )}
+                    {!isLoading && connection?.engine !== 'sqlite' && (
                         <>
                             <DetailItem
                                 label="Host"
@@ -215,14 +216,13 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                 </Typography>
 
                 {testResult && (
-                    <Alert
+                    <StatusAlert
                         severity={testResult.success ? 'success' : 'error'}
-                        icon={testResult.success ? <CheckCircleIcon /> : <ErrorIcon />}
                         onClose={() => setTestResult(null)}
                         sx={{ mb: 2 }}
                     >
                         {testResult.message}
-                    </Alert>
+                    </StatusAlert>
                 )}
 
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>

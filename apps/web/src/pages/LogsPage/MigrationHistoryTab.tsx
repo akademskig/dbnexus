@@ -9,7 +9,6 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Alert,
     TextField,
     InputAdornment,
 } from '@mui/material';
@@ -28,6 +27,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schemaApi } from '../../lib/api';
 import type { MigrationHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
+import { StatusAlert } from '@/components/StatusAlert';
 
 function formatDate(date: string): string {
     const d = new Date(date);
@@ -387,7 +387,7 @@ export function MigrationHistoryTab() {
                             )}
 
                             {!selectedMigration.success && selectedMigration.error && (
-                                <Alert
+                                <StatusAlert
                                     severity="error"
                                     sx={{
                                         '& .MuiAlert-message': {
@@ -413,7 +413,7 @@ export function MigrationHistoryTab() {
                                     >
                                         {selectedMigration.error}
                                     </Box>
-                                </Alert>
+                                </StatusAlert>
                             )}
 
                             <Box>

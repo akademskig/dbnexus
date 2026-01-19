@@ -10,7 +10,6 @@ import {
     TextField,
     FormControlLabel,
     Checkbox,
-    Alert,
     CircularProgress,
     Stack,
     ToggleButton,
@@ -33,6 +32,7 @@ import type {
 } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
 import { PROJECT_COLORS } from './constants';
+import { StatusAlert } from '@/components/StatusAlert';
 
 // Project form dialog
 interface ProjectFormDialogProps {
@@ -759,9 +759,9 @@ export function ConnectionFormDialog({
                         </Box>
 
                         {testResult && (
-                            <Alert severity={testResult.success ? 'success' : 'error'}>
+                            <StatusAlert severity={testResult.success ? 'success' : 'error'}>
                                 {testResult.message}
-                            </Alert>
+                            </StatusAlert>
                         )}
                     </Stack>
                 </DialogContent>

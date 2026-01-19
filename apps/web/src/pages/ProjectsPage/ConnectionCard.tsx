@@ -6,7 +6,6 @@ import {
     Button,
     IconButton,
     Chip,
-    Alert,
     CircularProgress,
     Collapse,
 } from '@mui/material';
@@ -28,14 +27,15 @@ import { useTagsStore } from '../../stores/tagsStore';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { DetailRow } from './DetailRow';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface ConnectionCardProps {
-    connection: ConnectionConfig;
-    compact?: boolean;
-    onEdit: () => void;
-    onDelete: () => void;
-    onQuery: () => void;
-    draggable?: boolean;
+    readonly connection: ConnectionConfig;
+    readonly compact?: boolean;
+    readonly onEdit: () => void;
+    readonly onDelete: () => void;
+    readonly onQuery: () => void;
+    readonly draggable?: boolean;
 }
 
 export function ConnectionCard({
@@ -359,13 +359,13 @@ export function ConnectionCard({
                     </Box>
 
                     {testResult && (
-                        <Alert
+                        <StatusAlert
                             severity={testResult.success ? 'success' : 'error'}
                             onClose={() => setTestResult(null)}
                             sx={{ mb: 2 }}
                         >
                             {testResult.message}
-                        </Alert>
+                        </StatusAlert>
                     )}
 
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

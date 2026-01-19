@@ -3,7 +3,6 @@ import {
     Box,
     Typography,
     Button,
-    Alert,
     Chip,
     TextField,
     InputAdornment,
@@ -40,6 +39,7 @@ import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
 import LinkIcon from '@mui/icons-material/Link';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -447,9 +447,8 @@ export function DataTab({
             {loading && <LinearProgress />}
 
             {confirmDangerous && (
-                <Alert
+                <StatusAlert
                     severity="warning"
-                    icon={<WarningIcon />}
                     action={
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             <Button color="inherit" size="small" onClick={onCancel}>
@@ -468,16 +467,16 @@ export function DataTab({
                 >
                     <Typography variant="subtitle2">Dangerous Query Detected</Typography>
                     <Typography variant="body2">{confirmDangerous.message}</Typography>
-                </Alert>
+                </StatusAlert>
             )}
 
             {error && (
-                <Alert severity="error" icon={<ErrorIcon />} sx={{ m: 2 }}>
+                <StatusAlert severity="error" sx={{ m: 2 }}>
                     <Typography variant="subtitle2">Query Error</Typography>
                     <Typography variant="body2" fontFamily="monospace">
                         {error}
                     </Typography>
-                </Alert>
+                </StatusAlert>
             )}
 
             {result && (

@@ -16,7 +16,6 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    Alert,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -35,6 +34,7 @@ import {
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface ActivityDetails {
     connectionId?: string;
@@ -554,7 +554,7 @@ export function ActivityLogTab() {
                             {/* Error Details */}
                             {selectedActivity.status === 'error' &&
                                 selectedActivity.details?.error && (
-                                    <Alert
+                                    <StatusAlert
                                         severity="error"
                                         sx={{
                                             '& .MuiAlert-message': {
@@ -583,7 +583,7 @@ export function ActivityLogTab() {
                                         >
                                             {selectedActivity.details.error}
                                         </Box>
-                                    </Alert>
+                                    </StatusAlert>
                                 )}
 
                             {/* Description / SQL */}

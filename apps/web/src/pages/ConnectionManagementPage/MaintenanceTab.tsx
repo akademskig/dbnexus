@@ -4,7 +4,6 @@ import {
     Box,
     Typography,
     Button,
-    Alert,
     CircularProgress,
     FormControl,
     InputLabel,
@@ -18,7 +17,11 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import StorageIcon from '@mui/icons-material/Storage';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
-import { OperationResultsList, type OperationResultData } from '../../components/StatusAlert';
+import {
+    OperationResultsList,
+    type OperationResultData,
+    StatusAlert,
+} from '../../components/StatusAlert';
 import { queriesApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 
@@ -192,13 +195,13 @@ export function MaintenanceTab({
     return (
         <Box>
             {/* Info Alert */}
-            <Alert severity="info" sx={{ mb: 3 }}>
+            <StatusAlert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
                     Maintenance operations help keep your database running efficiently. Some
                     operations may temporarily lock tables or impact performance. Run during
                     low-traffic periods when possible.
                 </Typography>
-            </Alert>
+            </StatusAlert>
 
             {/* Schema Selector (for operations that need it) */}
             {!isSqlite && schemas.length > 0 && (
@@ -323,9 +326,9 @@ export function MaintenanceTab({
 
             {/* Read-only warning */}
             {connection?.readOnly && (
-                <Alert severity="warning" sx={{ mb: 3 }}>
+                <StatusAlert severity="warning" sx={{ mb: 3 }}>
                     This connection is read-only. Maintenance operations are disabled.
-                </Alert>
+                </StatusAlert>
             )}
 
             {/* Results History */}

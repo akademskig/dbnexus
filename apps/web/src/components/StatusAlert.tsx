@@ -4,7 +4,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
-import { ReactNode } from 'react';
+import { ReactNode, forwardRef } from 'react';
 
 type Severity = 'success' | 'error' | 'warning' | 'info';
 
@@ -42,22 +42,21 @@ interface StatusAlertProps {
     readonly severity: Severity;
     readonly children: ReactNode;
     readonly onClose?: () => void;
+    readonly action?: ReactNode;
     readonly showIcon?: boolean;
     readonly sx?: object;
 }
 
-export function StatusAlert({
-    severity,
-    children,
-    onClose,
-    showIcon = true,
-    sx,
-}: StatusAlertProps) {
+export const StatusAlert = forwardRef<HTMLDivElement, StatusAlertProps>(function StatusAlert(
+    { severity, children, onClose, action, showIcon = true, sx },
+    ref
+) {
     const config = severityConfig[severity];
     const { Icon } = config;
 
     return (
         <Box
+            ref={ref}
             sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -71,7 +70,7 @@ export function StatusAlert({
             }}
         >
             {showIcon && <Icon sx={{ color: config.iconColor }} />}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0, fontSize: '0.875rem' }}>
                 {typeof children === 'string' ? (
                     <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
                         {children}
@@ -80,6 +79,7 @@ export function StatusAlert({
                     children
                 )}
             </Box>
+            {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
             {onClose && (
                 <IconButton size="small" onClick={onClose} sx={{ mt: -0.5, mr: -0.5 }}>
                     <CloseIcon fontSize="small" />
@@ -87,7 +87,7 @@ export function StatusAlert({
             )}
         </Box>
     );
-}
+});
 
 // ============================================================================
 // OperationResultData - For operation feedback

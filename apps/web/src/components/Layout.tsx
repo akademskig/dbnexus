@@ -280,8 +280,8 @@ export function Layout() {
                                 ? `${label} (No connections)`
                                 : label
                             : isDisabled
-                                ? 'No connections available'
-                                : '';
+                              ? 'No connections available'
+                              : '';
 
                         return (
                             <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
@@ -305,8 +305,8 @@ export function Layout() {
                                                 color: isActive
                                                     ? 'primary.main'
                                                     : isDisabled
-                                                        ? 'text.disabled'
-                                                        : 'text.secondary',
+                                                      ? 'text.disabled'
+                                                      : 'text.secondary',
                                             }}
                                         >
                                             {icon}
@@ -528,13 +528,13 @@ export function Layout() {
                                             const statusColor = isOnline
                                                 ? 'success.main'
                                                 : isOffline
-                                                    ? 'error.main'
-                                                    : 'text.disabled';
+                                                  ? 'error.main'
+                                                  : 'text.disabled';
                                             const statusText = isOnline
                                                 ? 'Online'
                                                 : isOffline
-                                                    ? 'Offline'
-                                                    : 'Unknown';
+                                                  ? 'Offline'
+                                                  : 'Unknown';
 
                                             const tooltipContent = (
                                                 <Box sx={{ p: 0.5 }}>
@@ -626,8 +626,8 @@ export function Layout() {
                                                                     bgcolor: isOnline
                                                                         ? 'success.main'
                                                                         : isOffline
-                                                                            ? 'error.main'
-                                                                            : 'text.disabled',
+                                                                          ? 'error.main'
+                                                                          : 'text.disabled',
                                                                     ml: 1,
                                                                     mr: 2,
                                                                     flexShrink: 0,
@@ -758,8 +758,8 @@ export function Layout() {
                                                             bgcolor: isOnline
                                                                 ? 'success.main'
                                                                 : isOffline
-                                                                    ? 'error.main'
-                                                                    : 'text.disabled',
+                                                                  ? 'error.main'
+                                                                  : 'text.disabled',
                                                             ml: 1,
                                                             mr: 2,
                                                             flexShrink: 0,

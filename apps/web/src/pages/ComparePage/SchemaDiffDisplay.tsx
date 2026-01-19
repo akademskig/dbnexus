@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import type { SchemaDiff, SchemaDiffItem } from '@dbnexus/shared';
 import { DiffTypeBadge } from './DiffTypeBadge';
-import { OperationResultItem } from '@/components/StatusAlert';
+import { OperationResultItem, StatusAlert } from '@/components/StatusAlert';
 
 interface SchemaDiffDisplayProps {
     diff: SchemaDiff;
@@ -69,13 +69,9 @@ export function SchemaDiffDisplay({
 
     if (diff.items.length === 0) {
         return (
-            <OperationResultItem
-                result={{
-                    id: 'schema-diff',
-                    success: true,
-                    message: 'Schemas are identical - no differences found.',
-                }}
-            />
+            <StatusAlert severity="success">
+                Schemas are identical - no differences found.
+            </StatusAlert>
         );
     }
 

@@ -9,7 +9,6 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Alert,
     FormControl,
     InputLabel,
     Select,
@@ -33,6 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
+import { StatusAlert } from '@/components/StatusAlert';
 
 function formatDate(date: Date | string): string {
     const d = new Date(date);
@@ -427,7 +427,7 @@ export function QueryHistoryTab() {
                             </Box>
 
                             {!selectedEntry.success && selectedEntry.error && (
-                                <Alert
+                                <StatusAlert
                                     severity="error"
                                     sx={{
                                         '& .MuiAlert-message': {
@@ -453,7 +453,7 @@ export function QueryHistoryTab() {
                                     >
                                         {selectedEntry.error}
                                     </Box>
-                                </Alert>
+                                </StatusAlert>
                             )}
 
                             <Box>

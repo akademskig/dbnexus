@@ -21,7 +21,7 @@ import { syncApi } from '../lib/api';
 import type { TableDataDiff } from '@dbnexus/shared';
 import { LoadingState } from './LoadingState';
 import { useToastStore } from '../stores/toastStore';
-import { OperationResultItem, StatusAlert } from './StatusAlert';
+import { StatusAlert } from './StatusAlert';
 
 interface DataDiffDisplayProps {
     /** Source connection ID */
@@ -458,7 +458,10 @@ export function DataDiffDisplay({
                     </Box>
                 </Box>
 
-                <StatusAlert severity={dumpRestoreResult.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
+                <StatusAlert
+                    severity={dumpRestoreResult.success ? 'success' : 'warning'}
+                    sx={{ mb: 2 }}
+                >
                     {dumpRestoreResult.success
                         ? `Successfully copied all data from source to target.`
                         : `Completed with some errors. Check the details below.`}
@@ -677,13 +680,9 @@ export function DataDiffDisplay({
     if (tableDiffs.length > 0 && outOfSyncTables.length === 0) {
         return (
             <Box>
-                <OperationResultItem
-                    result={{
-                        id: 'data-diff',
-                        success: true,
-                        message: `All ${inSyncTables.length} tables are in sync between source and target.`,
-                    }}
-                />
+                <StatusAlert severity="success">
+                    All {inSyncTables.length} tables are in sync between source and target.
+                </StatusAlert>
                 {shouldFetch && (
                     <Button
                         sx={{ mt: 2 }}
@@ -703,13 +702,11 @@ export function DataDiffDisplay({
     if (tableDiffs.length === 0) {
         return (
             <Box>
-                <OperationResultItem
-                    result={{
-                        id: 'data-diff',
-                        success: false,
-                        message: `No tables found in the selected schema, or unable to compare data.`,
-                    }}
-                />
+                <StatusAlert severity="error">
+                    <Typography variant="body2">
+                        No tables found in the selected schema, or unable to compare data.
+                    </Typography>
+                </StatusAlert>
                 {shouldFetch && (
                     <Button
                         sx={{ mt: 2 }}

@@ -1,5 +1,6 @@
-import { Snackbar, Alert, Slide, SlideProps } from '@mui/material';
+import { Snackbar, Slide, SlideProps } from '@mui/material';
 import { useToastStore } from '../stores/toastStore';
+import { StatusAlert } from './StatusAlert';
 
 function SlideTransition(props: SlideProps) {
     return <Slide {...props} direction="up" />;
@@ -22,10 +23,9 @@ export function ToastProvider() {
                         bottom: { xs: 24 + index * 60, sm: 24 + index * 60 },
                     }}
                 >
-                    <Alert
+                    <StatusAlert
                         onClose={() => removeToast(toast.id)}
                         severity={toast.severity}
-                        variant="filled"
                         sx={{
                             width: '100%',
                             minWidth: 280,
@@ -36,7 +36,7 @@ export function ToastProvider() {
                         }}
                     >
                         {toast.message}
-                    </Alert>
+                    </StatusAlert>
                 </Snackbar>
             ))}
         </>

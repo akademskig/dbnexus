@@ -4,7 +4,6 @@ import {
     Box,
     Typography,
     Button,
-    Alert,
     TableRow,
     TableCell,
     IconButton,
@@ -27,6 +26,7 @@ import { SchemaDiffDisplay } from './SchemaDiffDisplay';
 import { DataDiffDisplay } from '../../components/DataDiffDisplay';
 import type { InstanceGroupTargetStatus } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface TargetRowProps {
     target: InstanceGroupTargetStatus;
@@ -181,9 +181,9 @@ export function TargetRow({
                     <Collapse in={expanded}>
                         <Box sx={{ py: 1 }}>
                             {currentTarget.error && (
-                                <Alert severity="error" sx={{ mb: 1 }}>
+                                <StatusAlert severity="error" sx={{ mb: 1 }}>
                                     {currentTarget.error}
-                                </Alert>
+                                </StatusAlert>
                             )}
 
                             {/* Tabs for Schema and Data */}
@@ -219,18 +219,20 @@ export function TargetRow({
                                             applying={applying}
                                         />
                                     ) : currentTarget.schemaStatus === 'in_sync' ? (
-                                        <Alert severity="success">Schema is in sync</Alert>
+                                        <StatusAlert severity="success">
+                                            Schema is in sync
+                                        </StatusAlert>
                                     ) : (
-                                        <Alert severity="info">
+                                        <StatusAlert severity="info">
                                             Click &quot;Recheck&quot; to load schema diff
-                                        </Alert>
+                                        </StatusAlert>
                                     )}
                                 </Box>
                             )}
 
                             {/* Data Tab with shared DataDiffDisplay */}
                             {activeTab === 1 && group.syncData && (
-                                <Box sx={{ py: 1 }}>
+                                <Box sx={{ pt: 1 }}>
                                     {dataDiff.length > 0 ? (
                                         <DataDiffDisplay
                                             sourceConnectionId={sourceConnectionId}
@@ -241,13 +243,13 @@ export function TargetRow({
                                             onSyncComplete={handleDataSyncComplete}
                                         />
                                     ) : currentTarget.dataStatus === 'in_sync' ? (
-                                        <Alert severity="success" sx={{ mt: 1 }}>
+                                        <StatusAlert severity="success" sx={{ mt: 1 }}>
                                             All tables are in sync
-                                        </Alert>
+                                        </StatusAlert>
                                     ) : (
-                                        <Alert severity="info" sx={{ mt: 1 }}>
+                                        <StatusAlert severity="info" sx={{ mt: 1 }}>
                                             Click &quot;Recheck&quot; to load data diff
-                                        </Alert>
+                                        </StatusAlert>
                                     )}
                                 </Box>
                             )}

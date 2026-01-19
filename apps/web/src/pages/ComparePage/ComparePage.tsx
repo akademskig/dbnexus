@@ -6,7 +6,6 @@ import {
     Typography,
     Button,
     CircularProgress,
-    Alert,
     Chip,
     Paper,
     IconButton,
@@ -32,6 +31,7 @@ import { getDefaultSchema } from './utils';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import type { DatabaseGroup } from '@dbnexus/shared';
+import { StatusAlert } from '@/components/StatusAlert';
 
 type CompareTab = 'schema' | 'data';
 
@@ -275,10 +275,10 @@ export function ComparePage() {
                     Select Instance Group
                 </Typography>
                 {groups.length === 0 ? (
-                    <Alert severity="info" sx={{ mt: 2 }}>
+                    <StatusAlert severity="info" sx={{ mt: 2 }}>
                         No instance groups found. Create groups in the Projects page to compare
                         connections.
-                    </Alert>
+                    </StatusAlert>
                 ) : (
                     <FormControl fullWidth size="small" sx={{ mt: 1 }}>
                         <InputLabel>Instance Group</InputLabel>
@@ -428,11 +428,11 @@ export function ComparePage() {
 
             {/* Not enough connections message */}
             {selectedGroupId && groupedConnections.length < 2 && (
-                <Alert severity="info">
+                <StatusAlert severity="info">
                     {groupedConnections.length === 0
                         ? `No connections found in the "${selectedGroup?.name}" group. Add connections to this group in the Projects page.`
                         : `Only ${groupedConnections.length} connection found in the "${selectedGroup?.name}" group. At least 2 connections are required for comparison.`}
-                </Alert>
+                </StatusAlert>
             )}
 
             {/* Results */}
@@ -505,7 +505,9 @@ export function ComparePage() {
                             />
                         )}
                         {activeTab === 'schema' && !isComparing && !schemaDiff && (
-                            <Alert severity="info">Click Compare to see schema differences.</Alert>
+                            <StatusAlert severity="info">
+                                Click Compare to see schema differences.
+                            </StatusAlert>
                         )}
 
                         {/* Data Tab */}

@@ -66,29 +66,29 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
     &::before {
         content: ${(props) => {
-        switch (props.type) {
-            case 'added':
-                return '"+"';
-            case 'changed':
-                return '"~"';
-            case 'fixed':
-                return '"✓"';
-            case 'removed':
-                return '"-"';
-        }
-    }};
+            switch (props.type) {
+                case 'added':
+                    return '"+"';
+                case 'changed':
+                    return '"~"';
+                case 'fixed':
+                    return '"✓"';
+                case 'removed':
+                    return '"-"';
+            }
+        }};
         color: ${(props) => {
-        switch (props.type) {
-            case 'added':
-                return 'var(--color-accent-green)';
-            case 'changed':
-                return 'var(--color-accent-orange)';
-            case 'fixed':
-                return 'var(--color-primary-light)';
-            case 'removed':
-                return '#ef4444';
-        }
-    }};
+            switch (props.type) {
+                case 'added':
+                    return 'var(--color-accent-green)';
+                case 'changed':
+                    return 'var(--color-accent-orange)';
+                case 'fixed':
+                    return 'var(--color-primary-light)';
+                case 'removed':
+                    return '#ef4444';
+            }
+        }};
         font-weight: 700;
         font-family: var(--font-mono);
     }
@@ -113,9 +113,15 @@ const changelog = [
         date: 'January 2026',
         changes: [
             { type: 'added' as const, text: 'Connection details tooltip in navigation sidebar' },
-            { type: 'added' as const, text: 'Reusable OperationResult component for operation feedback' },
+            {
+                type: 'added' as const,
+                text: 'Reusable OperationResult component for operation feedback',
+            },
             { type: 'added' as const, text: 'CLI and API test suites' },
-            { type: 'changed' as const, text: 'Unified operation results styling across all pages' },
+            {
+                type: 'changed' as const,
+                text: 'Unified operation results styling across all pages',
+            },
         ],
     },
     {
@@ -123,7 +129,10 @@ const changelog = [
         date: 'January 2026',
         changes: [
             { type: 'added' as const, text: 'Local CLI development script (pnpm cli)' },
-            { type: 'added' as const, text: 'Full CLI commands in published package (connect, scan, query, export, schema)' },
+            {
+                type: 'added' as const,
+                text: 'Full CLI commands in published package (connect, scan, query, export, schema)',
+            },
             { type: 'changed' as const, text: 'Published package now uses CLI as entry point' },
         ],
     },
@@ -133,9 +142,15 @@ const changelog = [
         changes: [
             { type: 'added' as const, text: 'Accent color selector in Settings with dynamic logo' },
             { type: 'added' as const, text: 'Dynamic app version display in Settings' },
-            { type: 'added' as const, text: 'Shared Add/Edit Column dialog with PK and FK options' },
+            {
+                type: 'added' as const,
+                text: 'Shared Add/Edit Column dialog with PK and FK options',
+            },
             { type: 'added' as const, text: 'Icons on Settings page tabs' },
-            { type: 'changed' as const, text: 'Standardized tooltips and dialog padding across the app' },
+            {
+                type: 'changed' as const,
+                text: 'Standardized tooltips and dialog padding across the app',
+            },
             { type: 'fixed' as const, text: 'Tag chips rendering with rounded corners' },
         ],
     },
@@ -146,7 +161,10 @@ const changelog = [
             { type: 'added' as const, text: 'Interactive onboarding tour for new users' },
             { type: 'added' as const, text: 'Drag and drop connections into projects and groups' },
             { type: 'added' as const, text: 'Auto-select first connection and table' },
-            { type: 'changed' as const, text: 'Disabled navigation items when no connections exist' },
+            {
+                type: 'changed' as const,
+                text: 'Disabled navigation items when no connections exist',
+            },
             { type: 'fixed' as const, text: 'Drag state persisting after drop' },
         ],
     },
@@ -154,7 +172,10 @@ const changelog = [
         version: '0.1.6',
         date: 'January 2026',
         changes: [
-            { type: 'added' as const, text: 'Foreign key navigation - click FK values to jump to referenced rows' },
+            {
+                type: 'added' as const,
+                text: 'Foreign key navigation - click FK values to jump to referenced rows',
+            },
             { type: 'added' as const, text: 'Page not found handling with redirect to dashboard' },
             { type: 'fixed' as const, text: 'Connection switching on query page' },
             { type: 'fixed' as const, text: 'Schema diagram infinite loop when no connections' },
@@ -174,7 +195,10 @@ const changelog = [
         version: '0.1.4',
         date: 'January 2026',
         changes: [
-            { type: 'added' as const, text: 'Auto-discovery of databases (port scanning, Docker, .env files)' },
+            {
+                type: 'added' as const,
+                text: 'Auto-discovery of databases (port scanning, Docker, .env files)',
+            },
             { type: 'added' as const, text: 'SQLite file scanning' },
             { type: 'added' as const, text: 'Edit column functionality in Schema Diagram' },
             { type: 'changed' as const, text: 'Improved scanner to prioritize Docker sources' },
@@ -186,9 +210,18 @@ const changelog = [
         date: 'January 2026',
         changes: [
             { type: 'added' as const, text: 'Initial release' },
-            { type: 'added' as const, text: 'Query editor with syntax highlighting and auto-completion' },
-            { type: 'added' as const, text: 'Multi-database support (PostgreSQL, MySQL, MariaDB, SQLite)' },
-            { type: 'added' as const, text: 'Connection management with secure credential storage' },
+            {
+                type: 'added' as const,
+                text: 'Query editor with syntax highlighting and auto-completion',
+            },
+            {
+                type: 'added' as const,
+                text: 'Multi-database support (PostgreSQL, MySQL, MariaDB, SQLite)',
+            },
+            {
+                type: 'added' as const,
+                text: 'Connection management with secure credential storage',
+            },
             { type: 'added' as const, text: 'Interactive schema diagram with React Flow' },
             { type: 'added' as const, text: 'Schema comparison and sync functionality' },
             { type: 'added' as const, text: 'Projects and groups for organizing connections' },

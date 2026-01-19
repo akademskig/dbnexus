@@ -6,7 +6,6 @@ import {
     Typography,
     Button,
     CircularProgress,
-    Alert,
     Chip,
     Table,
     TableBody,
@@ -28,6 +27,7 @@ import { TargetRow } from './TargetRow';
 import { GroupSettingsDialog } from './GroupSettingsDialog';
 import { DataSyncDialog } from './DataSyncDialog';
 import type { ConnectionConfig } from '@dbnexus/shared';
+import { StatusAlert } from '@/components/StatusAlert';
 
 // Helper to format relative time
 function formatRelativeTime(date: Date): string {
@@ -141,7 +141,7 @@ export function GroupSyncPage() {
     if (!group) {
         return (
             <Box sx={{ p: 4 }}>
-                <Alert severity="error">Instance group not found</Alert>
+                <StatusAlert severity="error">Instance group not found</StatusAlert>
             </Box>
         );
     }
@@ -198,17 +198,17 @@ export function GroupSyncPage() {
 
             {/* No source warning */}
             {!group.sourceConnectionId && (
-                <Alert severity="warning" sx={{ mb: 3 }}>
+                <StatusAlert severity="warning" sx={{ mb: 3 }}>
                     No source connection set. Configure a source connection in settings to enable
                     sync checking.
-                </Alert>
+                </StatusAlert>
             )}
 
             {/* Sync not enabled warning */}
             {group.sourceConnectionId && !group.syncSchema && !group.syncData && (
-                <Alert severity="info" sx={{ mb: 3 }}>
+                <StatusAlert severity="info" sx={{ mb: 3 }}>
                     Neither schema nor data sync is enabled. Enable sync options in settings.
-                </Alert>
+                </StatusAlert>
             )}
 
             {/* Source info */}
