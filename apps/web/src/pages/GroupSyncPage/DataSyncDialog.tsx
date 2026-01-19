@@ -23,6 +23,20 @@ import type { TableDataDiff } from '@dbnexus/shared';
 // Cache for table primary keys to avoid repeated API calls
 const primaryKeyCache = new Map<string, string[]>();
 
+/**
+ * Parse a column array that might be a PostgreSQL array string or a JS array
+ * PostgreSQL array format: "{col1,col2}" or just a regular JS array
+ */
+function parseColumnArray(columns: string[] | string | undefined | null): string[] {
+    if (!columns) return [];
+    if (Array.isArray(columns)) return columns;
+    if (typeof columns === 'string') {
+        // PostgreSQL array format: "{col1,col2}"
+        return columns.replaceAll(/[{}]/g, '').split(',').filter(Boolean);
+    }
+    return [];
+}
+
 async function getTablePrimaryKeys(
     connectionId: string,
     schema: string,
@@ -35,9 +49,11 @@ async function getTablePrimaryKeys(
 
     try {
         const tableSchema = await schemaApi.getTableSchema(connectionId, schema, table);
-        const pks = tableSchema.primaryKey || ['id'];
-        primaryKeyCache.set(cacheKey, pks);
-        return pks;
+        // Parse in case it's a PostgreSQL array string format
+        const pks = parseColumnArray(tableSchema.primaryKey);
+        const result = pks.length > 0 ? pks : ['id'];
+        primaryKeyCache.set(cacheKey, result);
+        return result;
     } catch {
         // Fallback to 'id' if schema fetch fails
         return ['id'];

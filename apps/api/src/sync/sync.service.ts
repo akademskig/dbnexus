@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { ConnectionsService } from '../connections/connections.service.js';
 import { SchemaDiffService } from '../schema/schema-diff.service.js';
+import { parseColumnArray } from '../schema/sql-generator.js';
 import type {
     InstanceGroup,
     InstanceGroupSyncStatus,
@@ -337,12 +338,18 @@ export class SyncService {
         targetConnectionId: string,
         schema: string,
         table: string,
-        primaryKeyColumns: string[]
+        primaryKeyColumns: string[] | string
     ): Promise<{
         missingInTarget: Record<string, unknown>[];
         missingInSource: Record<string, unknown>[];
         different: { source: Record<string, unknown>; target: Record<string, unknown> }[];
     }> {
+        // Parse primaryKeyColumns in case it's a PostgreSQL array string
+        const pkColumns = parseColumnArray(primaryKeyColumns);
+        if (pkColumns.length === 0) {
+            throw new Error('No primary key columns provided');
+        }
+
         const sourceConnection = this.connectionsService.findById(sourceConnectionId);
         const targetConnection = this.connectionsService.findById(targetConnectionId);
         const sourceConnector = await this.connectionsService.getConnector(sourceConnectionId);
@@ -350,10 +357,10 @@ export class SyncService {
 
         const sourceTableRef = quoteTableRef(schema, table, sourceConnection.engine);
         const targetTableRef = quoteTableRef(schema, table, targetConnection.engine);
-        const sourceOrderBy = primaryKeyColumns
+        const sourceOrderBy = pkColumns
             .map((c) => quoteIdentifier(c, sourceConnection.engine))
             .join(', ');
-        const targetOrderBy = primaryKeyColumns
+        const targetOrderBy = pkColumns
             .map((c) => quoteIdentifier(c, targetConnection.engine))
             .join(', ');
 
@@ -367,7 +374,7 @@ export class SyncService {
 
         // Create maps by primary key
         const getPkValue = (row: Record<string, unknown>) =>
-            primaryKeyColumns.map((c) => String(row[c])).join('|');
+            pkColumns.map((c) => String(row[c])).join('|');
 
         const sourceMap = new Map<string, Record<string, unknown>>();
         const targetMap = new Map<string, Record<string, unknown>>();
