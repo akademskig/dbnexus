@@ -2,7 +2,7 @@
 
 A **local-first database management tool** with a modern web UI, CLI, and production safety guardrails.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)
 
 ## ✨ Features
 

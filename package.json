@@ -5,7 +5,7 @@
     "type": "module",
     "description": "A local-first, Prisma-like CLI tool for database management with web UI",
     "author": "",
-    "license": "MIT",
+    "license": "AGPL-3.0-or-later",
     "engines": {
         "node": ">=18.0.0"
     },
