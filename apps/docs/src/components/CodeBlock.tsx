@@ -13,6 +13,7 @@ const Pre = styled.pre`
     padding-right: 3.5rem;
     overflow-x: auto;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     font-size: 0.9rem;
     line-height: 1.6;
 
@@ -47,6 +48,7 @@ const CopyButton = styled.button<{ $copied: boolean }>`
         props.$copied ? 'var(--color-accent-green)' : 'var(--color-bg-tertiary)'};
     border: 1px solid
         ${(props) => (props.$copied ? 'var(--color-accent-green)' : 'rgba(255, 255, 255, 0.1)')};
+    border-radius: 4px;
     color: ${(props) => (props.$copied ? 'white' : 'var(--color-text-secondary)')};
     padding: 0.4rem 0.6rem;
     font-size: 0.75rem;

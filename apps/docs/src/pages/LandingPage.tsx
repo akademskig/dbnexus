@@ -106,6 +106,7 @@ const PrimaryButton = styled(Link)`
     background: var(--color-primary-light);
     color: white;
     font-weight: 600;
+    border-radius: 8px;
     transition:
         transform 0.2s,
         box-shadow 0.2s;
@@ -125,6 +126,7 @@ const SecondaryButton = styled.a`
     color: var(--color-text);
     font-weight: 600;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     transition:
         background 0.2s,
         border-color 0.2s;
@@ -144,6 +146,7 @@ const InstallCommand = styled(motion.div)`
     padding: 1rem 1.5rem;
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     font-family: var(--font-mono);
     font-size: 0.95rem;
 
@@ -167,6 +170,7 @@ const ScreenshotsGrid = styled.div`
 const ScreenshotCard = styled(motion.div)`
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
     overflow: hidden;
 `;
 
@@ -221,6 +225,7 @@ const FeatureHeader = styled.div`
 const FeatureCard = styled(motion.div)`
     background: var(--color-bg);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     padding: 2rem;
     transition:
         border-color 0.2s,
@@ -425,7 +430,7 @@ export function LandingPage() {
                 <ScreenshotsGrid>
                     {[
                         {
-                            src: `${import.meta.env.BASE_URL}screenshots/querypage.png`,
+                            src: `screenshots/querypage.png`,
                             label: 'Query Editor',
                         },
                         { src: 'screenshots/schemadiagrampage.png', label: 'Schema Diagram' },

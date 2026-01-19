@@ -45,6 +45,7 @@ const ShortcutRow = styled(motion.div)`
     padding: 0.75rem 1rem;
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
 
     &:hover {
         border-color: rgba(255, 255, 255, 0.1);
@@ -65,6 +66,7 @@ const Key = styled.kbd`
     background: var(--color-bg-tertiary);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-bottom-width: 2px;
+    border-radius: 4px;
     padding: 0.25rem 0.5rem;
     font-family: var(--font-mono);
     font-size: 0.8rem;

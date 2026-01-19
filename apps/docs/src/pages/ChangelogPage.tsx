@@ -19,6 +19,7 @@ const Version = styled(motion.section)`
     padding: 1.5rem;
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
 `;
 
 const VersionHeader = styled.div`
@@ -44,6 +45,7 @@ const VersionTag = styled.span<{ type: 'latest' | 'breaking' }>`
         props.type === 'latest' ? 'var(--color-accent-green)' : 'var(--color-accent-orange)'};
     color: white;
     padding: 0.2rem 0.5rem;
+    border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;

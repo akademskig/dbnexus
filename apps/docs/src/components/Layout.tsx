@@ -15,7 +15,6 @@ const Header = styled.header`
 `;
 
 const Nav = styled.nav`
-    max-width: 1400px;
     margin: 0 auto;
     padding: 1rem 2rem;
     display: flex;
@@ -65,7 +64,7 @@ const NavLinks = styled.div`
     }
 `;
 
-const NavLink = styled(Link)<{ $active?: boolean }>`
+const NavLink = styled(Link) <{ $active?: boolean }>`
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
     font-weight: 500;
     font-size: 1.05rem;
@@ -79,14 +78,17 @@ const NavLink = styled(Link)<{ $active?: boolean }>`
 const GitHubLink = styled.a`
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     padding: 0.65rem 1.1rem;
     font-weight: 500;
     font-size: 1rem;
+    line-height: 2;
     transition: background 0.2s;
 
     &:hover {
-        color: var(--color-primary);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
     }
 `;
 
@@ -119,7 +121,7 @@ const MobileMenu = styled(motion.div)`
     z-index: 99;
 `;
 
-const MobileNavLink = styled(Link)<{ $active?: boolean }>`
+const MobileNavLink = styled(Link) <{ $active?: boolean }>`
     display: block;
     padding: 0.9rem 1.1rem;
     color: ${(props) => (props.$active ? 'var(--color-text)' : 'var(--color-text-secondary)')};
@@ -214,6 +216,9 @@ export function Layout() {
                         >
                             Features
                         </NavLink>
+                        <NavLink to="/about" $active={location.pathname === '/about'}>
+                            About
+                        </NavLink>
                         <GitHubLink
                             href="https://github.com/akademskig/dbnexus"
                             target="_blank"
@@ -282,6 +287,13 @@ export function Layout() {
                                 onClick={closeMobileMenu}
                             >
                                 Features
+                            </MobileNavLink>
+                            <MobileNavLink
+                                to="/about"
+                                $active={location.pathname === '/about'}
+                                onClick={closeMobileMenu}
+                            >
+                                About
                             </MobileNavLink>
                             <MobileNavLink
                                 to="/docs/cli"

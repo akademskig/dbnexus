@@ -29,6 +29,7 @@ const Grid = styled.div`
 const Card = styled(motion(Link))`
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     padding: 2rem;
     transition:
         border-color 0.2s,

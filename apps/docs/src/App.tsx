@@ -7,6 +7,7 @@ import { FeaturesPage } from './pages/FeaturesPage';
 import { CLIReferencePage } from './pages/CLIReferencePage';
 import { KeyboardShortcutsPage } from './pages/KeyboardShortcutsPage';
 import { ChangelogPage } from './pages/ChangelogPage';
+import { AboutPage } from './pages/AboutPage';
 
 export default function App() {
     return (
@@ -19,6 +20,7 @@ export default function App() {
                 <Route path="/docs/cli" element={<CLIReferencePage />} />
                 <Route path="/docs/shortcuts" element={<KeyboardShortcutsPage />} />
                 <Route path="/changelog" element={<ChangelogPage />} />
+                <Route path="/about" element={<AboutPage />} />
             </Route>
         </Routes>
     );

@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
 import { DocsLayout } from '../components/DocsLayout';
+import { ImageLightbox } from '../components/ImageLightbox';
 
 const Title = styled.h1`
     font-size: 3rem;
@@ -19,6 +20,7 @@ const FeatureSection = styled(motion.section)`
     padding: 1.5rem;
     background: var(--color-bg-secondary);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
 `;
 
 const FeatureHeader = styled.div`
@@ -59,10 +61,13 @@ const FeatureList = styled.ul`
     gap: 0.75rem;
 `;
 
-const FeatureImage = styled.img`
-    width: 100%;
+const FeatureImageWrapper = styled.div`
     margin-top: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    img {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+    }
 `;
 
 const FeatureItem = styled.li`
@@ -230,10 +235,12 @@ export function FeaturesPage() {
                         ))}
                     </FeatureList>
                     {feature.screenshot && (
-                        <FeatureImage
-                            src={`${import.meta.env.BASE_URL}${feature.screenshot}`}
-                            alt={`${feature.title} screenshot`}
-                        />
+                        <FeatureImageWrapper>
+                            <ImageLightbox
+                                src={`${import.meta.env.BASE_URL}${feature.screenshot}`}
+                                alt={`${feature.title} screenshot`}
+                            />
+                        </FeatureImageWrapper>
                     )}
                 </FeatureSection>
             ))}

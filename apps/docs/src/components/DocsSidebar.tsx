@@ -80,6 +80,7 @@ const navigation = [
     {
         title: 'Resources',
         items: [
+            { label: 'About', href: '/about' },
             { label: 'Changelog', href: '/changelog' },
             { label: 'GitHub', href: 'https://github.com/akademskig/dbnexus', external: true },
         ],
