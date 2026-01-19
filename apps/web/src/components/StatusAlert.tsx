@@ -60,7 +60,7 @@ export function StatusAlert({
         <Box
             sx={{
                 display: 'flex',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 gap: 1.5,
                 p: 1.5,
                 bgcolor: config.bgcolor,
@@ -70,7 +70,7 @@ export function StatusAlert({
                 ...sx,
             }}
         >
-            {showIcon && <Icon sx={{ color: config.iconColor, mt: 0.25 }} />}
+            {showIcon && <Icon sx={{ color: config.iconColor }} />}
             <Box sx={{ flex: 1, minWidth: 0 }}>
                 {typeof children === 'string' ? (
                     <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
