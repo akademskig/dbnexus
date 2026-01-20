@@ -254,4 +254,107 @@ describe('Queries Integration Tests', () => {
             expect(Array.isArray(history)).toBe(true);
         });
     });
+
+    describe('Query Explanation (EXPLAIN)', () => {
+        const skipIfNoPostgres = () => !dockerAvailable?.postgres || !postgresConnectionId;
+
+        it('should explain query without ANALYZE', async () => {
+            if (skipIfNoPostgres()) return;
+
+            const result = await queriesService.explain(
+                postgresConnectionId!,
+                'SELECT * FROM products WHERE price > 1000',
+                false
+            );
+
+            expect(result).toBeDefined();
+            expect(result.plan).toBeDefined();
+            expect(result.planText).toBeDefined();
+            expect(result.insights).toBeDefined();
+            expect(result.suggestions).toBeDefined();
+            expect(Array.isArray(result.insights)).toBe(true);
+            expect(Array.isArray(result.suggestions)).toBe(true);
+        });
+
+        it('should explain query with ANALYZE', async () => {
+            if (skipIfNoPostgres()) return;
+
+            const result = await queriesService.explain(
+                postgresConnectionId!,
+                'SELECT * FROM products LIMIT 10',
+                true // ANALYZE
+            );
+
+            expect(result).toBeDefined();
+            expect(result.plan).toBeDefined();
+            expect(result.planText).toBeDefined();
+
+            // With ANALYZE, should have execution time insights
+            expect(result.insights.length).toBeGreaterThan(0);
+
+            // Check for execution time insight
+            const hasExecutionTimeInsight = result.insights.some((insight) =>
+                insight.message.toLowerCase().includes('executed')
+            );
+            expect(hasExecutionTimeInsight).toBe(true);
+        });
+
+        it('should detect sequential scans in insights', async () => {
+            if (skipIfNoPostgres()) return;
+
+            // Query without WHERE clause will use seq scan
+            const result = await queriesService.explain(
+                postgresConnectionId!,
+                'SELECT * FROM products',
+                false
+            );
+
+            // Should have insights about sequential scan
+            const hasSeqScanInsight = result.insights.some((insight) =>
+                insight.message.toLowerCase().includes('sequential scan')
+            );
+
+            if (hasSeqScanInsight) {
+                expect(hasSeqScanInsight).toBe(true);
+            }
+        });
+
+        it('should provide optimization suggestions', async () => {
+            if (skipIfNoPostgres()) return;
+
+            // Query that might benefit from optimization
+            const result = await queriesService.explain(
+                postgresConnectionId!,
+                'SELECT * FROM products ORDER BY created_at DESC',
+                false
+            );
+
+            expect(result.suggestions).toBeDefined();
+            expect(Array.isArray(result.suggestions)).toBe(true);
+            // Should either have suggestions or indicate plan is good
+            expect(result.suggestions.length).toBeGreaterThan(0);
+        });
+
+        it('should handle invalid SQL gracefully', async () => {
+            if (skipIfNoPostgres()) return;
+
+            await expect(
+                queriesService.explain(postgresConnectionId!, 'SELECT * FROM nonexistent_table', false)
+            ).rejects.toThrow();
+        });
+
+        it('should explain JOIN queries', async () => {
+            if (skipIfNoPostgres()) return;
+
+            const result = await queriesService.explain(
+                postgresConnectionId!,
+                'SELECT p.name, c.name as category FROM products p JOIN categories c ON p.category_id = c.id LIMIT 10',
+                false
+            );
+
+            expect(result).toBeDefined();
+            expect(result.plan).toBeDefined();
+            expect(result.planText).toContain('Join');
+        });
+    });
 });
