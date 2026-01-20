@@ -36,9 +36,10 @@ describe('Connections Integration Tests', () => {
         // Cleanup created connections
         for (const id of createdConnectionIds) {
             try {
+                await connectionsService.disconnect(id);
                 await connectionsService.delete(id);
-            } catch {
-                // Ignore cleanup errors
+            } catch (error) {
+                console.error(`Error cleaning up connection ${id}:`, error);
             }
         }
 
@@ -161,8 +162,11 @@ describe('Connections Integration Tests', () => {
                 return;
             }
 
-            // Create connection
-            const created = await connectionsService.create(TEST_CONNECTIONS.postgresEcommerce);
+            // Create connection with unique name
+            const created = await connectionsService.create({
+                ...TEST_CONNECTIONS.postgresEcommerce,
+                name: `${TEST_CONNECTIONS.postgresEcommerce.name} ${Date.now()}`,
+            });
             createdConnectionIds.push(created.id);
 
             // Get connector
@@ -202,8 +206,11 @@ describe('Connections Integration Tests', () => {
                 return;
             }
 
-            // Create
-            const created = await connectionsService.create(TEST_CONNECTIONS.mysqlBlog);
+            // Create with unique name
+            const created = await connectionsService.create({
+                ...TEST_CONNECTIONS.mysqlBlog,
+                name: `${TEST_CONNECTIONS.mysqlBlog.name} ${Date.now()}`,
+            });
             createdConnectionIds.push(created.id);
 
             expect(created.id).toBeDefined();

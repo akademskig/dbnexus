@@ -65,21 +65,44 @@ describe('Migration History Integration Tests', () => {
 
     afterAll(async () => {
         if (dockerAvailable.postgres && metadataService) {
+            // Clean up migration history entries first (to avoid FK constraint issues)
+            try {
+                const migrations = metadataService.migrationHistoryRepository.findAll();
+                const testMigrations = migrations.filter(
+                    (m) =>
+                        m.sourceConnectionId === postgresConnectionId ||
+                        m.targetConnectionId === postgresConnectionId ||
+                        m.sourceConnectionId === postgres2ConnectionId ||
+                        m.targetConnectionId === postgres2ConnectionId
+                );
+                for (const migration of testMigrations) {
+                    metadataService.migrationHistoryRepository.delete(migration.id);
+                }
+            } catch (error) {
+                console.error('Error cleaning up migration history:', error);
+            }
+
             // Clean up test group
             try {
                 if (groupId) {
                     metadataService.databaseGroupRepository.delete(groupId);
                 }
-            } catch {
-                // Ignore errors during cleanup
+            } catch (error) {
+                console.error('Error cleaning up group:', error);
             }
 
             // Clean up test connections
             try {
-                if (postgresConnectionId) await connectionsService.delete(postgresConnectionId);
-                if (postgres2ConnectionId) await connectionsService.delete(postgres2ConnectionId);
-            } catch {
-                // Ignore errors during cleanup
+                if (postgresConnectionId) {
+                    await connectionsService.disconnect(postgresConnectionId);
+                    await connectionsService.delete(postgresConnectionId);
+                }
+                if (postgres2ConnectionId) {
+                    await connectionsService.disconnect(postgres2ConnectionId);
+                    await connectionsService.delete(postgres2ConnectionId);
+                }
+            } catch (error) {
+                console.error('Error cleaning up connections:', error);
             }
         }
         if (app) {
