@@ -20,7 +20,7 @@ describe('Maintenance Operations Integration Tests', () => {
         if (dockerAvailable.postgres) {
             const conn = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresEcommerce,
-                name: 'Maintenance Test - PostgreSQL',
+                name: `Maintenance Test - PostgreSQL ${Date.now()}`,
             });
             postgresConnectionId = conn.id;
             await connectionsService.getConnector(postgresConnectionId);
@@ -28,7 +28,7 @@ describe('Maintenance Operations Integration Tests', () => {
         if (dockerAvailable.mysql) {
             const conn = await connectionsService.create({
                 ...TEST_CONNECTIONS.mysqlBlog,
-                name: 'Maintenance Test - MySQL',
+                name: `Maintenance Test - MySQL ${Date.now()}`,
             });
             mysqlConnectionId = conn.id;
             await connectionsService.getConnector(mysqlConnectionId);

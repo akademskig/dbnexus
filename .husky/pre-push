@@ -14,8 +14,9 @@ if ! docker ps | grep -q "postgres"; then
     sleep 5
 fi
 
-echo "🧹 Cleaning test database..."
+echo "🧹 Cleaning test database and cache..."
 rm -rf apps/api/.dbnexus
+rm -rf apps/api/node_modules/.cache
 
 echo "🧪 Running integration tests before push..."
 pnpm test:integration || {

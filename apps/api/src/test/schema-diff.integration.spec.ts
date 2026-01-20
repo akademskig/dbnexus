@@ -26,18 +26,21 @@ describe('Schema Diff Integration Tests', () => {
         connectionsService = app.get(ConnectionsService);
         schemaDiffService = app.get(SchemaDiffService);
 
+        // Use timestamp for unique names
+        const timestamp = Date.now();
+
         // Create test connections
         if (dockerAvailable.postgres) {
             const conn = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresEcommerce,
-                name: 'Diff Test - Production',
+                name: `Diff Test - Production ${timestamp}`,
             });
             prodConnectionId = conn.id;
         }
         if (dockerAvailable.staging) {
             const conn = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresStaging,
-                name: 'Diff Test - Staging',
+                name: `Diff Test - Staging ${timestamp}`,
             });
             stagingConnectionId = conn.id;
         }
