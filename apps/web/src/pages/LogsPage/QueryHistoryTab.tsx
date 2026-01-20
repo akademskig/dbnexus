@@ -33,6 +33,7 @@ import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
+import { classifyQuery, QUERY_TYPES, type QueryCategoryFilter } from '../../utils/queryClassifier';
 
 function formatDate(date: Date | string): string {
     const d = new Date(date);
@@ -52,6 +53,7 @@ export function QueryHistoryTab() {
     const [selectedConnection, setSelectedConnection] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
+    const [typeFilter, setTypeFilter] = useState<QueryCategoryFilter>('all');
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [clearDialogOpen, setClearDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<QueryHistoryEntry | null>(null);
@@ -114,6 +116,10 @@ export function QueryHistoryTab() {
         if (statusFilter === 'error' && entry.success) return false;
         if (searchQuery && !entry.sql.toLowerCase().includes(searchQuery.toLowerCase()))
             return false;
+        if (typeFilter !== 'all') {
+            const classification = classifyQuery(entry.sql);
+            if (classification.category !== typeFilter) return false;
+        }
         return true;
     });
 
@@ -145,6 +151,27 @@ export function QueryHistoryTab() {
                                 color: color,
                                 border: `1px solid ${color}`,
                             }),
+                        }}
+                    />
+                );
+            },
+        },
+        {
+            field: 'type',
+            headerName: 'Type',
+            width: 120,
+            renderCell: (params: GridRenderCellParams<QueryHistoryEntry>) => {
+                const classification = classifyQuery(params.row.sql);
+                return (
+                    <Chip
+                        label={classification.type}
+                        size="small"
+                        sx={{
+                            fontSize: 10,
+                            height: 20,
+                            bgcolor: `${classification.color}15`,
+                            color: classification.color,
+                            border: `1px solid ${classification.color}`,
                         }}
                     />
                 );
@@ -290,6 +317,21 @@ export function QueryHistoryTab() {
                         <MenuItem value="all">All</MenuItem>
                         <MenuItem value="success">Success</MenuItem>
                         <MenuItem value="error">Errors</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value as QueryCategoryFilter)}
+                        label="Type"
+                    >
+                        {QUERY_TYPES.map((type) => (
+                            <MenuItem key={type.value} value={type.value}>
+                                {type.label}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
