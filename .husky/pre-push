@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🧪 Running integration tests before push..."
+pnpm test:integration || {
+    echo "❌ Integration tests failed. If Docker is not running, start it with: docker compose up -d"
+    exit 1
+}
+
+echo "✅ All integration tests passed!"
