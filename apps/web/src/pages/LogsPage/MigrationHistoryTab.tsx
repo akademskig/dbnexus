@@ -140,28 +140,38 @@ export function MigrationHistoryTab() {
             width: 140,
             valueGetter: (_value, row) => (row.groupName ? `Group: ${row.groupName}` : 'Manual'),
             renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {params.row.groupName ? (
-                        <>
-                            <GroupIcon sx={{ fontSize: 14, color: '#8b5cf6' }} />
-                            <StyledTooltip title={`From group: ${params.row.groupName}`}>
-                                <Typography variant="body2" sx={{ fontSize: 12 }}>
-                                    {params.row.groupName}
-                                </Typography>
-                            </StyledTooltip>
-                        </>
-                    ) : (
-                        <>
-                            <PersonIcon sx={{ fontSize: 14, color: '#6b7280' }} />
-                            <Typography
-                                variant="body2"
-                                sx={{ fontSize: 12, color: 'text.secondary' }}
-                            >
-                                Manual
-                            </Typography>
-                        </>
-                    )}
-                </Box>
+                <StyledTooltip
+                    title={
+                        params.row.groupName
+                            ? `Applied from group: ${params.row.groupName}`
+                            : 'Manually applied migration'
+                    }
+                >
+                    <Chip
+                        icon={
+                            params.row.groupName ? (
+                                <GroupIcon sx={{ fontSize: 14 }} />
+                            ) : (
+                                <PersonIcon sx={{ fontSize: 14 }} />
+                            )
+                        }
+                        label={params.row.groupName || 'Manual'}
+                        size="small"
+                        sx={{
+                            fontSize: 11,
+                            height: 22,
+                            bgcolor: params.row.groupName
+                                ? 'rgba(139, 92, 246, 0.1)'
+                                : 'rgba(107, 114, 128, 0.1)',
+                            color: params.row.groupName ? '#8b5cf6' : '#6b7280',
+                            fontWeight: 500,
+                            '& .MuiChip-icon': {
+                                color: 'inherit',
+                                marginLeft: '6px',
+                            },
+                        }}
+                    />
+                </StyledTooltip>
             ),
         },
         {
