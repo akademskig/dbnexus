@@ -22,7 +22,12 @@ export class MetadataDatabase {
 
         if (currentVersion === 0) {
             // Fresh database, run all migrations
-            this.db.exec(MIGRATIONS[0]!);
+            for (let i = 0; i < SCHEMA_VERSION; i++) {
+                const migration = MIGRATIONS[i];
+                if (migration) {
+                    this.db.exec(migration);
+                }
+            }
         } else if (currentVersion < SCHEMA_VERSION) {
             // Run pending migrations
             for (let i = currentVersion; i < SCHEMA_VERSION; i++) {
