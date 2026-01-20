@@ -86,7 +86,7 @@ export class MigrationHistoryRepository {
             FROM migration_history mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
-            LEFT JOIN instance_groups ig ON mh.group_id = ig.id
+            LEFT JOIN database_groups ig ON mh.group_id = ig.id
             WHERE mh.id = ?
         `
             )
@@ -108,7 +108,7 @@ export class MigrationHistoryRepository {
             FROM migration_history mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
-            LEFT JOIN instance_groups ig ON mh.group_id = ig.id
+            LEFT JOIN database_groups ig ON mh.group_id = ig.id
         `;
         const params: unknown[] = [];
 
