@@ -142,15 +142,13 @@ export const MIGRATIONS: string[] = [
     target_connection_id TEXT NOT NULL,
     source_schema TEXT NOT NULL,
     target_schema TEXT NOT NULL,
-    group_id TEXT,
     description TEXT,
     sql_statements TEXT NOT NULL,
     applied_at TEXT NOT NULL DEFAULT (datetime('now')),
     success INTEGER NOT NULL DEFAULT 1,
     error TEXT,
     FOREIGN KEY (source_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES database_groups(id) ON DELETE SET NULL
+    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE
   );
 
   CREATE INDEX IF NOT EXISTS idx_migration_history_applied_at ON migration_history(applied_at DESC);
