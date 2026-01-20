@@ -132,10 +132,11 @@ describe('Connections Integration Tests', () => {
             expect(testResult.success).toBe(true);
 
             // Update
+            const updatedName = `Updated PostgreSQL Connection ${Date.now()}`;
             const updated = await connectionsService.update(created.id, {
-                name: 'Updated PostgreSQL Connection',
+                name: updatedName,
             });
-            expect(updated.name).toBe('Updated PostgreSQL Connection');
+            expect(updated.name).toBe(updatedName);
 
             // Delete
             await connectionsService.delete(created.id);

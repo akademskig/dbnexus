@@ -26,13 +26,22 @@ describe('Schema Integration Tests', () => {
         connectionsService = app.get(ConnectionsService);
         schemaService = app.get(SchemaService);
 
+        // Use timestamp for unique names
+        const timestamp = Date.now();
+
         // Create test connections
         if (dockerAvailable.postgres) {
-            const conn = await connectionsService.create(TEST_CONNECTIONS.postgresEcommerce);
+            const conn = await connectionsService.create({
+                ...TEST_CONNECTIONS.postgresEcommerce,
+                name: `${TEST_CONNECTIONS.postgresEcommerce.name} ${timestamp}`,
+            });
             postgresConnectionId = conn.id;
         }
         if (dockerAvailable.staging) {
-            const conn = await connectionsService.create(TEST_CONNECTIONS.postgresStaging);
+            const conn = await connectionsService.create({
+                ...TEST_CONNECTIONS.postgresStaging,
+                name: `${TEST_CONNECTIONS.postgresStaging.name} ${timestamp}`,
+            });
             stagingConnectionId = conn.id;
         }
     }, 30000);

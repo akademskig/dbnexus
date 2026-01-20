@@ -27,13 +27,22 @@ describe('Queries Integration Tests', () => {
         connectionsService = app.get(ConnectionsService);
         queriesService = app.get(QueriesService);
 
+        // Use timestamp for unique names
+        const timestamp = Date.now();
+
         // Create test connections
         if (dockerAvailable.postgres) {
-            const conn = await connectionsService.create(TEST_CONNECTIONS.postgresEcommerce);
+            const conn = await connectionsService.create({
+                ...TEST_CONNECTIONS.postgresEcommerce,
+                name: `${TEST_CONNECTIONS.postgresEcommerce.name} ${timestamp}`,
+            });
             postgresConnectionId = conn.id;
         }
         if (dockerAvailable.mysql) {
-            const conn = await connectionsService.create(TEST_CONNECTIONS.mysqlBlog);
+            const conn = await connectionsService.create({
+                ...TEST_CONNECTIONS.mysqlBlog,
+                name: `${TEST_CONNECTIONS.mysqlBlog.name} ${timestamp}`,
+            });
             mysqlConnectionId = conn.id;
         }
     }, 30000);

@@ -37,15 +37,17 @@ describe('Data Sync Integration Tests', () => {
 
         // Create test connections (both pointing to postgres for isolation)
         if (dockerAvailable.postgres && dockerAvailable.staging) {
+            const timestamp = Date.now();
+
             const source = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresEcommerce,
-                name: 'Sync Test - Source',
+                name: `Sync Test - Source ${timestamp}`,
             });
             sourceConnectionId = source.id;
 
             const target = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresStaging,
-                name: 'Sync Test - Target',
+                name: `Sync Test - Target ${timestamp}`,
             });
             targetConnectionId = target.id;
 
