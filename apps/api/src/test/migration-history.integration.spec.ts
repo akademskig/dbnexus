@@ -18,6 +18,7 @@ describe('Migration History Integration Tests', () => {
     let dockerAvailable: { postgres: boolean; staging: boolean; mysql: boolean };
     let postgresConnectionId: string;
     let postgres2ConnectionId: string;
+    let projectId: string;
     let groupId: string;
     let groupName: string;
     const timestamp = Date.now();
@@ -36,6 +37,13 @@ describe('Migration History Integration Tests', () => {
         metadataService = app.get(MetadataService);
 
         if (dockerAvailable.postgres) {
+            // Create a test project first (required for groups FK constraint)
+            const project = metadataService.projectRepository.create({
+                name: `Migration Test Project ${timestamp}`,
+                description: 'Test project for migration history tests',
+            });
+            projectId = project.id;
+
             // Create two test connections
             const conn1 = await connectionsService.create({
                 ...TEST_CONNECTIONS.postgresEcommerce,
@@ -52,7 +60,7 @@ describe('Migration History Integration Tests', () => {
             // Create a test group
             groupName = `Migration Test Group ${timestamp}`;
             const group = metadataService.databaseGroupRepository.create({
-                projectId: 'test-project',
+                projectId: project.id,
                 name: groupName,
                 databaseEngine: 'postgres',
                 sourceConnectionId: postgresConnectionId,
@@ -103,6 +111,15 @@ describe('Migration History Integration Tests', () => {
                 }
             } catch (error) {
                 console.error('Error cleaning up connections:', error);
+            }
+
+            // Clean up test project
+            try {
+                if (projectId) {
+                    metadataService.projectRepository.delete(projectId);
+                }
+            } catch (error) {
+                console.error('Error cleaning up project:', error);
             }
         }
         if (app) {
