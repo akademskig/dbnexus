@@ -10,8 +10,18 @@ fi
 if ! docker ps | grep -q "postgres"; then
     echo "🚀 Starting Docker containers..."
     docker compose up -d
-    echo "⏳ Waiting for databases to be ready..."
-    sleep 5
+    
+    echo "⏳ Waiting for PostgreSQL to be ready..."
+    until docker exec dbnexus-ecommerce-dev pg_isready -U demo > /dev/null 2>&1; do
+        sleep 1
+    done
+    
+    echo "⏳ Waiting for MySQL to be ready..."
+    until docker exec dbnexus-blog mysqladmin ping -h localhost -u demo -pdemo123 --silent > /dev/null 2>&1; do
+        sleep 1
+    done
+    
+    echo "✅ All databases are ready!"
 fi
 
 echo "🧹 Cleaning test database and cache..."
