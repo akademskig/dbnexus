@@ -44,13 +44,17 @@ describe('Queries Integration Tests', () => {
             try {
                 await connectionsService.disconnect(postgresConnectionId);
                 await connectionsService.delete(postgresConnectionId);
-            } catch {}
+            } catch (error) {
+                console.error(`Error disconnecting and deleting PostgreSQL connection ${postgresConnectionId}:`, error);
+            }
         }
         if (mysqlConnectionId) {
             try {
                 await connectionsService.disconnect(mysqlConnectionId);
                 await connectionsService.delete(mysqlConnectionId);
-            } catch {}
+            } catch (error) {
+                console.error(`Error disconnecting and deleting MySQL connection ${mysqlConnectionId}:`, error);
+            }
         }
         if (app) {
             await app.close();
@@ -229,7 +233,7 @@ describe('Queries Integration Tests', () => {
 
             // Execute a query
             await queriesService.execute({
-                connectionId: postgresConnectionId!,
+                connectionId: postgresConnectionId,
                 sql: 'SELECT * FROM categories LIMIT 1',
             });
 
@@ -237,7 +241,7 @@ describe('Queries Integration Tests', () => {
             const metadataService = app.get(MetadataService);
             const history = metadataService.queryRepository.findRecentHistory(
                 10,
-                postgresConnectionId!
+                postgresConnectionId
             );
 
             expect(history).toBeDefined();

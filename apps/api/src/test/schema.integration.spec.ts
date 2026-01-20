@@ -44,7 +44,9 @@ describe('Schema Integration Tests', () => {
                 try {
                     await connectionsService.disconnect(id);
                     await connectionsService.delete(id);
-                } catch {}
+                } catch (error) {
+                    console.error(`Error disconnecting and deleting connection ${id}:`, error);
+                }
             }
         }
         if (app) {
@@ -174,7 +176,7 @@ describe('Schema Integration Tests', () => {
 
         it('should retrieve schema from both databases', async () => {
             if (skipIfNoStaging()) {
-                console.log('⚠️  Skipping: Both Postgres containers required');
+                console.warn('⚠️  Skipping: Both Postgres containers required');
                 return;
             }
 
@@ -197,10 +199,10 @@ describe('Schema Integration Tests', () => {
             expect(stagingSchema.columns.length).toBeGreaterThan(0);
 
             // Log for debugging
-            console.log(
+            console.warn(
                 `Prod products columns: ${prodSchema.columns.map((c) => c.name).join(', ')}`
             );
-            console.log(
+            console.warn(
                 `Staging products columns: ${stagingSchema.columns.map((c) => c.name).join(', ')}`
             );
 
@@ -211,7 +213,7 @@ describe('Schema Integration Tests', () => {
 
             // Check if staging has any extra columns (may vary based on Docker state)
             const extraInStaging = stagingColumnNames.filter((c) => !prodColumnNames.includes(c));
-            console.log(`Extra columns in staging: ${extraInStaging.join(', ') || 'none'}`);
+            console.warn(`Extra columns in staging: ${extraInStaging.join(', ') || 'none'}`);
         });
 
         it('should list tables from both databases', async () => {
@@ -226,8 +228,8 @@ describe('Schema Integration Tests', () => {
             const prodTableNames = prodTables.map((t) => t.name);
             const stagingTableNames = stagingTables.map((t) => t.name);
 
-            console.log(`Prod tables: ${prodTableNames.join(', ')}`);
-            console.log(`Staging tables: ${stagingTableNames.join(', ')}`);
+            console.warn(`Prod tables: ${prodTableNames.join(', ')}`);
+            console.warn(`Staging tables: ${stagingTableNames.join(', ')}`);
 
             // Both should have core tables
             expect(prodTableNames).toContain('products');
