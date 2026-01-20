@@ -173,6 +173,7 @@ export function TableDetailsTab({
     const [editColumnOpen, setEditColumnOpen] = useState(false);
     const [deleteColumnOpen, setDeleteColumnOpen] = useState(false);
     const [addIndexOpen, setAddIndexOpen] = useState(false);
+    const [editIndexOpen, setEditIndexOpen] = useState(false);
     const [deleteIndexOpen, setDeleteIndexOpen] = useState(false);
     const [addFkOpen, setAddFkOpen] = useState(false);
     const [deleteFkOpen, setDeleteFkOpen] = useState(false);
@@ -180,8 +181,10 @@ export function TableDetailsTab({
     // Form states
     const [columnToEdit, setColumnToEdit] = useState<ColumnInfo | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<ColumnInfo | null>(null);
+    const [indexToEdit, setIndexToEdit] = useState<IndexInfo | null>(null);
     const [indexToDelete, setIndexToDelete] = useState<IndexInfo | null>(null);
     const [fkToDelete, setFkToDelete] = useState<ForeignKeyInfo | null>(null);
+    const [editIndexName, setEditIndexName] = useState('');
 
     // New column form
     const [newColumn, setNewColumn] = useState<NewColumnState>({
@@ -551,28 +554,101 @@ export function TableDetailsTab({
         }
     };
 
+    const handleRenameIndex = async () => {
+        if (!indexToEdit || !editIndexName.trim()) return;
+
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
+        const quotedOldName = quoteIdentifierForEngine(indexToEdit.name);
+        const quotedNewName = quoteIdentifierForEngine(editIndexName.trim());
+
+        let sql: string;
+        if (indexToEdit.isPrimary) {
+            // Renaming primary key constraints
+            if (connection?.engine === 'postgres') {
+                sql = `ALTER TABLE ${fullTableName} RENAME CONSTRAINT ${quotedOldName} TO ${quotedNewName}`;
+            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+                toast.error('MySQL/MariaDB does not support renaming primary keys');
+                return;
+            } else {
+                // SQLite doesn't support renaming constraints
+                toast.error('SQLite does not support renaming constraints');
+                return;
+            }
+        } else {
+            // Renaming regular indexes
+            if (connection?.engine === 'postgres') {
+                sql = `ALTER INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedOldName} RENAME TO ${quotedNewName}`;
+            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+                // MySQL doesn't have direct RENAME INDEX, need to recreate
+                toast.error(
+                    'MySQL/MariaDB does not support renaming indexes directly. Please drop and recreate the index.'
+                );
+                return;
+            } else {
+                // SQLite
+                sql = `ALTER INDEX ${quotedOldName} RENAME TO ${quotedNewName}`;
+            }
+        }
+
+        try {
+            await executeSql.mutateAsync({ sql });
+            const type = indexToEdit.isPrimary ? 'Primary key' : 'Index';
+            toast.success(
+                `${type} renamed from "${indexToEdit.name}" to "${editIndexName.trim()}"`
+            );
+            setEditIndexOpen(false);
+            setIndexToEdit(null);
+            setEditIndexName('');
+        } catch (err) {
+            toast.error(
+                err instanceof Error
+                    ? err.message
+                    : `Failed to rename ${indexToEdit.isPrimary ? 'primary key' : 'index'}`
+            );
+        }
+    };
+
     const handleDeleteIndex = async () => {
         if (!indexToDelete) return;
 
+        const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
         const quotedIndexName = quoteIdentifierForEngine(indexToDelete.name);
 
         let sql: string;
-        if (connection?.engine === 'postgres') {
-            sql = `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedIndexName}`;
-        } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-            const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
-            sql = `DROP INDEX ${quotedIndexName} ON ${fullTableName}`;
+        if (indexToDelete.isPrimary) {
+            // Primary key constraint - use ALTER TABLE DROP CONSTRAINT
+            if (connection?.engine === 'postgres') {
+                sql = `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quotedIndexName}`;
+            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+                sql = `ALTER TABLE ${fullTableName} DROP PRIMARY KEY`;
+            } else {
+                // SQLite doesn't support dropping primary keys
+                toast.error('SQLite does not support dropping primary keys');
+                return;
+            }
         } else {
-            sql = `DROP INDEX ${quotedIndexName}`;
+            // Regular index
+            if (connection?.engine === 'postgres') {
+                sql = `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedIndexName}`;
+            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+                sql = `DROP INDEX ${quotedIndexName} ON ${fullTableName}`;
+            } else {
+                sql = `DROP INDEX ${quotedIndexName}`;
+            }
         }
 
         try {
             await executeSql.mutateAsync({ sql, confirmed: true });
-            toast.success(`Index "${indexToDelete.name}" deleted`);
+            const type = indexToDelete.isPrimary ? 'Primary key' : 'Index';
+            toast.success(`${type} "${indexToDelete.name}" deleted`);
             setDeleteIndexOpen(false);
             setIndexToDelete(null);
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Failed to delete index');
+            toast.error(
+                err instanceof Error
+                    ? err.message
+                    : `Failed to delete ${indexToDelete.isPrimary ? 'primary key' : 'index'}`
+            );
         }
     };
 
@@ -850,28 +926,45 @@ export function TableDetailsTab({
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 80,
+            width: 120,
             sortable: false,
             renderCell: (params) => (
-                <StyledTooltip
-                    title={
-                        params.row.isPrimary ? 'Cannot delete primary key index' : 'Delete Index'
-                    }
-                >
-                    <span>
-                        <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => {
-                                setIndexToDelete(params.row);
-                                setDeleteIndexOpen(true);
-                            }}
-                            disabled={connection?.readOnly || params.row.isPrimary}
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </span>
-                </StyledTooltip>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <StyledTooltip title="Rename">
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setIndexToEdit(params.row);
+                                    setEditIndexName(params.row.name);
+                                    setEditIndexOpen(true);
+                                }}
+                                disabled={connection?.readOnly}
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </StyledTooltip>
+                    <StyledTooltip
+                        title={
+                            params.row.isPrimary ? 'Delete Primary Key Constraint' : 'Delete Index'
+                        }
+                    >
+                        <span>
+                            <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => {
+                                    setIndexToDelete(params.row);
+                                    setDeleteIndexOpen(true);
+                                }}
+                                disabled={connection?.readOnly}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </StyledTooltip>
+                </Box>
             ),
         },
     ];
@@ -1381,6 +1474,65 @@ export function TableDetailsTab({
                 </DialogActions>
             </Dialog>
 
+            {/* ============ Edit Index Dialog ============ */}
+            <Dialog
+                open={editIndexOpen}
+                onClose={() => setEditIndexOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    {indexToEdit?.isPrimary ? 'Rename Primary Key' : 'Rename Index'}
+                </DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label="New Name"
+                        value={editIndexName}
+                        onChange={(e) => setEditIndexName(e.target.value)}
+                        placeholder={indexToEdit?.isPrimary ? 'pk_table_name' : 'idx_table_column'}
+                        sx={{ mt: 2 }}
+                        helperText={`Current name: ${indexToEdit?.name}`}
+                    />
+                    {(connection?.engine === 'mysql' || connection?.engine === 'mariadb') && (
+                        <StatusAlert severity="warning" sx={{ mt: 2 }}>
+                            <Typography variant="body2">
+                                MySQL/MariaDB does not support renaming{' '}
+                                {indexToEdit?.isPrimary ? 'primary keys' : 'indexes'} directly.
+                            </Typography>
+                        </StatusAlert>
+                    )}
+                    {connection?.engine === 'sqlite' && indexToEdit?.isPrimary && (
+                        <StatusAlert severity="warning" sx={{ mt: 2 }}>
+                            <Typography variant="body2">
+                                SQLite does not support renaming constraints.
+                            </Typography>
+                        </StatusAlert>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setEditIndexOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleRenameIndex}
+                        disabled={
+                            !editIndexName.trim() ||
+                            editIndexName.trim() === indexToEdit?.name ||
+                            executeSql.isPending ||
+                            (connection?.engine === 'mysql' && !indexToEdit?.isPrimary) ||
+                            (connection?.engine === 'mariadb' && !indexToEdit?.isPrimary) ||
+                            (connection?.engine === 'sqlite' && indexToEdit?.isPrimary)
+                        }
+                        startIcon={
+                            executeSql.isPending ? <CircularProgress size={16} /> : <EditIcon />
+                        }
+                    >
+                        Rename
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             {/* ============ Delete Index Dialog ============ */}
             <Dialog
                 open={deleteIndexOpen}
@@ -1392,15 +1544,25 @@ export function TableDetailsTab({
                     sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}
                 >
                     <WarningIcon />
-                    Delete Index
+                    {indexToDelete?.isPrimary ? 'Delete Primary Key' : 'Delete Index'}
                 </DialogTitle>
                 <DialogContent>
                     <StatusAlert severity="warning" sx={{ mt: 1 }}>
                         <Typography variant="body2" gutterBottom>
-                            Are you sure you want to delete the index{' '}
+                            Are you sure you want to delete the{' '}
+                            {indexToDelete?.isPrimary ? 'primary key' : 'index'}{' '}
                             <strong>&quot;{indexToDelete?.name}&quot;</strong>?
                         </Typography>
-                        <Typography variant="body2">This may affect query performance.</Typography>
+                        {indexToDelete?.isPrimary ? (
+                            <Typography variant="body2">
+                                <strong>Warning:</strong> This will remove the primary key
+                                constraint. Foreign keys referencing this table may fail.
+                            </Typography>
+                        ) : (
+                            <Typography variant="body2">
+                                This may affect query performance.
+                            </Typography>
+                        )}
                     </StatusAlert>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -1414,7 +1576,7 @@ export function TableDetailsTab({
                             executeSql.isPending ? <CircularProgress size={16} /> : <DeleteIcon />
                         }
                     >
-                        Delete Index
+                        {indexToDelete?.isPrimary ? 'Delete Primary Key' : 'Delete Index'}
                     </Button>
                 </DialogActions>
             </Dialog>
