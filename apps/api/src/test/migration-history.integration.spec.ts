@@ -64,12 +64,21 @@ describe('Migration History Integration Tests', () => {
     });
 
     afterAll(async () => {
-        if (dockerAvailable.postgres && connectionsService) {
+        if (dockerAvailable.postgres && metadataService) {
+            // Clean up test group
+            try {
+                if (groupId) {
+                    metadataService.databaseGroupRepository.delete(groupId);
+                }
+            } catch {
+                // Ignore errors during cleanup
+            }
+
             // Clean up test connections
             try {
                 if (postgresConnectionId) await connectionsService.delete(postgresConnectionId);
                 if (postgres2ConnectionId) await connectionsService.delete(postgres2ConnectionId);
-            } catch (error) {
+            } catch {
                 // Ignore errors during cleanup
             }
         }
