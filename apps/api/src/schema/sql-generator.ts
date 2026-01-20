@@ -236,6 +236,56 @@ export function generateAlterColumnSql(
     const sql: string[] = [];
     const prefix = `ALTER TABLE ${quoteTable(schema, table, engine)}`;
 
+    // Primary key changes - these are complex and require manual intervention
+    if (source.isPrimaryKey !== target.isPrimaryKey) {
+        if (engine === 'postgres') {
+            sql.push(
+                `-- Primary key change detected for "${source.name}". To modify:`,
+                `-- ${prefix} DROP CONSTRAINT <constraint_name>;`,
+                `-- ${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
+            );
+        } else if (engine === 'mysql' || engine === 'mariadb') {
+            sql.push(
+                `-- Primary key change detected for "${source.name}". To modify:`,
+                `-- ${prefix} DROP PRIMARY KEY;`,
+                `-- ${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
+            );
+        } else {
+            sql.push(
+                `-- SQLite: Cannot alter primary key. Table recreation required for "${source.name}"`
+            );
+        }
+    }
+
+    // Unique constraint changes
+    if (source.isUnique !== target.isUnique) {
+        if (target.isUnique) {
+            // Need to add unique constraint
+            if (engine === 'postgres') {
+                sql.push(
+                    `${prefix} ADD CONSTRAINT uq_${table}_${source.name} UNIQUE (${quoteIdentifier(source.name, engine)});`
+                );
+            } else if (engine === 'mysql' || engine === 'mariadb') {
+                sql.push(`${prefix} ADD UNIQUE (${quoteIdentifier(source.name, engine)});`);
+            } else {
+                sql.push(
+                    `CREATE UNIQUE INDEX IF NOT EXISTS uq_${table}_${source.name} ON ${quoteIdentifier(table, engine)} (${quoteIdentifier(source.name, engine)});`
+                );
+            }
+        } else {
+            // Need to remove unique constraint
+            if (engine === 'postgres') {
+                sql.push(
+                    `-- ${prefix} DROP CONSTRAINT uq_${table}_${source.name}; -- Check actual constraint name in your database`
+                );
+            } else if (engine === 'mysql' || engine === 'mariadb') {
+                sql.push(`${prefix} DROP INDEX ${quoteIdentifier(source.name, engine)};`);
+            } else {
+                sql.push(`DROP INDEX IF EXISTS uq_${table}_${source.name};`);
+            }
+        }
+    }
+
     // Type change
     if (source.dataType.toLowerCase() !== target.dataType.toLowerCase()) {
         sql.push(...generateAlterColumnTypeSql(schema, table, source, engine));
