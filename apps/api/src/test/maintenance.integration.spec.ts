@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
-import { createTestApp, checkDockerContainers, TEST_CONNECTIONS } from './setup';
-import { ConnectionsService } from '../connections/connections.service';
-import { QueriesService } from '../queries/queries.service';
+import { createTestApp, checkDockerContainers, TEST_CONNECTIONS } from './setup.js';
+import { ConnectionsService } from '../connections/connections.service.js';
+import { QueriesService } from '../queries/queries.service.js';
 
 describe('Maintenance Operations Integration Tests', () => {
     let app: INestApplication;
@@ -98,6 +98,15 @@ describe('Maintenance Operations Integration Tests', () => {
             expect(result.details).toBeDefined();
         }, 60000); // VACUUM FULL can take longer
 
+        it('should execute REINDEX and return details', async () => {
+            if (skipIfNoPostgres()) return;
+            const result = await queriesService.executeMaintenance(postgresConnectionId!, 'reindex');
+            expect(result.success).toBe(true);
+            expect(result.message).toContain('REINDEX');
+            expect(result.duration).toBeGreaterThan(0);
+            expect(result.details).toBeDefined();
+        }, 60000); // REINDEX can take longer
+
         it('should handle unknown operation gracefully', async () => {
             if (skipIfNoPostgres()) return;
             await expect(
@@ -151,8 +160,8 @@ describe('Maintenance Operations Integration Tests', () => {
             expect(result.success).toBe(false);
             expect(result.message).toContain('with errors');
             expect(result.details).toBeDefined();
-            expect(result.details?.some((d) => d.includes('Error'))).toBe(true);
-            expect(result.details?.some((d) => d.includes("doesn't exist"))).toBe(true);
+            expect(result.details?.some((d: string) => d.includes('Error'))).toBe(true);
+            expect(result.details?.some((d: string) => d.includes("doesn't exist"))).toBe(true);
         });
     });
 

@@ -7,6 +7,7 @@ import type {
     QueryValidationResult,
     SavedQuery,
     QueryHistoryEntry,
+    ConnectionConfig,
 } from '@dbnexus/shared';
 
 export interface ExecuteQueryInput {
@@ -102,7 +103,7 @@ export class QueriesService {
         const startTime = Date.now();
 
         try {
-            let command = this.getMaintenanceCommand(operation, connection.engine, schema);
+            let command = this.getMaintenanceCommand(operation, connection.engine, schema, connection);
 
             // Add VERBOSE for PostgreSQL to get detailed output
             if (connection.engine === 'postgres') {
@@ -157,7 +158,12 @@ export class QueriesService {
     /**
      * Get maintenance command SQL
      */
-    private getMaintenanceCommand(operation: string, engine: string, schema?: string): string {
+    private getMaintenanceCommand(
+        operation: string,
+        engine: string,
+        schema: string | undefined,
+        connection: ConnectionConfig
+    ): string {
         const op = operation.toLowerCase();
 
         switch (op) {
@@ -172,8 +178,12 @@ export class QueriesService {
             case 'vacuum_analyze':
                 return 'VACUUM (ANALYZE)';
             case 'reindex':
-                // REINDEX DATABASE needs the actual database name
-                return engine === 'postgres' ? 'REINDEX DATABASE CURRENT_DATABASE' : 'REINDEX';
+                if (engine === 'postgres') {
+                    // REINDEX needs the actual database name
+                    const dbName = connection.database || 'postgres';
+                    return `REINDEX DATABASE "${dbName}"`;
+                }
+                return 'REINDEX';
             case 'optimize':
                 if (!schema) {
                     throw new BadRequestException('OPTIMIZE TABLE requires a table name');
@@ -218,7 +228,8 @@ export class QueriesService {
 
         if (op === 'reindex') {
             // PostgreSQL 12+ supports VERBOSE for REINDEX
-            return `${command} (VERBOSE)`.replace('(VERBOSE) (VERBOSE)', '(VERBOSE)');
+            // Syntax: REINDEX (VERBOSE) DATABASE "dbname"
+            return command.replace('REINDEX DATABASE', 'REINDEX (VERBOSE) DATABASE');
         }
 
         return command;
