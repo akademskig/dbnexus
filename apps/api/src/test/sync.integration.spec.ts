@@ -59,12 +59,16 @@ describe('Data Sync Integration Tests', () => {
         if (sourceConnector) {
             try {
                 await sourceConnector.query(`DROP TABLE IF EXISTS ${TEST_TABLE}`);
-            } catch {}
+            } catch (error) {
+                console.error(`Error dropping test table ${TEST_TABLE}:`, error);
+            }
         }
         if (targetConnector) {
             try {
                 await targetConnector.query(`DROP TABLE IF EXISTS ${TEST_TABLE}`);
-            } catch {}
+            } catch (error) {
+                console.error(`Error dropping test table ${TEST_TABLE}:`, error);
+            }
         }
 
         // Cleanup connections
@@ -73,7 +77,9 @@ describe('Data Sync Integration Tests', () => {
                 try {
                     await connectionsService.disconnect(id);
                     await connectionsService.delete(id);
-                } catch {}
+                } catch (error) {
+                    console.error(`Error disconnecting and deleting connection ${id}:`, error);
+                }
             }
         }
         if (app) {
@@ -116,7 +122,9 @@ describe('Data Sync Integration Tests', () => {
             try {
                 await sourceConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
                 await targetConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
-            } catch {}
+            } catch (error) {
+                console.error(`Error truncating test table ${TEST_TABLE}:`, error);
+            }
         });
 
         it('should detect rows missing in target', async () => {
@@ -189,8 +197,8 @@ describe('Data Sync Integration Tests', () => {
 
             expect(diff).toBeDefined();
             expect(diff.different.length).toBe(1);
-            expect(diff.different[0].source.value).toBe(100);
-            expect(diff.different[0].target.value).toBe(150);
+            expect(diff.different[0]?.source?.value).toBe(100);
+            expect(diff.different[0]?.target?.value).toBe(150);
         });
 
         it('should detect matching rows (empty diff)', async () => {
@@ -257,7 +265,9 @@ describe('Data Sync Integration Tests', () => {
             try {
                 await sourceConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
                 await targetConnector!.query(`TRUNCATE TABLE ${TEST_TABLE} RESTART IDENTITY`);
-            } catch {}
+            } catch (error) {
+                console.error(`Error truncating test table ${TEST_TABLE}:`, error);
+            }
         });
 
         it('should sync missing rows to target (INSERT)', async () => {
@@ -294,7 +304,7 @@ describe('Data Sync Integration Tests', () => {
                 `SELECT * FROM ${TEST_TABLE} ORDER BY id`
             );
             expect(targetData.rows.length).toBe(2);
-            expect(targetData.rows[0].name).toBe('Sync Item 1');
+            expect(targetData.rows[0]?.name).toBe('Sync Item 1');
         });
 
         it('should sync different rows (UPDATE)', async () => {
@@ -333,8 +343,8 @@ describe('Data Sync Integration Tests', () => {
             const targetData = await targetConnector!.query(
                 `SELECT * FROM ${TEST_TABLE} WHERE id = 1`
             );
-            expect(targetData.rows[0].name).toBe('Updated Name');
-            expect(targetData.rows[0].value).toBe(999);
+            expect(targetData.rows[0]?.name).toBe('Updated Name');
+            expect(targetData.rows[0]?.value).toBe(999);
         });
 
         it('should delete extra rows from target', async () => {
@@ -370,7 +380,7 @@ describe('Data Sync Integration Tests', () => {
             const targetData = await targetConnector!.query(
                 `SELECT COUNT(*) as count FROM ${TEST_TABLE}`
             );
-            expect(Number(targetData.rows[0].count)).toBe(0);
+            expect(Number(targetData.rows[0]?.count)).toBe(0);
         });
 
         it('should perform full sync (INSERT + UPDATE + DELETE)', async () => {
@@ -432,7 +442,7 @@ describe('Data Sync Integration Tests', () => {
             );
             if (check102.rows.length > 0) {
                 // If row exists, it should have been updated to source values
-                expect(check102.rows[0].name).toBe('Will Update');
+                expect(check102.rows[0]?.name).toBe('Will Update');
             }
         });
 
@@ -461,8 +471,8 @@ describe('Data Sync Integration Tests', () => {
 
             // Most recent run should have our data
             const latestRun = syncRuns[0];
-            expect(latestRun.status).toBe('completed');
-            expect(latestRun.inserts).toBeGreaterThanOrEqual(1);
+            expect(latestRun?.status).toBe('completed');
+            expect(latestRun?.inserts).toBeGreaterThanOrEqual(1);
         });
 
         it('should store SQL statements in sync run', async () => {
@@ -508,7 +518,7 @@ describe('Data Sync Integration Tests', () => {
             } else {
                 // If we can't find our specific run, just verify structure of latest
                 const latestRun = runsAfter[0];
-                expect(latestRun.sqlStatements).toBeDefined();
+                expect(latestRun?.sqlStatements).toBeDefined();
             }
         });
     });

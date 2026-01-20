@@ -86,7 +86,7 @@ describe('Queries Integration Tests', () => {
             });
 
             expect(result.rows.length).toBe(1);
-            expect(Number(result.rows[0].total)).toBeGreaterThan(0);
+            expect(Number(result.rows[0]?.total)).toBeGreaterThan(0);
         });
 
         it('should execute JOIN query', async () => {
@@ -219,7 +219,7 @@ describe('Queries Integration Tests', () => {
             });
 
             expect(result.rows).toBeDefined();
-            expect(result.rows[0].test).toBe(1);
+            expect(result.rows[0]?.test).toBe(1);
         });
     });
 

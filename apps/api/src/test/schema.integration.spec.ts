@@ -245,17 +245,17 @@ describe('Schema Integration Tests', () => {
 
             // ecommerce.sql creates an order_summary view
             const tables = await schemaService.getTables(postgresConnectionId!, 'public');
+            const orderSummaryView = tables.find((t) => t.name === 'order_summary');
 
-            // Views may be returned separately or with tables
-            // depending on implementation
-            const allObjects = tables.map((t) => t.name);
+            expect(orderSummaryView).toBeDefined();
+            expect(orderSummaryView?.type).toBe('view');
 
-            // The view should exist in the database
             // Let's verify by querying it directly
             const connector = await connectionsService.getConnector(postgresConnectionId!);
             const result = await connector.query('SELECT * FROM order_summary LIMIT 1');
 
-            expect(result.rows).toBeDefined();
+            expect(result.rows.length).toBe(1);
+            expect(result.columns.map((c) => c.name)).toContain('order_id');
         });
     });
 });

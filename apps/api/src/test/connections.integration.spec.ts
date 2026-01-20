@@ -8,11 +8,10 @@
  *   docker compose up -d
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { INestApplication } from '@nestjs/common';
 import { createTestApp, TEST_CONNECTIONS, checkDockerContainers } from './setup.js';
 import { ConnectionsService } from '../connections/connections.service.js';
-import type { ConnectionConfig } from '@dbnexus/shared';
 
 describe('Connections Integration Tests', () => {
     let app: INestApplication;
@@ -25,7 +24,7 @@ describe('Connections Integration Tests', () => {
         dockerAvailable = await checkDockerContainers();
 
         if (!dockerAvailable.postgres && !dockerAvailable.mysql) {
-            console.log('⚠️  No Docker containers available. Run: docker compose up -d');
+            console.warn('⚠️  No Docker containers available. Run: docker compose up -d');
         }
 
         // Create the app
@@ -53,7 +52,7 @@ describe('Connections Integration Tests', () => {
 
         it('should test PostgreSQL connection settings successfully', async () => {
             if (skipIfNoPostgres()) {
-                console.log('⚠️  Skipping: PostgreSQL container not available');
+                console.warn('⚠️  Skipping: PostgreSQL container not available');
                 return;
             }
 
@@ -69,7 +68,7 @@ describe('Connections Integration Tests', () => {
 
         it('should fail with wrong credentials', async () => {
             if (skipIfNoPostgres()) {
-                console.log('⚠️  Skipping: PostgreSQL container not available');
+                console.warn('⚠️  Skipping: PostgreSQL container not available');
                 return;
             }
 
@@ -86,7 +85,7 @@ describe('Connections Integration Tests', () => {
 
         it('should fail with wrong host', async () => {
             if (skipIfNoPostgres()) {
-                console.log('⚠️  Skipping: PostgreSQL container not available');
+                console.warn('⚠️  Skipping: PostgreSQL container not available');
                 return;
             }
 
@@ -102,7 +101,7 @@ describe('Connections Integration Tests', () => {
 
         it('should create, retrieve and delete a PostgreSQL connection', async () => {
             if (skipIfNoPostgres()) {
-                console.log('⚠️  Skipping: PostgreSQL container not available');
+                console.warn('⚠️  Skipping: PostgreSQL container not available');
                 return;
             }
 
@@ -157,7 +156,7 @@ describe('Connections Integration Tests', () => {
 
         it('should connect and execute queries', async () => {
             if (skipIfNoPostgres()) {
-                console.log('⚠️  Skipping: PostgreSQL container not available');
+                console.warn('⚠️  Skipping: PostgreSQL container not available');
                 return;
             }
 
@@ -173,7 +172,7 @@ describe('Connections Integration Tests', () => {
             const result = await connector.query('SELECT COUNT(*) as count FROM products');
             expect(result.rows).toBeDefined();
             expect(result.rows.length).toBe(1);
-            expect(Number(result.rows[0].count)).toBeGreaterThan(0);
+            expect(Number(result.rows[0]?.count)).toBeGreaterThan(0);
 
             // Disconnect
             await connectionsService.disconnect(created.id);
@@ -185,7 +184,7 @@ describe('Connections Integration Tests', () => {
 
         it('should test MySQL connection settings successfully', async () => {
             if (skipIfNoMySQL()) {
-                console.log('⚠️  Skipping: MySQL container not available');
+                console.warn('⚠️  Skipping: MySQL container not available');
                 return;
             }
 
@@ -198,7 +197,7 @@ describe('Connections Integration Tests', () => {
 
         it('should create and test a MySQL connection', async () => {
             if (skipIfNoMySQL()) {
-                console.log('⚠️  Skipping: MySQL container not available');
+                console.warn('⚠️  Skipping: MySQL container not available');
                 return;
             }
 
