@@ -200,6 +200,7 @@ export function TableDetailsTab({
         name: '',
         columns: [] as string[],
         isUnique: false,
+        isPrimary: false,
     });
 
     // New FK form
@@ -514,19 +515,29 @@ export function TableDetailsTab({
         if (!newIndex.name || newIndex.columns.length === 0) return;
 
         const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
-        const quotedIndexName = quoteIdentifierForEngine(newIndex.name);
         const quotedColumns = newIndex.columns.map((c) => quoteIdentifierForEngine(c)).join(', ');
 
-        const uniqueKeyword = newIndex.isUnique ? 'UNIQUE ' : '';
-        const sql = `CREATE ${uniqueKeyword}INDEX ${quotedIndexName} ON ${fullTableName} (${quotedColumns})`;
+        let sql: string;
+        if (newIndex.isPrimary) {
+            // Primary key constraint
+            sql = `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumns})`;
+        } else {
+            // Regular or unique index
+            const quotedIndexName = quoteIdentifierForEngine(newIndex.name);
+            const uniqueKeyword = newIndex.isUnique ? 'UNIQUE ' : '';
+            sql = `CREATE ${uniqueKeyword}INDEX ${quotedIndexName} ON ${fullTableName} (${quotedColumns})`;
+        }
 
         try {
             await executeSql.mutateAsync(sql);
-            toast.success(`Index "${newIndex.name}" created`);
+            const type = newIndex.isPrimary ? 'Primary key' : 'Index';
+            toast.success(
+                `${type} "${newIndex.isPrimary ? 'PRIMARY KEY' : newIndex.name}" created`
+            );
             setAddIndexOpen(false);
-            setNewIndex({ name: '', columns: [], isUnique: false });
+            setNewIndex({ name: '', columns: [], isUnique: false, isPrimary: false });
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Failed to create index');
+            toast.error(err instanceof Error ? err.message : 'Failed to create constraint');
         }
     };
 
@@ -1269,7 +1280,7 @@ export function TableDetailsTab({
             >
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <KeyIcon color="primary" />
-                    Add Index
+                    {newIndex.isPrimary ? 'Add Primary Key' : 'Add Index'}
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1282,6 +1293,10 @@ export function TableDetailsTab({
                                 setNewIndex((prev) => ({ ...prev, name: e.target.value }))
                             }
                             placeholder="idx_table_column"
+                            disabled={newIndex.isPrimary}
+                            helperText={
+                                newIndex.isPrimary ? 'Primary keys do not require a name' : ''
+                            }
                         />
                         <Autocomplete
                             multiple
@@ -1301,7 +1316,24 @@ export function TableDetailsTab({
                         <FormControlLabel
                             control={
                                 <Switch
+                                    checked={newIndex.isPrimary}
+                                    onChange={(e) =>
+                                        setNewIndex((prev) => ({
+                                            ...prev,
+                                            isPrimary: e.target.checked,
+                                            // Primary keys don't need a name
+                                            name: e.target.checked ? '' : prev.name,
+                                        }))
+                                    }
+                                />
+                            }
+                            label="Primary Key"
+                        />
+                        <FormControlLabel
+                            control={
+                                <Switch
                                     checked={newIndex.isUnique}
+                                    disabled={newIndex.isPrimary}
                                     onChange={(e) =>
                                         setNewIndex((prev) => ({
                                             ...prev,
@@ -1312,6 +1344,11 @@ export function TableDetailsTab({
                             }
                             label="Unique Index"
                         />
+                        {newIndex.isPrimary && (
+                            <Typography variant="caption" color="text.secondary">
+                                Note: Primary keys are implicitly unique and cannot be null
+                            </Typography>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -1320,13 +1357,15 @@ export function TableDetailsTab({
                         variant="contained"
                         onClick={handleAddIndex}
                         disabled={
-                            !newIndex.name || newIndex.columns.length === 0 || executeSql.isPending
+                            (!newIndex.isPrimary && !newIndex.name) ||
+                            newIndex.columns.length === 0 ||
+                            executeSql.isPending
                         }
                         startIcon={
                             executeSql.isPending ? <CircularProgress size={16} /> : <AddIcon />
                         }
                     >
-                        Create Index
+                        {newIndex.isPrimary ? 'Add Primary Key' : 'Create Index'}
                     </Button>
                 </DialogActions>
             </Dialog>
