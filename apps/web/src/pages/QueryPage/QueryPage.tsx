@@ -190,34 +190,39 @@ export function QueryPage() {
     // Update URL when state changes
     const updateUrl = useCallback(
         (updates: { schema?: string; table?: string; tab?: number }) => {
-            const newParams = new URLSearchParams(searchParams);
+            setSearchParams(
+                (currentParams) => {
+                    const newParams = new URLSearchParams(currentParams);
 
-            if (updates.schema !== undefined) {
-                if (updates.schema) {
-                    newParams.set('schema', updates.schema);
-                } else {
-                    newParams.delete('schema');
-                }
-            }
+                    if (updates.schema !== undefined) {
+                        if (updates.schema) {
+                            newParams.set('schema', updates.schema);
+                        } else {
+                            newParams.delete('schema');
+                        }
+                    }
 
-            if (updates.table !== undefined) {
-                if (updates.table) {
-                    newParams.set('table', updates.table);
-                } else {
-                    newParams.delete('table');
-                }
-            }
+                    if (updates.table !== undefined) {
+                        if (updates.table) {
+                            newParams.set('table', updates.table);
+                        } else {
+                            newParams.delete('table');
+                        }
+                    }
 
-            if (updates.tab !== undefined) {
-                const tabName = TAB_NAMES[updates.tab];
-                if (tabName) {
-                    newParams.set('tab', tabName);
-                }
-            }
+                    if (updates.tab !== undefined) {
+                        const tabName = TAB_NAMES[updates.tab];
+                        if (tabName) {
+                            newParams.set('tab', tabName);
+                        }
+                    }
 
-            setSearchParams(newParams, { replace: true });
+                    return newParams;
+                },
+                { replace: true }
+            );
         },
-        [searchParams, setSearchParams]
+        [setSearchParams]
     );
 
     // Handle connection change - update URL path
