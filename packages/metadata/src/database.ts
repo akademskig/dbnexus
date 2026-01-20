@@ -18,18 +18,16 @@ export class MetadataDatabase {
      * Initialize the database schema
      */
     initialize(): void {
-        const currentVersion = this.getSchemaVersion();
+        let currentVersion = this.getSchemaVersion();
 
         if (currentVersion === 0) {
-            // Fresh database, run all migrations
-            for (let i = 0; i < SCHEMA_VERSION; i++) {
-                const migration = MIGRATIONS[i];
-                if (migration) {
-                    this.db.exec(migration);
-                }
-            }
-        } else if (currentVersion < SCHEMA_VERSION) {
-            // Run pending migrations
+            // Fresh database, run initial migration
+            this.db.exec(MIGRATIONS[0]!);
+            currentVersion = this.getSchemaVersion();
+        }
+
+        // Run any pending migrations
+        if (currentVersion < SCHEMA_VERSION) {
             for (let i = currentVersion; i < SCHEMA_VERSION; i++) {
                 const migration = MIGRATIONS[i];
                 if (migration) {
