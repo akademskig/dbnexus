@@ -11,6 +11,10 @@ import {
     DialogActions,
     TextField,
     InputAdornment,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -21,10 +25,12 @@ import {
     Clear as ClearIcon,
     ArrowForward as ArrowIcon,
     Visibility as ViewIcon,
+    GroupWork as GroupIcon,
+    Person as PersonIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { schemaApi } from '../../lib/api';
+import { schemaApi, connectionsApi, instanceGroupsApi } from '../../lib/api';
 import type { MigrationHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
@@ -38,6 +44,8 @@ export function MigrationHistoryTab() {
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const [searchQuery, setSearchQuery] = useState('');
+    const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [selectedMigration, setSelectedMigration] = useState<MigrationHistoryEntry | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -46,6 +54,16 @@ export function MigrationHistoryTab() {
     const { data: migrations = [], isLoading } = useQuery({
         queryKey: ['migrationHistory'],
         queryFn: () => schemaApi.getMigrationHistory({ limit: 500 }),
+    });
+
+    const { data: connections = [] } = useQuery({
+        queryKey: ['connections'],
+        queryFn: connectionsApi.getAll,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['instanceGroups'],
+        queryFn: instanceGroupsApi.getAll,
     });
 
     const deleteMutation = useMutation({
@@ -72,16 +90,37 @@ export function MigrationHistoryTab() {
 
     // Filter migrations
     const filteredMigrations = migrations.filter((m) => {
-        if (!searchQuery) return true;
-        const search = searchQuery.toLowerCase();
-        return (
-            m.sourceConnectionName?.toLowerCase().includes(search) ||
-            m.targetConnectionName?.toLowerCase().includes(search) ||
-            m.sourceSchema.toLowerCase().includes(search) ||
-            m.targetSchema.toLowerCase().includes(search) ||
-            m.description?.toLowerCase().includes(search) ||
-            m.sqlStatements.some((s) => s.toLowerCase().includes(search))
-        );
+        // Source filter (group vs manual)
+        if (sourceFilter === 'group' && !m.groupId) return false;
+        if (sourceFilter === 'manual' && m.groupId) return false;
+        if (sourceFilter !== 'all' && sourceFilter !== 'group' && sourceFilter !== 'manual') {
+            // Specific group selected
+            if (m.groupId !== sourceFilter) return false;
+        }
+        
+        // Connection filter (source or target)
+        if (connectionFilter !== 'all') {
+            const matchesConnection =
+                m.sourceConnectionId === connectionFilter ||
+                m.targetConnectionId === connectionFilter;
+            if (!matchesConnection) return false;
+        }
+        
+        // Search query
+        if (searchQuery) {
+            const search = searchQuery.toLowerCase();
+            return (
+                m.sourceConnectionName?.toLowerCase().includes(search) ||
+                m.targetConnectionName?.toLowerCase().includes(search) ||
+                m.sourceSchema.toLowerCase().includes(search) ||
+                m.targetSchema.toLowerCase().includes(search) ||
+                m.description?.toLowerCase().includes(search) ||
+                m.groupName?.toLowerCase().includes(search) ||
+                m.sqlStatements.some((s) => s.toLowerCase().includes(search))
+            );
+        }
+        
+        return true;
     });
 
     const columns: GridColDef[] = [
@@ -93,6 +132,33 @@ export function MigrationHistoryTab() {
                 <Typography variant="body2" sx={{ fontSize: 12 }}>
                     {formatDate(params.value)}
                 </Typography>
+            ),
+        },
+        {
+            field: 'source_type',
+            headerName: 'Source',
+            width: 140,
+            valueGetter: (_value, row) => (row.groupName ? `Group: ${row.groupName}` : 'Manual'),
+            renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {params.row.groupName ? (
+                        <>
+                            <GroupIcon sx={{ fontSize: 14, color: '#8b5cf6' }} />
+                            <StyledTooltip title={`From group: ${params.row.groupName}`}>
+                                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                    {params.row.groupName}
+                                </Typography>
+                            </StyledTooltip>
+                        </>
+                    ) : (
+                        <>
+                            <PersonIcon sx={{ fontSize: 14, color: '#6b7280' }} />
+                            <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                                Manual
+                            </Typography>
+                        </>
+                    )}
+                </Box>
             ),
         },
         {
@@ -241,6 +307,41 @@ export function MigrationHistoryTab() {
                     alignItems: 'center',
                 }}
             >
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel>Source</InputLabel>
+                    <Select
+                        value={sourceFilter}
+                        onChange={(e) => setSourceFilter(e.target.value)}
+                        label="Source"
+                    >
+                        <MenuItem value="all">All Sources</MenuItem>
+                        <MenuItem value="group">From Groups</MenuItem>
+                        <MenuItem value="manual">Manual</MenuItem>
+                        {groups.length > 0 && <MenuItem disabled>─────────────</MenuItem>}
+                        {groups.map((group) => (
+                            <MenuItem key={group.id} value={group.id}>
+                                {group.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Connection</InputLabel>
+                    <Select
+                        value={connectionFilter}
+                        onChange={(e) => setConnectionFilter(e.target.value)}
+                        label="Connection"
+                    >
+                        <MenuItem value="all">All Connections</MenuItem>
+                        {connections.map((conn) => (
+                            <MenuItem key={conn.id} value={conn.id}>
+                                {conn.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
                 <TextField
                     size="small"
                     placeholder="Search migrations..."
@@ -336,6 +437,19 @@ export function MigrationHistoryTab() {
                                     alignItems: 'center',
                                 }}
                             >
+                                {selectedMigration.groupName && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Source
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <GroupIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
+                                            <Typography variant="body2">
+                                                {selectedMigration.groupName}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                )}
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
                                         Source

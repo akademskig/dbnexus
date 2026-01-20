@@ -111,6 +111,7 @@ function getActivityColor(type: string, status: string) {
 export function ActivityLogTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
 
     // Fetch data from multiple sources
@@ -210,6 +211,13 @@ export function ActivityLogTab() {
     // Filter activities
     const filteredActivities = activities.filter((activity) => {
         if (typeFilter !== 'all' && activity.type !== typeFilter) return false;
+        if (connectionFilter !== 'all') {
+            const matchesConnection =
+                activity.details?.connectionId === connectionFilter ||
+                activity.details?.sourceConnection === connections.find((c) => c.id === connectionFilter)?.name ||
+                activity.details?.targetConnection === connections.find((c) => c.id === connectionFilter)?.name;
+            if (!matchesConnection) return false;
+        }
         if (searchQuery) {
             const search = searchQuery.toLowerCase();
             return (
@@ -403,6 +411,22 @@ export function ActivityLogTab() {
                         <MenuItem value="migration">Migrations</MenuItem>
                         <MenuItem value="sync">Sync Operations</MenuItem>
                         <MenuItem value="connection">Connections</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Connection</InputLabel>
+                    <Select
+                        value={connectionFilter}
+                        onChange={(e) => setConnectionFilter(e.target.value)}
+                        label="Connection"
+                    >
+                        <MenuItem value="all">All Connections</MenuItem>
+                        {connections.map((conn) => (
+                            <MenuItem key={conn.id} value={conn.id}>
+                                {conn.name}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 

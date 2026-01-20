@@ -11,6 +11,7 @@ interface MigrationHistoryRow {
     target_connection_id: string;
     source_schema: string;
     target_schema: string;
+    group_id: string | null;
     description: string | null;
     sql_statements: string;
     applied_at: string;
@@ -18,6 +19,7 @@ interface MigrationHistoryRow {
     error: string | null;
     source_connection_name?: string;
     target_connection_name?: string;
+    group_name?: string;
 }
 
 export class MigrationHistoryRepository {
@@ -31,6 +33,7 @@ export class MigrationHistoryRepository {
         targetConnectionId: string;
         sourceSchema: string;
         targetSchema: string;
+        groupId?: string;
         description?: string;
         sqlStatements: string[];
         success: boolean;
@@ -45,10 +48,10 @@ export class MigrationHistoryRepository {
                 `
             INSERT INTO migration_history (
                 id, source_connection_id, target_connection_id, 
-                source_schema, target_schema, description, 
+                source_schema, target_schema, group_id, description, 
                 sql_statements, success, error
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
             .run(
@@ -57,6 +60,7 @@ export class MigrationHistoryRepository {
                 input.targetConnectionId,
                 input.sourceSchema,
                 input.targetSchema,
+                input.groupId || null,
                 input.description || null,
                 sqlJson,
                 input.success ? 1 : 0,
@@ -77,10 +81,12 @@ export class MigrationHistoryRepository {
             SELECT 
                 mh.*,
                 sc.name as source_connection_name,
-                tc.name as target_connection_name
+                tc.name as target_connection_name,
+                ig.name as group_name
             FROM migration_history mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
+            LEFT JOIN instance_groups ig ON mh.group_id = ig.id
             WHERE mh.id = ?
         `
             )
@@ -97,10 +103,12 @@ export class MigrationHistoryRepository {
             SELECT 
                 mh.*,
                 sc.name as source_connection_name,
-                tc.name as target_connection_name
+                tc.name as target_connection_name,
+                ig.name as group_name
             FROM migration_history mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
+            LEFT JOIN instance_groups ig ON mh.group_id = ig.id
         `;
         const params: unknown[] = [];
 
@@ -149,6 +157,7 @@ export class MigrationHistoryRepository {
             targetConnectionId: row.target_connection_id,
             sourceSchema: row.source_schema,
             targetSchema: row.target_schema,
+            groupId: row.group_id || undefined,
             description: row.description || undefined,
             sqlStatements: JSON.parse(row.sql_statements) as string[],
             appliedAt: row.applied_at,
@@ -156,6 +165,7 @@ export class MigrationHistoryRepository {
             error: row.error || undefined,
             sourceConnectionName: row.source_connection_name,
             targetConnectionName: row.target_connection_name,
+            groupName: row.group_name || undefined,
         };
     }
 }

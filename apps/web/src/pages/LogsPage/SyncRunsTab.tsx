@@ -24,10 +24,13 @@ import {
     Visibility as ViewIcon,
     TableChart as TableIcon,
     Schema as SchemaIcon,
+    GroupWork as GroupIcon,
+    Person as PersonIcon,
+    ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
-import { syncApi, SyncRun } from '../../lib/api';
+import { syncApi, SyncRun, connectionsApi, instanceGroupsApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
 
 function formatDate(date: Date): string {
@@ -62,6 +65,8 @@ function getStatusColor(status: SyncRun['status']): string {
 export function SyncRunsTab() {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [selectedRun, setSelectedRun] = useState<SyncRun | null>(null);
 
     const { data: syncRuns = [], isLoading } = useQuery({
@@ -69,16 +74,46 @@ export function SyncRunsTab() {
         queryFn: () => syncApi.getSyncRuns(500),
     });
 
+    const { data: connections = [] } = useQuery({
+        queryKey: ['connections'],
+        queryFn: connectionsApi.getAll,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['instanceGroups'],
+        queryFn: instanceGroupsApi.getAll,
+    });
+
     // Filter sync runs
     const filteredRuns = syncRuns.filter((run) => {
+        // Status filter
         if (statusFilter !== 'all' && run.status !== statusFilter) return false;
+        
+        // Source filter (group vs manual)
+        if (sourceFilter === 'group' && !run.groupId) return false;
+        if (sourceFilter === 'manual' && run.groupId) return false;
+        if (sourceFilter !== 'all' && sourceFilter !== 'group' && sourceFilter !== 'manual') {
+            // Specific group selected
+            if (run.groupId !== sourceFilter) return false;
+        }
+        
+        // Connection filter (source or target)
+        if (connectionFilter !== 'all') {
+            const matchesConnection =
+                run.sourceConnectionId === connectionFilter ||
+                run.targetConnectionId === connectionFilter;
+            if (!matchesConnection) return false;
+        }
+        
+        // Search query
         if (searchQuery) {
             const search = searchQuery.toLowerCase();
             return (
                 run.tableName?.toLowerCase().includes(search) ||
                 run.schemaName?.toLowerCase().includes(search) ||
                 run.sourceConnectionName?.toLowerCase().includes(search) ||
-                run.targetConnectionName?.toLowerCase().includes(search)
+                run.targetConnectionName?.toLowerCase().includes(search) ||
+                run.groupName?.toLowerCase().includes(search)
             );
         }
         return true;
@@ -110,6 +145,33 @@ export function SyncRunsTab() {
                     <Typography variant="body2" sx={{ fontSize: 12 }}>
                         {params.value}
                     </Typography>
+                </Box>
+            ),
+        },
+        {
+            field: 'source_type',
+            headerName: 'Source',
+            width: 140,
+            valueGetter: (_value, row) => (row.groupName ? `Group: ${row.groupName}` : 'Manual'),
+            renderCell: (params: GridRenderCellParams<SyncRun>) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {params.row.groupName ? (
+                        <>
+                            <GroupIcon sx={{ fontSize: 14, color: '#8b5cf6' }} />
+                            <StyledTooltip title={`From group: ${params.row.groupName}`}>
+                                <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                    {params.row.groupName}
+                                </Typography>
+                            </StyledTooltip>
+                        </>
+                    ) : (
+                        <>
+                            <PersonIcon sx={{ fontSize: 14, color: '#6b7280' }} />
+                            <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                                Manual
+                            </Typography>
+                        </>
+                    )}
                 </Box>
             ),
         },
@@ -267,7 +329,7 @@ export function SyncRunsTab() {
                     alignItems: 'center',
                 }}
             >
-                <FormControl size="small" sx={{ minWidth: 150 }}>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
                     <InputLabel>Status</InputLabel>
                     <Select
                         value={statusFilter}
@@ -279,6 +341,41 @@ export function SyncRunsTab() {
                         <MenuItem value="failed">Failed</MenuItem>
                         <MenuItem value="running">Running</MenuItem>
                         <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel>Source</InputLabel>
+                    <Select
+                        value={sourceFilter}
+                        onChange={(e) => setSourceFilter(e.target.value)}
+                        label="Source"
+                    >
+                        <MenuItem value="all">All Sources</MenuItem>
+                        <MenuItem value="group">From Groups</MenuItem>
+                        <MenuItem value="manual">Manual</MenuItem>
+                        {groups.length > 0 && <MenuItem disabled>─────────────</MenuItem>}
+                        {groups.map((group) => (
+                            <MenuItem key={group.id} value={group.id}>
+                                {group.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Connection</InputLabel>
+                    <Select
+                        value={connectionFilter}
+                        onChange={(e) => setConnectionFilter(e.target.value)}
+                        label="Connection"
+                    >
+                        <MenuItem value="all">All Connections</MenuItem>
+                        {connections.map((conn) => (
+                            <MenuItem key={conn.id} value={conn.id}>
+                                {conn.name}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -395,17 +492,31 @@ export function SyncRunsTab() {
 
                             {/* Connections */}
                             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                {selectedRun.groupName && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Instance Group
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <GroupIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
+                                            <Typography variant="body2">
+                                                {selectedRun.groupName}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                )}
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
-                                        Source
+                                        Source Connection
                                     </Typography>
                                     <Typography variant="body2">
                                         {selectedRun.sourceConnectionName || 'Unknown'}
                                     </Typography>
                                 </Box>
+                                <ArrowIcon sx={{ color: 'text.secondary', alignSelf: 'center' }} />
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
-                                        Target
+                                        Target Connection
                                     </Typography>
                                     <Typography variant="body2">
                                         {selectedRun.targetConnectionName || 'Unknown'}

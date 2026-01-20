@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -142,13 +142,15 @@ export const MIGRATIONS: string[] = [
     target_connection_id TEXT NOT NULL,
     source_schema TEXT NOT NULL,
     target_schema TEXT NOT NULL,
+    group_id TEXT,
     description TEXT,
     sql_statements TEXT NOT NULL,
     applied_at TEXT NOT NULL DEFAULT (datetime('now')),
     success INTEGER NOT NULL DEFAULT 1,
     error TEXT,
     FOREIGN KEY (source_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE
+    FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES instance_groups(id) ON DELETE SET NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_migration_history_applied_at ON migration_history(applied_at DESC);
@@ -274,5 +276,12 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE sync_runs ADD COLUMN sql_statements TEXT;
 
   UPDATE schema_version SET version = 11;
+  `,
+
+    // Version 12: Add group_id to migration_history for tracking group-based migrations
+    `
+  ALTER TABLE migration_history ADD COLUMN group_id TEXT REFERENCES instance_groups(id) ON DELETE SET NULL;
+
+  UPDATE schema_version SET version = 12;
   `,
 ];

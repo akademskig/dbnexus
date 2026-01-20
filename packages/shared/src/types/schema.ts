@@ -105,6 +105,7 @@ export interface MigrationHistoryEntry {
     targetConnectionId: string;
     sourceSchema: string;
     targetSchema: string;
+    groupId?: string;
     description?: string;
     sqlStatements: string[];
     appliedAt: string;
@@ -113,4 +114,5 @@ export interface MigrationHistoryEntry {
     // Populated from joins
     sourceConnectionName?: string;
     targetConnectionName?: string;
+    groupName?: string;
 }
