@@ -176,34 +176,43 @@ export class QueriesService {
 
         // PostgreSQL operations
         if (engine === 'postgres') {
+            // Helper to properly quote PostgreSQL identifiers (handles schema.table format)
+            const quotePostgresIdentifier = (identifier: string): string => {
+                if (identifier.includes('.')) {
+                    const [schema, table] = identifier.split('.');
+                    return `"${schema}"."${table}"`;
+                }
+                return `"${identifier}"`;
+            };
+
             switch (op) {
                 case 'vacuum':
                     if (scope === 'table' && target) {
-                        return `VACUUM "${target}"`;
+                        return `VACUUM ${quotePostgresIdentifier(target)}`;
                     }
                     return 'VACUUM';
 
                 case 'vacuum_full':
                     if (scope === 'table' && target) {
-                        return `VACUUM (FULL) "${target}"`;
+                        return `VACUUM (FULL) ${quotePostgresIdentifier(target)}`;
                     }
                     return 'VACUUM (FULL)';
 
                 case 'analyze':
                     if (scope === 'table' && target) {
-                        return `ANALYZE "${target}"`;
+                        return `ANALYZE ${quotePostgresIdentifier(target)}`;
                     }
                     return 'ANALYZE';
 
                 case 'vacuum_analyze':
                     if (scope === 'table' && target) {
-                        return `VACUUM (ANALYZE) "${target}"`;
+                        return `VACUUM (ANALYZE) ${quotePostgresIdentifier(target)}`;
                     }
                     return 'VACUUM (ANALYZE)';
 
                 case 'reindex':
                     if (scope === 'table' && target) {
-                        return `REINDEX TABLE "${target}"`;
+                        return `REINDEX TABLE ${quotePostgresIdentifier(target)}`;
                     } else if (scope === 'schema' && target) {
                         return `REINDEX SCHEMA "${target}"`;
                     } else {

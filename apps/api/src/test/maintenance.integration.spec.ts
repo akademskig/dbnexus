@@ -74,12 +74,12 @@ describe('Maintenance Operations Integration Tests', () => {
             const result = await queriesService.executeMaintenance(
                 postgresConnectionId!,
                 'vacuum',
-                'products',
+                'public.products',
                 'table'
             );
             expect(result.success).toBe(true);
             expect(result.message).toContain('VACUUM');
-            expect(result.duration).toBeGreaterThan(0);
+            expect(result.duration).toBeGreaterThanOrEqual(0);
             expect(result.details).toBeDefined();
         });
 

@@ -210,10 +210,13 @@ export function MaintenanceTab({
                 toast.error('Please select a table');
                 return;
             }
-            // For MySQL, use schema.table format
-            target = connection?.engine === 'mysql' || connection?.engine === 'mariadb'
-                ? `${selectedSchema}.${selectedTable}`
-                : selectedTable;
+            // For PostgreSQL and MySQL, use schema.table format
+            // For SQLite, just use table name
+            if (connection?.engine === 'sqlite') {
+                target = selectedTable;
+            } else {
+                target = `${selectedSchema}.${selectedTable}`;
+            }
         } else if (scope === 'schema') {
             if (!selectedSchema) {
                 toast.error('Please select a schema');
