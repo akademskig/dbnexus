@@ -64,7 +64,7 @@ export interface SyncRunUpdateInput {
     sqlStatements?: string[];
 }
 
-export class SyncRunRepository {
+export class SyncRunLogsRepository {
     constructor(private readonly db: MetadataDatabase) {}
 
     /**
@@ -77,7 +77,7 @@ export class SyncRunRepository {
             .getDb()
             .prepare(
                 `
-            INSERT INTO sync_runs (id, source_connection_id, target_connection_id, schema_name, table_name, group_id, status)
+            INSERT INTO sync_run_logs (id, source_connection_id, target_connection_id, schema_name, table_name, group_id, status)
             VALUES (?, ?, ?, ?, ?, ?, 'running')
         `
             )
@@ -106,7 +106,7 @@ export class SyncRunRepository {
                 src.name as source_connection_name,
                 tgt.name as target_connection_name,
                 dg.name as group_name
-            FROM sync_runs sr
+            FROM sync_run_logs sr
             LEFT JOIN connections src ON sr.source_connection_id = src.id
             LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
             LEFT JOIN database_groups dg ON sr.group_id = dg.id
@@ -128,7 +128,7 @@ export class SyncRunRepository {
                 src.name as source_connection_name,
                 tgt.name as target_connection_name,
                 dg.name as group_name
-            FROM sync_runs sr
+            FROM sync_run_logs sr
             LEFT JOIN connections src ON sr.source_connection_id = src.id
             LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
             LEFT JOIN database_groups dg ON sr.group_id = dg.id
@@ -154,7 +154,7 @@ export class SyncRunRepository {
                 src.name as source_connection_name,
                 tgt.name as target_connection_name,
                 dg.name as group_name
-            FROM sync_runs sr
+            FROM sync_run_logs sr
             LEFT JOIN connections src ON sr.source_connection_id = src.id
             LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
             LEFT JOIN database_groups dg ON sr.group_id = dg.id
@@ -183,7 +183,7 @@ export class SyncRunRepository {
                 src.name as source_connection_name,
                 tgt.name as target_connection_name,
                 dg.name as group_name
-            FROM sync_runs sr
+            FROM sync_run_logs sr
             LEFT JOIN connections src ON sr.source_connection_id = src.id
             LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
             LEFT JOIN database_groups dg ON sr.group_id = dg.id
@@ -208,7 +208,7 @@ export class SyncRunRepository {
                 src.name as source_connection_name,
                 tgt.name as target_connection_name,
                 dg.name as group_name
-            FROM sync_runs sr
+            FROM sync_run_logs sr
             LEFT JOIN connections src ON sr.source_connection_id = src.id
             LEFT JOIN connections tgt ON sr.target_connection_id = tgt.id
             LEFT JOIN database_groups dg ON sr.group_id = dg.id
@@ -265,7 +265,7 @@ export class SyncRunRepository {
 
         this.db
             .getDb()
-            .prepare(`UPDATE sync_runs SET ${updates.join(', ')} WHERE id = ?`)
+            .prepare(`UPDATE sync_run_logs SET ${updates.join(', ')} WHERE id = ?`)
             .run(...params);
 
         return this.findById(id);
@@ -291,7 +291,7 @@ export class SyncRunRepository {
      * Delete a sync run
      */
     delete(id: string): boolean {
-        const result = this.db.getDb().prepare('DELETE FROM sync_runs WHERE id = ?').run(id);
+        const result = this.db.getDb().prepare('DELETE FROM sync_run_logs WHERE id = ?').run(id);
 
         return result.changes > 0;
     }
@@ -304,7 +304,7 @@ export class SyncRunRepository {
             .getDb()
             .prepare(
                 `
-            DELETE FROM sync_runs 
+            DELETE FROM sync_run_logs 
             WHERE started_at < datetime('now', '-' || ? || ' days')
         `
             )

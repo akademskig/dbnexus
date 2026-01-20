@@ -63,7 +63,7 @@ export class QueriesService {
             const result = await connector.query(sql);
 
             // Log to history
-            this.metadataService.queryRepository.addHistoryEntry({
+            this.metadataService.queryLogsRepository.addHistoryEntry({
                 connectionId,
                 sql,
                 executionTimeMs: result.executionTimeMs,
@@ -77,7 +77,7 @@ export class QueriesService {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
             // Log failed query to history
-            this.metadataService.queryRepository.addHistoryEntry({
+            this.metadataService.queryLogsRepository.addHistoryEntry({
                 connectionId,
                 sql,
                 executionTimeMs,
@@ -133,7 +133,7 @@ export class QueriesService {
                 : `${operation.toUpperCase()} completed successfully`;
 
             // Log to audit
-            this.metadataService.queryRepository.addHistoryEntry({
+            this.metadataService.queryLogsRepository.addHistoryEntry({
                 connectionId,
                 sql: command,
                 executionTimeMs: duration,
@@ -152,7 +152,7 @@ export class QueriesService {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
             // Log failed operation
-            this.metadataService.queryRepository.addHistoryEntry({
+            this.metadataService.queryLogsRepository.addHistoryEntry({
                 connectionId,
                 sql: operation,
                 executionTimeMs: duration,
@@ -525,11 +525,11 @@ export class QueriesService {
     // ============ Saved Queries ============
 
     getSavedQueries(): SavedQuery[] {
-        return this.metadataService.queryRepository.findAllSavedQueries();
+        return this.metadataService.queryLogsRepository.findAllSavedQueries();
     }
 
     getSavedQuery(id: string): SavedQuery | null {
-        return this.metadataService.queryRepository.findSavedQueryById(id);
+        return this.metadataService.queryLogsRepository.findSavedQueryById(id);
     }
 
     createSavedQuery(input: {
@@ -538,28 +538,28 @@ export class QueriesService {
         connectionId?: string;
         folderId?: string;
     }): SavedQuery {
-        return this.metadataService.queryRepository.createSavedQuery(input);
+        return this.metadataService.queryLogsRepository.createSavedQuery(input);
     }
 
     updateSavedQuery(
         id: string,
         input: { name?: string; sql?: string; connectionId?: string; folderId?: string }
     ): SavedQuery | null {
-        return this.metadataService.queryRepository.updateSavedQuery(id, input);
+        return this.metadataService.queryLogsRepository.updateSavedQuery(id, input);
     }
 
     deleteSavedQuery(id: string): boolean {
-        return this.metadataService.queryRepository.deleteSavedQuery(id);
+        return this.metadataService.queryLogsRepository.deleteSavedQuery(id);
     }
 
     // ============ Query History ============
 
     getHistory(connectionId?: string, limit: number = 100): QueryHistoryEntry[] {
-        return this.metadataService.queryRepository.findRecentHistory(limit, connectionId);
+        return this.metadataService.queryLogsRepository.findRecentHistory(limit, connectionId);
     }
 
     clearHistory(connectionId?: string): number {
-        return this.metadataService.queryRepository.clearHistory(connectionId);
+        return this.metadataService.queryLogsRepository.clearHistory(connectionId);
     }
 
     // ============ Plan Analysis ============

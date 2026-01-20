@@ -3,7 +3,7 @@
  */
 
 import type { MetadataDatabase } from '../database.js';
-import type { MigrationHistoryEntry } from '@dbnexus/shared';
+import type { MigrationLogEntry } from '@dbnexus/shared';
 
 interface MigrationHistoryRow {
     id: string;
@@ -22,7 +22,7 @@ interface MigrationHistoryRow {
     group_name?: string;
 }
 
-export class MigrationHistoryRepository {
+export class MigrationLogsRepository {
     constructor(private db: MetadataDatabase) {}
 
     /**
@@ -38,7 +38,7 @@ export class MigrationHistoryRepository {
         sqlStatements: string[];
         success: boolean;
         error?: string;
-    }): MigrationHistoryEntry {
+    }): MigrationLogEntry {
         const id = crypto.randomUUID();
         const sqlJson = JSON.stringify(input.sqlStatements);
 
@@ -55,7 +55,7 @@ export class MigrationHistoryRepository {
                 .getDb()
                 .prepare(
                     `
-                INSERT INTO migration_history (
+                INSERT INTO migration_logs (
                     id, source_connection_id, target_connection_id, 
                     source_schema, target_schema, group_id, description, 
                     sql_statements, success, error
@@ -88,7 +88,7 @@ export class MigrationHistoryRepository {
     /**
      * Find a migration by ID
      */
-    findById(id: string): MigrationHistoryEntry | null {
+    findById(id: string): MigrationLogEntry | null {
         const row = this.db
             .getDb()
             .prepare(
@@ -98,7 +98,7 @@ export class MigrationHistoryRepository {
                 sc.name as source_connection_name,
                 tc.name as target_connection_name,
                 ig.name as group_name
-            FROM migration_history mh
+            FROM migration_logs mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
             LEFT JOIN database_groups ig ON mh.group_id = ig.id
@@ -113,14 +113,14 @@ export class MigrationHistoryRepository {
     /**
      * Get migration history
      */
-    findAll(options?: { targetConnectionId?: string; limit?: number }): MigrationHistoryEntry[] {
+    findAll(options?: { targetConnectionId?: string; limit?: number }): MigrationLogEntry[] {
         let query = `
             SELECT 
                 mh.*,
                 sc.name as source_connection_name,
                 tc.name as target_connection_name,
                 ig.name as group_name
-            FROM migration_history mh
+            FROM migration_logs mh
             LEFT JOIN connections sc ON mh.source_connection_id = sc.id
             LEFT JOIN connections tc ON mh.target_connection_id = tc.id
             LEFT JOIN database_groups ig ON mh.group_id = ig.id
@@ -163,7 +163,7 @@ export class MigrationHistoryRepository {
                 .getDb()
                 .prepare(
                     `
-                DELETE FROM migration_history WHERE id = ?
+                DELETE FROM migration_logs WHERE id = ?
             `
                 )
                 .run(id);
@@ -178,9 +178,9 @@ export class MigrationHistoryRepository {
     }
 
     /**
-     * Convert database row to MigrationHistoryEntry
+     * Convert database row to MigrationLogEntry
      */
-    private rowToEntry(row: MigrationHistoryRow): MigrationHistoryEntry {
+    private rowToEntry(row: MigrationHistoryRow): MigrationLogEntry {
         return {
             id: row.id,
             sourceConnectionId: row.source_connection_id,

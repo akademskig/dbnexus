@@ -15,7 +15,9 @@ export class SyncController {
      */
     @Get('runs')
     getSyncRuns(@Query('limit') limit?: string) {
-        return this.metadataService.syncRunRepository.findRecent(limit ? parseInt(limit, 10) : 500);
+        return this.metadataService.syncRunLogsRepository.findRecent(
+            limit ? parseInt(limit, 10) : 500
+        );
     }
 
     /**

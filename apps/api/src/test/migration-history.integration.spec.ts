@@ -75,7 +75,7 @@ describe('Migration History Integration Tests', () => {
         if (dockerAvailable.postgres && metadataService) {
             // Clean up migration history entries first (to avoid FK constraint issues)
             try {
-                const migrations = metadataService.migrationHistoryRepository.findAll();
+                const migrations = metadataService.migrationLogsRepository.findAll();
                 const testMigrations = migrations.filter(
                     (m) =>
                         m.sourceConnectionId === postgresConnectionId ||
@@ -84,7 +84,7 @@ describe('Migration History Integration Tests', () => {
                         m.targetConnectionId === postgres2ConnectionId
                 );
                 for (const migration of testMigrations) {
-                    metadataService.migrationHistoryRepository.delete(migration.id);
+                    metadataService.migrationLogsRepository.delete(migration.id);
                 }
             } catch (error) {
                 console.error('Error cleaning up migration history:', error);
@@ -134,7 +134,7 @@ describe('Migration History Integration Tests', () => {
                 return;
             }
 
-            const migration = metadataService.migrationHistoryRepository.create({
+            const migration = metadataService.migrationLogsRepository.create({
                 sourceConnectionId: postgresConnectionId,
                 targetConnectionId: postgres2ConnectionId,
                 sourceSchema: 'public',
@@ -157,7 +157,7 @@ describe('Migration History Integration Tests', () => {
                 return;
             }
 
-            const migration = metadataService.migrationHistoryRepository.create({
+            const migration = metadataService.migrationLogsRepository.create({
                 sourceConnectionId: postgresConnectionId,
                 targetConnectionId: postgres2ConnectionId,
                 sourceSchema: 'public',
@@ -181,7 +181,7 @@ describe('Migration History Integration Tests', () => {
                 return;
             }
 
-            const migrations = metadataService.migrationHistoryRepository.findAll({
+            const migrations = metadataService.migrationLogsRepository.findAll({
                 limit: 10,
             });
 
@@ -209,7 +209,7 @@ describe('Migration History Integration Tests', () => {
                 return;
             }
 
-            const migrations = metadataService.migrationHistoryRepository.findAll({
+            const migrations = metadataService.migrationLogsRepository.findAll({
                 targetConnectionId: postgres2ConnectionId,
                 limit: 10,
             });
@@ -230,7 +230,7 @@ describe('Migration History Integration Tests', () => {
             }
 
             // First get all migrations
-            const migrations = metadataService.migrationHistoryRepository.findAll({
+            const migrations = metadataService.migrationLogsRepository.findAll({
                 limit: 10,
             });
 
@@ -241,9 +241,7 @@ describe('Migration History Integration Tests', () => {
             }
 
             // Get individual migration
-            const migration = metadataService.migrationHistoryRepository.findById(
-                groupMigration.id
-            );
+            const migration = metadataService.migrationLogsRepository.findById(groupMigration.id);
 
             expect(migration).not.toBeNull();
             expect(migration?.id).toBe(groupMigration.id);
@@ -260,7 +258,7 @@ describe('Migration History Integration Tests', () => {
                 return;
             }
 
-            const migration = metadataService.migrationHistoryRepository.create({
+            const migration = metadataService.migrationLogsRepository.create({
                 sourceConnectionId: postgresConnectionId,
                 targetConnectionId: postgres2ConnectionId,
                 sourceSchema: 'public',
@@ -284,7 +282,7 @@ describe('Migration History Integration Tests', () => {
             }
 
             // Create a migration to delete
-            const migration = metadataService.migrationHistoryRepository.create({
+            const migration = metadataService.migrationLogsRepository.create({
                 sourceConnectionId: postgresConnectionId,
                 targetConnectionId: postgres2ConnectionId,
                 sourceSchema: 'public',
@@ -297,11 +295,11 @@ describe('Migration History Integration Tests', () => {
             const migrationId = migration.id;
 
             // Delete it
-            const deleted = metadataService.migrationHistoryRepository.delete(migrationId);
+            const deleted = metadataService.migrationLogsRepository.delete(migrationId);
             expect(deleted).toBe(true);
 
             // Verify it's gone
-            const retrieved = metadataService.migrationHistoryRepository.findById(migrationId);
+            const retrieved = metadataService.migrationLogsRepository.findById(migrationId);
             expect(retrieved).toBeNull();
         });
     });

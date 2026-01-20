@@ -99,7 +99,7 @@ export interface SchemaDiff {
     };
 }
 
-export interface MigrationHistoryEntry {
+export interface MigrationLogEntry {
     id: string;
     sourceConnectionId: string;
     targetConnectionId: string;

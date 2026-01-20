@@ -31,7 +31,7 @@ import {
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schemaApi, connectionsApi, groupsApi } from '../../lib/api';
-import type { MigrationHistoryEntry } from '@dbnexus/shared';
+import type { MigrationLogEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
 
@@ -47,7 +47,7 @@ export function MigrationHistoryTab() {
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [selectedMigration, setSelectedMigration] = useState<MigrationHistoryEntry | null>(null);
+    const [selectedMigration, setSelectedMigration] = useState<MigrationLogEntry | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [migrationToDelete, setMigrationToDelete] = useState<string | null>(null);
 
@@ -139,7 +139,7 @@ export function MigrationHistoryTab() {
             headerName: 'Source',
             width: 140,
             valueGetter: (_value, row) => (row.groupName ? `Group: ${row.groupName}` : 'Manual'),
-            renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
+            renderCell: (params: GridRenderCellParams<MigrationLogEntry>) => (
                 <StyledTooltip
                     title={
                         params.row.groupName
@@ -180,7 +180,7 @@ export function MigrationHistoryTab() {
             width: 180,
             valueGetter: (_value, row) =>
                 `${row.sourceConnectionName || 'Unknown'}.${row.sourceSchema}`,
-            renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
+            renderCell: (params: GridRenderCellParams<MigrationLogEntry>) => (
                 <Box sx={{ lineHeight: 1.3 }}>
                     <Typography
                         variant="body2"
@@ -207,7 +207,7 @@ export function MigrationHistoryTab() {
             width: 180,
             valueGetter: (_value, row) =>
                 `${row.targetConnectionName || 'Unknown'}.${row.targetSchema}`,
-            renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
+            renderCell: (params: GridRenderCellParams<MigrationLogEntry>) => (
                 <Box sx={{ lineHeight: 1.3 }}>
                     <Typography
                         variant="body2"
@@ -274,7 +274,7 @@ export function MigrationHistoryTab() {
             headerName: '',
             width: 100,
             sortable: false,
-            renderCell: (params: GridRenderCellParams<MigrationHistoryEntry>) => (
+            renderCell: (params: GridRenderCellParams<MigrationLogEntry>) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <StyledTooltip title="Copy SQL">
                         <IconButton

@@ -467,7 +467,7 @@ describe('Data Sync Integration Tests', () => {
             );
 
             // Check sync runs
-            const syncRuns = metadataService.syncRunRepository.findRecent(100);
+            const syncRuns = metadataService.syncRunLogsRepository.findRecent(100);
             expect(syncRuns).toBeDefined();
             expect(syncRuns.length).toBeGreaterThan(0);
 
@@ -481,7 +481,7 @@ describe('Data Sync Integration Tests', () => {
             if (skipIfNoBothDBs()) return;
 
             // Get count of sync runs before
-            const runsBefore = metadataService.syncRunRepository.findRecent(1000);
+            const runsBefore = metadataService.syncRunLogsRepository.findRecent(1000);
             const countBefore = runsBefore.length;
 
             // Use a unique value to identify this test's SQL
@@ -503,7 +503,7 @@ describe('Data Sync Integration Tests', () => {
             );
 
             // Check sync runs - find the new one
-            const runsAfter = metadataService.syncRunRepository.findRecent(1000);
+            const runsAfter = metadataService.syncRunLogsRepository.findRecent(1000);
             expect(runsAfter.length).toBeGreaterThan(countBefore);
 
             // Find the run that has our unique value in SQL

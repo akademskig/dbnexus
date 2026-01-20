@@ -3,7 +3,7 @@ import { SchemaService } from './schema.service.js';
 import { SchemaDiffService } from './schema-diff.service.js';
 import { ConnectionsService } from '../connections/connections.service.js';
 import { MetadataService } from '../metadata/metadata.service.js';
-import type { TableInfo, TableSchema, SchemaDiff, MigrationHistoryEntry } from '@dbnexus/shared';
+import type { TableInfo, TableSchema, SchemaDiff, MigrationLogEntry } from '@dbnexus/shared';
 
 @Controller('schema')
 export class SchemaController {
@@ -114,7 +114,7 @@ export class SchemaController {
         @Query('sourceSchema') sourceSchema?: string,
         @Query('targetSchema') targetSchema?: string,
         @Body() body?: { description?: string }
-    ): Promise<MigrationHistoryEntry> {
+    ): Promise<MigrationLogEntry> {
         const srcSchema = sourceSchema || 'public';
         const tgtSchema = targetSchema || 'public';
 
@@ -150,7 +150,7 @@ export class SchemaController {
         }
 
         // Record the migration
-        return this.metadataService.migrationHistoryRepository.create({
+        return this.metadataService.migrationLogsRepository.create({
             sourceConnectionId,
             targetConnectionId,
             sourceSchema: srcSchema,
@@ -168,20 +168,20 @@ export class SchemaController {
     async getMigrationHistory(
         @Query('targetConnectionId') targetConnectionId?: string,
         @Query('limit') limit?: string
-    ): Promise<MigrationHistoryEntry[]> {
-        return this.metadataService.migrationHistoryRepository.findAll({
+    ): Promise<MigrationLogEntry[]> {
+        return this.metadataService.migrationLogsRepository.findAll({
             targetConnectionId,
             limit: limit ? parseInt(limit, 10) : undefined,
         });
     }
 
     @Get('migrations/:id')
-    async getMigration(@Param('id') id: string): Promise<MigrationHistoryEntry | null> {
-        return this.metadataService.migrationHistoryRepository.findById(id);
+    async getMigration(@Param('id') id: string): Promise<MigrationLogEntry | null> {
+        return this.metadataService.migrationLogsRepository.findById(id);
     }
 
     @Delete('migrations/:id')
     async deleteMigration(@Param('id') id: string): Promise<{ success: boolean }> {
-        return { success: this.metadataService.migrationHistoryRepository.delete(id) };
+        return { success: this.metadataService.migrationLogsRepository.delete(id) };
     }
 }

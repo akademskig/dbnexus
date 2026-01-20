@@ -254,7 +254,7 @@ describe('Queries Integration Tests', () => {
 
             // Get history - signature is (limit, connectionId?)
             const metadataService = app.get(MetadataService);
-            const history = metadataService.queryRepository.findRecentHistory(
+            const history = metadataService.queryLogsRepository.findRecentHistory(
                 10,
                 postgresConnectionId
             );

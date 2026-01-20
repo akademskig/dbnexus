@@ -34,7 +34,7 @@ interface QueryHistoryRow {
     error: string | null;
 }
 
-export class QueryRepository {
+export class QueryLogsRepository {
     private readonly db: Database.Database;
 
     constructor(metadataDb: MetadataDatabase) {
@@ -192,7 +192,7 @@ export class QueryRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO query_history (id, connection_id, sql, executed_at, execution_time_ms, row_count, success, error)
+      INSERT INTO query_logs (id, connection_id, sql, executed_at, execution_time_ms, row_count, success, error)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
@@ -211,7 +211,7 @@ export class QueryRepository {
     }
 
     findHistoryEntryById(id: string): QueryHistoryEntry | null {
-        const row = this.db.prepare('SELECT * FROM query_history WHERE id = ?').get(id) as
+        const row = this.db.prepare('SELECT * FROM query_logs WHERE id = ?').get(id) as
             | QueryHistoryRow
             | undefined;
         return row ? this.rowToHistoryEntry(row) : null;
@@ -219,8 +219,8 @@ export class QueryRepository {
 
     findRecentHistory(limit: number = 100, connectionId?: string): QueryHistoryEntry[] {
         const query = connectionId
-            ? 'SELECT * FROM query_history WHERE connection_id = ? ORDER BY executed_at DESC LIMIT ?'
-            : 'SELECT * FROM query_history ORDER BY executed_at DESC LIMIT ?';
+            ? 'SELECT * FROM query_logs WHERE connection_id = ? ORDER BY executed_at DESC LIMIT ?'
+            : 'SELECT * FROM query_logs ORDER BY executed_at DESC LIMIT ?';
         const rows = this.db
             .prepare(query)
             .all(...(connectionId ? [connectionId, limit] : [limit])) as QueryHistoryRow[];
@@ -229,8 +229,8 @@ export class QueryRepository {
 
     clearHistory(connectionId?: string): number {
         const query = connectionId
-            ? 'DELETE FROM query_history WHERE connection_id = ?'
-            : 'DELETE FROM query_history';
+            ? 'DELETE FROM query_logs WHERE connection_id = ?'
+            : 'DELETE FROM query_logs';
         const result = connectionId
             ? this.db.prepare(query).run(connectionId)
             : this.db.prepare(query).run();

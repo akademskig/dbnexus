@@ -14,7 +14,7 @@ import type {
     TableInfo,
     TableSchema,
     SchemaDiff,
-    MigrationHistoryEntry,
+    MigrationLogEntry,
     Project,
     ProjectCreateInput,
     ProjectUpdateInput,
@@ -250,7 +250,7 @@ export const schemaApi = {
         const params = new URLSearchParams();
         if (sourceSchema) params.set('sourceSchema', sourceSchema);
         if (targetSchema) params.set('targetSchema', targetSchema);
-        return fetchApi<MigrationHistoryEntry>(
+        return fetchApi<MigrationLogEntry>(
             `/schema/diff/${sourceConnectionId}/${targetConnectionId}/apply?${params}`,
             {
                 method: 'POST',
@@ -265,10 +265,10 @@ export const schemaApi = {
         if (options?.targetConnectionId)
             params.set('targetConnectionId', options.targetConnectionId);
         if (options?.limit) params.set('limit', String(options.limit));
-        return fetchApi<MigrationHistoryEntry[]>(`/schema/migrations?${params}`);
+        return fetchApi<MigrationLogEntry[]>(`/schema/migrations?${params}`);
     },
 
-    getMigration: (id: string) => fetchApi<MigrationHistoryEntry>(`/schema/migrations/${id}`),
+    getMigration: (id: string) => fetchApi<MigrationLogEntry>(`/schema/migrations/${id}`),
 
     deleteMigration: (id: string) =>
         fetchApi<{ success: boolean }>(`/schema/migrations/${id}`, {

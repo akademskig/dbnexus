@@ -507,7 +507,7 @@ export class SyncService {
         }
 
         // Create sync run entry
-        const syncRun = this.metadataService.syncRunRepository.create({
+        const syncRun = this.metadataService.syncRunLogsRepository.create({
             sourceConnectionId,
             targetConnectionId,
             schemaName: schema,
@@ -624,7 +624,7 @@ export class SyncService {
         }
 
         // Complete sync run with results and SQL statements
-        this.metadataService.syncRunRepository.update(syncRun.id, {
+        this.metadataService.syncRunLogsRepository.update(syncRun.id, {
             status: result.errors.length > 0 ? 'failed' : 'completed',
             inserts: result.inserted,
             updates: result.updated,
@@ -654,6 +654,14 @@ export class SyncService {
         if (rowIds.length === 0 || primaryKeyColumns.length === 0) {
             return result;
         }
+
+        // Create a sync run log entry
+        const syncRun = this.metadataService.syncRunLogsRepository.create({
+            sourceConnectionId,
+            targetConnectionId,
+            schemaName: sourceSchema,
+            tableName: table,
+        });
 
         const sourceConnection = this.connectionsService.findById(sourceConnectionId);
         const targetConnection = this.connectionsService.findById(targetConnectionId);
@@ -773,6 +781,21 @@ export class SyncService {
                 );
             }
         }
+
+        // Update sync run log with results
+        // Note: For now, manually update since SyncRunLogsRepository doesn't have an update method
+        const completedStatus = result.errors.length > 0 ? 'failed' : 'completed';
+        const errorsJson = result.errors.length > 0 ? JSON.stringify(result.errors) : null;
+        this.metadataService.database
+            .getDb()
+            .prepare(
+                `
+            UPDATE sync_run_logs 
+            SET status = ?, completed_at = datetime('now'), inserts = ?, updates = ?, deletes = ?, errors_json = ?
+            WHERE id = ?
+        `
+            )
+            .run(completedStatus, result.inserted, result.updated, 0, errorsJson, syncRun.id);
 
         return result;
     }
@@ -900,7 +923,7 @@ export class SyncService {
         };
 
         // Create sync run entry for dump & restore
-        const syncRun = this.metadataService.syncRunRepository.create({
+        const syncRun = this.metadataService.syncRunLogsRepository.create({
             sourceConnectionId,
             targetConnectionId,
             schemaName: schema,
@@ -1049,7 +1072,7 @@ export class SyncService {
         }
 
         // Complete sync run with results
-        this.metadataService.syncRunRepository.complete(syncRun.id, {
+        this.metadataService.syncRunLogsRepository.complete(syncRun.id, {
             inserts: result.rowsCopied,
             updates: 0,
             deletes: 0,

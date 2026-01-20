@@ -2,11 +2,11 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import {
     MetadataDatabase,
     ConnectionRepository,
-    QueryRepository,
-    MigrationHistoryRepository,
+    QueryLogsRepository,
+    MigrationLogsRepository,
     ProjectRepository,
     DatabaseGroupRepository,
-    SyncRunRepository,
+    SyncRunLogsRepository,
     SchemaSnapshotRepository,
     AuditLogRepository,
 } from '@dbnexus/metadata';
@@ -18,11 +18,11 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(MetadataService.name);
     private db!: MetadataDatabase;
     private _connectionRepository!: ConnectionRepository;
-    private _queryRepository!: QueryRepository;
-    private _migrationHistoryRepository!: MigrationHistoryRepository;
+    private _queryLogsRepository!: QueryLogsRepository;
+    private _migrationLogsRepository!: MigrationLogsRepository;
     private _projectRepository!: ProjectRepository;
     private _databaseGroupRepository!: DatabaseGroupRepository;
-    private _syncRunRepository!: SyncRunRepository;
+    private _syncRunLogsRepository!: SyncRunLogsRepository;
     private _schemaSnapshotRepository!: SchemaSnapshotRepository;
     private _auditLogRepository!: AuditLogRepository;
 
@@ -58,11 +58,11 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this.db.initialize();
 
         this._connectionRepository = new ConnectionRepository(this.db);
-        this._queryRepository = new QueryRepository(this.db);
-        this._migrationHistoryRepository = new MigrationHistoryRepository(this.db);
+        this._queryLogsRepository = new QueryLogsRepository(this.db);
+        this._migrationLogsRepository = new MigrationLogsRepository(this.db);
         this._projectRepository = new ProjectRepository(this.db);
         this._databaseGroupRepository = new DatabaseGroupRepository(this.db);
-        this._syncRunRepository = new SyncRunRepository(this.db);
+        this._syncRunLogsRepository = new SyncRunLogsRepository(this.db);
         this._schemaSnapshotRepository = new SchemaSnapshotRepository(this.db);
         this._auditLogRepository = new AuditLogRepository(this.db);
 
@@ -77,12 +77,12 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         return this._connectionRepository;
     }
 
-    get queryRepository(): QueryRepository {
-        return this._queryRepository;
+    get queryLogsRepository(): QueryLogsRepository {
+        return this._queryLogsRepository;
     }
 
-    get migrationHistoryRepository(): MigrationHistoryRepository {
-        return this._migrationHistoryRepository;
+    get migrationLogsRepository(): MigrationLogsRepository {
+        return this._migrationLogsRepository;
     }
 
     get projectRepository(): ProjectRepository {
@@ -93,8 +93,8 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         return this._databaseGroupRepository;
     }
 
-    get syncRunRepository(): SyncRunRepository {
-        return this._syncRunRepository;
+    get syncRunLogsRepository(): SyncRunLogsRepository {
+        return this._syncRunLogsRepository;
     }
 
     get schemaSnapshotRepository(): SchemaSnapshotRepository {

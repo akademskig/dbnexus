@@ -91,7 +91,7 @@ describe('SchemaController', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockMetadataService: any = {
-        migrationHistoryRepository: {
+        migrationLogsRepository: {
             create: jest.fn(),
             findAll: jest.fn(),
             findById: jest.fn(),
@@ -282,7 +282,7 @@ describe('SchemaController', () => {
 
         describe('getMigrationHistory', () => {
             it('should return migration history', async () => {
-                mockMetadataService.migrationHistoryRepository.findAll.mockReturnValue([
+                mockMetadataService.migrationLogsRepository.findAll.mockReturnValue([
                     mockMigrationEntry,
                 ]);
 
@@ -292,37 +292,33 @@ describe('SchemaController', () => {
             });
 
             it('should filter by targetConnectionId', async () => {
-                mockMetadataService.migrationHistoryRepository.findAll.mockReturnValue([
+                mockMetadataService.migrationLogsRepository.findAll.mockReturnValue([
                     mockMigrationEntry,
                 ]);
 
                 await controller.getMigrationHistory('target-conn');
 
-                expect(mockMetadataService.migrationHistoryRepository.findAll).toHaveBeenCalledWith(
-                    {
-                        targetConnectionId: 'target-conn',
-                        limit: undefined,
-                    }
-                );
+                expect(mockMetadataService.migrationLogsRepository.findAll).toHaveBeenCalledWith({
+                    targetConnectionId: 'target-conn',
+                    limit: undefined,
+                });
             });
 
             it('should limit results', async () => {
-                mockMetadataService.migrationHistoryRepository.findAll.mockReturnValue([]);
+                mockMetadataService.migrationLogsRepository.findAll.mockReturnValue([]);
 
                 await controller.getMigrationHistory(undefined, '10');
 
-                expect(mockMetadataService.migrationHistoryRepository.findAll).toHaveBeenCalledWith(
-                    {
-                        targetConnectionId: undefined,
-                        limit: 10,
-                    }
-                );
+                expect(mockMetadataService.migrationLogsRepository.findAll).toHaveBeenCalledWith({
+                    targetConnectionId: undefined,
+                    limit: 10,
+                });
             });
         });
 
         describe('getMigration', () => {
             it('should return a migration by id', async () => {
-                mockMetadataService.migrationHistoryRepository.findById.mockReturnValue(
+                mockMetadataService.migrationLogsRepository.findById.mockReturnValue(
                     mockMigrationEntry
                 );
 
@@ -332,7 +328,7 @@ describe('SchemaController', () => {
             });
 
             it('should return null for non-existent migration', async () => {
-                mockMetadataService.migrationHistoryRepository.findById.mockReturnValue(null);
+                mockMetadataService.migrationLogsRepository.findById.mockReturnValue(null);
 
                 const result = await controller.getMigration('non-existent');
 
@@ -342,7 +338,7 @@ describe('SchemaController', () => {
 
         describe('deleteMigration', () => {
             it('should delete a migration', async () => {
-                mockMetadataService.migrationHistoryRepository.delete.mockReturnValue(true);
+                mockMetadataService.migrationLogsRepository.delete.mockReturnValue(true);
 
                 const result = await controller.deleteMigration('migration-123');
 
@@ -350,7 +346,7 @@ describe('SchemaController', () => {
             });
 
             it('should return false when migration not found', async () => {
-                mockMetadataService.migrationHistoryRepository.delete.mockReturnValue(false);
+                mockMetadataService.migrationLogsRepository.delete.mockReturnValue(false);
 
                 const result = await controller.deleteMigration('non-existent');
 

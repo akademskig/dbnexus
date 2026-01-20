@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -281,5 +281,35 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE migration_history ADD COLUMN group_id TEXT REFERENCES database_groups(id) ON DELETE SET NULL;
 
   UPDATE schema_version SET version = 12;
+  `,
+
+    // Version 13: Rename tables and indexes for consistency (*_history -> *_logs)
+    `
+  -- Rename query_history to query_logs
+  ALTER TABLE query_history RENAME TO query_logs;
+  DROP INDEX IF EXISTS idx_query_history_connection;
+  DROP INDEX IF EXISTS idx_query_history_executed_at;
+  CREATE INDEX IF NOT EXISTS idx_query_logs_connection ON query_logs(connection_id);
+  CREATE INDEX IF NOT EXISTS idx_query_logs_executed_at ON query_logs(executed_at DESC);
+  
+  -- Rename migration_history to migration_logs
+  ALTER TABLE migration_history RENAME TO migration_logs;
+  DROP INDEX IF EXISTS idx_migration_history_applied_at;
+  DROP INDEX IF EXISTS idx_migration_history_target;
+  CREATE INDEX IF NOT EXISTS idx_migration_logs_applied_at ON migration_logs(applied_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_migration_logs_target ON migration_logs(target_connection_id);
+  
+  -- Rename sync_runs to sync_run_logs
+  ALTER TABLE sync_runs RENAME TO sync_run_logs;
+  DROP INDEX IF EXISTS idx_sync_runs_source;
+  DROP INDEX IF EXISTS idx_sync_runs_target;
+  DROP INDEX IF EXISTS idx_sync_runs_group;
+  DROP INDEX IF EXISTS idx_sync_runs_started;
+  CREATE INDEX IF NOT EXISTS idx_sync_run_logs_source ON sync_run_logs(source_connection_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_run_logs_target ON sync_run_logs(target_connection_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_run_logs_group ON sync_run_logs(group_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_run_logs_started ON sync_run_logs(started_at DESC);
+
+  UPDATE schema_version SET version = 13;
   `,
 ];
