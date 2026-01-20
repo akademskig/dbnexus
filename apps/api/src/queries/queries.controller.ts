@@ -9,11 +9,22 @@ import type {
 
 @Controller('queries')
 export class QueriesController {
-    constructor(private readonly queriesService: QueriesService) {}
+    constructor(private readonly queriesService: QueriesService) { }
 
     @Post('execute')
     async execute(@Body() input: ExecuteQueryInput): Promise<QueryResult> {
         return this.queriesService.execute(input);
+    }
+
+    @Post('maintenance')
+    async executeMaintenance(
+        @Body() input: { connectionId: string; operation: string; schema?: string }
+    ): Promise<{ success: boolean; message: string; details?: string[]; duration: number }> {
+        return this.queriesService.executeMaintenance(
+            input.connectionId,
+            input.operation,
+            input.schema
+        );
     }
 
     @Post('explain')

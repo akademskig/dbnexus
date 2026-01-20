@@ -143,23 +143,15 @@ export function MaintenanceTab({
             operation: MaintenanceOperation;
             schema?: string;
         }) => {
-            const startTime = Date.now();
-            let command = operation.getCommand(schema);
-
-            // Handle special PostgreSQL commands
-            if (operation.id === 'reindex' && connection?.engine === 'postgres') {
-                command = `REINDEX DATABASE "${connection.database}"`;
-            }
-
-            await queriesApi.execute(connectionId, command);
-            return { duration: Date.now() - startTime };
+            return await queriesApi.executeMaintenance(connectionId, operation.id, schema);
         },
         onSuccess: (data, { operation }) => {
             const result: OperationResultData = {
                 id: operation.id,
                 success: true,
-                message: `${operation.name} completed successfully`,
+                message: data.message,
                 duration: data.duration,
+                details: data.details,
             };
             setResults((prev) => [result, ...prev.slice(0, 9)]);
             toast.success(`${operation.name} completed in ${(data.duration / 1000).toFixed(2)}s`);

@@ -90,6 +90,181 @@ export class QueriesService {
     }
 
     /**
+     * Execute maintenance operation with detailed output
+     */
+    async executeMaintenance(
+        connectionId: string,
+        operation: string,
+        schema?: string
+    ): Promise<{ success: boolean; message: string; details?: string[]; duration: number }> {
+        const connection = this.connectionsService.findById(connectionId);
+        const connector = await this.connectionsService.getConnector(connectionId);
+        const startTime = Date.now();
+
+        try {
+            let command = this.getMaintenanceCommand(operation, connection.engine, schema);
+
+            // Add VERBOSE for PostgreSQL to get detailed output
+            if (connection.engine === 'postgres') {
+                command = this.addVerboseFlag(operation, command);
+            }
+
+            const result = await connector.query(command);
+            const duration = Date.now() - startTime;
+
+            // Extract details from result
+            const details = this.extractMaintenanceDetails(result, connection.engine);
+
+            // Log to audit
+            this.metadataService.queryRepository.addHistoryEntry({
+                connectionId,
+                sql: command,
+                executionTimeMs: duration,
+                rowCount: 0,
+                success: true,
+            });
+
+            return {
+                success: true,
+                message: `${operation.toUpperCase()} completed successfully`,
+                details,
+                duration,
+            };
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            // Log failed operation
+            this.metadataService.queryRepository.addHistoryEntry({
+                connectionId,
+                sql: operation,
+                executionTimeMs: duration,
+                rowCount: 0,
+                success: false,
+                error: errorMessage,
+            });
+
+            throw new BadRequestException(errorMessage);
+        }
+    }
+
+    /**
+     * Get maintenance command SQL
+     */
+    private getMaintenanceCommand(operation: string, engine: string, schema?: string): string {
+        const op = operation.toLowerCase();
+
+        switch (op) {
+            case 'vacuum':
+                return 'VACUUM';
+            case 'vacuum_full':
+                return 'VACUUM (FULL)';
+            case 'analyze':
+                // In PostgreSQL, ANALYZE without target analyzes all tables
+                // To analyze a specific schema, you'd need to analyze each table
+                return 'ANALYZE';
+            case 'vacuum_analyze':
+                return 'VACUUM (ANALYZE)';
+            case 'reindex':
+                // REINDEX DATABASE needs the actual database name
+                return engine === 'postgres' ? 'REINDEX DATABASE CURRENT_DATABASE' : 'REINDEX';
+            case 'optimize':
+                if (!schema) {
+                    throw new BadRequestException('OPTIMIZE TABLE requires a table name');
+                }
+                return `OPTIMIZE TABLE ${schema}`;
+            case 'check':
+                if (!schema) {
+                    throw new BadRequestException('CHECK TABLE requires a table name');
+                }
+                return `CHECK TABLE ${schema}`;
+            case 'repair':
+                if (!schema) {
+                    throw new BadRequestException('REPAIR TABLE requires a table name');
+                }
+                return `REPAIR TABLE ${schema}`;
+            default:
+                throw new BadRequestException(`Unknown maintenance operation: ${operation}`);
+        }
+    }
+
+    /**
+     * Add VERBOSE flag to PostgreSQL commands
+     */
+    private addVerboseFlag(operation: string, command: string): string {
+        const op = operation.toLowerCase();
+
+        if (op === 'vacuum') {
+            return command.replace('VACUUM', 'VACUUM (VERBOSE)');
+        }
+
+        if (op === 'vacuum_full') {
+            return command.replace('VACUUM (FULL)', 'VACUUM (FULL, VERBOSE)');
+        }
+
+        if (op === 'vacuum_analyze') {
+            return command.replace('VACUUM (ANALYZE)', 'VACUUM (ANALYZE, VERBOSE)');
+        }
+
+        if (op === 'analyze') {
+            return command.replace('ANALYZE', 'ANALYZE (VERBOSE)');
+        }
+
+        if (op === 'reindex') {
+            // PostgreSQL 12+ supports VERBOSE for REINDEX
+            return `${command} (VERBOSE)`.replace('(VERBOSE) (VERBOSE)', '(VERBOSE)');
+        }
+
+        return command;
+    }
+
+    /**
+     * Extract detailed information from maintenance operation results
+     */
+    private extractMaintenanceDetails(result: QueryResult, engine: string): string[] {
+        const details: string[] = [];
+
+        // PostgreSQL returns NOTICE messages
+        if (engine === 'postgres') {
+            // Check for notices in the result (PostgreSQL sends INFO/NOTICE messages)
+            // These are typically in result.messages or need to be captured from connection
+            // For now, parse any rows returned
+            if (result.rows && result.rows.length > 0) {
+                result.rows.forEach((row) => {
+                    const rowStr = JSON.stringify(row);
+                    if (rowStr.length > 2) {
+                        // Not empty {}
+                        details.push(rowStr);
+                    }
+                });
+            }
+        }
+
+        // MySQL OPTIMIZE/CHECK/REPAIR return result rows
+        if (engine === 'mysql' && result.rows && result.rows.length > 0) {
+            result.rows.forEach((row) => {
+                const table = row['Table'] as string;
+                const op = row['Op'] as string;
+                const msgType = row['Msg_type'] as string;
+                const msgText = row['Msg_text'] as string;
+
+                if (table && op && msgType && msgText) {
+                    details.push(`${table} (${op}): ${msgType} - ${msgText}`);
+                } else {
+                    details.push(JSON.stringify(row));
+                }
+            });
+        }
+
+        // Add summary based on operation
+        if (details.length === 0) {
+            details.push(`Operation completed successfully (no detailed output available)`);
+        }
+
+        return details;
+    }
+
+    /**
      * Get query execution plan
      */
     async explain(

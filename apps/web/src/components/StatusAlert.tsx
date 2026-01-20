@@ -98,7 +98,7 @@ export interface OperationResultData {
     message: string;
     duration?: number;
     timestamp?: Date;
-    details?: string;
+    details?: string | string[];
     severity?: Severity;
 }
 
@@ -131,13 +131,35 @@ export function OperationResultItem({ result, showTimestamp = false }: Operation
                     {result.message}
                 </Typography>
                 {result.details && (
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mt: 0.5 }}
-                    >
-                        {result.details}
-                    </Typography>
+                    <Box sx={{ mt: 1 }}>
+                        {Array.isArray(result.details) ? (
+                            <Box
+                                component="ul"
+                                sx={{
+                                    m: 0,
+                                    pl: 2,
+                                    fontSize: '0.75rem',
+                                    color: 'text.secondary',
+                                    '& li': {
+                                        mb: 0.25,
+                                        fontFamily: 'monospace',
+                                    },
+                                }}
+                            >
+                                {result.details.map((detail) => (
+                                    <li key={detail}>{detail}</li>
+                                ))}
+                            </Box>
+                        ) : (
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                            >
+                                {result.details}
+                            </Typography>
+                        )}
+                    </Box>
                 )}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
