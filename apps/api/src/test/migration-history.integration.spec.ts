@@ -52,6 +52,7 @@ describe('Migration History Integration Tests', () => {
             // Create a test group
             groupName = `Migration Test Group ${timestamp}`;
             const group = metadataService.databaseGroupRepository.create({
+                projectId: 'test-project',
                 name: groupName,
                 databaseEngine: 'postgres',
                 sourceConnectionId: postgresConnectionId,
