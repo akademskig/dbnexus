@@ -127,7 +127,7 @@ export function AuditLogsTab() {
                             justifyContent: 'center',
                             width: 28,
                             height: 28,
-                            borderRadius: 1,
+                            borderRadius: '50%',
                             bgcolor: `${getActionColor(params.value)}20`,
                             color: getActionColor(params.value),
                         }}
