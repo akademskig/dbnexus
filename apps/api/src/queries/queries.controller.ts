@@ -9,7 +9,7 @@ import type {
 
 @Controller('queries')
 export class QueriesController {
-    constructor(private readonly queriesService: QueriesService) { }
+    constructor(private readonly queriesService: QueriesService) {}
 
     @Post('execute')
     async execute(@Body() input: ExecuteQueryInput): Promise<QueryResult> {

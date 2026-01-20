@@ -23,7 +23,7 @@ export class QueriesService {
     constructor(
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService
-    ) { }
+    ) {}
 
     /**
      * Validate a query without executing
@@ -121,7 +121,10 @@ export class QueriesService {
             const duration = Date.now() - startTime;
 
             // Extract details from result
-            const { details, hasErrors } = this.extractMaintenanceDetails(result, connection.engine);
+            const { details, hasErrors } = this.extractMaintenanceDetails(
+                result,
+                connection.engine
+            );
 
             // MySQL operations can "succeed" but return error details
             const success = !hasErrors;

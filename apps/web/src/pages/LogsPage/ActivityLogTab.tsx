@@ -214,8 +214,10 @@ export function ActivityLogTab() {
         if (connectionFilter !== 'all') {
             const matchesConnection =
                 activity.details?.connectionId === connectionFilter ||
-                activity.details?.sourceConnection === connections.find((c) => c.id === connectionFilter)?.name ||
-                activity.details?.targetConnection === connections.find((c) => c.id === connectionFilter)?.name;
+                activity.details?.sourceConnection ===
+                    connections.find((c) => c.id === connectionFilter)?.name ||
+                activity.details?.targetConnection ===
+                    connections.find((c) => c.id === connectionFilter)?.name;
             if (!matchesConnection) return false;
         }
         if (searchQuery) {

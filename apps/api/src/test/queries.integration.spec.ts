@@ -339,7 +339,11 @@ describe('Queries Integration Tests', () => {
             if (skipIfNoPostgres()) return;
 
             await expect(
-                queriesService.explain(postgresConnectionId!, 'SELECT * FROM nonexistent_table', false)
+                queriesService.explain(
+                    postgresConnectionId!,
+                    'SELECT * FROM nonexistent_table',
+                    false
+                )
             ).rejects.toThrow();
         });
 

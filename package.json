@@ -23,9 +23,9 @@
         "release:major": "node scripts/release.js major",
         "release:version": "node scripts/release.js",
         "publish:package": "pnpm build:package && cd dist-package && npm publish",
-        "test": "pnpm -r test:run",
-        "test:unit": "pnpm --filter @dbnexus/api test:unit",
-        "test:integration": "pnpm --filter @dbnexus/api test:integration",
+        "test": "pnpm test:unit && pnpm test:integration",
+        "test:unit": "pnpm -r --filter @dbnexus/api test:unit",
+        "test:integration": "pnpm -r --filter @dbnexus/api test:integration",
         "test:web": "pnpm --filter @dbnexus/web test",
         "test:api": "pnpm --filter @dbnexus/api test",
         "test:cli": "pnpm --filter dbnexus test",
@@ -43,7 +43,8 @@
         "desktop:build": "pnpm build && pnpm --filter @dbnexus/desktop dist",
         "desktop:build:win": "pnpm build && pnpm --filter @dbnexus/desktop dist:win",
         "desktop:build:mac": "pnpm build && pnpm --filter @dbnexus/desktop dist:mac",
-        "desktop:build:linux": "pnpm build && pnpm --filter @dbnexus/desktop dist:linux"
+        "desktop:build:linux": "pnpm build && pnpm --filter @dbnexus/desktop dist:linux",
+        "prepare": "husky"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.19.0",
@@ -54,6 +55,7 @@
         "eslint-plugin-react": "^7.37.3",
         "eslint-plugin-react-hooks": "^5.1.0",
         "globals": "^15.14.0",
+        "husky": "^9.1.7",
         "prettier": "^3.4.2",
         "typescript-eslint": "^8.19.0"
     }

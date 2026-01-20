@@ -182,7 +182,9 @@ export function MaintenanceTab({
             };
             setResults((prev) => [result, ...prev.slice(0, 9)]);
             if (data.success) {
-                toast.success(`${operation.name} completed in ${(data.duration / 1000).toFixed(2)}s`);
+                toast.success(
+                    `${operation.name} completed in ${(data.duration / 1000).toFixed(2)}s`
+                );
             } else {
                 toast.error(`${operation.name} completed with errors`);
             }

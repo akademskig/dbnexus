@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
-import { syncApi, SyncRun, connectionsApi, instanceGroupsApi } from '../../lib/api';
+import { syncApi, SyncRun, connectionsApi, groupsApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
 
 function formatDate(date: Date): string {
@@ -81,14 +81,14 @@ export function SyncRunsTab() {
 
     const { data: groups = [] } = useQuery({
         queryKey: ['instanceGroups'],
-        queryFn: instanceGroupsApi.getAll,
+        queryFn: () => groupsApi.getAll(),
     });
 
     // Filter sync runs
     const filteredRuns = syncRuns.filter((run) => {
         // Status filter
         if (statusFilter !== 'all' && run.status !== statusFilter) return false;
-        
+
         // Source filter (group vs manual)
         if (sourceFilter === 'group' && !run.groupId) return false;
         if (sourceFilter === 'manual' && run.groupId) return false;
@@ -96,7 +96,7 @@ export function SyncRunsTab() {
             // Specific group selected
             if (run.groupId !== sourceFilter) return false;
         }
-        
+
         // Connection filter (source or target)
         if (connectionFilter !== 'all') {
             const matchesConnection =
@@ -104,7 +104,7 @@ export function SyncRunsTab() {
                 run.targetConnectionId === connectionFilter;
             if (!matchesConnection) return false;
         }
-        
+
         // Search query
         if (searchQuery) {
             const search = searchQuery.toLowerCase();
@@ -167,7 +167,10 @@ export function SyncRunsTab() {
                     ) : (
                         <>
                             <PersonIcon sx={{ fontSize: 14, color: '#6b7280' }} />
-                            <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontSize: 12, color: 'text.secondary' }}
+                            >
                                 Manual
                             </Typography>
                         </>
@@ -497,7 +500,9 @@ export function SyncRunsTab() {
                                         <Typography variant="caption" color="text.secondary">
                                             Instance Group
                                         </Typography>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <Box
+                                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                                        >
                                             <GroupIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
                                             <Typography variant="body2">
                                                 {selectedRun.groupName}

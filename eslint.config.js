@@ -14,6 +14,7 @@ export default tseslint.config(
             '**/node_modules/**',
             '**/*.min.js',
             '**/coverage/**',
+            '**/*.cjs', // Ignore CommonJS config files (Jest, etc.)
         ],
     },
 

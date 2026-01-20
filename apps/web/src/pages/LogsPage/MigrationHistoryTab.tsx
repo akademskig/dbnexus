@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { schemaApi, connectionsApi, instanceGroupsApi } from '../../lib/api';
+import { schemaApi, connectionsApi, groupsApi } from '../../lib/api';
 import type { MigrationHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
@@ -63,7 +63,7 @@ export function MigrationHistoryTab() {
 
     const { data: groups = [] } = useQuery({
         queryKey: ['instanceGroups'],
-        queryFn: instanceGroupsApi.getAll,
+        queryFn: () => groupsApi.getAll(),
     });
 
     const deleteMutation = useMutation({
@@ -97,7 +97,7 @@ export function MigrationHistoryTab() {
             // Specific group selected
             if (m.groupId !== sourceFilter) return false;
         }
-        
+
         // Connection filter (source or target)
         if (connectionFilter !== 'all') {
             const matchesConnection =
@@ -105,7 +105,7 @@ export function MigrationHistoryTab() {
                 m.targetConnectionId === connectionFilter;
             if (!matchesConnection) return false;
         }
-        
+
         // Search query
         if (searchQuery) {
             const search = searchQuery.toLowerCase();
@@ -119,7 +119,7 @@ export function MigrationHistoryTab() {
                 m.sqlStatements.some((s) => s.toLowerCase().includes(search))
             );
         }
-        
+
         return true;
     });
 
@@ -153,7 +153,10 @@ export function MigrationHistoryTab() {
                     ) : (
                         <>
                             <PersonIcon sx={{ fontSize: 14, color: '#6b7280' }} />
-                            <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontSize: 12, color: 'text.secondary' }}
+                            >
                                 Manual
                             </Typography>
                         </>
@@ -442,7 +445,9 @@ export function MigrationHistoryTab() {
                                         <Typography variant="caption" color="text.secondary">
                                             Source
                                         </Typography>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <Box
+                                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                                        >
                                             <GroupIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
                                             <Typography variant="body2">
                                                 {selectedMigration.groupName}
