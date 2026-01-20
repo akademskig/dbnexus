@@ -279,21 +279,43 @@ export function AuditLogsTab() {
             </Box>
 
             {/* Data Grid */}
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-                <DataGrid
-                    rows={filteredLogs}
-                    columns={columns}
-                    loading={isLoading}
-                    pageSizeOptions={[25, 50, 100]}
-                    initialState={{
-                        pagination: { paginationModel: { pageSize: 25 } },
-                    }}
-                    disableRowSelectionOnClick
-                    sx={{
-                        border: 'none',
-                        '& .MuiDataGrid-cell': { fontSize: 12 },
-                    }}
-                />
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <Box sx={{ width: '100%', height: '100%' }}>
+                    <DataGrid
+                        rows={filteredLogs}
+                        columns={columns}
+                        loading={isLoading}
+                        pageSizeOptions={[25, 50, 100]}
+                        initialState={{
+                            pagination: { paginationModel: { pageSize: 25 } },
+                        }}
+                        disableRowSelectionOnClick
+                        sx={{
+                            border: 'none',
+                            '& .MuiDataGrid-cell': {
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                            },
+                            '& .MuiDataGrid-columnHeader': {
+                                display: 'flex',
+                                alignItems: 'center',
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                textAlign: 'center',
+                                width: '100%',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
             {/* Details Dialog */}
