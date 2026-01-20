@@ -5,4 +5,4 @@ echo "🔍 Running linter..."
 pnpm lint
 
 echo "🧪 Running unit tests..."
-pnpm test:unit
+pnpm test
