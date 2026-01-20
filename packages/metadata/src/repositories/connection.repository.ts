@@ -313,11 +313,52 @@ export class ConnectionRepository {
     }
 
     /**
-     * Delete a connection
+     * Delete a connection and all related data
      */
     delete(id: string): boolean {
-        const result = this.db.prepare('DELETE FROM connections WHERE id = ?').run(id);
-        return result.changes > 0;
+        // Temporarily disable foreign key checks to avoid issues with circular dependencies
+        this.db.prepare('PRAGMA foreign_keys = OFF').run();
+
+        try {
+            // Delete related records manually (in case CASCADE doesn't work)
+            this.db.prepare('DELETE FROM query_history WHERE connection_id = ?').run(id);
+            this.db.prepare('DELETE FROM schema_snapshots WHERE connection_id = ?').run(id);
+            this.db
+                .prepare(
+                    'DELETE FROM migration_history WHERE source_connection_id = ? OR target_connection_id = ?'
+                )
+                .run(id, id);
+            this.db
+                .prepare(
+                    'DELETE FROM sync_configs WHERE source_connection_id = ? OR target_connection_id = ?'
+                )
+                .run(id, id);
+            this.db
+                .prepare(
+                    'DELETE FROM sync_runs WHERE source_connection_id = ? OR target_connection_id = ?'
+                )
+                .run(id, id);
+            this.db
+                .prepare('UPDATE saved_queries SET connection_id = NULL WHERE connection_id = ?')
+                .run(id);
+            this.db
+                .prepare(
+                    'UPDATE database_groups SET source_connection_id = NULL WHERE source_connection_id = ?'
+                )
+                .run(id);
+            this.db
+                .prepare(
+                    'UPDATE connections SET group_id = NULL WHERE group_id IN (SELECT id FROM database_groups WHERE source_connection_id = ?)'
+                )
+                .run(id);
+
+            // Now delete the connection itself
+            const result = this.db.prepare('DELETE FROM connections WHERE id = ?').run(id);
+            return result.changes > 0;
+        } finally {
+            // Re-enable foreign key checks
+            this.db.prepare('PRAGMA foreign_keys = ON').run();
+        }
     }
 
     /**

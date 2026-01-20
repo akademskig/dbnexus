@@ -11,6 +11,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../app.module.js';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+
+// Set test-specific metadata database path
+const TEST_DATA_DIR = path.join(process.cwd(), '.dbnexus-test');
+process.env['DBNEXUS_DATA_DIR'] = TEST_DATA_DIR;
+
+/**
+ * Clean up test database before running tests
+ * This ensures a fresh start for each test run
+ */
+export function cleanupTestDatabase(): void {
+    if (fs.existsSync(TEST_DATA_DIR)) {
+        fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
+    }
+}
 
 // Docker container connection configs
 export const TEST_CONNECTIONS = {

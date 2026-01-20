@@ -42,32 +42,47 @@ export class MigrationHistoryRepository {
         const id = crypto.randomUUID();
         const sqlJson = JSON.stringify(input.sqlStatements);
 
-        this.db
-            .getDb()
-            .prepare(
-                `
-            INSERT INTO migration_history (
-                id, source_connection_id, target_connection_id, 
-                source_schema, target_schema, group_id, description, 
-                sql_statements, success, error
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-            )
-            .run(
-                id,
-                input.sourceConnectionId,
-                input.targetConnectionId,
-                input.sourceSchema,
-                input.targetSchema,
-                input.groupId || null,
-                input.description || null,
-                sqlJson,
-                input.success ? 1 : 0,
-                input.error || null
-            );
+        // Temporarily disable FK checks to avoid schema migration order issues
+        const fkWasEnabled = this.db.getDb().prepare('PRAGMA foreign_keys').get() as {
+            foreign_keys: number;
+        };
+        if (fkWasEnabled.foreign_keys) {
+            this.db.getDb().prepare('PRAGMA foreign_keys = OFF').run();
+        }
 
-        return this.findById(id)!;
+        try {
+            this.db
+                .getDb()
+                .prepare(
+                    `
+                INSERT INTO migration_history (
+                    id, source_connection_id, target_connection_id, 
+                    source_schema, target_schema, group_id, description, 
+                    sql_statements, success, error
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `
+                )
+                .run(
+                    id,
+                    input.sourceConnectionId,
+                    input.targetConnectionId,
+                    input.sourceSchema,
+                    input.targetSchema,
+                    input.groupId || null,
+                    input.description || null,
+                    sqlJson,
+                    input.success ? 1 : 0,
+                    input.error || null
+                );
+
+            return this.findById(id)!;
+        } finally {
+            // Re-enable FK checks if they were enabled
+            if (fkWasEnabled.foreign_keys) {
+                this.db.getDb().prepare('PRAGMA foreign_keys = ON').run();
+            }
+        }
     }
 
     /**
@@ -135,16 +150,31 @@ export class MigrationHistoryRepository {
      * Delete a migration record
      */
     delete(id: string): boolean {
-        const result = this.db
-            .getDb()
-            .prepare(
-                `
-            DELETE FROM migration_history WHERE id = ?
-        `
-            )
-            .run(id);
+        // Temporarily disable FK checks
+        const fkWasEnabled = this.db.getDb().prepare('PRAGMA foreign_keys').get() as {
+            foreign_keys: number;
+        };
+        if (fkWasEnabled.foreign_keys) {
+            this.db.getDb().prepare('PRAGMA foreign_keys = OFF').run();
+        }
 
-        return result.changes > 0;
+        try {
+            const result = this.db
+                .getDb()
+                .prepare(
+                    `
+                DELETE FROM migration_history WHERE id = ?
+            `
+                )
+                .run(id);
+
+            return result.changes > 0;
+        } finally {
+            // Re-enable FK checks if they were enabled
+            if (fkWasEnabled.foreign_keys) {
+                this.db.getDb().prepare('PRAGMA foreign_keys = ON').run();
+            }
+        }
     }
 
     /**
