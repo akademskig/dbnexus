@@ -22,7 +22,7 @@ export class QueriesService {
     constructor(
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService
-    ) {}
+    ) { }
 
     /**
      * Validate a query without executing
@@ -113,7 +113,13 @@ export class QueriesService {
             const duration = Date.now() - startTime;
 
             // Extract details from result
-            const details = this.extractMaintenanceDetails(result, connection.engine);
+            const { details, hasErrors } = this.extractMaintenanceDetails(result, connection.engine);
+
+            // MySQL operations can "succeed" but return error details
+            const success = !hasErrors;
+            const message = hasErrors
+                ? `${operation.toUpperCase()} completed with errors`
+                : `${operation.toUpperCase()} completed successfully`;
 
             // Log to audit
             this.metadataService.queryRepository.addHistoryEntry({
@@ -121,12 +127,12 @@ export class QueriesService {
                 sql: command,
                 executionTimeMs: duration,
                 rowCount: 0,
-                success: true,
+                success,
             });
 
             return {
-                success: true,
-                message: `${operation.toUpperCase()} completed successfully`,
+                success,
+                message,
                 details,
                 duration,
             };
@@ -221,8 +227,12 @@ export class QueriesService {
     /**
      * Extract detailed information from maintenance operation results
      */
-    private extractMaintenanceDetails(result: QueryResult, engine: string): string[] {
+    private extractMaintenanceDetails(
+        result: QueryResult,
+        engine: string
+    ): { details: string[]; hasErrors: boolean } {
         const details: string[] = [];
+        let hasErrors = false;
 
         // PostgreSQL returns NOTICE messages
         if (engine === 'postgres') {
@@ -249,7 +259,21 @@ export class QueriesService {
                 const msgText = row['Msg_text'] as string;
 
                 if (table && op && msgType && msgText) {
-                    details.push(`${table} (${op}): ${msgType} - ${msgText}`);
+                    const detail = `${table} (${op}): ${msgType} - ${msgText}`;
+                    details.push(detail);
+
+                    // Check for error indicators in MySQL results
+                    const msgTypeLower = msgType.toLowerCase();
+                    const msgTextLower = msgText.toLowerCase();
+                    if (
+                        msgTypeLower === 'error' ||
+                        msgTypeLower === 'warning' ||
+                        msgTextLower.includes('failed') ||
+                        msgTextLower.includes('error') ||
+                        msgTextLower.includes("doesn't exist")
+                    ) {
+                        hasErrors = true;
+                    }
                 } else {
                     details.push(JSON.stringify(row));
                 }
@@ -261,7 +285,7 @@ export class QueriesService {
             details.push(`Operation completed successfully (no detailed output available)`);
         }
 
-        return details;
+        return { details, hasErrors };
     }
 
     /**

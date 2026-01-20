@@ -117,7 +117,7 @@ describe('Maintenance Operations Integration Tests', () => {
                 'posts'
             );
             expect(result.success).toBe(true);
-            expect(result.message).toContain('OPTIMIZE');
+            expect(result.message).toContain('completed successfully');
             expect(result.duration).toBeGreaterThan(0);
             expect(result.details).toBeDefined();
             expect(Array.isArray(result.details)).toBe(true);
@@ -148,9 +148,11 @@ describe('Maintenance Operations Integration Tests', () => {
                 'nonexistent_table'
             );
             // MySQL OPTIMIZE doesn't throw, but returns error status in result
-            expect(result.success).toBe(true);
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('with errors');
             expect(result.details).toBeDefined();
             expect(result.details?.some((d) => d.includes('Error'))).toBe(true);
+            expect(result.details?.some((d) => d.includes("doesn't exist"))).toBe(true);
         });
     });
 
