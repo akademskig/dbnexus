@@ -150,7 +150,7 @@ export const MIGRATIONS: string[] = [
     error TEXT,
     FOREIGN KEY (source_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
     FOREIGN KEY (target_connection_id) REFERENCES connections(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES instance_groups(id) ON DELETE SET NULL
+    FOREIGN KEY (group_id) REFERENCES database_groups(id) ON DELETE SET NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_migration_history_applied_at ON migration_history(applied_at DESC);
@@ -280,7 +280,7 @@ export const MIGRATIONS: string[] = [
 
     // Version 12: Add group_id to migration_history for tracking group-based migrations
     `
-  ALTER TABLE migration_history ADD COLUMN group_id TEXT REFERENCES instance_groups(id) ON DELETE SET NULL;
+  ALTER TABLE migration_history ADD COLUMN group_id TEXT REFERENCES database_groups(id) ON DELETE SET NULL;
 
   UPDATE schema_version SET version = 12;
   `,
