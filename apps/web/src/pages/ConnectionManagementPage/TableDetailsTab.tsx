@@ -512,7 +512,8 @@ export function TableDetailsTab({
     // ============ Index Operations ============
 
     const handleAddIndex = async () => {
-        if (!newIndex.name || newIndex.columns.length === 0) return;
+        // Primary keys don't need a name, but regular indexes do
+        if ((!newIndex.isPrimary && !newIndex.name) || newIndex.columns.length === 0) return;
 
         const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
         const quotedColumns = newIndex.columns.map((c) => quoteIdentifierForEngine(c)).join(', ');
@@ -1313,37 +1314,39 @@ export function TableDetailsTab({
                                 />
                             )}
                         />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newIndex.isPrimary}
-                                    onChange={(e) =>
-                                        setNewIndex((prev) => ({
-                                            ...prev,
-                                            isPrimary: e.target.checked,
-                                            // Primary keys don't need a name
-                                            name: e.target.checked ? '' : prev.name,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Primary Key"
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={newIndex.isUnique}
-                                    disabled={newIndex.isPrimary}
-                                    onChange={(e) =>
-                                        setNewIndex((prev) => ({
-                                            ...prev,
-                                            isUnique: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Unique Index"
-                        />
+                        <Box sx={{ display: 'flex', gap: 3 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={newIndex.isPrimary}
+                                        onChange={(e) =>
+                                            setNewIndex((prev) => ({
+                                                ...prev,
+                                                isPrimary: e.target.checked,
+                                                // Primary keys don't need a name
+                                                name: e.target.checked ? '' : prev.name,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Primary Key"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={newIndex.isUnique}
+                                        disabled={newIndex.isPrimary}
+                                        onChange={(e) =>
+                                            setNewIndex((prev) => ({
+                                                ...prev,
+                                                isUnique: e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Unique Index"
+                            />
+                        </Box>
                         {newIndex.isPrimary && (
                             <Typography variant="caption" color="text.secondary">
                                 Note: Primary keys are implicitly unique and cannot be null
