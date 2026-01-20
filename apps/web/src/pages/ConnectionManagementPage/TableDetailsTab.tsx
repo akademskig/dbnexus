@@ -184,7 +184,12 @@ export function TableDetailsTab({
     const [indexToEdit, setIndexToEdit] = useState<IndexInfo | null>(null);
     const [indexToDelete, setIndexToDelete] = useState<IndexInfo | null>(null);
     const [fkToDelete, setFkToDelete] = useState<ForeignKeyInfo | null>(null);
-    const [editIndexName, setEditIndexName] = useState('');
+    const [editedIndex, setEditedIndex] = useState<{
+        name: string;
+        columns: string[];
+        isUnique: boolean;
+        isPrimary: boolean;
+    }>({ name: '', columns: [], isUnique: false, isPrimary: false });
 
     // New column form
     const [newColumn, setNewColumn] = useState<NewColumnState>({
@@ -554,56 +559,76 @@ export function TableDetailsTab({
         }
     };
 
-    const handleRenameIndex = async () => {
-        if (!indexToEdit || !editIndexName.trim()) return;
+    const handleEditIndex = async () => {
+        if (!indexToEdit) return;
+        if (!editedIndex.isPrimary && !editedIndex.name.trim()) return;
+        if (editedIndex.columns.length === 0) return;
 
         const fullTableName = buildTableNameForEngine(selectedSchema, selectedTable);
         const quotedOldName = quoteIdentifierForEngine(indexToEdit.name);
-        const quotedNewName = quoteIdentifierForEngine(editIndexName.trim());
+        const quotedColumns = editedIndex.columns
+            .map((col) => quoteIdentifierForEngine(col))
+            .join(', ');
 
-        let sql: string;
+        const sqlStatements: string[] = [];
+
+        // Step 1: Drop the old index/primary key
         if (indexToEdit.isPrimary) {
-            // Renaming primary key constraints
             if (connection?.engine === 'postgres') {
-                sql = `ALTER TABLE ${fullTableName} RENAME CONSTRAINT ${quotedOldName} TO ${quotedNewName}`;
+                sqlStatements.push(`ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quotedOldName}`);
             } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-                toast.error('MySQL/MariaDB does not support renaming primary keys');
-                return;
+                sqlStatements.push(`ALTER TABLE ${fullTableName} DROP PRIMARY KEY`);
             } else {
-                // SQLite doesn't support renaming constraints
-                toast.error('SQLite does not support renaming constraints');
+                toast.error('SQLite does not support dropping primary keys');
                 return;
             }
         } else {
-            // Renaming regular indexes
             if (connection?.engine === 'postgres') {
-                sql = `ALTER INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedOldName} RENAME TO ${quotedNewName}`;
-            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
-                // MySQL doesn't have direct RENAME INDEX, need to recreate
-                toast.error(
-                    'MySQL/MariaDB does not support renaming indexes directly. Please drop and recreate the index.'
+                sqlStatements.push(
+                    `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedOldName}`
                 );
-                return;
+            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+                sqlStatements.push(`DROP INDEX ${quotedOldName} ON ${fullTableName}`);
             } else {
-                // SQLite
-                sql = `ALTER INDEX ${quotedOldName} RENAME TO ${quotedNewName}`;
+                sqlStatements.push(`DROP INDEX ${quotedOldName}`);
             }
         }
 
-        try {
-            await executeSql.mutateAsync({ sql });
-            const type = indexToEdit.isPrimary ? 'Primary key' : 'Index';
-            toast.success(
-                `${type} renamed from "${indexToEdit.name}" to "${editIndexName.trim()}"`
+        // Step 2: Create the new index/primary key
+        if (editedIndex.isPrimary) {
+            if (editedIndex.name.trim()) {
+                const quotedConstraintName = quoteIdentifierForEngine(editedIndex.name.trim());
+                sqlStatements.push(
+                    `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quotedConstraintName} PRIMARY KEY (${quotedColumns})`
+                );
+            } else {
+                sqlStatements.push(
+                    `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumns})`
+                );
+            }
+        } else {
+            const quotedNewName = quoteIdentifierForEngine(editedIndex.name.trim());
+            const uniqueKeyword = editedIndex.isUnique ? 'UNIQUE ' : '';
+            sqlStatements.push(
+                `CREATE ${uniqueKeyword}INDEX ${quotedNewName} ON ${fullTableName} (${quotedColumns})`
             );
+        }
+
+        try {
+            // Execute all statements
+            for (const sql of sqlStatements) {
+                await executeSql.mutateAsync({ sql, confirmed: true });
+            }
+            const type = editedIndex.isPrimary ? 'Primary key' : 'Index';
+            toast.success(`${type} "${editedIndex.name || 'PRIMARY KEY'}" updated successfully`);
             setEditIndexOpen(false);
             setIndexToEdit(null);
-            setEditIndexName('');
+            setEditedIndex({ name: '', columns: [], isUnique: false, isPrimary: false });
         } catch (err) {
             toast.error(
                 err instanceof Error
                     ? err.message
-                    : `Failed to rename ${indexToEdit.isPrimary ? 'primary key' : 'index'}`
+                    : `Failed to update ${editedIndex.isPrimary ? 'primary key' : 'index'}`
             );
         }
     };
@@ -930,13 +955,22 @@ export function TableDetailsTab({
             sortable: false,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <StyledTooltip title="Rename">
+                    <StyledTooltip title="Edit">
                         <span>
                             <IconButton
                                 size="small"
                                 onClick={() => {
                                     setIndexToEdit(params.row);
-                                    setEditIndexName(params.row.name);
+                                    setEditedIndex({
+                                        name: params.row.name,
+                                        columns: params.row.columns
+                                            ? params.row.columns
+                                                  .split(',')
+                                                  .map((c: string) => c.trim())
+                                            : [],
+                                        isUnique: params.row.isUnique || false,
+                                        isPrimary: params.row.isPrimary || false,
+                                    });
                                     setEditIndexOpen(true);
                                 }}
                                 disabled={connection?.readOnly}
@@ -1482,53 +1516,112 @@ export function TableDetailsTab({
                 fullWidth
             >
                 <DialogTitle>
-                    {indexToEdit?.isPrimary ? 'Rename Primary Key' : 'Rename Index'}
+                    {indexToEdit?.isPrimary ? 'Edit Primary Key' : 'Edit Index'}
                 </DialogTitle>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        label="New Name"
-                        value={editIndexName}
-                        onChange={(e) => setEditIndexName(e.target.value)}
-                        placeholder={indexToEdit?.isPrimary ? 'pk_table_name' : 'idx_table_column'}
-                        sx={{ mt: 2 }}
-                        helperText={`Current name: ${indexToEdit?.name}`}
-                    />
-                    {(connection?.engine === 'mysql' || connection?.engine === 'mariadb') && (
-                        <StatusAlert severity="warning" sx={{ mt: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <TextField
+                            autoFocus
+                            fullWidth
+                            label={
+                                editedIndex.isPrimary ? 'Constraint Name (Optional)' : 'Index Name'
+                            }
+                            value={editedIndex.name}
+                            onChange={(e) =>
+                                setEditedIndex((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                            placeholder={
+                                editedIndex.isPrimary ? 'pk_table_name' : 'idx_table_column'
+                            }
+                            helperText={
+                                editedIndex.isPrimary
+                                    ? 'Leave empty for auto-generated name'
+                                    : 'Required for indexes'
+                            }
+                        />
+                        <Autocomplete
+                            multiple
+                            options={tableSchema?.columns.map((c: ColumnInfo) => c.name) || []}
+                            value={editedIndex.columns}
+                            onChange={(_, newValue) => {
+                                setEditedIndex((prev) => ({ ...prev, columns: newValue }));
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Columns"
+                                    placeholder="Select columns"
+                                />
+                            )}
+                        />
+                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={editedIndex.isPrimary}
+                                        onChange={(e) =>
+                                            setEditedIndex((prev) => ({
+                                                ...prev,
+                                                isPrimary: e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Primary Key"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={editedIndex.isUnique}
+                                        disabled={editedIndex.isPrimary}
+                                        onChange={(e) =>
+                                            setEditedIndex((prev) => ({
+                                                ...prev,
+                                                isUnique: e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Unique Index"
+                            />
+                        </Box>
+                        {editedIndex.isPrimary && (
+                            <Typography variant="caption" color="text.secondary">
+                                Note: Primary keys are implicitly unique and cannot be null
+                            </Typography>
+                        )}
+                        <StatusAlert severity="info" sx={{ mt: 1 }}>
                             <Typography variant="body2">
-                                MySQL/MariaDB does not support renaming{' '}
-                                {indexToEdit?.isPrimary ? 'primary keys' : 'indexes'} directly.
+                                <strong>Note:</strong> Editing will drop and recreate the{' '}
+                                {editedIndex.isPrimary ? 'primary key' : 'index'}. This may
+                                temporarily affect queries.
                             </Typography>
                         </StatusAlert>
-                    )}
-                    {connection?.engine === 'sqlite' && indexToEdit?.isPrimary && (
-                        <StatusAlert severity="warning" sx={{ mt: 2 }}>
-                            <Typography variant="body2">
-                                SQLite does not support renaming constraints.
-                            </Typography>
-                        </StatusAlert>
-                    )}
+                        {connection?.engine === 'sqlite' && indexToEdit?.isPrimary && (
+                            <StatusAlert severity="warning">
+                                <Typography variant="body2">
+                                    SQLite does not support dropping primary keys.
+                                </Typography>
+                            </StatusAlert>
+                        )}
+                    </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
                     <Button onClick={() => setEditIndexOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
-                        onClick={handleRenameIndex}
+                        onClick={handleEditIndex}
                         disabled={
-                            !editIndexName.trim() ||
-                            editIndexName.trim() === indexToEdit?.name ||
+                            (!editedIndex.isPrimary && !editedIndex.name) ||
+                            editedIndex.columns.length === 0 ||
                             executeSql.isPending ||
-                            (connection?.engine === 'mysql' && !indexToEdit?.isPrimary) ||
-                            (connection?.engine === 'mariadb' && !indexToEdit?.isPrimary) ||
                             (connection?.engine === 'sqlite' && indexToEdit?.isPrimary)
                         }
                         startIcon={
                             executeSql.isPending ? <CircularProgress size={16} /> : <EditIcon />
                         }
                     >
-                        Rename
+                        Update {editedIndex.isPrimary ? 'Primary Key' : 'Index'}
                     </Button>
                 </DialogActions>
             </Dialog>
