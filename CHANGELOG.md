@@ -9,12 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Husky pre-commit hooks** - Automatically run format, lint, and unit tests before commits
+- **Query type classification** - Categorize queries (READ, WRITE, DDL, MAINTENANCE) with color-coded chips
+- **Enhanced logs filtering** - Filter by query type in Query History tab
+- **Group source tracking** - Migrations and sync runs now track if they came from instance groups
+- **Connection filtering in logs** - Filter activities by specific connections in Activity, Migrations, and Sync tabs
+- **Badge design for source column** - Beautiful purple/gray badges for group vs manual operations
+- **Database schema version 12** - Added `group_id` column to `migration_history` table
 - About page with Bitcoin donation option in docs
 - Screenshot lightbox (click to enlarge) in docs
+- Comprehensive tests for query classifier utility
+- Integration tests for migration history with group tracking
 
 ### Changed
 
+- Logs tabs now show instance group name for automated operations
+- Migration History tab includes source filter (All/Groups/Manual/Specific Group)
+- Sync Runs tab includes source filter (All/Groups/Manual/Specific Group)
+- Activity Log tab includes connection filter dropdown
+- Source column in logs uses styled Chip badges instead of plain text
+- Test commands updated - `pnpm test` now runs both unit and integration tests
+- ESLint configuration updated to ignore `.cjs` files (Jest configs)
 - Consistent border-radius styling across all docs cards
+
+### Fixed
+
+- TypeScript errors with `groupsApi.getAll()` query function signatures
+- Triple-slash reference error in `vitest.d.ts`
+- Husky hooks now compatible with v10 (removed deprecated helper lines)
 
 ## [0.1.12] - 2026-01-19
 
