@@ -112,6 +112,17 @@ export const queriesApi = {
             body: JSON.stringify({ connectionId, sql }),
         }),
 
+    explain: (connectionId: string, sql: string, analyze?: boolean) =>
+        fetchApi<{
+            plan: unknown;
+            planText: string;
+            insights: { type: string; message: string }[];
+            suggestions: string[];
+        }>('/queries/explain', {
+            method: 'POST',
+            body: JSON.stringify({ connectionId, sql, analyze }),
+        }),
+
     // Saved queries
     getSaved: () => fetchApi<SavedQuery[]>('/queries/saved'),
 

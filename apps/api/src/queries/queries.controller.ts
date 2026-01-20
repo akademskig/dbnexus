@@ -16,6 +16,18 @@ export class QueriesController {
         return this.queriesService.execute(input);
     }
 
+    @Post('explain')
+    async explain(
+        @Body() input: { connectionId: string; sql: string; analyze?: boolean }
+    ): Promise<{
+        plan: unknown;
+        planText: string;
+        insights: { type: string; message: string }[];
+        suggestions: string[];
+    }> {
+        return this.queriesService.explain(input.connectionId, input.sql, input.analyze);
+    }
+
     @Post('validate')
     validate(@Body() input: { connectionId: string; sql: string }): QueryValidationResult {
         return this.queriesService.validate(input.connectionId, input.sql);

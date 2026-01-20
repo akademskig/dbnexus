@@ -49,7 +49,9 @@ describe('Schema Diff Integration Tests', () => {
                 try {
                     await connectionsService.disconnect(id);
                     await connectionsService.delete(id);
-                } catch {}
+                } catch (error) {
+                    console.error(`Error disconnecting and deleting connection ${id}:`, error);
+                }
             }
         }
         if (app) {
@@ -66,7 +68,7 @@ describe('Schema Diff Integration Tests', () => {
 
         it('should compare schemas and return result', async () => {
             if (skipIfNoBothDBs()) {
-                console.log('⚠️  Skipping: Both DB containers required');
+                console.warn('⚠️  Skipping: Both DB containers required');
                 return;
             }
 
@@ -81,9 +83,9 @@ describe('Schema Diff Integration Tests', () => {
             expect(Array.isArray(diff.items)).toBe(true);
 
             // Log what we found for debugging
-            console.log(`Schema diff found ${diff.items.length} differences`);
+            console.warn(`Schema diff found ${diff.items.length} differences`);
             if (diff.items.length > 0) {
-                console.log(`Diff types: ${diff.items.map((d) => d.type).join(', ')}`);
+                console.warn(`Diff types: ${diff.items.map((d) => d.type).join(', ')}`);
             }
         });
 
@@ -121,7 +123,7 @@ describe('Schema Diff Integration Tests', () => {
                 (item) => item.migrationSql && item.migrationSql.length > 0
             );
 
-            console.log(`${itemsWithSql.length} items have migration SQL`);
+            console.warn(`${itemsWithSql.length} items have migration SQL`);
 
             // Only assert if there are differences
             if (diff.items.length > 0) {

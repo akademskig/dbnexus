@@ -39,6 +39,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
@@ -52,6 +53,7 @@ import { SavedQueriesPanel } from './SavedQueriesPanel';
 import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
+import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import {
     SIDEBAR_WIDTH,
     TAB_NAMES,
@@ -151,6 +153,15 @@ export function QueryPage() {
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
     const [rowsToDelete, setRowsToDelete] = useState<Record<string, unknown>[] | null>(null);
+
+    // Explain plan state
+    const [explainDialogOpen, setExplainDialogOpen] = useState(false);
+    const [explainPlan, setExplainPlan] = useState<{
+        plan: unknown;
+        planText: string;
+        insights: { type: string; message: string }[];
+        suggestions: string[];
+    } | null>(null);
 
     // Track last executed query for table selection
     const lastExecutedQueryRef = useRef<string>('');
@@ -477,11 +488,35 @@ export function QueryPage() {
         },
     });
 
+    const explainMutation = useMutation({
+        mutationFn: async ({ analyze }: { analyze: boolean }) => {
+            if (!selectedConnectionId) throw new Error('No connection selected');
+            if (!sql.trim()) throw new Error('No query to explain');
+            return queriesApi.explain(selectedConnectionId, sql, analyze);
+        },
+        onSuccess: (data) => {
+            setExplainPlan(data);
+            setExplainDialogOpen(true);
+            toast.success('Query plan generated');
+        },
+        onError: (err: Error) => {
+            toast.error(`Failed to explain query: ${err.message}`);
+        },
+    });
+
     const handleExecute = useCallback(() => {
         if (!sql.trim()) return;
         setConfirmDangerous(null);
         executeMutation.mutate({ query: sql });
     }, [executeMutation, sql]);
+
+    const handleExplain = useCallback(
+        (analyze = false) => {
+            if (!sql.trim()) return;
+            explainMutation.mutate({ analyze });
+        },
+        [explainMutation, sql]
+    );
 
     const handleConfirmDangerous = () => {
         executeMutation.mutate({ query: sql, confirmed: true });
@@ -1427,6 +1462,29 @@ export function QueryPage() {
                                         </StyledTooltip>
                                     )}
 
+                                    <StyledTooltip title="Explain Query">
+                                        <span>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={
+                                                    explainMutation.isPending ? (
+                                                        <CircularProgress
+                                                            size={16}
+                                                            color="inherit"
+                                                        />
+                                                    ) : (
+                                                        <AccountTreeIcon />
+                                                    )
+                                                }
+                                                onClick={() => handleExplain(false)}
+                                                disabled={!sql.trim() || explainMutation.isPending}
+                                            >
+                                                Explain
+                                            </Button>
+                                        </span>
+                                    </StyledTooltip>
+
                                     <StyledTooltip title="Run Query (⌘+Enter)">
                                         <span>
                                             <Button
@@ -1847,6 +1905,15 @@ export function QueryPage() {
                     tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || []
                 }
                 connections={connections}
+            />
+
+            {/* Explain Plan Dialog */}
+            <ExplainPlanDialog
+                open={explainDialogOpen}
+                onClose={() => setExplainDialogOpen(false)}
+                onExplainAnalyze={() => handleExplain(true)}
+                explainPlan={explainPlan}
+                loading={explainMutation.isPending}
             />
 
             {/* Saved Queries Drawer */}

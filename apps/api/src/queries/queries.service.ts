@@ -89,6 +89,151 @@ export class QueriesService {
         }
     }
 
+    /**
+     * Get query execution plan
+     */
+    async explain(
+        connectionId: string,
+        sql: string,
+        analyze = false
+    ): Promise<{
+        plan: unknown;
+        planText: string;
+        insights: { type: string; message: string }[];
+        suggestions: string[];
+    }> {
+        const connection = this.connectionsService.findById(connectionId);
+        const connector = await this.connectionsService.getConnector(connectionId);
+
+        try {
+            const { explainSql, parsePlan } = this.getExplainStrategy(
+                connection.engine,
+                sql,
+                analyze
+            );
+            const result = await connector.query(explainSql);
+            const { plan, planText } = parsePlan(result);
+
+            // Analyze the plan and generate insights
+            const insights = this.analyzePlan(plan, connection.engine, analyze);
+            const suggestions = this.generateSuggestions(plan, connection.engine);
+
+            return { plan, planText, insights, suggestions };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new BadRequestException(`Failed to explain query: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * Get database-specific EXPLAIN strategy
+     */
+    private getExplainStrategy(
+        engine: string,
+        sql: string,
+        analyze: boolean
+    ): {
+        explainSql: string;
+        parsePlan: (result: QueryResult) => { plan: unknown; planText: string };
+    } {
+        switch (engine) {
+            case 'postgres':
+                return this.getPostgresExplainStrategy(sql, analyze);
+            case 'mysql':
+                return this.getMysqlExplainStrategy(sql, analyze);
+            case 'sqlite':
+                return this.getSqliteExplainStrategy(sql);
+            default:
+                throw new BadRequestException(`EXPLAIN not supported for ${engine}`);
+        }
+    }
+
+    /**
+     * PostgreSQL EXPLAIN strategy
+     */
+    private getPostgresExplainStrategy(
+        sql: string,
+        analyze: boolean
+    ): {
+        explainSql: string;
+        parsePlan: (result: QueryResult) => { plan: unknown; planText: string };
+    } {
+        const explainSql = analyze
+            ? `EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) ${sql}`
+            : `EXPLAIN (FORMAT JSON) ${sql}`;
+
+        const parsePlan = (result: QueryResult) => {
+            const planJson = result.rows[0]?.['QUERY PLAN'];
+            const plan = Array.isArray(planJson) ? planJson[0] : planJson;
+            return {
+                plan,
+                planText: JSON.stringify(plan, null, 2),
+            };
+        };
+
+        return { explainSql, parsePlan };
+    }
+
+    /**
+     * MySQL EXPLAIN strategy
+     */
+    private getMysqlExplainStrategy(
+        sql: string,
+        analyze: boolean
+    ): {
+        explainSql: string;
+        parsePlan: (result: QueryResult) => { plan: unknown; planText: string };
+    } {
+        if (analyze) {
+            return {
+                explainSql: `EXPLAIN ANALYZE ${sql}`,
+                parsePlan: (result) => {
+                    const planText = result.rows[0]?.['EXPLAIN'] || '';
+                    return {
+                        plan: { text: planText },
+                        planText: planText as string,
+                    };
+                },
+            };
+        }
+
+        return {
+            explainSql: `EXPLAIN FORMAT=JSON ${sql}`,
+            parsePlan: (result) => {
+                const explainData = result.rows[0]?.['EXPLAIN'];
+                const planJson =
+                    typeof explainData === 'string' ? JSON.parse(explainData) : explainData;
+                return {
+                    plan: planJson,
+                    planText: JSON.stringify(planJson, null, 2),
+                };
+            },
+        };
+    }
+
+    /**
+     * SQLite EXPLAIN strategy
+     */
+    private getSqliteExplainStrategy(sql: string): {
+        explainSql: string;
+        parsePlan: (result: QueryResult) => { plan: unknown; planText: string };
+    } {
+        return {
+            explainSql: `EXPLAIN QUERY PLAN ${sql}`,
+            parsePlan: (result) => {
+                const planText = result.rows
+                    .map(
+                        (row) => `${row['id']} ${row['parent']} ${row['notused']} ${row['detail']}`
+                    )
+                    .join('\n');
+                return {
+                    plan: result.rows,
+                    planText,
+                };
+            },
+        };
+    }
+
     // ============ Saved Queries ============
 
     getSavedQueries(): SavedQuery[] {
@@ -127,5 +272,208 @@ export class QueriesService {
 
     clearHistory(connectionId?: string): number {
         return this.metadataService.queryRepository.clearHistory(connectionId);
+    }
+
+    // ============ Plan Analysis ============
+
+    /**
+     * Analyze query plan and generate human-friendly insights
+     */
+    private analyzePlan(
+        plan: unknown,
+        engine: string,
+        analyze: boolean
+    ): { type: string; message: string }[] {
+        const insights: { type: string; message: string }[] = [];
+
+        if (engine !== 'postgres' || !plan || typeof plan !== 'object') {
+            return insights;
+        }
+
+        const planObj = plan as Record<string, unknown>;
+        const mainPlan = planObj['Plan'] as Record<string, unknown>;
+
+        if (!mainPlan) return insights;
+
+        // Execution time insight
+        if (analyze && planObj['Execution Time']) {
+            const execTime = planObj['Execution Time'] as number;
+            if (execTime < 1) {
+                insights.push({
+                    type: 'success',
+                    message: `Very fast query! Executed in ${execTime.toFixed(3)}ms`,
+                });
+            } else if (execTime < 100) {
+                insights.push({
+                    type: 'info',
+                    message: `Query executed in ${execTime.toFixed(2)}ms`,
+                });
+            } else if (execTime < 1000) {
+                insights.push({
+                    type: 'warning',
+                    message: `Moderately slow query: ${execTime.toFixed(0)}ms`,
+                });
+            } else {
+                insights.push({
+                    type: 'error',
+                    message: `Slow query! Took ${(execTime / 1000).toFixed(2)} seconds`,
+                });
+            }
+        }
+
+        // Check for sequential scans
+        const seqScans = this.findSequentialScans(mainPlan);
+        if (seqScans.length > 0) {
+            for (const scan of seqScans) {
+                const rows = scan['Plan Rows'] as number;
+                if (rows > 10000) {
+                    insights.push({
+                        type: 'warning',
+                        message: `Sequential scan on "${scan['Relation Name']}" (${rows.toLocaleString()} rows). Consider adding an index if filtering.`,
+                    });
+                } else if (rows > 1000) {
+                    insights.push({
+                        type: 'info',
+                        message: `Sequential scan on "${scan['Relation Name']}" (${rows.toLocaleString()} rows). This is acceptable for small tables.`,
+                    });
+                }
+            }
+        }
+
+        // Check for index usage
+        const indexScans = this.findNodesByType(mainPlan, 'Index Scan');
+        if (indexScans.length > 0) {
+            insights.push({
+                type: 'success',
+                message: `Using ${indexScans.length} index scan(s) - efficient data access`,
+            });
+        }
+
+        // Check for sorts
+        const sorts = this.findNodesByType(mainPlan, 'Sort');
+        if (sorts.length > 0) {
+            insights.push({
+                type: 'info',
+                message: `Sorting ${sorts.length} result set(s). Add an index on ORDER BY columns to avoid sorting.`,
+            });
+        }
+
+        // I/O analysis
+        if (analyze && planObj['Planning']) {
+            const sharedHit = (mainPlan['Shared Hit Blocks'] as number) || 0;
+            const sharedRead = (mainPlan['Shared Read Blocks'] as number) || 0;
+
+            if (sharedRead > 0) {
+                insights.push({
+                    type: 'warning',
+                    message: `Query read ${sharedRead} block(s) from disk. Repeated queries will be faster (cached).`,
+                });
+            } else if (sharedHit > 0) {
+                insights.push({
+                    type: 'success',
+                    message: `All data read from cache (${sharedHit} blocks). No disk I/O needed!`,
+                });
+            }
+        }
+
+        return insights;
+    }
+
+    /**
+     * Generate optimization suggestions based on plan analysis
+     */
+    private generateSuggestions(plan: unknown, engine: string): string[] {
+        const suggestions: string[] = [];
+
+        if (engine !== 'postgres' || !plan || typeof plan !== 'object') {
+            return suggestions;
+        }
+
+        const planObj = plan as Record<string, unknown>;
+        const mainPlan = planObj['Plan'] as Record<string, unknown>;
+
+        if (!mainPlan) return suggestions;
+
+        // Suggest indexes for sequential scans
+        const seqScans = this.findSequentialScans(mainPlan);
+        for (const scan of seqScans) {
+            const rows = scan['Plan Rows'] as number;
+            const tableName = scan['Relation Name'] as string;
+
+            if (rows > 10000) {
+                suggestions.push(
+                    `Consider adding an index on "${tableName}" for WHERE clause columns`
+                );
+            }
+        }
+
+        // Suggest composite indexes for sorts
+        const sorts = this.findNodesByType(mainPlan, 'Sort');
+        if (sorts.length > 0) {
+            suggestions.push(
+                'Add indexes on columns used in ORDER BY to eliminate sorting overhead'
+            );
+        }
+
+        // Suggest LIMIT if missing and many rows
+        const totalRows = mainPlan['Plan Rows'] as number;
+        if (totalRows > 100000 && mainPlan['Node Type'] !== 'Limit') {
+            suggestions.push(
+                "Consider adding a LIMIT clause if you don't need all rows (reduces memory usage)"
+            );
+        }
+
+        // Check for nested loops with high row counts
+        const nestedLoops = this.findNodesByType(mainPlan, 'Nested Loop');
+        if (nestedLoops.length > 0) {
+            for (const loop of nestedLoops) {
+                const rows = loop['Plan Rows'] as number;
+                if (rows > 10000) {
+                    suggestions.push(
+                        'Large nested loop detected. Consider using a Hash Join or adding indexes on join columns'
+                    );
+                    break;
+                }
+            }
+        }
+
+        // General suggestions
+        if (suggestions.length === 0) {
+            suggestions.push('Query plan looks good! No obvious optimization opportunities.');
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Find all sequential scan nodes in the plan
+     */
+    private findSequentialScans(node: Record<string, unknown>): Record<string, unknown>[] {
+        return this.findNodesByType(node, 'Seq Scan');
+    }
+
+    /**
+     * Recursively find all nodes of a specific type
+     */
+    private findNodesByType(
+        node: Record<string, unknown>,
+        nodeType: string
+    ): Record<string, unknown>[] {
+        const results: Record<string, unknown>[] = [];
+
+        if (node['Node Type'] === nodeType) {
+            results.push(node);
+        }
+
+        // Check nested plans
+        if (Array.isArray(node['Plans'])) {
+            for (const childPlan of node['Plans']) {
+                results.push(
+                    ...this.findNodesByType(childPlan as Record<string, unknown>, nodeType)
+                );
+            }
+        }
+
+        return results;
     }
 }

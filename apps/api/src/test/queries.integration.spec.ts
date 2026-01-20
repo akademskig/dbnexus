@@ -45,7 +45,10 @@ describe('Queries Integration Tests', () => {
                 await connectionsService.disconnect(postgresConnectionId);
                 await connectionsService.delete(postgresConnectionId);
             } catch (error) {
-                console.error(`Error disconnecting and deleting PostgreSQL connection ${postgresConnectionId}:`, error);
+                console.error(
+                    `Error disconnecting and deleting PostgreSQL connection ${postgresConnectionId}:`,
+                    error
+                );
             }
         }
         if (mysqlConnectionId) {
@@ -53,7 +56,10 @@ describe('Queries Integration Tests', () => {
                 await connectionsService.disconnect(mysqlConnectionId);
                 await connectionsService.delete(mysqlConnectionId);
             } catch (error) {
-                console.error(`Error disconnecting and deleting MySQL connection ${mysqlConnectionId}:`, error);
+                console.error(
+                    `Error disconnecting and deleting MySQL connection ${mysqlConnectionId}:`,
+                    error
+                );
             }
         }
         if (app) {
