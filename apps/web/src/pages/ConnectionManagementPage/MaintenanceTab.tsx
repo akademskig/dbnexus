@@ -283,11 +283,12 @@ export function MaintenanceTab({
                         </Box>
                     )}
 
-                    {/* Schema Selector */}
+                    {/* Schema and Table Selectors */}
                     {(selectedScope === 'schema' || selectedScope === 'table') &&
                         schemas.length > 0 && (
-                            <Box sx={{ mb: 2 }}>
-                                <FormControl size="small" fullWidth sx={{ maxWidth: 300 }}>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                                {/* Schema Selector */}
+                                <FormControl size="small" sx={{ minWidth: 200 }}>
                                     <InputLabel>Schema</InputLabel>
                                     <Select
                                         value={selectedSchema || ''}
@@ -301,34 +302,36 @@ export function MaintenanceTab({
                                         ))}
                                     </Select>
                                 </FormControl>
+
+                                {/* Table Selector */}
+                                {selectedScope === 'table' && selectedSchema && (
+                                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                                        <InputLabel>Table</InputLabel>
+                                        <Select
+                                            value={selectedTable}
+                                            onChange={(e) => setSelectedTable(e.target.value)}
+                                            label="Table"
+                                            disabled={tables.length === 0}
+                                        >
+                                            {tables.map((table) => (
+                                                <MenuItem key={table.name} value={table.name}>
+                                                    {table.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                        {tables.length === 0 && (
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{ mt: 0.5, display: 'block' }}
+                                            >
+                                                No tables found
+                                            </Typography>
+                                        )}
+                                    </FormControl>
+                                )}
                             </Box>
                         )}
-
-                    {/* Table Selector */}
-                    {selectedScope === 'table' && selectedSchema && (
-                        <Box>
-                            <FormControl size="small" fullWidth sx={{ maxWidth: 300 }}>
-                                <InputLabel>Table</InputLabel>
-                                <Select
-                                    value={selectedTable}
-                                    onChange={(e) => setSelectedTable(e.target.value)}
-                                    label="Table"
-                                    disabled={tables.length === 0}
-                                >
-                                    {tables.map((table) => (
-                                        <MenuItem key={table.name} value={table.name}>
-                                            {table.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            {tables.length === 0 && (
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                                    No tables found in this schema
-                                </Typography>
-                            )}
-                        </Box>
-                    )}
                 </GlassCard>
             )}
 
@@ -343,7 +346,10 @@ export function MaintenanceTab({
             >
                 {availableOperations.map((operation) => {
                     const isRunning = runningOperation === operation.id;
-                    const needsSchema = operation.requiresSchema && !selectedSchema;
+                    const currentScope = operation.scopeOptions ? selectedScope : operation.scope;
+                    const needsTarget =
+                        (currentScope === 'schema' || currentScope === 'table') && !selectedSchema;
+                    const needsTable = currentScope === 'table' && !selectedTable;
 
                     return (
                         <GlassCard key={operation.id} sx={{ p: 2.5 }}>
@@ -397,7 +403,12 @@ export function MaintenanceTab({
                                         variant="outlined"
                                         size="small"
                                         onClick={() => handleRunOperation(operation)}
-                                        disabled={isRunning || needsSchema || connection?.readOnly}
+                                        disabled={
+                                            isRunning ||
+                                            needsTarget ||
+                                            needsTable ||
+                                            connection?.readOnly
+                                        }
                                         startIcon={
                                             isRunning ? (
                                                 <CircularProgress size={14} />
@@ -416,7 +427,15 @@ export function MaintenanceTab({
                                     >
                                         {isRunning ? 'Running...' : `Run ${operation.name}`}
                                     </Button>
-                                    {needsSchema && (
+                                    {needsTable ? (
+                                        <Typography
+                                            variant="caption"
+                                            color="warning.main"
+                                            sx={{ display: 'block', mt: 1 }}
+                                        >
+                                            Select a table first
+                                        </Typography>
+                                    ) : needsTarget ? (
                                         <Typography
                                             variant="caption"
                                             color="warning.main"
@@ -424,7 +443,7 @@ export function MaintenanceTab({
                                         >
                                             Select a schema first
                                         </Typography>
-                                    )}
+                                    ) : null}
                                 </Box>
                             </Box>
                         </GlassCard>
