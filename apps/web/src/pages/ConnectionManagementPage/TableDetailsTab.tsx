@@ -287,8 +287,8 @@ export function TableDetailsTab({
 
     // Execute SQL mutation
     const executeSql = useMutation({
-        mutationFn: async (sql: string) => {
-            return queriesApi.execute(connectionId, sql);
+        mutationFn: async ({ sql, confirmed = false }: { sql: string; confirmed?: boolean }) => {
+            return queriesApi.execute(connectionId, sql, confirmed);
         },
         onSuccess: () => {
             refetchSchema();
@@ -323,7 +323,7 @@ export function TableDetailsTab({
         }
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             if (newColumn.isForeignKey) {
                 const fkName = `fk_${selectedTable}_${newColumn.name}`;
                 const fullTargetTable = buildTableNameForEngine(
@@ -335,7 +335,7 @@ export function TableDetailsTab({
                 )} FOREIGN KEY (${quotedColumn}) REFERENCES ${fullTargetTable} (${quoteIdentifierForEngine(
                     newColumn.foreignKeyColumn
                 )})`;
-                await executeSql.mutateAsync(fkSql);
+                await executeSql.mutateAsync({ sql: fkSql });
             }
             toast.success(`Column "${newColumn.name}" added`);
             setAddColumnOpen(false);
@@ -471,7 +471,7 @@ export function TableDetailsTab({
 
         try {
             for (const sql of statements) {
-                await executeSql.mutateAsync(sql);
+                await executeSql.mutateAsync({ sql });
             }
             toast.success(`Column "${columnToEdit.name}" updated`);
             setEditColumnOpen(false);
@@ -500,7 +500,7 @@ export function TableDetailsTab({
         const sql = `ALTER TABLE ${fullTableName} DROP COLUMN ${quotedColumn}`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql, confirmed: true });
             toast.success(`Column "${columnToDelete.name}" deleted`);
             setDeleteColumnOpen(false);
             setColumnToDelete(null);
@@ -529,7 +529,7 @@ export function TableDetailsTab({
         }
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             const type = newIndex.isPrimary ? 'Primary key' : 'Index';
             toast.success(
                 `${type} "${newIndex.isPrimary ? 'PRIMARY KEY' : newIndex.name}" created`
@@ -557,7 +557,7 @@ export function TableDetailsTab({
         }
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql, confirmed: true });
             toast.success(`Index "${indexToDelete.name}" deleted`);
             setDeleteIndexOpen(false);
             setIndexToDelete(null);
@@ -591,7 +591,7 @@ export function TableDetailsTab({
         const sql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quotedFkName} FOREIGN KEY (${quotedColumns}) REFERENCES ${quotedRefTable} (${quotedRefColumns}) ON DELETE ${newFk.onDelete} ON UPDATE ${newFk.onUpdate}`;
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql });
             toast.success(`Foreign key "${newFk.name}" created`);
             setAddFkOpen(false);
             setNewFk({
@@ -622,7 +622,7 @@ export function TableDetailsTab({
         }
 
         try {
-            await executeSql.mutateAsync(sql);
+            await executeSql.mutateAsync({ sql, confirmed: true });
             toast.success(`Foreign key "${fkToDelete.name}" deleted`);
             setDeleteFkOpen(false);
             setFkToDelete(null);
