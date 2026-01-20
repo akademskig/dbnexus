@@ -28,17 +28,60 @@ export class ProjectsController {
 
     @Post()
     createProject(@Body() input: ProjectCreateInput): Project {
-        return this.metadataService.projectRepository.create(input);
+        const project = this.metadataService.projectRepository.create(input);
+
+        // Audit log
+        this.metadataService.auditLogRepository.create({
+            action: 'project_created',
+            entityType: 'project',
+            entityId: project.id,
+            details: {
+                name: project.name,
+                description: project.description,
+            },
+        });
+
+        return project;
     }
 
     @Put(':id')
     updateProject(@Param('id') id: string, @Body() input: ProjectUpdateInput): Project | null {
-        return this.metadataService.projectRepository.update(id, input);
+        const project = this.metadataService.projectRepository.update(id, input);
+
+        if (project) {
+            // Audit log
+            this.metadataService.auditLogRepository.create({
+                action: 'project_updated',
+                entityType: 'project',
+                entityId: id,
+                details: {
+                    name: project.name,
+                    changes: input,
+                },
+            });
+        }
+
+        return project;
     }
 
     @Delete(':id')
     deleteProject(@Param('id') id: string): { success: boolean } {
-        return { success: this.metadataService.projectRepository.delete(id) };
+        const project = this.metadataService.projectRepository.findById(id);
+        const success = this.metadataService.projectRepository.delete(id);
+
+        if (success && project) {
+            // Audit log
+            this.metadataService.auditLogRepository.create({
+                action: 'project_deleted',
+                entityType: 'project',
+                entityId: id,
+                details: {
+                    name: project.name,
+                },
+            });
+        }
+
+        return { success };
     }
 
     // ============ Database Groups ============
@@ -61,10 +104,23 @@ export class ProjectsController {
         @Param('projectId') projectId: string,
         @Body() input: Omit<DatabaseGroupCreateInput, 'projectId'>
     ): DatabaseGroup {
-        return this.metadataService.databaseGroupRepository.create({
+        const group = this.metadataService.databaseGroupRepository.create({
             ...input,
             projectId,
         });
+
+        // Audit log
+        this.metadataService.auditLogRepository.create({
+            action: 'database_group_created',
+            entityType: 'database_group',
+            entityId: group.id,
+            details: {
+                name: group.name,
+                projectId: group.projectId,
+            },
+        });
+
+        return group;
     }
 
     @Put(':projectId/groups/:groupId')
@@ -73,7 +129,22 @@ export class ProjectsController {
         @Param('groupId') groupId: string,
         @Body() input: DatabaseGroupUpdateInput
     ): DatabaseGroup | null {
-        return this.metadataService.databaseGroupRepository.update(groupId, input);
+        const group = this.metadataService.databaseGroupRepository.update(groupId, input);
+
+        if (group) {
+            // Audit log
+            this.metadataService.auditLogRepository.create({
+                action: 'database_group_updated',
+                entityType: 'database_group',
+                entityId: groupId,
+                details: {
+                    name: group.name,
+                    changes: input,
+                },
+            });
+        }
+
+        return group;
     }
 
     @Delete(':projectId/groups/:groupId')
@@ -81,7 +152,22 @@ export class ProjectsController {
         @Param('projectId') _projectId: string,
         @Param('groupId') groupId: string
     ): { success: boolean } {
-        return { success: this.metadataService.databaseGroupRepository.delete(groupId) };
+        const group = this.metadataService.databaseGroupRepository.findById(groupId);
+        const success = this.metadataService.databaseGroupRepository.delete(groupId);
+
+        if (success && group) {
+            // Audit log
+            this.metadataService.auditLogRepository.create({
+                action: 'database_group_deleted',
+                entityType: 'database_group',
+                entityId: groupId,
+                details: {
+                    name: group.name,
+                },
+            });
+        }
+
+        return { success };
     }
 
     // ============ Connections in Project/Group ============

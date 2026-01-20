@@ -7,11 +7,13 @@ import {
     CompareArrows as MigrationIcon,
     Sync as SyncIcon,
     Timeline as ActivityIcon,
+    Security as AuditIcon,
 } from '@mui/icons-material';
 import { QueryHistoryTab } from './QueryHistoryTab';
 import { MigrationHistoryTab } from './MigrationHistoryTab';
 import { SyncRunsTab } from './SyncRunsTab';
 import { ActivityLogTab } from './ActivityLogTab';
+import { AuditLogsTab } from './AuditLogsTab';
 import { connectionsApi } from '../../lib/api';
 
 interface TabPanelProps {
@@ -107,6 +109,11 @@ export function LogsPage() {
                         iconPosition="start"
                         label="Activity"
                     />
+                    <Tab
+                        icon={<AuditIcon sx={{ fontSize: 18 }} />}
+                        iconPosition="start"
+                        label="Audit Logs"
+                    />
                 </Tabs>
 
                 <Box
@@ -130,6 +137,9 @@ export function LogsPage() {
                     </TabPanel>
                     <TabPanel value={activeTab} index={3}>
                         <ActivityLogTab />
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={4}>
+                        <AuditLogsTab />
                     </TabPanel>
                 </Box>
             </Paper>

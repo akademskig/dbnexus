@@ -8,6 +8,12 @@ export type AuditAction =
     | 'connection_created'
     | 'connection_updated'
     | 'connection_deleted'
+    | 'project_created'
+    | 'project_updated'
+    | 'project_deleted'
+    | 'database_group_created'
+    | 'database_group_updated'
+    | 'database_group_deleted'
     | 'query_executed'
     | 'schema_migration_applied'
     | 'data_sync_started'
@@ -25,6 +31,8 @@ export type AuditAction =
 
 export type AuditEntityType =
     | 'connection'
+    | 'project'
+    | 'database_group'
     | 'query'
     | 'migration'
     | 'sync_config'
@@ -245,6 +253,56 @@ export class AuditLogRepository {
         `
             )
             .all(entityType, entityId) as AuditLogRow[];
+        return rows.map((row) => this.rowToEntry(row));
+    }
+
+    /**
+     * Find all entries with optional filters
+     */
+    findAll(params?: {
+        connectionId?: string;
+        entityType?: string;
+        action?: string;
+        limit?: number;
+    }): AuditLogEntry[] {
+        const conditions: string[] = [];
+        const values: unknown[] = [];
+
+        if (params?.connectionId) {
+            conditions.push('al.connection_id = ?');
+            values.push(params.connectionId);
+        }
+
+        if (params?.entityType) {
+            conditions.push('al.entity_type = ?');
+            values.push(params.entityType);
+        }
+
+        if (params?.action) {
+            conditions.push('al.action = ?');
+            values.push(params.action);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+        const limit = params?.limit || 500;
+
+        const query = `
+            SELECT 
+                al.*,
+                c.name as connection_name
+            FROM audit_log al
+            LEFT JOIN connections c ON al.connection_id = c.id
+            ${whereClause}
+            ORDER BY al.created_at DESC
+            LIMIT ?
+        `;
+
+        values.push(limit);
+
+        const rows = this.db
+            .getDb()
+            .prepare(query)
+            .all(...values) as AuditLogRow[];
         return rows.map((row) => this.rowToEntry(row));
     }
 

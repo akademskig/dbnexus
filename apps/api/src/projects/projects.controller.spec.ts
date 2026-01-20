@@ -65,6 +65,9 @@ describe('ProjectsController', () => {
             findByProject: jest.fn(),
             findByGroup: jest.fn(),
         },
+        auditLogRepository: {
+            create: jest.fn(),
+        },
     };
 
     beforeEach(async () => {

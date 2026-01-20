@@ -71,6 +71,9 @@ export class QueriesService {
                 success: true,
             });
 
+            // Log high-level audit events for significant DDL operations
+            this.logAuditEventFromSql(connectionId, sql);
+
             return result;
         } catch (error) {
             const executionTimeMs = Date.now() - startTime;
@@ -763,5 +766,92 @@ export class QueriesService {
         }
 
         return results;
+    }
+
+    /**
+     * Log audit events for high-level DDL operations
+     */
+    private logAuditEventFromSql(connectionId: string, sql: string): void {
+        const normalized = sql.trim().toUpperCase();
+
+        // Extract table name from SQL (simple pattern matching)
+        const extractTableName = (pattern: RegExp): string | null => {
+            const match = sql.match(pattern);
+            return match ? match[1]!.replace(/[`"'[\]]/g, '') : null;
+        };
+
+        // CREATE TABLE
+        if (normalized.startsWith('CREATE TABLE')) {
+            const tableName = extractTableName(
+                /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)/i
+            );
+            if (tableName) {
+                this.metadataService.auditLogRepository.create({
+                    action: 'table_created',
+                    entityType: 'table',
+                    connectionId,
+                    details: { tableName, sql: sql.substring(0, 200) },
+                });
+            }
+        }
+        // DROP TABLE
+        else if (normalized.startsWith('DROP TABLE')) {
+            const tableName = extractTableName(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([^\s;]+)/i);
+            if (tableName) {
+                this.metadataService.auditLogRepository.create({
+                    action: 'table_dropped',
+                    entityType: 'table',
+                    connectionId,
+                    details: { tableName },
+                });
+            }
+        }
+        // ALTER TABLE ADD COLUMN
+        else if (normalized.includes('ALTER TABLE') && normalized.includes('ADD COLUMN')) {
+            const tableName = extractTableName(/ALTER\s+TABLE\s+([^\s]+)\s+ADD\s+COLUMN/i);
+            const columnMatch = sql.match(/ADD\s+COLUMN\s+([^\s(]+)/i);
+            const columnName = columnMatch ? columnMatch[1]!.replace(/[`"'[\]]/g, '') : null;
+            if (tableName && columnName) {
+                this.metadataService.auditLogRepository.create({
+                    action: 'column_added',
+                    entityType: 'column',
+                    connectionId,
+                    details: { tableName, columnName },
+                });
+            }
+        }
+        // ALTER TABLE DROP COLUMN
+        else if (normalized.includes('ALTER TABLE') && normalized.includes('DROP COLUMN')) {
+            const tableName = extractTableName(/ALTER\s+TABLE\s+([^\s]+)\s+DROP\s+COLUMN/i);
+            const columnMatch = sql.match(/DROP\s+COLUMN\s+([^\s,;]+)/i);
+            const columnName = columnMatch ? columnMatch[1]!.replace(/[`"'[\]]/g, '') : null;
+            if (tableName && columnName) {
+                this.metadataService.auditLogRepository.create({
+                    action: 'column_dropped',
+                    entityType: 'column',
+                    connectionId,
+                    details: { tableName, columnName },
+                });
+            }
+        }
+        // ALTER TABLE ALTER/MODIFY COLUMN
+        else if (
+            normalized.includes('ALTER TABLE') &&
+            (normalized.includes('ALTER COLUMN') || normalized.includes('MODIFY COLUMN'))
+        ) {
+            const tableName = extractTableName(/ALTER\s+TABLE\s+([^\s]+)/i);
+            const columnMatch = sql.match(/(?:ALTER|MODIFY)\s+COLUMN\s+([^\s(]+)/i);
+            const columnName = columnMatch ? columnMatch[1]!.replace(/[`"'[\]]/g, '') : null;
+            if (tableName && columnName) {
+                this.metadataService.auditLogRepository.create({
+                    action: 'column_modified',
+                    entityType: 'column',
+                    connectionId,
+                    details: { tableName, columnName },
+                });
+            }
+        }
+        // Note: We don't log every single DDL operation (indexes, constraints, etc.)
+        // to keep audit logs focused on major structural changes
     }
 }

@@ -62,6 +62,20 @@ export class ConnectionsService {
         const connection = this.metadataService.connectionRepository.create(input);
         this.logger.log(`Created connection "${connection.name}" (${connection.id})`);
 
+        // Audit log
+        this.metadataService.auditLogRepository.create({
+            action: 'connection_created',
+            entityType: 'connection',
+            entityId: connection.id,
+            connectionId: connection.id,
+            details: {
+                name: connection.name,
+                engine: connection.engine,
+                host: connection.host,
+                database: connection.database,
+            },
+        });
+
         return connection;
     }
 
@@ -90,6 +104,18 @@ export class ConnectionsService {
         // Disconnect if connected (will reconnect with new settings)
         await this.disconnect(id);
 
+        // Audit log
+        this.metadataService.auditLogRepository.create({
+            action: 'connection_updated',
+            entityType: 'connection',
+            entityId: id,
+            connectionId: id,
+            details: {
+                name: updated.name,
+                changes: input,
+            },
+        });
+
         return updated;
     }
 
@@ -97,12 +123,25 @@ export class ConnectionsService {
      * Delete a connection
      */
     async delete(id: string): Promise<void> {
+        const connection = this.findById(id);
+
         await this.disconnect(id);
 
         const deleted = this.metadataService.connectionRepository.delete(id);
         if (!deleted) {
             throw new NotFoundException(`Connection with ID ${id} not found`);
         }
+
+        // Audit log
+        this.metadataService.auditLogRepository.create({
+            action: 'connection_deleted',
+            entityType: 'connection',
+            entityId: id,
+            details: {
+                name: connection.name,
+                engine: connection.engine,
+            },
+        });
     }
 
     /**

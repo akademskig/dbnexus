@@ -569,3 +569,36 @@ export const scannerApi = {
             `/scanner/scan/sqlite${workspace ? `?workspace=${encodeURIComponent(workspace)}` : ''}`
         ),
 };
+
+// ============ Audit Logs API ============
+
+export interface AuditLogEntry {
+    id: string;
+    action: string;
+    entityType: string;
+    entityId?: string;
+    connectionId?: string;
+    details?: Record<string, unknown>;
+    createdAt: string;
+    connectionName?: string;
+}
+
+export const auditApi = {
+    getLogs: (params?: {
+        connectionId?: string;
+        entityType?: string;
+        action?: string;
+        limit?: number;
+    }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.connectionId) searchParams.set('connectionId', params.connectionId);
+        if (params?.entityType) searchParams.set('entityType', params.entityType);
+        if (params?.action) searchParams.set('action', params.action);
+        if (params?.limit) searchParams.set('limit', params.limit.toString());
+
+        const query = searchParams.toString();
+        return fetchApi<AuditLogEntry[]>(`/audit/logs${query ? `?${query}` : ''}`);
+    },
+
+    getLog: (id: string) => fetchApi<AuditLogEntry>(`/audit/logs/${id}`),
+};
