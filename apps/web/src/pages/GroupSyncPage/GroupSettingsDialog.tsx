@@ -47,6 +47,16 @@ export function GroupSettingsDialog({
     const [availableSchemas, setAvailableSchemas] = useState<string[]>([]);
     const [loadingSchemas, setLoadingSchemas] = useState(false);
 
+    // Reset form state when dialog opens or group changes
+    useEffect(() => {
+        if (open) {
+            setSourceConnectionId(group.sourceConnectionId || '');
+            setSyncSchema(group.syncSchema);
+            setSyncData(group.syncData);
+            setSyncTargetSchema(group.syncTargetSchema || '');
+        }
+    }, [open, group.sourceConnectionId, group.syncSchema, group.syncData, group.syncTargetSchema]);
+
     // Load schemas when source connection changes
     useEffect(() => {
         if (sourceConnectionId) {

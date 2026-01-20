@@ -239,20 +239,45 @@ export function generateAlterColumnSql(
     // Primary key changes - these are complex and require manual intervention
     if (source.isPrimaryKey !== target.isPrimaryKey) {
         if (engine === 'postgres') {
-            sql.push(
-                `-- Primary key change detected for "${source.name}". To modify:`,
-                `-- ${prefix} DROP CONSTRAINT <constraint_name>;`,
-                `-- ${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
-            );
+            const likelyConstraintName = `${table}_pkey`;
+
+            if (source.isPrimaryKey && !target.isPrimaryKey) {
+                // Need to ADD primary key (source has it, target doesn't)
+                sql.push(
+                    `-- Adding primary key constraint to column "${source.name}"`,
+                    `${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
+                );
+            } else if (!source.isPrimaryKey && target.isPrimaryKey) {
+                // Need to DROP primary key (target has it, source doesn't)
+                sql.push(
+                    `-- WARNING: Removing primary key constraint from column "${source.name}"`,
+                    `-- This is a dangerous operation. Verify before executing!`,
+                    ``,
+                    `-- Find the actual constraint name (most likely: ${likelyConstraintName}):`,
+                    `-- SELECT constraint_name FROM information_schema.table_constraints WHERE table_schema = '${schema}' AND table_name = '${table}' AND constraint_type = 'PRIMARY KEY';`,
+                    ``,
+                    `-- Drop the primary key:`,
+                    `${prefix} DROP CONSTRAINT ${likelyConstraintName};`
+                );
+            }
         } else if (engine === 'mysql' || engine === 'mariadb') {
-            sql.push(
-                `-- Primary key change detected for "${source.name}". To modify:`,
-                `-- ${prefix} DROP PRIMARY KEY;`,
-                `-- ${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
-            );
+            if (source.isPrimaryKey && !target.isPrimaryKey) {
+                // Need to ADD primary key
+                sql.push(
+                    `-- Adding primary key constraint to column "${source.name}"`,
+                    `${prefix} ADD PRIMARY KEY (${quoteIdentifier(source.name, engine)});`
+                );
+            } else if (!source.isPrimaryKey && target.isPrimaryKey) {
+                // Need to DROP primary key
+                sql.push(
+                    `-- WARNING: Removing primary key from column "${source.name}"`,
+                    `${prefix} DROP PRIMARY KEY;`
+                );
+            }
         } else {
             sql.push(
-                `-- SQLite: Cannot alter primary key. Table recreation required for "${source.name}"`
+                `-- SQLite: Cannot alter primary key. Table recreation required for column "${source.name}"`,
+                `-- You must recreate the table with the new primary key definition`
             );
         }
     }
