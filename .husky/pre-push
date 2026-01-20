@@ -1,9 +1,25 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+echo "🐳 Checking Docker containers..."
+
+# Check if Docker is running
+if ! docker info > /dev/null 2>&1; then
+    echo "❌ Docker is not running. Please start Docker and try again."
+    exit 1
+fi
+
+# Check if containers are running, if not start them
+if ! docker ps | grep -q "postgres"; then
+    echo "🚀 Starting Docker containers..."
+    docker compose up -d
+    echo "⏳ Waiting for databases to be ready..."
+    sleep 5
+fi
+
 echo "🧪 Running integration tests before push..."
 pnpm test:integration || {
-    echo "❌ Integration tests failed. If Docker is not running, start it with: docker compose up -d"
+    echo "❌ Integration tests failed."
     exit 1
 }
 
