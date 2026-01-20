@@ -521,7 +521,14 @@ export function TableDetailsTab({
         let sql: string;
         if (newIndex.isPrimary) {
             // Primary key constraint
-            sql = `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumns})`;
+            if (newIndex.name) {
+                // Custom constraint name provided
+                const quotedConstraintName = quoteIdentifierForEngine(newIndex.name);
+                sql = `ALTER TABLE ${fullTableName} ADD CONSTRAINT ${quotedConstraintName} PRIMARY KEY (${quotedColumns})`;
+            } else {
+                // Auto-generated name
+                sql = `ALTER TABLE ${fullTableName} ADD PRIMARY KEY (${quotedColumns})`;
+            }
         } else {
             // Regular or unique index
             const quotedIndexName = quoteIdentifierForEngine(newIndex.name);
@@ -531,10 +538,12 @@ export function TableDetailsTab({
 
         try {
             await executeSql.mutateAsync({ sql });
-            const type = newIndex.isPrimary ? 'Primary key' : 'Index';
-            toast.success(
-                `${type} "${newIndex.isPrimary ? 'PRIMARY KEY' : newIndex.name}" created`
-            );
+            if (newIndex.isPrimary) {
+                const constraintName = newIndex.name || 'PRIMARY KEY';
+                toast.success(`Primary key "${constraintName}" created`);
+            } else {
+                toast.success(`Index "${newIndex.name}" created`);
+            }
             setAddIndexOpen(false);
             setNewIndex({ name: '', columns: [], isUnique: false, isPrimary: false });
         } catch (err) {
@@ -1288,15 +1297,16 @@ export function TableDetailsTab({
                         <TextField
                             autoFocus
                             fullWidth
-                            label="Index Name"
+                            label={newIndex.isPrimary ? 'Constraint Name (Optional)' : 'Index Name'}
                             value={newIndex.name}
                             onChange={(e) =>
                                 setNewIndex((prev) => ({ ...prev, name: e.target.value }))
                             }
-                            placeholder="idx_table_column"
-                            disabled={newIndex.isPrimary}
+                            placeholder={newIndex.isPrimary ? 'pk_table_name' : 'idx_table_column'}
                             helperText={
-                                newIndex.isPrimary ? 'Primary keys do not require a name' : ''
+                                newIndex.isPrimary
+                                    ? 'Leave empty for auto-generated name'
+                                    : 'Required for indexes'
                             }
                         />
                         <Autocomplete
@@ -1323,8 +1333,6 @@ export function TableDetailsTab({
                                             setNewIndex((prev) => ({
                                                 ...prev,
                                                 isPrimary: e.target.checked,
-                                                // Primary keys don't need a name
-                                                name: e.target.checked ? '' : prev.name,
                                             }))
                                         }
                                     />
