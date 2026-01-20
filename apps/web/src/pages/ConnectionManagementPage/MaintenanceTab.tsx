@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
     Box,
     Typography,
@@ -10,6 +10,9 @@ import {
     Select,
     MenuItem,
     Chip,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
 } from '@mui/material';
 import BuildIcon from '@mui/icons-material/Build';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
@@ -22,7 +25,7 @@ import {
     type OperationResultData,
     StatusAlert,
 } from '../../components/StatusAlert';
-import { queriesApi } from '../../lib/api';
+import { queriesApi, schemaApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 
 interface MaintenanceTabProps {
@@ -33,14 +36,17 @@ interface MaintenanceTabProps {
     onSchemaChange?: (schema: string) => void;
 }
 
+type OperationScope = 'database' | 'schema' | 'table';
+
 interface MaintenanceOperation {
     id: string;
     name: string;
     description: string;
     icon: React.ReactNode;
     engines: string[];
-    getCommand: (schema?: string) => string;
-    requiresSchema?: boolean;
+    getCommand: (target?: string) => string;
+    scope: OperationScope;
+    scopeOptions?: OperationScope[]; // Multiple scope options (e.g., database or table)
     color: string;
 }
 
@@ -53,6 +59,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         icon: <CleaningServicesIcon />,
         engines: ['postgres', 'sqlite'],
         getCommand: () => 'VACUUM',
+        scope: 'database',
+        scopeOptions: ['database', 'table'],
         color: '#8b5cf6',
     },
     {
@@ -63,6 +71,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         icon: <CleaningServicesIcon />,
         engines: ['postgres'],
         getCommand: () => 'VACUUM FULL',
+        scope: 'database',
+        scopeOptions: ['database', 'table'],
         color: '#dc2626',
     },
     {
@@ -71,8 +81,9 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         description: 'Update statistics used by the query planner. Improves query performance.',
         icon: <SpeedIcon />,
         engines: ['postgres', 'sqlite'],
-        getCommand: (schema) => (schema ? `ANALYZE "${schema}"` : 'ANALYZE'),
-        requiresSchema: false,
+        getCommand: () => 'ANALYZE',
+        scope: 'database',
+        scopeOptions: ['database', 'table'],
         color: '#06b6d4',
     },
     {
@@ -82,15 +93,19 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         icon: <BuildIcon />,
         engines: ['postgres'],
         getCommand: () => 'VACUUM ANALYZE',
+        scope: 'database',
+        scopeOptions: ['database', 'table'],
         color: '#22c55e',
     },
     {
         id: 'reindex',
-        name: 'REINDEX DATABASE',
-        description: 'Rebuild all indexes in the database. Useful after heavy write operations.',
+        name: 'REINDEX',
+        description: 'Rebuild indexes. Can target database, schema, or individual tables/indexes.',
         icon: <StorageIcon />,
         engines: ['postgres'],
-        getCommand: () => 'REINDEX DATABASE CURRENT_DATABASE',
+        getCommand: () => 'REINDEX',
+        scope: 'database',
+        scopeOptions: ['database', 'schema', 'table'],
         color: '#f59e0b',
     },
     {
@@ -100,8 +115,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
             'Reorganize table storage and rebuild indexes. MySQL/MariaDB equivalent of VACUUM.',
         icon: <CleaningServicesIcon />,
         engines: ['mysql', 'mariadb'],
-        getCommand: (schema) => `OPTIMIZE TABLE ${schema ? `\`${schema}\`.*` : '*'}`,
-        requiresSchema: true,
+        getCommand: () => 'OPTIMIZE TABLE',
+        scope: 'table',
         color: '#8b5cf6',
     },
     {
@@ -110,8 +125,8 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         description: 'Update table statistics for the query optimizer.',
         icon: <SpeedIcon />,
         engines: ['mysql', 'mariadb'],
-        getCommand: (schema) => `ANALYZE TABLE ${schema ? `\`${schema}\`.*` : '*'}`,
-        requiresSchema: true,
+        getCommand: () => 'ANALYZE TABLE',
+        scope: 'table',
         color: '#06b6d4',
     },
 ];
@@ -127,34 +142,50 @@ export function MaintenanceTab({
     // Use external schema if provided, otherwise use local state
     const [localSchema, setLocalSchema] = useState<string>(externalSchema || '');
     const selectedSchema = externalSchema ?? localSchema;
+    const [selectedTable, setSelectedTable] = useState<string>('');
+    const [selectedScope, setSelectedScope] = useState<OperationScope>('database');
     const [results, setResults] = useState<OperationResultData[]>([]);
     const [runningOperation, setRunningOperation] = useState<string | null>(null);
 
     const handleSchemaChange = (schema: string) => {
         setLocalSchema(schema);
+        setSelectedTable(''); // Reset table when schema changes
         onSchemaChange?.(schema);
     };
+
+    // Fetch tables for the selected schema
+    const { data: tables = [] } = useQuery({
+        queryKey: ['tables', connectionId, selectedSchema],
+        queryFn: () => schemaApi.getTables(connectionId, selectedSchema || 'public'),
+        enabled: !!connectionId && !!selectedSchema,
+    });
 
     const executeMutation = useMutation({
         mutationFn: async ({
             operation,
-            schema,
+            target,
+            scope,
         }: {
             operation: MaintenanceOperation;
-            schema?: string;
+            target?: string;
+            scope: OperationScope;
         }) => {
-            return await queriesApi.executeMaintenance(connectionId, operation.id, schema);
+            return await queriesApi.executeMaintenance(connectionId, operation.id, target, scope);
         },
         onSuccess: (data, { operation }) => {
             const result: OperationResultData = {
                 id: operation.id,
-                success: true,
+                success: data.success,
                 message: data.message,
                 duration: data.duration,
                 details: data.details,
             };
             setResults((prev) => [result, ...prev.slice(0, 9)]);
-            toast.success(`${operation.name} completed in ${(data.duration / 1000).toFixed(2)}s`);
+            if (data.success) {
+                toast.success(`${operation.name} completed in ${(data.duration / 1000).toFixed(2)}s`);
+            } else {
+                toast.error(`${operation.name} completed with errors`);
+            }
             setRunningOperation(null);
         },
         onError: (error, { operation }) => {
@@ -170,10 +201,33 @@ export function MaintenanceTab({
     });
 
     const handleRunOperation = (operation: MaintenanceOperation) => {
+        // Determine the target based on scope
+        let target: string | undefined;
+        const scope = operation.scopeOptions ? selectedScope : operation.scope;
+
+        if (scope === 'table') {
+            if (!selectedTable) {
+                toast.error('Please select a table');
+                return;
+            }
+            // For MySQL, use schema.table format
+            target = connection?.engine === 'mysql' || connection?.engine === 'mariadb'
+                ? `${selectedSchema}.${selectedTable}`
+                : selectedTable;
+        } else if (scope === 'schema') {
+            if (!selectedSchema) {
+                toast.error('Please select a schema');
+                return;
+            }
+            target = selectedSchema;
+        }
+        // For 'database' scope, target is undefined (operates on whole database)
+
         setRunningOperation(operation.id);
         executeMutation.mutate({
             operation,
-            schema: operation.requiresSchema ? selectedSchema : undefined,
+            target,
+            scope,
         });
     };
 
@@ -195,25 +249,87 @@ export function MaintenanceTab({
                 </Typography>
             </StatusAlert>
 
-            {/* Schema Selector (for operations that need it) */}
-            {!isSqlite && schemas.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Target Schema</InputLabel>
-                        <Select
-                            value={selectedSchema || ''}
-                            onChange={(e) => handleSchemaChange(e.target.value)}
-                            label="Target Schema"
-                        >
-                            <MenuItem value="">All schemas</MenuItem>
-                            {schemas.map((schema) => (
-                                <MenuItem key={schema} value={schema}>
-                                    {schema}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
+            {/* Target Selection */}
+            {!isSqlite && (
+                <GlassCard sx={{ mb: 3, p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                        Operation Target
+                    </Typography>
+
+                    {/* Scope Selector (for operations with multiple scope options) */}
+                    {availableOperations.some((op) => op.scopeOptions) && (
+                        <Box sx={{ mb: 2 }}>
+                            <RadioGroup
+                                row
+                                value={selectedScope}
+                                onChange={(e) => setSelectedScope(e.target.value as OperationScope)}
+                            >
+                                <FormControlLabel
+                                    value="database"
+                                    control={<Radio size="small" />}
+                                    label="Entire Database"
+                                />
+                                <FormControlLabel
+                                    value="schema"
+                                    control={<Radio size="small" />}
+                                    label="Schema"
+                                />
+                                <FormControlLabel
+                                    value="table"
+                                    control={<Radio size="small" />}
+                                    label="Single Table"
+                                />
+                            </RadioGroup>
+                        </Box>
+                    )}
+
+                    {/* Schema Selector */}
+                    {(selectedScope === 'schema' || selectedScope === 'table') &&
+                        schemas.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                                <FormControl size="small" fullWidth sx={{ maxWidth: 300 }}>
+                                    <InputLabel>Schema</InputLabel>
+                                    <Select
+                                        value={selectedSchema || ''}
+                                        onChange={(e) => handleSchemaChange(e.target.value)}
+                                        label="Schema"
+                                    >
+                                        {schemas.map((schema) => (
+                                            <MenuItem key={schema} value={schema}>
+                                                {schema}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                        )}
+
+                    {/* Table Selector */}
+                    {selectedScope === 'table' && selectedSchema && (
+                        <Box>
+                            <FormControl size="small" fullWidth sx={{ maxWidth: 300 }}>
+                                <InputLabel>Table</InputLabel>
+                                <Select
+                                    value={selectedTable}
+                                    onChange={(e) => setSelectedTable(e.target.value)}
+                                    label="Table"
+                                    disabled={tables.length === 0}
+                                >
+                                    {tables.map((table) => (
+                                        <MenuItem key={table.name} value={table.name}>
+                                            {table.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            {tables.length === 0 && (
+                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                                    No tables found in this schema
+                                </Typography>
+                            )}
+                        </Box>
+                    )}
+                </GlassCard>
             )}
 
             {/* Operations Grid */}

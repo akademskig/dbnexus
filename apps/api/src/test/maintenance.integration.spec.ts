@@ -54,9 +54,14 @@ describe('Maintenance Operations Integration Tests', () => {
     describe('PostgreSQL Maintenance Operations', () => {
         const skipIfNoPostgres = () => !dockerAvailable?.postgres || !postgresConnectionId;
 
-        it('should execute VACUUM and return details', async () => {
+        it('should execute VACUUM on entire database', async () => {
             if (skipIfNoPostgres()) return;
-            const result = await queriesService.executeMaintenance(postgresConnectionId!, 'vacuum');
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'vacuum',
+                undefined,
+                'database'
+            );
             expect(result.success).toBe(true);
             expect(result.message).toContain('VACUUM');
             expect(result.duration).toBeGreaterThan(0);
@@ -64,9 +69,28 @@ describe('Maintenance Operations Integration Tests', () => {
             expect(Array.isArray(result.details)).toBe(true);
         });
 
-        it('should execute ANALYZE and return details', async () => {
+        it('should execute VACUUM on a specific table', async () => {
             if (skipIfNoPostgres()) return;
-            const result = await queriesService.executeMaintenance(postgresConnectionId!, 'analyze');
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'vacuum',
+                'products',
+                'table'
+            );
+            expect(result.success).toBe(true);
+            expect(result.message).toContain('VACUUM');
+            expect(result.duration).toBeGreaterThan(0);
+            expect(result.details).toBeDefined();
+        });
+
+        it('should execute ANALYZE on entire database', async () => {
+            if (skipIfNoPostgres()) return;
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'analyze',
+                undefined,
+                'database'
+            );
             expect(result.success).toBe(true);
             expect(result.message).toContain('ANALYZE');
             expect(result.duration).toBeGreaterThan(0);
@@ -78,7 +102,9 @@ describe('Maintenance Operations Integration Tests', () => {
             if (skipIfNoPostgres()) return;
             const result = await queriesService.executeMaintenance(
                 postgresConnectionId!,
-                'vacuum_analyze'
+                'vacuum_analyze',
+                undefined,
+                'database'
             );
             expect(result.success).toBe(true);
             expect(result.message).toContain('VACUUM_ANALYZE');
@@ -90,7 +116,9 @@ describe('Maintenance Operations Integration Tests', () => {
             if (skipIfNoPostgres()) return;
             const result = await queriesService.executeMaintenance(
                 postgresConnectionId!,
-                'vacuum_full'
+                'vacuum_full',
+                undefined,
+                'database'
             );
             expect(result.success).toBe(true);
             expect(result.message).toContain('VACUUM_FULL');
@@ -98,19 +126,42 @@ describe('Maintenance Operations Integration Tests', () => {
             expect(result.details).toBeDefined();
         }, 60000); // VACUUM FULL can take longer
 
-        it('should execute REINDEX and return details', async () => {
+        it('should execute REINDEX on entire database', async () => {
             if (skipIfNoPostgres()) return;
-            const result = await queriesService.executeMaintenance(postgresConnectionId!, 'reindex');
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'reindex',
+                undefined,
+                'database'
+            );
             expect(result.success).toBe(true);
             expect(result.message).toContain('REINDEX');
             expect(result.duration).toBeGreaterThan(0);
             expect(result.details).toBeDefined();
         }, 60000); // REINDEX can take longer
 
+        it('should execute REINDEX on a specific schema', async () => {
+            if (skipIfNoPostgres()) return;
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'reindex',
+                'public',
+                'schema'
+            );
+            expect(result.success).toBe(true);
+            expect(result.message).toContain('REINDEX');
+            expect(result.duration).toBeGreaterThan(0);
+        }, 60000);
+
         it('should handle unknown operation gracefully', async () => {
             if (skipIfNoPostgres()) return;
             await expect(
-                queriesService.executeMaintenance(postgresConnectionId!, 'unknown_operation')
+                queriesService.executeMaintenance(
+                    postgresConnectionId!,
+                    'unknown_operation',
+                    undefined,
+                    'database'
+                )
             ).rejects.toThrow('Unknown maintenance operation');
         });
     });
@@ -123,7 +174,8 @@ describe('Maintenance Operations Integration Tests', () => {
             const result = await queriesService.executeMaintenance(
                 mysqlConnectionId!,
                 'optimize',
-                'posts'
+                'blog.posts',
+                'table'
             );
             expect(result.success).toBe(true);
             expect(result.message).toContain('completed successfully');
@@ -141,7 +193,12 @@ describe('Maintenance Operations Integration Tests', () => {
             // Note: CHECK TABLE is not supported in MySQL prepared statement protocol
             // This is a known MySQL limitation, not a bug in our code
             if (skipIfNoMysql()) return;
-            const result = await queriesService.executeMaintenance(mysqlConnectionId!, 'check', 'posts');
+            const result = await queriesService.executeMaintenance(
+                mysqlConnectionId!,
+                'check',
+                'blog.posts',
+                'table'
+            );
             expect(result.success).toBe(true);
             expect(result.message).toContain('CHECK');
             expect(result.duration).toBeGreaterThan(0);
@@ -154,7 +211,8 @@ describe('Maintenance Operations Integration Tests', () => {
             const result = await queriesService.executeMaintenance(
                 mysqlConnectionId!,
                 'optimize',
-                'nonexistent_table'
+                'blog.nonexistent_table',
+                'table'
             );
             // MySQL OPTIMIZE doesn't throw, but returns error status in result
             expect(result.success).toBe(false);
@@ -171,7 +229,12 @@ describe('Maintenance Operations Integration Tests', () => {
         it('should track operation duration accurately', async () => {
             if (skipIfNoPostgres()) return;
             const startTime = Date.now();
-            const result = await queriesService.executeMaintenance(postgresConnectionId!, 'vacuum');
+            const result = await queriesService.executeMaintenance(
+                postgresConnectionId!,
+                'vacuum',
+                undefined,
+                'database'
+            );
             const actualDuration = Date.now() - startTime;
 
             expect(result.duration).toBeGreaterThan(0);

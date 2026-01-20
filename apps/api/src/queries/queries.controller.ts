@@ -18,12 +18,19 @@ export class QueriesController {
 
     @Post('maintenance')
     async executeMaintenance(
-        @Body() input: { connectionId: string; operation: string; schema?: string }
+        @Body()
+        input: {
+            connectionId: string;
+            operation: string;
+            target?: string;
+            scope?: 'database' | 'schema' | 'table';
+        }
     ): Promise<{ success: boolean; message: string; details?: string[]; duration: number }> {
         return this.queriesService.executeMaintenance(
             input.connectionId,
             input.operation,
-            input.schema
+            input.target,
+            input.scope
         );
     }
 

@@ -123,7 +123,12 @@ export const queriesApi = {
             body: JSON.stringify({ connectionId, sql, analyze }),
         }),
 
-    executeMaintenance: (connectionId: string, operation: string, schema?: string) =>
+    executeMaintenance: (
+        connectionId: string,
+        operation: string,
+        target?: string,
+        scope?: 'database' | 'schema' | 'table'
+    ) =>
         fetchApi<{
             success: boolean;
             message: string;
@@ -131,7 +136,7 @@ export const queriesApi = {
             duration: number;
         }>('/queries/maintenance', {
             method: 'POST',
-            body: JSON.stringify({ connectionId, operation, schema }),
+            body: JSON.stringify({ connectionId, operation, target, scope }),
         }),
 
     // Saved queries

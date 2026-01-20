@@ -96,14 +96,21 @@ export class QueriesService {
     async executeMaintenance(
         connectionId: string,
         operation: string,
-        schema?: string
+        target?: string,
+        scope?: 'database' | 'schema' | 'table'
     ): Promise<{ success: boolean; message: string; details?: string[]; duration: number }> {
         const connection = this.connectionsService.findById(connectionId);
         const connector = await this.connectionsService.getConnector(connectionId);
         const startTime = Date.now();
 
         try {
-            let command = this.getMaintenanceCommand(operation, connection.engine, schema, connection);
+            let command = this.getMaintenanceCommand(
+                operation,
+                connection.engine,
+                target,
+                scope || 'database',
+                connection
+            );
 
             // Add VERBOSE for PostgreSQL to get detailed output
             if (connection.engine === 'postgres') {
@@ -161,47 +168,92 @@ export class QueriesService {
     private getMaintenanceCommand(
         operation: string,
         engine: string,
-        schema: string | undefined,
+        target: string | undefined,
+        scope: 'database' | 'schema' | 'table',
         connection: ConnectionConfig
     ): string {
         const op = operation.toLowerCase();
 
-        switch (op) {
-            case 'vacuum':
-                return 'VACUUM';
-            case 'vacuum_full':
-                return 'VACUUM (FULL)';
-            case 'analyze':
-                // In PostgreSQL, ANALYZE without target analyzes all tables
-                // To analyze a specific schema, you'd need to analyze each table
-                return 'ANALYZE';
-            case 'vacuum_analyze':
-                return 'VACUUM (ANALYZE)';
-            case 'reindex':
-                if (engine === 'postgres') {
-                    // REINDEX needs the actual database name
-                    const dbName = connection.database || 'postgres';
-                    return `REINDEX DATABASE "${dbName}"`;
-                }
-                return 'REINDEX';
-            case 'optimize':
-                if (!schema) {
-                    throw new BadRequestException('OPTIMIZE TABLE requires a table name');
-                }
-                return `OPTIMIZE TABLE ${schema}`;
-            case 'check':
-                if (!schema) {
-                    throw new BadRequestException('CHECK TABLE requires a table name');
-                }
-                return `CHECK TABLE ${schema}`;
-            case 'repair':
-                if (!schema) {
-                    throw new BadRequestException('REPAIR TABLE requires a table name');
-                }
-                return `REPAIR TABLE ${schema}`;
-            default:
-                throw new BadRequestException(`Unknown maintenance operation: ${operation}`);
+        // PostgreSQL operations
+        if (engine === 'postgres') {
+            switch (op) {
+                case 'vacuum':
+                    if (scope === 'table' && target) {
+                        return `VACUUM "${target}"`;
+                    }
+                    return 'VACUUM';
+
+                case 'vacuum_full':
+                    if (scope === 'table' && target) {
+                        return `VACUUM (FULL) "${target}"`;
+                    }
+                    return 'VACUUM (FULL)';
+
+                case 'analyze':
+                    if (scope === 'table' && target) {
+                        return `ANALYZE "${target}"`;
+                    }
+                    return 'ANALYZE';
+
+                case 'vacuum_analyze':
+                    if (scope === 'table' && target) {
+                        return `VACUUM (ANALYZE) "${target}"`;
+                    }
+                    return 'VACUUM (ANALYZE)';
+
+                case 'reindex':
+                    if (scope === 'table' && target) {
+                        return `REINDEX TABLE "${target}"`;
+                    } else if (scope === 'schema' && target) {
+                        return `REINDEX SCHEMA "${target}"`;
+                    } else {
+                        const dbName = connection.database || 'postgres';
+                        return `REINDEX DATABASE "${dbName}"`;
+                    }
+            }
         }
+
+        // MySQL operations
+        if (engine === 'mysql' || engine === 'mariadb') {
+            switch (op) {
+                case 'optimize':
+                case 'analyze_mysql':
+                case 'check':
+                case 'repair': {
+                    if (!target) {
+                        throw new BadRequestException(
+                            `${op.toUpperCase()} requires a table name (format: schema.table)`
+                        );
+                    }
+                    let commandName: string;
+                    if (op === 'analyze_mysql') {
+                        commandName = 'ANALYZE';
+                    } else if (op === 'optimize') {
+                        commandName = 'OPTIMIZE';
+                    } else if (op === 'check') {
+                        commandName = 'CHECK';
+                    } else {
+                        commandName = 'REPAIR';
+                    }
+                    return `${commandName} TABLE ${target}`;
+                }
+            }
+        }
+
+        // SQLite operations
+        if (engine === 'sqlite') {
+            switch (op) {
+                case 'vacuum':
+                    return 'VACUUM';
+                case 'analyze':
+                    if (target) {
+                        return `ANALYZE "${target}"`;
+                    }
+                    return 'ANALYZE';
+            }
+        }
+
+        throw new BadRequestException(`Unknown maintenance operation: ${operation} for ${engine}`);
     }
 
     /**
@@ -211,6 +263,10 @@ export class QueriesService {
         const op = operation.toLowerCase();
 
         if (op === 'vacuum') {
+            if (command.includes('"')) {
+                // Table-specific: VACUUM "table" -> VACUUM (VERBOSE) "table"
+                return command.replace('VACUUM', 'VACUUM (VERBOSE)');
+            }
             return command.replace('VACUUM', 'VACUUM (VERBOSE)');
         }
 
@@ -223,13 +279,23 @@ export class QueriesService {
         }
 
         if (op === 'analyze') {
+            if (command.includes('"')) {
+                // Table-specific: ANALYZE "table" -> ANALYZE (VERBOSE) "table"
+                return command.replace('ANALYZE', 'ANALYZE (VERBOSE)');
+            }
             return command.replace('ANALYZE', 'ANALYZE (VERBOSE)');
         }
 
         if (op === 'reindex') {
             // PostgreSQL 12+ supports VERBOSE for REINDEX
-            // Syntax: REINDEX (VERBOSE) DATABASE "dbname"
-            return command.replace('REINDEX DATABASE', 'REINDEX (VERBOSE) DATABASE');
+            // Syntax: REINDEX (VERBOSE) TABLE/SCHEMA/DATABASE "name"
+            if (command.includes('TABLE')) {
+                return command.replace('REINDEX TABLE', 'REINDEX (VERBOSE) TABLE');
+            } else if (command.includes('SCHEMA')) {
+                return command.replace('REINDEX SCHEMA', 'REINDEX (VERBOSE) SCHEMA');
+            } else {
+                return command.replace('REINDEX DATABASE', 'REINDEX (VERBOSE) DATABASE');
+            }
         }
 
         return command;
