@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Query Templates**: Pre-built SQL templates panel with 25+ categorized snippets (SELECT, JOIN, Aggregate, INSERT, UPDATE, DELETE, DDL, Window Functions)
+- **Screenshots**: Added visual showcase to README with 8 screenshots
+
 ## [0.1.13] - 2026-01-21
 
 ### Added
