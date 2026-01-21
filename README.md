@@ -1,8 +1,12 @@
 # DB Nexus
 
-A **local-first database management tool** with a modern web UI, CLI, and production safety guardrails.
+> A **local-first database management tool** with a modern web UI, CLI, and production safety guardrails for PostgreSQL, MySQL, MariaDB, and SQLite.
 
-![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)
+[![npm version](https://img.shields.io/npm/v/dbnexus.svg)](https://www.npmjs.com/package/dbnexus)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
+
+**[Documentation](https://akademskig.github.io/dbnexus/)** • **[Installation](#-quick-start)** • **[Features](#-features)** • **[CLI Usage](#-cli-usage)**
 
 ## ✨ Features
 
@@ -282,8 +286,45 @@ docker-compose down
 
 ## 📖 Documentation
 
-For detailed architecture and design decisions, see [DESIGN.md](./DESIGN.md).
+- **[Full Documentation](https://akademskig.github.io/dbnexus/)** - Complete guide with screenshots and examples
+- **[Architecture & Design](./DESIGN.md)** - Technical details and design decisions
+- **[Installation Guide](./INSTALLATION.md)** - Detailed installation instructions
+- **[Changelog](./CHANGELOG.md)** - Release notes and version history
+
+## 🌟 Why DB Nexus?
+
+- **🏠 Local-First** - Your data stays on your machine. No cloud dependencies.
+- **🎨 Modern UI** - Beautiful, intuitive interface with dark mode and glassmorphism design
+- **🛡️ Production Safe** - Built-in guardrails prevent accidental data loss
+- **🔒 Secure** - AES-256-GCM encryption for stored credentials
+- **⚡ Fast** - Native performance with direct database connections
+- **🆓 Open Source** - AGPL-3.0 licensed, free forever
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 🐛 Bug Reports
+
+Found a bug? Please [open an issue](https://github.com/akademskig/dbnexus/issues) with:
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Database type and version
+- DB Nexus version (`dbnexus --version`)
 
 ## 📄 License
 
 AGPL-3.0 - See [LICENSE](./LICENSE) for details.
+
+---
+
+**Made with ❤️ by the DB Nexus team**
+
+[⭐ Star us on GitHub](https://github.com/akademskig/dbnexus) • [📖 Read the docs](https://akademskig.github.io/dbnexus/) • [🐛 Report a bug](https://github.com/akademskig/dbnexus/issues)
