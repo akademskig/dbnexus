@@ -13,30 +13,38 @@
 <div align="center">
 
 ### Query Editor
+
 ![Query Page](https://akademskig.github.io/dbnexus/screenshots/querypage.png)
 
 ### Schema Diagram
+
 ![Schema Diagram](https://akademskig.github.io/dbnexus/screenshots/schemadiagrampage.png)
 
 ### Compare & Sync
+
 ![Compare Schema](https://akademskig.github.io/dbnexus/screenshots/comparepage-schema.png)
 
 <details>
 <summary>📷 More Screenshots</summary>
 
 ### Data Comparison
+
 ![Compare Data](https://akademskig.github.io/dbnexus/screenshots/comparepage-data.png)
 
 ### Projects & Groups
+
 ![Projects Page](https://akademskig.github.io/dbnexus/screenshots/projectspage.png)
 
 ### Connection Management
+
 ![Connection Management](https://akademskig.github.io/dbnexus/screenshots/connectionmanagement.png)
 
 ### Query Logs
+
 ![Logs Page](https://akademskig.github.io/dbnexus/screenshots/logspage-query.png)
 
 ### Connection Scanner
+
 ![Scan Connections](https://akademskig.github.io/dbnexus/screenshots/scanconnections.png)
 
 </details>

@@ -50,6 +50,7 @@ import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
+import { TemplatesPanel } from './TemplatesPanel';
 import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
@@ -149,6 +150,9 @@ export function QueryPage() {
     const [saveQueryOpen, setSaveQueryOpen] = useState(false);
     const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
     const [queryToDelete, setQueryToDelete] = useState<SavedQuery | null>(null);
+
+    // Templates state
+    const [templatesOpen, setTemplatesOpen] = useState(false);
 
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
@@ -1187,6 +1191,16 @@ export function QueryPage() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title="Query Templates">
+                    <IconButton
+                        size="small"
+                        onClick={() => setTemplatesOpen(true)}
+                        color={templatesOpen ? 'primary' : 'default'}
+                    >
+                        <CodeIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
+
                 <StyledTooltip title="Saved Queries">
                     <IconButton
                         size="small"
@@ -1745,6 +1759,24 @@ export function QueryPage() {
                     )}
                 </Box>
             </Box>
+
+            {/* Query Templates Drawer */}
+            <Drawer
+                anchor="right"
+                open={templatesOpen}
+                onClose={() => setTemplatesOpen(false)}
+                PaperProps={{
+                    sx: { width: 420, bgcolor: 'background.default' },
+                }}
+            >
+                <TemplatesPanel
+                    onTemplateSelect={(templateSql) => {
+                        setSql(templateSql);
+                        handleTabChange(4); // Switch to SQL tab
+                        setTemplatesOpen(false);
+                    }}
+                />
+            </Drawer>
 
             {/* Query History Drawer */}
             <Drawer
