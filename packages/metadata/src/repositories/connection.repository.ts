@@ -321,11 +321,11 @@ export class ConnectionRepository {
 
         try {
             // Delete related records manually (in case CASCADE doesn't work)
-            this.db.prepare('DELETE FROM query_history WHERE connection_id = ?').run(id);
+            this.db.prepare('DELETE FROM query_logs WHERE connection_id = ?').run(id);
             this.db.prepare('DELETE FROM schema_snapshots WHERE connection_id = ?').run(id);
             this.db
                 .prepare(
-                    'DELETE FROM migration_history WHERE source_connection_id = ? OR target_connection_id = ?'
+                    'DELETE FROM migration_logs WHERE source_connection_id = ? OR target_connection_id = ?'
                 )
                 .run(id, id);
             this.db
@@ -335,7 +335,7 @@ export class ConnectionRepository {
                 .run(id, id);
             this.db
                 .prepare(
-                    'DELETE FROM sync_runs WHERE source_connection_id = ? OR target_connection_id = ?'
+                    'DELETE FROM sync_run_logs WHERE source_connection_id = ? OR target_connection_id = ?'
                 )
                 .run(id, id);
             this.db

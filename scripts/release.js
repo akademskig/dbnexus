@@ -101,5 +101,8 @@ if (!flags.has('--no-commit')) {
 }
 
 if (!flags.has('--no-tag')) {
-    execSync(`git tag v${nextVersion}`, { cwd: rootDir, stdio: 'inherit' });
+    execSync(`git tag -a v${nextVersion} -m "Release v${nextVersion}"`, {
+        cwd: rootDir,
+        stdio: 'inherit',
+    });
 }
