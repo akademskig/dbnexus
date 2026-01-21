@@ -51,6 +51,7 @@ import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
 import { TemplatesPanel } from './TemplatesPanel';
+import { FloatingEditorDialog } from './FloatingEditorDialog';
 import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
@@ -153,6 +154,9 @@ export function QueryPage() {
 
     // Templates state
     const [templatesOpen, setTemplatesOpen] = useState(false);
+
+    // Floating editor state
+    const [floatingEditorOpen, setFloatingEditorOpen] = useState(false);
 
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
@@ -1749,6 +1753,7 @@ export function QueryPage() {
                                         onExecute={handleExecute}
                                         onSave={() => setSaveQueryOpen(true)}
                                         onKeyDown={handleKeyDown}
+                                        onPopOut={() => setFloatingEditorOpen(true)}
                                         loading={executeMutation.isPending}
                                     />
                                 )}
@@ -2039,6 +2044,21 @@ export function QueryPage() {
                 confirmText="Delete"
                 confirmColor="error"
                 loading={deleteQueryMutation.isPending}
+            />
+
+            {/* Floating Editor Dialog */}
+            <FloatingEditorDialog
+                open={floatingEditorOpen}
+                onClose={() => setFloatingEditorOpen(false)}
+                sql={sql}
+                onSqlChange={setSql}
+                onExecute={() => {
+                    handleExecute();
+                    handleTabChange(0); // Switch to Data tab to show results
+                }}
+                onSave={() => setSaveQueryOpen(true)}
+                onExplain={() => handleExplain(false)}
+                loading={executeMutation.isPending}
             />
         </Box>
     );

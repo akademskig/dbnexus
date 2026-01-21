@@ -27,7 +27,7 @@ export function generateContextAwareSQL(
     }
 
     const columns = schema.columns || [];
-    
+
     // Helper to quote identifiers based on engine
     const quote = (identifier: string): string => {
         if (engine === 'mysql' || engine === 'mariadb') {
@@ -37,28 +37,34 @@ export function generateContextAwareSQL(
     };
 
     // Find specific column types
-    const textColumn = columns.find((c) => 
-        c.dataType.toLowerCase().includes('varchar') || 
-        c.dataType.toLowerCase().includes('text') ||
-        c.dataType.toLowerCase().includes('char')
-    )?.name || 'name';
-    
-    const numberColumn = columns.find((c) => 
-        c.dataType.toLowerCase().includes('int') || 
-        c.dataType.toLowerCase().includes('numeric') ||
-        c.dataType.toLowerCase().includes('decimal') ||
-        c.dataType.toLowerCase().includes('float') ||
-        c.dataType.toLowerCase().includes('double')
-    )?.name || 'id';
-    
-    const dateColumn = columns.find((c) => 
-        c.dataType.toLowerCase().includes('timestamp') || 
-        c.dataType.toLowerCase().includes('date') ||
-        c.dataType.toLowerCase().includes('time')
-    )?.name || 'created_at';
+    const textColumn =
+        columns.find(
+            (c) =>
+                c.dataType.toLowerCase().includes('varchar') ||
+                c.dataType.toLowerCase().includes('text') ||
+                c.dataType.toLowerCase().includes('char')
+        )?.name || 'name';
+
+    const numberColumn =
+        columns.find(
+            (c) =>
+                c.dataType.toLowerCase().includes('int') ||
+                c.dataType.toLowerCase().includes('numeric') ||
+                c.dataType.toLowerCase().includes('decimal') ||
+                c.dataType.toLowerCase().includes('float') ||
+                c.dataType.toLowerCase().includes('double')
+        )?.name || 'id';
+
+    const dateColumn =
+        columns.find(
+            (c) =>
+                c.dataType.toLowerCase().includes('timestamp') ||
+                c.dataType.toLowerCase().includes('date') ||
+                c.dataType.toLowerCase().includes('time')
+        )?.name || 'created_at';
 
     const primaryKey = columns.find((c) => c.isPrimaryKey)?.name || 'id';
-    
+
     // Get first few non-PK columns for examples
     const dataColumns = columns
         .filter((c) => !c.isPrimaryKey)
@@ -66,7 +72,7 @@ export function generateContextAwareSQL(
         .map((c) => c.name);
 
     // Build full table name with schema if available
-    const fullTableName = schema.schema 
+    const fullTableName = schema.schema
         ? `${quote(schema.schema)}.${quote(tableName)}`
         : quote(tableName);
 

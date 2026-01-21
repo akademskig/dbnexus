@@ -18,6 +18,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { TableSchema } from '@dbnexus/shared';
 
 interface SchemaTabProps {
@@ -327,10 +328,19 @@ interface SqlTabProps {
     readonly onExecute: () => void;
     readonly onSave?: () => void;
     readonly onKeyDown: (e: React.KeyboardEvent) => void;
+    readonly onPopOut?: () => void;
     readonly loading: boolean;
 }
 
-export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading }: SqlTabProps) {
+export function SqlTab({
+    sql,
+    onSqlChange,
+    onExecute,
+    onSave,
+    onKeyDown,
+    onPopOut,
+    loading,
+}: SqlTabProps) {
     return (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1 }} onKeyDown={onKeyDown}>
@@ -378,6 +388,18 @@ export function SqlTab({ sql, onSqlChange, onExecute, onSave, onKeyDown, loading
                                 disabled={!sql.trim()}
                             >
                                 Save
+                            </Button>
+                        </StyledTooltip>
+                    )}
+                    {onPopOut && (
+                        <StyledTooltip title="Open in floating window">
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<OpenInNewIcon />}
+                                onClick={onPopOut}
+                            >
+                                Pop Out
                             </Button>
                         </StyledTooltip>
                     )}

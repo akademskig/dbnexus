@@ -171,7 +171,7 @@ export function TemplatesPanel({
                                             tableSchema || undefined,
                                             engine
                                         );
-                                        
+
                                         return (
                                             <ListItemButton
                                                 key={template.id}
@@ -185,57 +185,57 @@ export function TemplatesPanel({
                                                     },
                                                 }}
                                             >
-                                            <ListItemText
-                                                primary={
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            fontWeight: 500,
-                                                            color: 'text.primary',
-                                                        }}
-                                                    >
-                                                        {template.name}
-                                                    </Typography>
-                                                }
-                                                secondary={
-                                                    <Box>
+                                                <ListItemText
+                                                    primary={
                                                         <Typography
-                                                            variant="caption"
+                                                            variant="body2"
                                                             sx={{
-                                                                color: 'text.secondary',
-                                                                display: 'block',
-                                                                mb: 0.5,
+                                                                fontWeight: 500,
+                                                                color: 'text.primary',
                                                             }}
                                                         >
-                                                            {template.description}
+                                                            {template.name}
                                                         </Typography>
-                                                        {template.tags && (
-                                                            <Box
+                                                    }
+                                                    secondary={
+                                                        <Box>
+                                                            <Typography
+                                                                variant="caption"
                                                                 sx={{
-                                                                    display: 'flex',
-                                                                    gap: 0.5,
-                                                                    flexWrap: 'wrap',
+                                                                    color: 'text.secondary',
+                                                                    display: 'block',
+                                                                    mb: 0.5,
                                                                 }}
                                                             >
-                                                                {template.tags.map((tag) => (
-                                                                    <Chip
-                                                                        key={tag}
-                                                                        label={tag}
-                                                                        size="small"
-                                                                        sx={{
-                                                                            height: 18,
-                                                                            fontSize: 10,
-                                                                            bgcolor:
-                                                                                'action.selected',
-                                                                        }}
-                                                                    />
-                                                                ))}
-                                                            </Box>
-                                                        )}
-                                                    </Box>
-                                                }
-                                            />
-                                        </ListItemButton>
+                                                                {template.description}
+                                                            </Typography>
+                                                            {template.tags && (
+                                                                <Box
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        gap: 0.5,
+                                                                        flexWrap: 'wrap',
+                                                                    }}
+                                                                >
+                                                                    {template.tags.map((tag) => (
+                                                                        <Chip
+                                                                            key={tag}
+                                                                            label={tag}
+                                                                            size="small"
+                                                                            sx={{
+                                                                                height: 18,
+                                                                                fontSize: 10,
+                                                                                bgcolor:
+                                                                                    'action.selected',
+                                                                            }}
+                                                                        />
+                                                                    ))}
+                                                                </Box>
+                                                            )}
+                                                        </Box>
+                                                    }
+                                                />
+                                            </ListItemButton>
                                         );
                                     })}
                                 </List>
