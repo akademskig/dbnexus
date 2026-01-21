@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
+    Paper,
     Box,
     IconButton,
     Button,
@@ -17,8 +15,10 @@ import {
     AccountTree as ExplainIcon,
     Fullscreen as FullscreenIcon,
     FullscreenExit as FullscreenExitIcon,
+    DragIndicator as DragIcon,
 } from '@mui/icons-material';
 import Editor from '@monaco-editor/react';
+import Draggable from 'react-draggable';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 
 interface FloatingEditorDialogProps {
@@ -44,7 +44,9 @@ export function FloatingEditorDialog({
 }: FloatingEditorDialogProps) {
     const { mode } = useThemeModeStore();
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [size, setSize] = useState({ width: 800, height: 600 });
     const editorRef = useRef<any>(null);
+    const nodeRef = useRef(null);
 
     // Handle Ctrl/Cmd+Enter to execute
     useEffect(() => {
@@ -61,6 +63,13 @@ export function FloatingEditorDialog({
         }
     }, [open, onExecute]);
 
+    // Reset fullscreen when closing
+    useEffect(() => {
+        if (!open) {
+            setIsFullscreen(false);
+        }
+    }, [open]);
+
     const handleEditorMount = (editor: any) => {
         editorRef.current = editor;
         editor.focus();
@@ -74,37 +83,49 @@ export function FloatingEditorDialog({
         setIsFullscreen(!isFullscreen);
     };
 
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth={isFullscreen ? false : 'lg'}
-            fullWidth={!isFullscreen}
-            fullScreen={isFullscreen}
-            PaperProps={{
-                sx: {
-                    bgcolor: 'background.paper',
-                    minHeight: isFullscreen ? '100vh' : '60vh',
-                    maxHeight: isFullscreen ? '100vh' : '80vh',
-                },
+    if (!open) return null;
+
+    const content = (
+        <Paper
+            ref={nodeRef}
+            elevation={8}
+            sx={{
+                position: 'fixed',
+                top: isFullscreen ? 0 : '10%',
+                left: isFullscreen ? 0 : '50%',
+                transform: isFullscreen ? 'none' : 'translateX(-50%)',
+                width: isFullscreen ? '100vw' : size.width,
+                height: isFullscreen ? '100vh' : size.height,
+                maxWidth: isFullscreen ? '100vw' : '90vw',
+                maxHeight: isFullscreen ? '100vh' : '85vh',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.paper',
+                zIndex: 1300,
+                overflow: 'hidden',
             }}
         >
-            <DialogTitle
+            {/* Title Bar */}
+            <Box
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     borderBottom: 1,
                     borderColor: 'divider',
-                    py: 1.5,
+                    py: 1,
                     px: 2,
+                    bgcolor: 'background.default',
+                    cursor: isFullscreen ? 'default' : 'move',
                 }}
+                className="drag-handle"
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {!isFullscreen && <DragIcon sx={{ color: 'text.secondary', fontSize: 20 }} />}
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                         SQL Editor
                     </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         Ctrl/Cmd+Enter to execute
                     </Typography>
                 </Box>
@@ -125,79 +146,105 @@ export function FloatingEditorDialog({
                         </IconButton>
                     </Tooltip>
                 </Box>
-            </DialogTitle>
+            </Box>
 
-            <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
-                {/* Editor */}
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                    <Editor
-                        height="100%"
-                        language="sql"
-                        value={sql}
-                        onChange={(value) => onSqlChange(value || '')}
-                        onMount={handleEditorMount}
-                        theme={mode === 'dark' ? 'vs-dark' : 'light'}
-                        options={{
-                            minimap: { enabled: true },
-                            fontSize: 14,
-                            lineNumbers: 'on',
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            tabSize: 2,
-                            wordWrap: 'on',
-                            padding: { top: 16, bottom: 16 },
-                        }}
-                    />
-                </Box>
-
-                {/* Action Bar */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        gap: 1,
-                        p: 2,
-                        borderTop: 1,
-                        borderColor: 'divider',
-                        bgcolor: 'background.default',
+            {/* Editor */}
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Editor
+                    height="100%"
+                    language="sql"
+                    value={sql}
+                    onChange={(value) => onSqlChange(value || '')}
+                    onMount={handleEditorMount}
+                    theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                    options={{
+                        minimap: { enabled: true },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        tabSize: 2,
+                        wordWrap: 'on',
+                        padding: { top: 16, bottom: 16 },
                     }}
+                />
+            </Box>
+
+            {/* Action Bar */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    gap: 1,
+                    p: 2,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                    bgcolor: 'background.default',
+                }}
+            >
+                <Button
+                    variant="contained"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={onExecute}
+                    disabled={loading || !sql.trim()}
+                    sx={{ minWidth: 120 }}
                 >
-                    <Button
-                        variant="contained"
-                        startIcon={<PlayArrowIcon />}
-                        onClick={onExecute}
-                        disabled={loading || !sql.trim()}
-                        sx={{ minWidth: 120 }}
-                    >
-                        {loading ? 'Executing...' : 'Execute'}
-                    </Button>
+                    {loading ? 'Executing...' : 'Execute'}
+                </Button>
 
-                    <Button
-                        variant="outlined"
-                        startIcon={<ExplainIcon />}
-                        onClick={onExplain}
-                        disabled={loading || !sql.trim()}
-                    >
-                        Explain
-                    </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<ExplainIcon />}
+                    onClick={onExplain}
+                    disabled={loading || !sql.trim()}
+                >
+                    Explain
+                </Button>
 
-                    <Button
-                        variant="outlined"
-                        startIcon={<SaveIcon />}
-                        onClick={onSave}
-                        disabled={!sql.trim()}
-                    >
-                        Save
-                    </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<SaveIcon />}
+                    onClick={onSave}
+                    disabled={!sql.trim()}
+                >
+                    Save
+                </Button>
 
-                    <Box sx={{ flex: 1 }} />
+                <Box sx={{ flex: 1 }} />
 
-                    <Tooltip title="Copy SQL">
-                        <IconButton size="small" onClick={handleCopy} disabled={!sql.trim()}>
-                            <CopyIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            </DialogContent>
-        </Dialog>
+                <Tooltip title="Copy SQL">
+                    <IconButton size="small" onClick={handleCopy} disabled={!sql.trim()}>
+                        <CopyIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+            </Box>
+        </Paper>
+    );
+
+    // Wrap in Draggable only when not fullscreen
+    if (isFullscreen) {
+        return content;
+    }
+
+    return (
+        <>
+            {/* Backdrop */}
+            <Box
+                sx={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: 'rgba(0, 0, 0, 0.5)',
+                    zIndex: 1299,
+                }}
+                onClick={onClose}
+            />
+
+            {/* Draggable Window */}
+            <Draggable handle=".drag-handle" nodeRef={nodeRef} bounds="parent">
+                {content}
+            </Draggable>
+        </>
     );
 }
