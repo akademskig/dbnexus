@@ -89,6 +89,8 @@ export function FloatingEditorDialog({
                 transform: isFullscreen ? 'none' : 'translateX(-50%)',
                 width: isFullscreen ? '100vw' : size.width,
                 height: isFullscreen ? '100vh' : size.height,
+                minWidth: isFullscreen ? '100vw' : 400,
+                minHeight: isFullscreen ? '100vh' : 300,
                 maxWidth: isFullscreen ? '100vw' : '90vw',
                 maxHeight: isFullscreen ? '100vh' : '85vh',
                 display: 'flex',
@@ -96,6 +98,7 @@ export function FloatingEditorDialog({
                 bgcolor: 'background.paper',
                 zIndex: 1300,
                 overflow: 'hidden',
+                resize: isFullscreen ? 'none' : 'both',
             }}
         >
             {/* Title Bar */}
@@ -219,25 +222,8 @@ export function FloatingEditorDialog({
     }
 
     return (
-        <>
-            {/* Backdrop */}
-            <Box
-                sx={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bgcolor: 'rgba(0, 0, 0, 0.5)',
-                    zIndex: 1299,
-                }}
-                onClick={onClose}
-            />
-
-            {/* Draggable Window */}
-            <Draggable handle=".drag-handle" nodeRef={nodeRef} bounds="parent">
-                {content}
-            </Draggable>
-        </>
+        <Draggable handle=".drag-handle" nodeRef={nodeRef} bounds="parent">
+            {content}
+        </Draggable>
     );
 }
