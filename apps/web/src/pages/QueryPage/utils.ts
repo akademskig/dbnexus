@@ -20,7 +20,7 @@ export function formatBytes(bytes: number): string {
 }
 
 // Sidebar width constant
-export const SIDEBAR_WIDTH = 280;
+export const SIDEBAR_WIDTH = 260;
 
 // Common data types for create table
 export const COMMON_TYPES = {

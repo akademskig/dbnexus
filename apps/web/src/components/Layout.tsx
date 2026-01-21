@@ -41,7 +41,7 @@ import { useConnectionStore } from '../stores/connectionStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 240;
 const DRAWER_WIDTH_COLLAPSED = 64;
 
 // Sidebar state store

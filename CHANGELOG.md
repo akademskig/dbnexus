@@ -7,24 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-01-21
+
 ### Added
 
-- **Query type classification** - Categorize queries (READ, WRITE, DDL, MAINTENANCE) with color-coded chips in Query History
-- **Enhanced logs filtering** - Filter by query type in Query History tab
-- **Group source tracking** - Migrations and sync runs now show if they came from instance groups vs manual operations
-- **Connection filtering in logs** - Filter activities by specific connections in Activity, Migrations, and Sync tabs
-- **Source badges** - Beautiful purple badges for group operations, gray for manual operations
-- About page with Bitcoin donation option in docs
-- Screenshot lightbox (click to enlarge) in docs
+- **Explain Plan Dialog** - Separate component with tabs for execution plan and insights
+- **Query type classification** - Categorize queries (READ, WRITE, DDL, MAINTENANCE) with color-coded chips
+- **Maintenance operations** - Detailed results for VACUUM, ANALYZE, REINDEX, OPTIMIZE with scope targeting
+- **Audit Logs** - New tab tracking connection lifecycle, project/group management, and schema changes
+- **Primary key management** - Add, edit, and remove primary keys from table management UI
+- **Index editing** - Full edit functionality for indexes including rename
+- **Group source tracking** - Migrations and sync runs show if from instance groups or manual
+- **Connection filtering** - Filter activities by connection in Activity, Migrations, and Sync tabs
+- Single-row data sync now logged in sync_run_logs
 
 ### Changed
 
-- Logs tabs now show instance group name for automated operations
-- Migration History tab includes source filter (All/Groups/Manual/Specific Group)
-- Sync Runs tab includes source filter (All/Groups/Manual/Specific Group)
-- Activity Log tab includes connection filter dropdown
-- Source column in logs uses styled Chip badges instead of plain text
-- Consistent border-radius styling across all docs cards
+- Renamed tables: `query_history` → `query_logs`, `migration_history` → `migration_logs`, `sync_runs` → `sync_run_logs`
+- Schema diff now generates SQL for primary key and unique constraint changes
+- Logs tabs show instance group name for automated operations
+- Source column uses styled Chip badges (purple for groups, gray for manual)
+- Navigation panel width reduced for more workspace
+
+### Fixed
+
+- Schema selection resetting on Query Page
+- Primary key constraint names in generated SQL
+- Delete operations now properly confirmed
+- Table management operations correctly logged
 
 ## [0.1.12] - 2026-01-19
 
@@ -212,7 +222,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark/Light theme support
 - Keyboard shortcuts for common actions
 
-[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.13...HEAD
+[0.1.13]: https://github.com/yourusername/db-manager/compare/v0.1.12...v0.1.13
+[0.1.12]: https://github.com/yourusername/db-manager/compare/v0.1.11...v0.1.12
+[0.1.11]: https://github.com/yourusername/db-manager/compare/v0.1.10...v0.1.11
 [0.1.10]: https://github.com/yourusername/db-manager/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/yourusername/db-manager/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/yourusername/db-manager/compare/v0.1.7...v0.1.8
