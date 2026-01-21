@@ -1775,6 +1775,9 @@ export function QueryPage() {
                         handleTabChange(4); // Switch to SQL tab
                         setTemplatesOpen(false);
                     }}
+                    selectedTable={selectedTable}
+                    tableSchema={tableSchema}
+                    engine={selectedConnection?.engine}
                 />
             </Drawer>
 

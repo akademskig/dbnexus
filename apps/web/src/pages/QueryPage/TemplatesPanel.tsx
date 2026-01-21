@@ -17,13 +17,27 @@ import {
     Code as CodeIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../components/GlassCard';
-import { QUERY_TEMPLATES, getTemplateCategories, type QueryTemplate } from './queryTemplates';
+import {
+    QUERY_TEMPLATES,
+    getTemplateCategories,
+    generateContextAwareSQL,
+    type QueryTemplate,
+} from './queryTemplates';
+import type { TableInfo, TableSchema } from '@dbnexus/shared';
 
 interface TemplatesPanelProps {
     onTemplateSelect: (sql: string) => void;
+    selectedTable?: TableInfo | null;
+    tableSchema?: TableSchema | null;
+    engine?: string;
 }
 
-export function TemplatesPanel({ onTemplateSelect }: TemplatesPanelProps) {
+export function TemplatesPanel({
+    onTemplateSelect,
+    selectedTable,
+    tableSchema,
+    engine,
+}: TemplatesPanelProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedCategory, setExpandedCategory] = useState<string | null>('select');
 
@@ -150,19 +164,27 @@ export function TemplatesPanel({ onTemplateSelect }: TemplatesPanelProps) {
                             {/* Templates in Category */}
                             <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                                 <List disablePadding>
-                                    {categoryTemplates.map((template) => (
-                                        <ListItemButton
-                                            key={template.id}
-                                            onClick={() => onTemplateSelect(template.sql)}
-                                            sx={{
-                                                pl: 3,
-                                                borderBottom: 1,
-                                                borderColor: 'divider',
-                                                '&:hover': {
-                                                    bgcolor: 'action.hover',
-                                                },
-                                            }}
-                                        >
+                                    {categoryTemplates.map((template) => {
+                                        const contextAwareSQL = generateContextAwareSQL(
+                                            template,
+                                            selectedTable?.name,
+                                            tableSchema || undefined,
+                                            engine
+                                        );
+                                        
+                                        return (
+                                            <ListItemButton
+                                                key={template.id}
+                                                onClick={() => onTemplateSelect(contextAwareSQL)}
+                                                sx={{
+                                                    pl: 3,
+                                                    borderBottom: 1,
+                                                    borderColor: 'divider',
+                                                    '&:hover': {
+                                                        bgcolor: 'action.hover',
+                                                    },
+                                                }}
+                                            >
                                             <ListItemText
                                                 primary={
                                                     <Typography
@@ -214,7 +236,8 @@ export function TemplatesPanel({ onTemplateSelect }: TemplatesPanelProps) {
                                                 }
                                             />
                                         </ListItemButton>
-                                    ))}
+                                        );
+                                    })}
                                 </List>
                             </Collapse>
                         </Box>
