@@ -182,9 +182,9 @@ export function FloatingEditorDialog({
                     startIcon={<PlayArrowIcon />}
                     onClick={onExecute}
                     disabled={loading || !sql.trim()}
-                    sx={{ minWidth: 120 }}
+                    sx={{ minWidth: 80 }}
                 >
-                    {loading ? 'Executing...' : 'Execute'}
+                    {loading ? 'Running...' : 'Run'}
                 </Button>
 
                 <Button
