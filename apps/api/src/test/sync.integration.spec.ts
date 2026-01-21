@@ -451,9 +451,14 @@ describe('Data Sync Integration Tests', () => {
         it('should record sync run in database', async () => {
             if (skipIfNoBothDBs()) return;
 
-            // Insert data in source
+            // Clean both tables to ensure fresh state
+            await sourceConnector!.query(`DELETE FROM ${TEST_TABLE}`);
+            await targetConnector!.query(`DELETE FROM ${TEST_TABLE}`);
+
+            // Insert unique data in source (use small number to avoid integer overflow)
+            const uniqueValue = Math.floor(Math.random() * 1000000);
             await sourceConnector!.query(`
-                INSERT INTO ${TEST_TABLE} (name, value) VALUES ('Test', 1)
+                INSERT INTO ${TEST_TABLE} (name, value) VALUES ('SyncRunTest', ${uniqueValue})
             `);
 
             // Perform sync

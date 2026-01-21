@@ -313,6 +313,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 🐛 Bug Reports
 
 Found a bug? Please [open an issue](https://github.com/akademskig/dbnexus/issues) with:
+
 - Steps to reproduce
 - Expected behavior
 - Actual behavior
