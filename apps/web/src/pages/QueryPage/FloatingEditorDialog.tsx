@@ -1,12 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-    Paper,
-    Box,
-    IconButton,
-    Button,
-    Typography,
-    Tooltip,
-} from '@mui/material';
+import { Paper, Box, IconButton, Button, Typography, Tooltip } from '@mui/material';
 import {
     Close as CloseIcon,
     PlayArrow as PlayArrowIcon,
@@ -44,7 +37,7 @@ export function FloatingEditorDialog({
 }: FloatingEditorDialogProps) {
     const { mode } = useThemeModeStore();
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [size, setSize] = useState({ width: 800, height: 600 });
+    const [size] = useState({ width: 800, height: 600 });
     const editorRef = useRef<any>(null);
     const nodeRef = useRef(null);
 

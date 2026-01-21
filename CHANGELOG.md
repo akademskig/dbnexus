@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Floating SQL Editor**: Detachable editor dialog to write queries while viewing results
-  - Pop out from SQL tab to separate window
-  - Fullscreen mode support
-  - Execute, Explain, Save, and Copy actions
-  - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
+    - Pop out from SQL tab to separate window
+    - Fullscreen mode support
+    - Execute, Explain, Save, and Copy actions
+    - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
 - **Query Templates**: Pre-built SQL templates panel with 25+ categorized snippets (SELECT, JOIN, Aggregate, INSERT, UPDATE, DELETE, DDL, Window Functions)
-  - Context-aware templates auto-replace placeholders with selected table and column names
-  - Smart column detection by type (text, number, date)
-  - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
+    - Context-aware templates auto-replace placeholders with selected table and column names
+    - Smart column detection by type (text, number, date)
+    - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
 - **Screenshots**: Added visual showcase to README with 8 screenshots
 
 ## [0.1.13] - 2026-01-21
@@ -129,8 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Drag and drop connections between projects and groups on Projects page
-  - Visual feedback with dashed border on drag over
-  - Drop zones on projects, groups, and ungrouped section
+    - Visual feedback with dashed border on drag over
+    - Drop zones on projects, groups, and ungrouped section
 
 ### Fixed
 
@@ -141,10 +141,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Interactive onboarding tour for new users
-  - Step-by-step walkthrough of main features
-  - Minimizable floating panel
-  - Progress tracking with localStorage persistence
-  - Spotlight indicators for target elements
+    - Step-by-step walkthrough of main features
+    - Minimizable floating panel
+    - Progress tracking with localStorage persistence
+    - Spotlight indicators for target elements
 - Auto-select first connection and default schema when adding connections
 - Auto-select first table on Query page when none is selected
 - Redirect from connection-required pages when no connections exist
@@ -183,11 +183,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Connection scanning feature to auto-discover databases
-  - Port scanning for common database ports
-  - Docker container inspection
-  - Environment file parsing (.env)
-  - Docker Compose file parsing
-  - SQLite file discovery
+    - Port scanning for common database ports
+    - Docker container inspection
+    - Environment file parsing (.env)
+    - Docker Compose file parsing
+    - SQLite file discovery
 - Connection type classification (local, Docker, remote)
 - Edit column functionality in Schema Diagram
 - Centralized SQL utilities for consistent identifier quoting
