@@ -17,6 +17,10 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -32,6 +36,7 @@ import {
     School as SchoolIcon,
     Palette as PaletteIcon,
     Label as LabelIcon,
+    ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
@@ -522,6 +527,24 @@ function TagsTab() {
 // About Tab Content
 function AboutTab() {
     const version = __APP_VERSION__;
+    const [donateDialogOpen, setDonateDialogOpen] = useState(false);
+    const [addressCopied, setAddressCopied] = useState(false);
+    const toastSuccess = useToastStore((state) => state.success);
+    const toastError = useToastStore((state) => state.error);
+
+    const DONATION_ADDRESS = 'bc1qhrg37apup3dkdmxmmy2kt0xcrufxjekxnd7x9jm3k0lv5lyzyrjqecryqh';
+    const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=bitcoin:${DONATION_ADDRESS}`;
+
+    const handleCopyAddress = async () => {
+        try {
+            await navigator.clipboard.writeText(DONATION_ADDRESS);
+            setAddressCopied(true);
+            toastSuccess('Bitcoin address copied to clipboard');
+            setTimeout(() => setAddressCopied(false), 2000);
+        } catch {
+            toastError('Failed to copy address');
+        }
+    };
 
     return (
         <>
@@ -534,14 +557,17 @@ function AboutTab() {
                     </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                    DB Nexus is a powerful database management tool that helps you manage multiple
-                    database connections, compare schemas, synchronize data, and visualize database
-                    structures across PostgreSQL, MySQL, MariaDB, and SQLite databases.
+                    A <strong>local-first</strong> database management tool designed for speed, safety,
+                    and clarity. DB Nexus brings together query editing, schema visualization, data
+                    synchronization, and production safety guardrails in one modern experience.
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    Works seamlessly with <strong>PostgreSQL, MySQL, MariaDB, and SQLite</strong> —
+                    everything runs locally, giving you full control over your data and infrastructure.
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                    Built with modern technologies including React, TypeScript, NestJS, and
-                    Material-UI, DB Nexus provides a seamless experience for database administrators
-                    and developers.
+                    Built with React, TypeScript, NestJS, and Material-UI. Open source and designed for
+                    database administrators and developers who value both power and usability.
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                     Version {version}
@@ -571,6 +597,38 @@ function AboutTab() {
                     }}
                 >
                     admin@dbnexus.dev
+                </Button>
+            </GlassCard>
+
+            {/* Support Development */}
+            <GlassCard sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600, mb: 2 }}>
+                    Support Development
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    If DB Nexus helps you, consider supporting its development.
+                </Typography>
+                <Button
+                    variant="outlined"
+                    startIcon={
+                        <Box
+                            component="img"
+                            src="/Bitcoin.svg.webp"
+                            alt="Bitcoin"
+                            sx={{ width: 20, height: 20 }}
+                        />
+                    }
+                    onClick={() => setDonateDialogOpen(true)}
+                    sx={{
+                        textTransform: 'none',
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                        },
+                    }}
+                >
+                    Donate Bitcoin
                 </Button>
             </GlassCard>
 
@@ -631,6 +689,106 @@ function AboutTab() {
                     © {new Date().getFullYear()} DB Nexus. All rights reserved.
                 </Typography>
             </GlassCard>
+
+            {/* Bitcoin Donation Dialog */}
+            <Dialog
+                open={donateDialogOpen}
+                onClose={() => setDonateDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                            component="img"
+                            src="/Bitcoin.svg.webp"
+                            alt="Bitcoin"
+                            sx={{ width: 28, height: 28 }}
+                        />
+                        <Typography variant="h6">Donate Bitcoin</Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2,
+                        }}
+                    >
+                        <Typography variant="body2" color="text.secondary" textAlign="center">
+                            Support DB Nexus development
+                        </Typography>
+
+                        {/* QR Code */}
+                        <Box
+                            component="img"
+                            src={QR_CODE_URL}
+                            alt="Bitcoin QR Code"
+                            sx={{
+                                width: 200,
+                                height: 200,
+                                border: 1,
+                                borderColor: 'divider',
+                                borderRadius: 1,
+                                p: 1,
+                                bgcolor: 'white',
+                            }}
+                        />
+
+                        {/* Address */}
+                        <Box sx={{ width: '100%' }}>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', mb: 0.5 }}
+                            >
+                                Bitcoin Address:
+                            </Typography>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    p: 1.2,
+                                    borderRadius: 1,
+                                    border: 1.5,
+                                    borderColor: 'divider',
+                                    "&:hover": {
+                                        borderColor: 'primary.main',
+                                    },
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        flex: 1,
+                                        wordBreak: 'break-all',
+                                        fontFamily: 'monospace',
+                                        fontSize: 11,
+                                    }}
+                                >
+                                    {DONATION_ADDRESS}
+                                </Typography>
+                                <IconButton
+                                    size="small"
+
+                                    onClick={handleCopyAddress}
+                                    sx={{
+                                        color: addressCopied ? 'success.main' : 'primary.main',
+                                    }}
+                                >
+                                    {addressCopied ? <CheckIcon /> : <ContentCopyIcon />}
+                                </IconButton>
+                            </Box>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 2, pb: 2 }}>
+                    <Button onClick={() => setDonateDialogOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }
