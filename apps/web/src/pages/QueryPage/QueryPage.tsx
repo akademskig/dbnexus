@@ -5,7 +5,6 @@ import { Group, Panel, Separator } from 'react-resizable-panels';
 import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import CodeIcon from '@mui/icons-material/Code';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
@@ -33,6 +32,7 @@ import {
     buildTableName,
     extractTableFromQuery,
 } from './utils';
+import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
 
 export function QueryPage() {
     const theme = useTheme();
@@ -354,13 +354,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1147,7 +1147,7 @@ export function QueryPage() {
                         onClick={() => setTemplatesOpen(true)}
                         color={templatesOpen ? 'primary' : 'default'}
                     >
-                        <CodeIcon fontSize="small" />
+                        <QueryTemplateIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
 
