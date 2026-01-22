@@ -14,7 +14,6 @@ import {
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
     Search as SearchIcon,
-    SchemaOutlined,
 } from '@mui/icons-material';
 import { GlassCard } from '../../components/GlassCard';
 import {
