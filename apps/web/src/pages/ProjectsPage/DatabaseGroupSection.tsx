@@ -10,8 +10,8 @@ import {
     ListItemIcon,
     ListItemText,
     Stack,
-    alpha,
     Button,
+    alpha,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -20,23 +20,29 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import LayersIcon from '@mui/icons-material/Layers';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SyncIcon from '@mui/icons-material/Sync';
+import AddIcon from '@mui/icons-material/Add';
+import StorageIcon from '@mui/icons-material/Storage';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../../lib/api';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { ConnectionCard } from './ConnectionCard';
 import { useToastStore } from '../../stores/toastStore';
+import { StyledTooltip } from '@/components/StyledTooltip';
 
 interface DatabaseGroupSectionProps {
-    group: DatabaseGroup;
-    connections: ConnectionConfig[];
-    allConnections: ConnectionConfig[];
-    projectColor: string;
-    onEditGroup: () => void;
-    onEditConnection: (conn: ConnectionConfig) => void;
-    onDeleteConnection: (id: string) => void;
-    onQuery: (id: string) => void;
-    onMoveConnection?: (connectionId: string) => void;
-    onDropComplete?: () => void;
+    readonly group: DatabaseGroup;
+    readonly connections: ConnectionConfig[];
+    readonly allConnections: ConnectionConfig[];
+    readonly projectColor: string;
+    readonly onEditGroup: () => void;
+    readonly onGroupSettings: () => void;
+    readonly onEditConnection: (conn: ConnectionConfig) => void;
+    readonly onDeleteConnection: (id: string) => void;
+    readonly onQuery: (id: string) => void;
+    readonly onMoveConnection?: (connectionId: string) => void;
+    readonly onDropComplete?: () => void;
+    readonly onAddConnection?: () => void;
 }
 
 export function DatabaseGroupSection({
@@ -45,11 +51,13 @@ export function DatabaseGroupSection({
     allConnections,
     projectColor,
     onEditGroup,
+    onGroupSettings,
     onEditConnection,
     onDeleteConnection,
     onQuery,
     onMoveConnection,
     onDropComplete,
+    onAddConnection,
 }: DatabaseGroupSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -166,7 +174,7 @@ export function DatabaseGroupSection({
                 >
                     <LayersIcon fontSize="small" sx={{ color: projectColor }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" fontWeight={600}>
                         {group.name}
                     </Typography>
@@ -177,14 +185,29 @@ export function DatabaseGroupSection({
                     )}
                 </Box>
                 <Chip
+                    icon={<StorageIcon sx={{ fontSize: 14 }} />}
+                    label={connections.length}
+                    size="small"
+                    sx={{
+                        height: 24,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                        color: 'info.main',
+                        border: '1px solid',
+                        borderColor: (theme) => alpha(theme.palette.info.main, 0.3),
+                        '& .MuiChip-icon': { color: 'info.main', fontSize: 14 },
+                    }}
+                />
+                <Chip
                     label={
                         group.databaseEngine === 'postgres'
                             ? 'PostgreSQL'
                             : group.databaseEngine === 'mysql'
-                              ? 'MySQL'
-                              : group.databaseEngine === 'mariadb'
-                                ? 'MariaDB'
-                                : 'SQLite'
+                                ? 'MySQL'
+                                : group.databaseEngine === 'mariadb'
+                                    ? 'MariaDB'
+                                    : 'SQLite'
                     }
                     size="small"
                     sx={{
@@ -201,8 +224,8 @@ export function DatabaseGroupSection({
                             group.syncSchema && group.syncData
                                 ? 'Schema + Data'
                                 : group.syncSchema
-                                  ? 'Schema'
-                                  : 'Data'
+                                    ? 'Schema'
+                                    : 'Data'
                         }
                         size="small"
                         icon={<SyncIcon sx={{ fontSize: 14 }} />}
@@ -216,9 +239,45 @@ export function DatabaseGroupSection({
                         }}
                     />
                 )}
-                <Typography variant="caption" color="text.secondary">
-                    {connections.length} instance{connections.length !== 1 ? 's' : ''}
-                </Typography>
+                {/* Quick Action */}
+                {onAddConnection && (
+                    <StyledTooltip title="Add Connection">
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddConnection();
+                            }}
+                            sx={{
+                                color: 'text.secondary',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                                },
+                            }}
+                        >
+                            <AddIcon fontSize="small" />
+                        </IconButton>
+                    </StyledTooltip>
+                )}
+                <StyledTooltip title="Sync Group Settings">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onGroupSettings();
+                        }}
+                        sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                                color: 'primary.main',
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                            },
+                        }}
+                    >
+                        <SettingsIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
                 <IconButton size="small">
                     {expanded ? (
                         <ExpandLessIcon fontSize="small" />
@@ -290,64 +349,101 @@ export function DatabaseGroupSection({
                         borderColor: 'divider',
                     }}
                 >
-                    <Stack spacing={1}>
-                        {visibleConnections.map((conn) => (
-                            <ConnectionCard
-                                key={conn.id}
-                                connection={conn}
-                                compact
-                                onEdit={() => onEditConnection(conn)}
-                                onDelete={() => onDeleteConnection(conn.id)}
-                                onQuery={() => onQuery(conn.id)}
-                            />
-                        ))}
-                        {connections.length === 0 && (
+                    {connections.length === 0 ? (
+                        <Box
+                            sx={{
+                                textAlign: 'center',
+                                py: 3,
+                                borderRadius: 1,
+                                border: '1px dashed',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <Typography variant="caption" color="text.secondary">
+                                No connections in this group yet
+                            </Typography>
                             <Typography
                                 variant="caption"
-                                sx={{ color: 'text.disabled', py: 2, textAlign: 'center' }}
+                                color="text.disabled"
+                                sx={{ display: 'block', mt: 0.5 }}
                             >
-                                No connections in this group
+                                Drag connections here to add
                             </Typography>
-                        )}
-                        {hasMore && !showAll && (
-                            <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                <Button
-                                    size="small"
-                                    onClick={() => setShowAll(true)}
-                                    sx={{
-                                        color: 'text.secondary',
-                                        textTransform: 'none',
-                                        fontSize: 12,
-                                        '&:hover': {
-                                            bgcolor: 'action.hover',
-                                            color: 'primary.main',
-                                        },
-                                    }}
-                                >
-                                    Show {connections.length - LIMIT} more...
-                                </Button>
-                            </Box>
-                        )}
-                        {showAll && hasMore && (
-                            <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                <Button
-                                    size="small"
-                                    onClick={() => setShowAll(false)}
-                                    sx={{
-                                        color: 'text.secondary',
-                                        textTransform: 'none',
-                                        fontSize: 12,
-                                        '&:hover': {
-                                            bgcolor: 'action.hover',
-                                            color: 'primary.main',
-                                        },
-                                    }}
-                                >
-                                    Show less
-                                </Button>
-                            </Box>
-                        )}
-                    </Stack>
+                        </Box>
+                    ) : (
+                        <Stack spacing={1}>
+                            {visibleConnections.map((conn) => (
+                                <ConnectionCard
+                                    key={conn.id}
+                                    connection={conn}
+                                    compact
+                                    onEdit={() => onEditConnection(conn)}
+                                    onDelete={() => onDeleteConnection(conn.id)}
+                                    onQuery={() => onQuery(conn.id)}
+                                />
+                            ))}
+                        </Stack>
+                    )}
+                    {hasMore && !showAll && (
+                        <Box
+                            sx={{
+                                textAlign: 'center',
+                                pt: 1.5,
+                                borderTop: '1px solid',
+                                borderColor: 'divider',
+                                mt: 1.5,
+                            }}
+                        >
+                            <Button
+                                size="small"
+                                onClick={() => setShowAll(true)}
+                                sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    fontSize: 13,
+                                    px: 2,
+                                    py: 0.75,
+                                    borderRadius: 1,
+                                    color: 'primary.main',
+                                    '&:hover': {
+                                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                    },
+                                }}
+                            >
+                                Show {connections.length - LIMIT} more connections
+                            </Button>
+                        </Box>
+                    )}
+                    {showAll && hasMore && (
+                        <Box
+                            sx={{
+                                textAlign: 'center',
+                                pt: 1.5,
+                                borderTop: '1px solid',
+                                borderColor: 'divider',
+                                mt: 1.5,
+                            }}
+                        >
+                            <Button
+                                size="small"
+                                onClick={() => setShowAll(false)}
+                                sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    fontSize: 13,
+                                    px: 2,
+                                    py: 0.75,
+                                    color: 'text.secondary',
+                                    '&:hover': {
+                                        bgcolor: 'action.hover',
+                                        color: 'primary.main',
+                                    },
+                                }}
+                            >
+                                Show less
+                            </Button>
+                        </Box>
+                    )}
                 </Box>
             </Collapse>
         </Box>

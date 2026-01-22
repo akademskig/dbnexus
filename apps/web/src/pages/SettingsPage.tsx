@@ -105,6 +105,9 @@ const colorSchemeLabels: Record<ColorScheme, string> = {
     blue: 'Blue',
     emerald: 'Emerald',
     rose: 'Rose',
+    lightblue: 'Light Blue',
+    lime: 'Lime',
+    orange: 'Orange',
 };
 
 // Appearance Tab Content

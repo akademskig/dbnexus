@@ -322,6 +322,8 @@ interface ConnectionFormDialogProps {
     projects: Project[];
     groups: DatabaseGroup[];
     onClose: () => void;
+    initialProjectId?: string;
+    initialGroupId?: string;
 }
 
 export function ConnectionFormDialog({
@@ -330,6 +332,8 @@ export function ConnectionFormDialog({
     projects,
     groups,
     onClose,
+    initialProjectId,
+    initialGroupId,
 }: ConnectionFormDialogProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -391,8 +395,8 @@ export function ConnectionFormDialog({
                 defaultSchema: '',
                 tags: [],
                 readOnly: false,
-                projectId: undefined,
-                groupId: undefined,
+                projectId: initialProjectId,
+                groupId: initialGroupId,
             });
         }
         setTestResult(null);

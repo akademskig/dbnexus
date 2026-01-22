@@ -14,6 +14,7 @@ import { useToastStore } from '../../stores/toastStore';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
 import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
+import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
 export function ProjectsPage() {
     const queryClient = useQueryClient();
@@ -21,11 +22,15 @@ export function ProjectsPage() {
     const toast = useToastStore();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
+    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(undefined);
+    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(undefined);
     const [projectFormOpen, setProjectFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [groupFormOpen, setGroupFormOpen] = useState(false);
     const [groupFormProjectId, setGroupFormProjectId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
+    const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
+    const [settingsGroup, setSettingsGroup] = useState<DatabaseGroup | null>(null);
 
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
@@ -96,9 +101,18 @@ export function ProjectsPage() {
         setFormOpen(true);
     };
 
+    const handleAddConnection = (projectId: string, groupId?: string) => {
+        setConnectionFormProjectId(projectId);
+        setConnectionFormGroupId(groupId);
+        setEditingConnection(null);
+        setFormOpen(true);
+    };
+
     const handleCloseForm = () => {
         setFormOpen(false);
         setEditingConnection(null);
+        setConnectionFormProjectId(undefined);
+        setConnectionFormGroupId(undefined);
     };
 
     const handleEditProject = (project: Project) => {
@@ -121,6 +135,11 @@ export function ProjectsPage() {
         setEditingGroup(group);
         setGroupFormProjectId(group.projectId);
         setGroupFormOpen(true);
+    };
+
+    const handleGroupSettings = (group: DatabaseGroup) => {
+        setSettingsGroup(group);
+        setGroupSettingsOpen(true);
     };
 
     const handleCloseGroupForm = () => {
@@ -173,6 +192,8 @@ export function ProjectsPage() {
                 projects={projects}
                 groups={groups}
                 onClose={handleCloseForm}
+                initialProjectId={connectionFormProjectId}
+                initialGroupId={connectionFormGroupId}
             />
             <ProjectFormDialog
                 open={projectFormOpen}
@@ -185,6 +206,14 @@ export function ProjectsPage() {
                 projectId={groupFormProjectId}
                 onClose={handleCloseGroupForm}
             />
+            {settingsGroup && (
+                <GroupSettingsDialog
+                    open={groupSettingsOpen}
+                    onClose={() => setGroupSettingsOpen(false)}
+                    group={settingsGroup}
+                    connections={connections.filter((c) => c.groupId === settingsGroup.id)}
+                />
+            )}
 
             {/* Content */}
             {isLoading ? (
@@ -219,9 +248,11 @@ export function ProjectsPage() {
                             onEditProject={() => handleEditProject(project)}
                             onAddGroup={() => handleAddGroup(project.id)}
                             onEditGroup={handleEditGroup}
+                            onGroupSettings={handleGroupSettings}
                             onEditConnection={handleEdit}
                             onDeleteConnection={(id) => deleteMutation.mutate(id)}
                             onQuery={(id) => navigate(`/query/${id}`)}
+                            onAddConnection={handleAddConnection}
                         />
                     ))}
 

@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Stack, alpha } from '@mui/material';
+import { Box, Typography, Button, Stack, alpha, TextField, InputAdornment, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
@@ -16,6 +17,7 @@ import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
 import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
 import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
+import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
 export function ProjectsPage() {
     const queryClient = useQueryClient();
@@ -23,14 +25,19 @@ export function ProjectsPage() {
     const toast = useToastStore();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
+    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(undefined);
+    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(undefined);
     const [projectFormOpen, setProjectFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [groupFormOpen, setGroupFormOpen] = useState(false);
     const [groupFormProjectId, setGroupFormProjectId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
+    const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
+    const [settingsGroup, setSettingsGroup] = useState<DatabaseGroup | null>(null);
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
     const [isUngroupedDragOver, setIsUngroupedDragOver] = useState(false);
     const [showAllUngrouped, setShowAllUngrouped] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const UNGROUPED_LIMIT = 5;
 
@@ -51,7 +58,7 @@ export function ProjectsPage() {
 
     const isLoading = loadingConnections || loadingProjects;
 
-    // Organize connections by project and group
+    // Organize connections by project and group with search filtering
     const organizedData = useMemo(() => {
         const projectMap = new Map<string, Project>();
         projects.forEach((p) => projectMap.set(p.id, p));
@@ -59,11 +66,24 @@ export function ProjectsPage() {
         const groupMap = new Map<string, DatabaseGroup>();
         groups.forEach((g) => groupMap.set(g.id, g));
 
+        // Filter connections by search query
+        const query = searchQuery.toLowerCase().trim();
+        const filteredConnections = query
+            ? connections.filter((conn) => {
+                const matchesName = conn.name.toLowerCase().includes(query);
+                const matchesHost = conn.host?.toLowerCase().includes(query);
+                const matchesDatabase = conn.database?.toLowerCase().includes(query);
+                const matchesEngine = conn.engine.toLowerCase().includes(query);
+                const matchesType = conn.connectionType?.toLowerCase().includes(query);
+                return matchesName || matchesHost || matchesDatabase || matchesEngine || matchesType;
+            })
+            : connections;
+
         // Group connections
         const projectConnections = new Map<string, Map<string | null, ConnectionConfig[]>>();
         const ungroupedConnections: ConnectionConfig[] = [];
 
-        connections.forEach((conn) => {
+        filteredConnections.forEach((conn) => {
             if (conn.projectId) {
                 if (!projectConnections.has(conn.projectId)) {
                     projectConnections.set(conn.projectId, new Map());
@@ -79,16 +99,26 @@ export function ProjectsPage() {
             }
         });
 
+        // Filter projects to only show those with connections (when searching)
+        const filteredProjects = query
+            ? projects.filter((p) => {
+                const hasConnections = projectConnections.get(p.id)?.size ?? 0 > 0;
+                return hasConnections;
+            })
+            : projects;
+
         return {
-            projects: projects.map((p) => ({
+            projects: filteredProjects.map((p) => ({
                 project: p,
                 groups: projectConnections.get(p.id) || new Map(),
             })),
             ungroupedConnections,
             projectMap,
             groupMap,
+            totalFiltered: filteredConnections.length,
+            totalOriginal: connections.length,
         };
-    }, [connections, projects, groups]);
+    }, [connections, projects, groups, searchQuery]);
 
     const deleteMutation = useMutation({
         mutationFn: connectionsApi.delete,
@@ -153,9 +183,18 @@ export function ProjectsPage() {
         setFormOpen(true);
     };
 
+    const handleAddConnection = (projectId: string, groupId?: string) => {
+        setConnectionFormProjectId(projectId);
+        setConnectionFormGroupId(groupId);
+        setEditingConnection(null);
+        setFormOpen(true);
+    };
+
     const handleCloseForm = () => {
         setFormOpen(false);
         setEditingConnection(null);
+        setConnectionFormProjectId(undefined);
+        setConnectionFormGroupId(undefined);
     };
 
     const handleEditProject = (project: Project) => {
@@ -178,6 +217,11 @@ export function ProjectsPage() {
         setEditingGroup(group);
         setGroupFormProjectId(group.projectId);
         setGroupFormOpen(true);
+    };
+
+    const handleGroupSettings = (group: DatabaseGroup) => {
+        setSettingsGroup(group);
+        setGroupSettingsOpen(true);
     };
 
     const handleCloseGroupForm = () => {
@@ -232,6 +276,55 @@ export function ProjectsPage() {
                 </Box>
             </Box>
 
+            {/* Search Bar */}
+            <Box sx={{ mb: 3 }}>
+                <TextField
+                    fullWidth
+                    placeholder="Search connections by name, host, database, or engine..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'text.secondary' }} />
+                            </InputAdornment>
+                        ),
+                        endAdornment: searchQuery && (
+                            <InputAdornment position="end">
+                                <Button
+                                    size="small"
+                                    onClick={() => setSearchQuery('')}
+                                    sx={{ minWidth: 'auto', p: 0.5 }}
+                                >
+                                    <ClearIcon fontSize="small" />
+                                </Button>
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            bgcolor: 'background.paper',
+                        },
+                    }}
+                />
+                {searchQuery && (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" color="text.secondary">
+                            Found {organizedData.totalFiltered} of {organizedData.totalOriginal}{' '}
+                            connections
+                        </Typography>
+                        {organizedData.totalFiltered === 0 && (
+                            <Chip
+                                label="No results"
+                                size="small"
+                                color="warning"
+                                sx={{ height: 20, fontSize: 11 }}
+                            />
+                        )}
+                    </Box>
+                )}
+            </Box>
+
             {/* Dialogs */}
             <ConnectionFormDialog
                 open={formOpen}
@@ -239,6 +332,8 @@ export function ProjectsPage() {
                 projects={projects}
                 groups={groups}
                 onClose={handleCloseForm}
+                initialProjectId={connectionFormProjectId}
+                initialGroupId={connectionFormGroupId}
             />
             <ProjectFormDialog
                 open={projectFormOpen}
@@ -251,6 +346,14 @@ export function ProjectsPage() {
                 projectId={groupFormProjectId}
                 onClose={handleCloseGroupForm}
             />
+            {settingsGroup && (
+                <GroupSettingsDialog
+                    open={groupSettingsOpen}
+                    onClose={() => setGroupSettingsOpen(false)}
+                    group={settingsGroup}
+                    connections={connections.filter((c) => c.groupId === settingsGroup.id)}
+                />
+            )}
             <ScanConnectionsDialog open={scanDialogOpen} onClose={() => setScanDialogOpen(false)} />
 
             {/* Content */}
@@ -291,9 +394,11 @@ export function ProjectsPage() {
                             onEditProject={() => handleEditProject(project)}
                             onAddGroup={() => handleAddGroup(project.id)}
                             onEditGroup={handleEditGroup}
+                            onGroupSettings={handleGroupSettings}
                             onEditConnection={handleEdit}
                             onDeleteConnection={(id) => deleteMutation.mutate(id)}
                             onQuery={(id) => navigate(`/query/${id}`)}
+                            onAddConnection={handleAddConnection}
                         />
                     ))}
 
@@ -353,37 +458,62 @@ export function ProjectsPage() {
                                 ))}
                                 {organizedData.ungroupedConnections.length > UNGROUPED_LIMIT &&
                                     !showAllUngrouped && (
-                                        <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                        <Box
+                                            sx={{
+                                                textAlign: 'center',
+                                                pt: 1.5,
+                                                borderTop: '1px solid',
+                                                borderColor: 'divider',
+                                                mt: 1.5,
+                                            }}
+                                        >
                                             <Button
                                                 size="small"
                                                 onClick={() => setShowAllUngrouped(true)}
                                                 sx={{
-                                                    color: 'text.secondary',
                                                     textTransform: 'none',
-                                                    fontSize: 12,
+                                                    fontWeight: 500,
+                                                    fontSize: 13,
+                                                    px: 2,
+                                                    py: 0.75,
+                                                    borderRadius: 1,
+                                                    bgcolor: (theme) =>
+                                                        alpha(theme.palette.primary.main, 0.05),
+                                                    color: 'primary.main',
                                                     '&:hover': {
-                                                        bgcolor: 'action.hover',
-                                                        color: 'primary.main',
+                                                        bgcolor: (theme) =>
+                                                            alpha(theme.palette.primary.main, 0.1),
                                                     },
                                                 }}
                                             >
                                                 Show{' '}
                                                 {organizedData.ungroupedConnections.length -
                                                     UNGROUPED_LIMIT}{' '}
-                                                more...
+                                                more connections
                                             </Button>
                                         </Box>
                                     )}
                                 {showAllUngrouped &&
                                     organizedData.ungroupedConnections.length > UNGROUPED_LIMIT && (
-                                        <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                        <Box
+                                            sx={{
+                                                textAlign: 'center',
+                                                pt: 1.5,
+                                                borderTop: '1px solid',
+                                                borderColor: 'divider',
+                                                mt: 1.5,
+                                            }}
+                                        >
                                             <Button
                                                 size="small"
                                                 onClick={() => setShowAllUngrouped(false)}
                                                 sx={{
-                                                    color: 'text.secondary',
                                                     textTransform: 'none',
-                                                    fontSize: 12,
+                                                    fontWeight: 500,
+                                                    fontSize: 13,
+                                                    px: 2,
+                                                    py: 0.75,
+                                                    color: 'text.secondary',
                                                     '&:hover': {
                                                         bgcolor: 'action.hover',
                                                         color: 'primary.main',

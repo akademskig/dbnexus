@@ -3,15 +3,17 @@ import {
     Box,
     Typography,
     IconButton,
+    Chip,
     Collapse,
     Menu,
     MenuItem,
     ListItemIcon,
     ListItemText,
     Stack,
-    alpha,
     Button,
+    alpha,
 } from '@mui/material';
+import { StyledTooltip } from '@/components/StyledTooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -19,6 +21,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderIcon from '@mui/icons-material/Folder';
 import LayersIcon from '@mui/icons-material/Layers';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import StorageIcon from '@mui/icons-material/Storage';
+import AddIcon from '@mui/icons-material/Add';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi, connectionsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
@@ -35,9 +39,11 @@ interface ProjectSectionProps {
     onEditProject: () => void;
     onAddGroup: () => void;
     onEditGroup: (group: DatabaseGroup) => void;
+    onGroupSettings: (group: DatabaseGroup) => void;
     onEditConnection: (conn: ConnectionConfig) => void;
     onDeleteConnection: (id: string) => void;
     onQuery: (id: string) => void;
+    onAddConnection: (projectId: string, groupId?: string) => void;
 }
 
 export function ProjectSection({
@@ -48,9 +54,11 @@ export function ProjectSection({
     onEditProject,
     onAddGroup,
     onEditGroup,
+    onGroupSettings,
     onEditConnection,
     onDeleteConnection,
     onQuery,
+    onAddConnection,
 }: ProjectSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -180,7 +188,7 @@ export function ProjectSection({
                 >
                     <FolderIcon sx={{ color: projectColor, fontSize: 20 }} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="subtitle1" fontWeight={600}>
                         {project.name}
                     </Typography>
@@ -191,16 +199,60 @@ export function ProjectSection({
                     )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
-                        {totalConnections} connection{totalConnections !== 1 ? 's' : ''}
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled">
-                        •
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {allGroups.length} group{allGroups.length !== 1 ? 's' : ''}
-                    </Typography>
+                    <StyledTooltip title="Connections">
+                        <Chip
+                            icon={<StorageIcon sx={{ fontSize: 14 }} />}
+                            label={totalConnections}
+                            size="small"
+                            sx={{
+                                height: 24,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                                color: 'info.main',
+                                border: '1px solid',
+                                borderColor: (theme) => alpha(theme.palette.info.main, 0.3),
+                                '& .MuiChip-icon': { color: 'info.main', fontSize: 14 },
+                            }}
+                        />
+                    </StyledTooltip>
+                    <StyledTooltip title="Groups">
+                        <Chip
+                            icon={<LayersIcon sx={{ fontSize: 14 }} />}
+                            label={allGroups.length}
+                            size="small"
+                            sx={{
+                                height: 24,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
+                                color: 'success.main',
+                                border: '1px solid',
+                                borderColor: (theme) => alpha(theme.palette.success.main, 0.3),
+                                '& .MuiChip-icon': { color: 'success.main', fontSize: 14 },
+                            }}
+                        />
+                    </StyledTooltip>
                 </Box>
+                {/* Quick Actions */}
+                <StyledTooltip title="Add Group">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAddGroup();
+                        }}
+                        sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                                color: 'primary.main',
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                            },
+                        }}
+                    >
+                        <AddIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
                 <IconButton size="small" sx={{ ml: 1 }}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
@@ -279,6 +331,7 @@ export function ProjectSection({
                                 allConnections={allConnections}
                                 projectColor={projectColor}
                                 onEditGroup={() => onEditGroup(group)}
+                                onGroupSettings={() => onGroupSettings(group)}
                                 onEditConnection={onEditConnection}
                                 onDeleteConnection={onDeleteConnection}
                                 onQuery={onQuery}
@@ -290,6 +343,7 @@ export function ProjectSection({
                                     })
                                 }
                                 onDropComplete={handleChildDrop}
+                                onAddConnection={() => onAddConnection(project.id, group.id)}
                             />
                         ))}
 
@@ -323,60 +377,112 @@ export function ProjectSection({
                                             onQuery={() => onQuery(conn.id)}
                                         />
                                     ))}
-                                    {ungroupedInProject.length > UNGROUPED_LIMIT &&
-                                        !showAllUngrouped && (
-                                            <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                                <Button
-                                                    size="small"
-                                                    onClick={() => setShowAllUngrouped(true)}
-                                                    sx={{
-                                                        color: 'text.secondary',
-                                                        textTransform: 'none',
-                                                        fontSize: 12,
-                                                        '&:hover': {
-                                                            bgcolor: 'action.hover',
-                                                            color: 'primary.main',
-                                                        },
-                                                    }}
-                                                >
-                                                    Show{' '}
-                                                    {ungroupedInProject.length - UNGROUPED_LIMIT}{' '}
-                                                    more...
-                                                </Button>
-                                            </Box>
-                                        )}
-                                    {showAllUngrouped &&
-                                        ungroupedInProject.length > UNGROUPED_LIMIT && (
-                                            <Box sx={{ textAlign: 'center', pt: 1 }}>
-                                                <Button
-                                                    size="small"
-                                                    onClick={() => setShowAllUngrouped(false)}
-                                                    sx={{
-                                                        color: 'text.secondary',
-                                                        textTransform: 'none',
-                                                        fontSize: 12,
-                                                        '&:hover': {
-                                                            bgcolor: 'action.hover',
-                                                            color: 'primary.main',
-                                                        },
-                                                    }}
-                                                >
-                                                    Show less
-                                                </Button>
-                                            </Box>
-                                        )}
                                 </Stack>
+                                {ungroupedInProject.length > UNGROUPED_LIMIT && !showAllUngrouped && (
+                                    <Box
+                                        sx={{
+                                            textAlign: 'center',
+                                            pt: 1.5,
+                                            borderTop: '1px solid',
+                                            borderColor: 'divider',
+                                            mt: 1.5,
+                                        }}
+                                    >
+                                        <Button
+                                            size="small"
+                                            onClick={() => setShowAllUngrouped(true)}
+                                            sx={{
+                                                textTransform: 'none',
+                                                fontWeight: 500,
+                                                fontSize: 13,
+                                                px: 2,
+                                                py: 0.75,
+                                                borderRadius: 1,
+                                                bgcolor: (theme) =>
+                                                    alpha(theme.palette.primary.main, 0.05),
+                                                color: 'primary.main',
+                                                '&:hover': {
+                                                    bgcolor: (theme) =>
+                                                        alpha(theme.palette.primary.main, 0.1),
+                                                },
+                                            }}
+                                        >
+                                            Show {ungroupedInProject.length - UNGROUPED_LIMIT} more
+                                            connections
+                                        </Button>
+                                    </Box>
+                                )}
+                                {showAllUngrouped && ungroupedInProject.length > UNGROUPED_LIMIT && (
+                                    <Box
+                                        sx={{
+                                            textAlign: 'center',
+                                            pt: 1.5,
+                                            borderTop: '1px solid',
+                                            borderColor: 'divider',
+                                            mt: 1.5,
+                                        }}
+                                    >
+                                        <Button
+                                            size="small"
+                                            onClick={() => setShowAllUngrouped(false)}
+                                            sx={{
+                                                textTransform: 'none',
+                                                fontWeight: 500,
+                                                fontSize: 13,
+                                                px: 2,
+                                                py: 0.75,
+                                                color: 'text.secondary',
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover',
+                                                    color: 'primary.main',
+                                                },
+                                            }}
+                                        >
+                                            Show less
+                                        </Button>
+                                    </Box>
+                                )}
                             </Box>
                         )}
 
-                        {totalConnections === 0 && allGroups.length === 0 && (
-                            <Box sx={{ textAlign: 'center', py: 3 }}>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                    No connections or groups yet
+                        {totalConnections === 0 && (
+                            <Box
+                                sx={{
+                                    textAlign: 'center',
+                                    py: 4,
+                                    px: 3,
+                                    borderRadius: 1,
+                                    border: '1px dashed',
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <StorageIcon
+                                    sx={{
+                                        fontSize: 40,
+                                        color: 'text.disabled',
+                                        mb: 1,
+                                        opacity: 0.5,
+                                    }}
+                                />
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                    No connections in this project yet
                                 </Typography>
-                                <Typography variant="caption" color="text.disabled">
-                                    Add an instance group to organize related database instances
+                                <Typography
+                                    variant="caption"
+                                    color="text.disabled"
+                                    sx={{ display: 'block', mb: 2 }}
+                                >
+                                    Drag connections here or click + to add
                                 </Typography>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<AddIcon />}
+                                    onClick={onAddGroup}
+                                    sx={{ textTransform: 'none', fontSize: 12 }}
+                                >
+                                    Add Instance Group
+                                </Button>
                             </Box>
                         )}
                     </Stack>

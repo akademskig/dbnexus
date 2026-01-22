@@ -266,22 +266,51 @@ export function ConnectionCard({
                     </Box>
                 )}
 
-                {/* Connection Status Indicator */}
+                {/* Connection Status Badge */}
                 <StyledTooltip
                     title={
                         connectionHealth?.error ||
                         `Connection is ${connectionHealth?.isOnline ? 'online' : connectionHealth ? 'offline' : 'unknown'}`
                     }
                 >
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        {isOnline ? (
-                            <CheckCircleIcon fontSize="small" color="success" />
-                        ) : isOffline ? (
-                            <ErrorIcon fontSize="small" color="error" />
-                        ) : (
-                            <HelpOutlineIcon fontSize="small" color="disabled" />
-                        )}
-                    </Box>
+                    <Chip
+                        size="small"
+                        icon={
+                            isOnline ? (
+                                <CheckCircleIcon sx={{ fontSize: 14 }} />
+                            ) : isOffline ? (
+                                <ErrorIcon sx={{ fontSize: 14 }} />
+                            ) : (
+                                <HelpOutlineIcon sx={{ fontSize: 14 }} />
+                            )
+                        }
+                        label={isOnline ? 'Online' : isOffline ? 'Offline' : 'Unknown'}
+                        sx={{
+                            height: 22,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            flexShrink: 0,
+                            ...(isOnline && {
+                                bgcolor: 'rgba(34, 197, 94, 0.15)',
+                                color: '#22c55e',
+                                border: '1px solid rgba(34, 197, 94, 0.3)',
+                                '& .MuiChip-icon': { color: '#22c55e' },
+                            }),
+                            ...(isOffline && {
+                                bgcolor: 'rgba(239, 68, 68, 0.15)',
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                '& .MuiChip-icon': { color: '#ef4444' },
+                            }),
+                            ...(!isOnline &&
+                                !isOffline && {
+                                    bgcolor: 'rgba(107, 114, 128, 0.15)',
+                                    color: '#6b7280',
+                                    border: '1px solid rgba(107, 114, 128, 0.3)',
+                                    '& .MuiChip-icon': { color: '#6b7280' },
+                                }),
+                        }}
+                    />
                 </StyledTooltip>
 
                 <IconButton

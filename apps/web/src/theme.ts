@@ -26,6 +26,24 @@ export const colorSchemes = {
         primaryDark: '#2563eb',
         primaryRgb: '59, 130, 246',
     },
+    lightblue: {
+        primary: '#0ea5e9',
+        primaryLight: '#38bdf8',
+        primaryDark: '#0284c7',
+        primaryRgb: '14, 165, 233',
+    },
+    lime: {
+        primary: '#84cc16',
+        primaryLight: '#bef264',
+        primaryDark: '#65a30d',
+        primaryRgb: '132, 204, 22',
+    },
+    orange: {
+        primary: '#f97316',
+        primaryLight: '#fb923c',
+        primaryDark: '#ea580c',
+        primaryRgb: '249, 115, 22',
+    },
     emerald: {
         primary: '#10b981',
         primaryLight: '#34d399',
@@ -277,23 +295,23 @@ export const createAppTheme = (mode: PaletteMode, scheme: ColorScheme = 'indigo'
             background:
                 mode === 'dark'
                     ? {
-                          default: '#09090b',
-                          paper: 'rgb(20, 25, 27)',
-                      }
+                        default: '#09090b',
+                        paper: 'rgb(20, 25, 27)',
+                    }
                     : {
-                          default: '#fafafa',
-                          paper: '#ffffff',
-                      },
+                        default: '#fafafa',
+                        paper: '#ffffff',
+                    },
             text:
                 mode === 'dark'
                     ? {
-                          primary: '#fafafa',
-                          secondary: '#a1a1aa',
-                      }
+                        primary: '#fafafa',
+                        secondary: '#a1a1aa',
+                    }
                     : {
-                          primary: '#18181b',
-                          secondary: '#71717a',
-                      },
+                        primary: '#18181b',
+                        secondary: '#71717a',
+                    },
             divider: mode === 'dark' ? '#27272a' : '#e4e4e7',
         },
         typography: {
