@@ -79,10 +79,7 @@ export function SqlEditor({
             </Box>
 
             {/* Editor */}
-            <Box
-                sx={{ flex: 1, overflow: 'hidden' }}
-                onKeyDown={onKeyDown}
-            >
+            <Box sx={{ flex: 1, overflow: 'hidden' }} onKeyDown={onKeyDown}>
                 <Editor
                     height="100%"
                     defaultLanguage="sql"

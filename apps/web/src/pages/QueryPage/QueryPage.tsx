@@ -8,7 +8,6 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import CodeIcon from '@mui/icons-material/Code';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import CodeOffIcon from '@mui/icons-material/CodeOff';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
@@ -1142,20 +1141,6 @@ export function QueryPage() {
 
                 <Box sx={{ flex: 1 }} />
 
-                <StyledTooltip title={splitViewOpen ? 'Close SQL Editor' : 'Open SQL Editor'}>
-                    <IconButton
-                        size="small"
-                        onClick={() => setSplitViewOpen(!splitViewOpen)}
-                        color={splitViewOpen ? 'primary' : 'default'}
-                    >
-                        {splitViewOpen ? (
-                            <CodeOffIcon fontSize="small" />
-                        ) : (
-                            <CodeIcon fontSize="small" />
-                        )}
-                    </IconButton>
-                </StyledTooltip>
-
                 <StyledTooltip title="Query Templates">
                     <IconButton
                         size="small"
@@ -1282,13 +1267,8 @@ export function QueryPage() {
                                             tableName={selectedTable?.name}
                                             selectedTable={selectedTable}
                                             tableSchemaLoading={tableSchemaLoading}
-                                            sql={sql}
-                                            onSqlChange={setSql}
-                                            onExecute={handleExecute}
-                                            onSave={() => setSaveQueryOpen(true)}
-                                            onKeyDown={handleKeyDown}
-                                            onPopOut={() => setFloatingEditorOpen(true)}
-                                            hideSqlTab={true}
+                                            splitViewOpen={splitViewOpen}
+                                            onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
                                         />
                                     </Panel>
 
@@ -1359,12 +1339,8 @@ export function QueryPage() {
                                     tableName={selectedTable?.name}
                                     selectedTable={selectedTable}
                                     tableSchemaLoading={tableSchemaLoading}
-                                    sql={sql}
-                                    onSqlChange={setSql}
-                                    onExecute={handleExecute}
-                                    onSave={() => setSaveQueryOpen(true)}
-                                    onKeyDown={handleKeyDown}
-                                    onPopOut={() => setFloatingEditorOpen(true)}
+                                    splitViewOpen={splitViewOpen}
+                                    onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
                                 />
                             )}
                         </>

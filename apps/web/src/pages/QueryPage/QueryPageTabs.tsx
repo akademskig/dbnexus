@@ -5,8 +5,9 @@ import KeyIcon from '@mui/icons-material/Key';
 import LinkIcon from '@mui/icons-material/Link';
 import CodeIcon from '@mui/icons-material/Code';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import CodeOffIcon from '@mui/icons-material/CodeOff';
 import { DataTab } from './DataTab';
-import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
+import { StructureTab, IndexesTab, ForeignKeysTab } from './SchemaTabs';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 
 interface ForeignKeyClickInfo {
@@ -43,13 +44,8 @@ interface QueryPageTabsProps {
     tableName: string | undefined;
     selectedTable: TableInfo | null;
     tableSchemaLoading: boolean;
-    sql: string;
-    onSqlChange: (sql: string) => void;
-    onExecute: () => void;
-    onSave: () => void;
-    onKeyDown: (e: React.KeyboardEvent) => void;
-    onPopOut: () => void;
-    hideSqlTab?: boolean;
+    splitViewOpen?: boolean;
+    onToggleSplitView?: () => void;
 }
 
 export function QueryPageTabs({
@@ -77,13 +73,8 @@ export function QueryPageTabs({
     tableName,
     selectedTable,
     tableSchemaLoading,
-    sql,
-    onSqlChange,
-    onExecute,
-    onSave,
-    onKeyDown,
-    onPopOut,
-    hideSqlTab = false,
+    splitViewOpen = false,
+    onToggleSplitView,
 }: QueryPageTabsProps) {
     return (
         <Box
@@ -95,8 +86,15 @@ export function QueryPageTabs({
             }}
         >
             {/* Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 48 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                }}
+            >
+                <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 48, flex: 1 }}>
                     <Tab
                         label={
                             <Badge badgeContent={result?.rowCount} color="primary" max={999}>
@@ -169,7 +167,9 @@ export function QueryPageTabs({
                         }
                         sx={{ minHeight: 40, textTransform: 'none' }}
                     />
-                    {!hideSqlTab && (
+
+                    {/* SQL Editor Toggle - Looks like tab but opens side panel */}
+                    {onToggleSplitView && (
                         <Tab
                             label={
                                 <Box
@@ -179,11 +179,23 @@ export function QueryPageTabs({
                                         gap: 0.5,
                                     }}
                                 >
-                                    <CodeIcon fontSize="small" />
+                                    {splitViewOpen ? (
+                                        <CodeOffIcon fontSize="small" />
+                                    ) : (
+                                        <CodeIcon fontSize="small" />
+                                    )}
                                     SQL
                                 </Box>
                             }
-                            sx={{ minHeight: 40, textTransform: 'none' }}
+                            sx={{
+                                minHeight: 40,
+                                textTransform: 'none',
+                                color: splitViewOpen ? 'primary.main' : undefined,
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleSplitView();
+                            }}
                         />
                     )}
                 </Tabs>
@@ -276,18 +288,6 @@ export function QueryPageTabs({
                             </Typography>
                         </Box>
                     ))}
-
-                {!hideSqlTab && activeTab === 4 && (
-                    <SqlTab
-                        sql={sql}
-                        onSqlChange={onSqlChange}
-                        onExecute={onExecute}
-                        onSave={onSave}
-                        onKeyDown={onKeyDown}
-                        onPopOut={onPopOut}
-                        loading={loading}
-                    />
-                )}
             </Box>
         </Box>
     );
