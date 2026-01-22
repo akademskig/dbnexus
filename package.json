@@ -58,5 +58,8 @@
         "husky": "^9.1.7",
         "prettier": "^3.4.2",
         "typescript-eslint": "^8.19.0"
+    },
+    "dependencies": {
+        "react-resizable-panels": "^4.4.1"
     }
 }
