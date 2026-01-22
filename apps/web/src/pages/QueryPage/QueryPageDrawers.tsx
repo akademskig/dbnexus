@@ -12,34 +12,34 @@ import type {
 
 interface QueryPageDrawersProps {
     // Templates
-    templatesOpen: boolean;
-    onTemplatesClose: () => void;
-    onTemplateSelect: (sql: string) => void;
-    selectedTable: TableInfo | null;
-    tableSchema: TableSchema | undefined;
-    engine: string | undefined;
+    readonly templatesOpen: boolean;
+    readonly onTemplatesClose: () => void;
+    readonly onTemplateSelect: (sql: string) => void;
+    readonly selectedTable: TableInfo | null;
+    readonly tableSchema: TableSchema | undefined;
+    readonly engine: string | undefined;
 
     // History
-    historyOpen: boolean;
-    onHistoryClose: () => void;
-    queryHistory: QueryHistoryEntry[];
-    historyConnections: ConnectionConfig[];
-    onHistorySelect: (entry: QueryHistoryEntry) => void;
-    onHistoryRerun: (entry: QueryHistoryEntry) => void;
-    onHistoryClear: () => void;
-    onHistoryRefresh: () => void;
-    historyClearing: boolean;
+    readonly historyOpen: boolean;
+    readonly onHistoryClose: () => void;
+    readonly queryHistory: QueryHistoryEntry[];
+    readonly historyConnections: ConnectionConfig[];
+    readonly onHistorySelect: (entry: QueryHistoryEntry) => void;
+    readonly onHistoryRerun: (entry: QueryHistoryEntry) => void;
+    readonly onHistoryClear: () => void;
+    readonly onHistoryRefresh: () => void;
+    readonly historyClearing: boolean;
 
     // Saved Queries
-    savedQueriesOpen: boolean;
-    onSavedQueriesClose: () => void;
-    savedQueries: SavedQuery[];
-    savedQueryConnections: ConnectionConfig[];
-    onSavedQuerySelect: (query: SavedQuery) => void;
-    onSavedQueryRun: (query: SavedQuery) => void;
-    onSavedQueryEdit: (query: SavedQuery) => void;
-    onSavedQueryDelete: (query: SavedQuery) => void;
-    onSavedQueriesRefresh: () => void;
+    readonly savedQueriesOpen: boolean;
+    readonly onSavedQueriesClose: () => void;
+    readonly savedQueries: SavedQuery[];
+    readonly savedQueryConnections: ConnectionConfig[];
+    readonly onSavedQuerySelect: (query: SavedQuery) => void;
+    readonly onSavedQueryRun: (query: SavedQuery) => void;
+    readonly onSavedQueryEdit: (query: SavedQuery) => void;
+    readonly onSavedQueryDelete: (query: SavedQuery) => void;
+    readonly onSavedQueriesRefresh: () => void;
 }
 
 export function QueryPageDrawers({

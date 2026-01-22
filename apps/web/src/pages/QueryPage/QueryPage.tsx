@@ -1205,9 +1205,6 @@ export function QueryPage() {
                                 <QueryPageHeader
                                     selectedTable={selectedTable}
                                     tableSchema={tableSchema}
-                                    sql={sql}
-                                    explainLoading={explainMutation.isPending}
-                                    executeLoading={executeMutation.isPending}
                                     onManageTable={() => {
                                         navigate(
                                             `/connections/${selectedConnectionId}?tab=management&schema=${encodeURIComponent(
@@ -1216,8 +1213,6 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
-                                    onExplain={() => handleExplain(false)}
-                                    onExecute={handleExecute}
                                 />
                             )}
                             {splitViewOpen ? (
@@ -1307,8 +1302,10 @@ export function QueryPage() {
                                             onExecute={handleExecute}
                                             onSave={() => setSaveQueryOpen(true)}
                                             onExplain={() => handleExplain(false)}
+                                            onPopOut={() => setFloatingEditorOpen(true)}
                                             onKeyDown={handleKeyDown}
-                                            loading={executeMutation.isPending}
+                                            executeLoading={executeMutation.isPending}
+                                            explainLoading={explainMutation.isPending}
                                         />
                                     </Panel>
                                 </Group>
@@ -1372,8 +1369,11 @@ export function QueryPage() {
                     if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
                         handleConnectionChange(entry.connectionId);
                     }
-                    handleTabChange(4);
+                    handleTabChange(0);
                     setHistoryOpen(false);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: entry.sql });
+                    }, 100);
                 }}
                 onHistoryRerun={(entry) => {
                     setSql(entry.sql);
@@ -1398,7 +1398,10 @@ export function QueryPage() {
                     if (query.connectionId && query.connectionId !== selectedConnectionId) {
                         handleConnectionChange(query.connectionId);
                     }
-                    handleTabChange(4);
+                    handleTabChange(0);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: query.sql });
+                    }, 100);
                     setSavedQueriesOpen(false);
                 }}
                 onSavedQueryRun={(query) => {

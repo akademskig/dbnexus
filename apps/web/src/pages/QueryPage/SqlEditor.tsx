@@ -1,8 +1,9 @@
-import { Box, Button, IconButton } from '@mui/material';
+import { Box, Button, IconButton, CircularProgress } from '@mui/material';
 import { Editor } from '@monaco-editor/react';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 
@@ -12,8 +13,10 @@ interface SqlEditorProps {
     onExecute: () => void;
     onSave: () => void;
     onExplain: () => void;
+    onPopOut: () => void;
     onKeyDown?: (e: React.KeyboardEvent) => void;
-    loading?: boolean;
+    executeLoading?: boolean;
+    explainLoading?: boolean;
 }
 
 export function SqlEditor({
@@ -22,8 +25,10 @@ export function SqlEditor({
     onExecute,
     onSave,
     onExplain,
+    onPopOut,
     onKeyDown,
-    loading,
+    executeLoading,
+    explainLoading,
 }: SqlEditorProps) {
     const { mode } = useThemeModeStore();
 
@@ -52,29 +57,56 @@ export function SqlEditor({
                         <Button
                             variant="contained"
                             size="small"
-                            startIcon={<PlayArrowIcon />}
+                            sx={{ height: 28 }}
+                            data-tour="run-query"
+                            startIcon={
+                                executeLoading ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                    <PlayArrowIcon />
+                                )
+                            }
                             onClick={onExecute}
-                            disabled={!sql.trim() || loading}
+                            disabled={!sql.trim() || executeLoading}
                         >
                             Run
                         </Button>
                     </span>
                 </StyledTooltip>
 
-                <StyledTooltip title="Save Query">
+                <StyledTooltip title="Explain Query">
                     <span>
-                        <IconButton size="small" onClick={onSave} disabled={!sql.trim()}>
-                            <SaveIcon fontSize="small" />
-                        </IconButton>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={
+                                explainLoading ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                    <AccountTreeIcon />
+                                )
+                            }
+                            onClick={onExplain}
+                            disabled={!sql.trim() || explainLoading}
+                        >
+                            Explain
+                        </Button>
                     </span>
                 </StyledTooltip>
 
-                <StyledTooltip title="Explain Query">
-                    <span>
-                        <IconButton size="small" onClick={onExplain} disabled={!sql.trim()}>
-                            <AccountTreeIcon fontSize="small" />
-                        </IconButton>
-                    </span>
+                <StyledTooltip title="Save Query">
+                    <Button size="small" variant="outlined" onClick={onSave} disabled={!sql.trim()}>
+                        <SaveIcon fontSize="small" />
+                        Save
+                    </Button>
+                </StyledTooltip>
+
+                <Box sx={{ flex: 1 }} />
+
+                <StyledTooltip title="Pop Out Editor">
+                    <IconButton size="small" onClick={onPopOut}>
+                        <OpenInNewIcon fontSize="small" />
+                    </IconButton>
                 </StyledTooltip>
             </Box>
 

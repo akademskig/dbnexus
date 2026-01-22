@@ -1,10 +1,8 @@
-import { Box, Typography, Chip, IconButton, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Chip, IconButton } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { formatBytes } from './utils';
 import type { TableInfo, TableSchema } from '@dbnexus/shared';
@@ -12,25 +10,15 @@ import type { TableInfo, TableSchema } from '@dbnexus/shared';
 interface QueryPageHeaderProps {
     selectedTable: TableInfo;
     tableSchema: TableSchema | undefined;
-    sql: string;
-    explainLoading: boolean;
-    executeLoading: boolean;
     onManageTable: () => void;
     onAddRow: () => void;
-    onExplain: () => void;
-    onExecute: () => void;
 }
 
 export function QueryPageHeader({
     selectedTable,
     tableSchema,
-    sql,
-    explainLoading,
-    executeLoading,
     onManageTable,
     onAddRow,
-    onExplain,
-    onExecute,
 }: QueryPageHeaderProps) {
     return (
         <Box
@@ -90,47 +78,6 @@ export function QueryPageHeader({
                     </IconButton>
                 </StyledTooltip>
             )}
-
-            <StyledTooltip title="Explain Query">
-                <span>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={
-                            explainLoading ? (
-                                <CircularProgress size={16} color="inherit" />
-                            ) : (
-                                <AccountTreeIcon />
-                            )
-                        }
-                        onClick={onExplain}
-                        disabled={!sql.trim() || explainLoading}
-                    >
-                        Explain
-                    </Button>
-                </span>
-            </StyledTooltip>
-
-            <StyledTooltip title="Run Query (⌘+Enter)">
-                <span>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        data-tour="run-query"
-                        startIcon={
-                            executeLoading ? (
-                                <CircularProgress size={16} color="inherit" />
-                            ) : (
-                                <PlayArrowIcon />
-                            )
-                        }
-                        onClick={onExecute}
-                        disabled={!sql.trim() || executeLoading}
-                    >
-                        Run
-                    </Button>
-                </span>
-            </StyledTooltip>
         </Box>
     );
 }
