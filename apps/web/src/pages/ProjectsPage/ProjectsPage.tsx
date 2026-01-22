@@ -287,6 +287,7 @@ export function ProjectsPage() {
                             project={project}
                             groupsMap={projectGroups}
                             allGroups={groups.filter((g) => g.projectId === project.id)}
+                            allConnections={connections}
                             onEditProject={() => handleEditProject(project)}
                             onAddGroup={() => handleAddGroup(project.id)}
                             onEditGroup={handleEditGroup}

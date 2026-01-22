@@ -31,6 +31,7 @@ interface ProjectSectionProps {
     project: Project;
     groupsMap: Map<string | null, ConnectionConfig[]>;
     allGroups: DatabaseGroup[];
+    allConnections: ConnectionConfig[];
     onEditProject: () => void;
     onAddGroup: () => void;
     onEditGroup: (group: DatabaseGroup) => void;
@@ -43,6 +44,7 @@ export function ProjectSection({
     project,
     groupsMap,
     allGroups,
+    allConnections,
     onEditProject,
     onAddGroup,
     onEditGroup,
@@ -274,6 +276,7 @@ export function ProjectSection({
                                 key={group.id}
                                 group={group}
                                 connections={groupsMap.get(group.id) || []}
+                                allConnections={allConnections}
                                 projectColor={projectColor}
                                 onEditGroup={() => onEditGroup(group)}
                                 onEditConnection={onEditConnection}
@@ -336,7 +339,8 @@ export function ProjectSection({
                                                         },
                                                     }}
                                                 >
-                                                    Show {ungroupedInProject.length - UNGROUPED_LIMIT}{' '}
+                                                    Show{' '}
+                                                    {ungroupedInProject.length - UNGROUPED_LIMIT}{' '}
                                                     more...
                                                 </Button>
                                             </Box>

@@ -24,10 +24,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../../lib/api';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { ConnectionCard } from './ConnectionCard';
+import { useToastStore } from '../../stores/toastStore';
 
 interface DatabaseGroupSectionProps {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
+    allConnections: ConnectionConfig[];
     projectColor: string;
     onEditGroup: () => void;
     onEditConnection: (conn: ConnectionConfig) => void;
@@ -40,6 +42,7 @@ interface DatabaseGroupSectionProps {
 export function DatabaseGroupSection({
     group,
     connections,
+    allConnections,
     projectColor,
     onEditGroup,
     onEditConnection,
@@ -53,6 +56,7 @@ export function DatabaseGroupSection({
     const [isDragOver, setIsDragOver] = useState(false);
     const [showAll, setShowAll] = useState(false);
     const queryClient = useQueryClient();
+    const toast = useToastStore();
 
     const LIMIT = 5;
     const visibleConnections = showAll ? connections : connections.slice(0, LIMIT);
@@ -81,6 +85,28 @@ export function DatabaseGroupSection({
             const data = JSON.parse(e.dataTransfer.getData('application/json'));
             // Move to this group
             if (data.connectionId && data.currentGroupId !== group.id && onMoveConnection) {
+                // Find the connection being dropped
+                const connection = allConnections.find((c) => c.id === data.connectionId);
+
+                if (!connection) {
+                    toast.error('Connection not found');
+                    return;
+                }
+
+                // Validate engine compatibility
+                if (connection.engine !== group.databaseEngine) {
+                    const engineNames: Record<string, string> = {
+                        postgres: 'PostgreSQL',
+                        mysql: 'MySQL',
+                        mariadb: 'MariaDB',
+                        sqlite: 'SQLite',
+                    };
+                    toast.error(
+                        `Cannot move ${engineNames[connection.engine] || connection.engine} connection to ${engineNames[group.databaseEngine] || group.databaseEngine} group`
+                    );
+                    return;
+                }
+
                 onMoveConnection(data.connectionId);
             }
         } catch {
