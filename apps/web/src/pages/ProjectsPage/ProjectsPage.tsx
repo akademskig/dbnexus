@@ -1,7 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Stack, alpha, TextField, InputAdornment, Chip } from '@mui/material';
+import {
+    Box,
+    Typography,
+    Button,
+    Stack,
+    alpha,
+    TextField,
+    InputAdornment,
+    Chip,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -25,8 +34,12 @@ export function ProjectsPage() {
     const toast = useToastStore();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
-    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(undefined);
-    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(undefined);
+    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(
+        undefined
+    );
+    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(
+        undefined
+    );
     const [projectFormOpen, setProjectFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [groupFormOpen, setGroupFormOpen] = useState(false);
@@ -70,13 +83,15 @@ export function ProjectsPage() {
         const query = searchQuery.toLowerCase().trim();
         const filteredConnections = query
             ? connections.filter((conn) => {
-                const matchesName = conn.name.toLowerCase().includes(query);
-                const matchesHost = conn.host?.toLowerCase().includes(query);
-                const matchesDatabase = conn.database?.toLowerCase().includes(query);
-                const matchesEngine = conn.engine.toLowerCase().includes(query);
-                const matchesType = conn.connectionType?.toLowerCase().includes(query);
-                return matchesName || matchesHost || matchesDatabase || matchesEngine || matchesType;
-            })
+                  const matchesName = conn.name.toLowerCase().includes(query);
+                  const matchesHost = conn.host?.toLowerCase().includes(query);
+                  const matchesDatabase = conn.database?.toLowerCase().includes(query);
+                  const matchesEngine = conn.engine.toLowerCase().includes(query);
+                  const matchesType = conn.connectionType?.toLowerCase().includes(query);
+                  return (
+                      matchesName || matchesHost || matchesDatabase || matchesEngine || matchesType
+                  );
+              })
             : connections;
 
         // Group connections
@@ -102,9 +117,9 @@ export function ProjectsPage() {
         // Filter projects to only show those with connections (when searching)
         const filteredProjects = query
             ? projects.filter((p) => {
-                const hasConnections = projectConnections.get(p.id)?.size ?? 0 > 0;
-                return hasConnections;
-            })
+                  const hasConnections = projectConnections.get(p.id)?.size ?? 0 > 0;
+                  return hasConnections;
+              })
             : projects;
 
         return {

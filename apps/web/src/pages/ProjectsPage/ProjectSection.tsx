@@ -378,70 +378,72 @@ export function ProjectSection({
                                         />
                                     ))}
                                 </Stack>
-                                {ungroupedInProject.length > UNGROUPED_LIMIT && !showAllUngrouped && (
-                                    <Box
-                                        sx={{
-                                            textAlign: 'center',
-                                            pt: 1.5,
-                                            borderTop: '1px solid',
-                                            borderColor: 'divider',
-                                            mt: 1.5,
-                                        }}
-                                    >
-                                        <Button
-                                            size="small"
-                                            onClick={() => setShowAllUngrouped(true)}
+                                {ungroupedInProject.length > UNGROUPED_LIMIT &&
+                                    !showAllUngrouped && (
+                                        <Box
                                             sx={{
-                                                textTransform: 'none',
-                                                fontWeight: 500,
-                                                fontSize: 13,
-                                                px: 2,
-                                                py: 0.75,
-                                                borderRadius: 1,
-                                                bgcolor: (theme) =>
-                                                    alpha(theme.palette.primary.main, 0.05),
-                                                color: 'primary.main',
-                                                '&:hover': {
+                                                textAlign: 'center',
+                                                pt: 1.5,
+                                                borderTop: '1px solid',
+                                                borderColor: 'divider',
+                                                mt: 1.5,
+                                            }}
+                                        >
+                                            <Button
+                                                size="small"
+                                                onClick={() => setShowAllUngrouped(true)}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    fontSize: 13,
+                                                    px: 2,
+                                                    py: 0.75,
+                                                    borderRadius: 1,
                                                     bgcolor: (theme) =>
-                                                        alpha(theme.palette.primary.main, 0.1),
-                                                },
-                                            }}
-                                        >
-                                            Show {ungroupedInProject.length - UNGROUPED_LIMIT} more
-                                            connections
-                                        </Button>
-                                    </Box>
-                                )}
-                                {showAllUngrouped && ungroupedInProject.length > UNGROUPED_LIMIT && (
-                                    <Box
-                                        sx={{
-                                            textAlign: 'center',
-                                            pt: 1.5,
-                                            borderTop: '1px solid',
-                                            borderColor: 'divider',
-                                            mt: 1.5,
-                                        }}
-                                    >
-                                        <Button
-                                            size="small"
-                                            onClick={() => setShowAllUngrouped(false)}
-                                            sx={{
-                                                textTransform: 'none',
-                                                fontWeight: 500,
-                                                fontSize: 13,
-                                                px: 2,
-                                                py: 0.75,
-                                                color: 'text.secondary',
-                                                '&:hover': {
-                                                    bgcolor: 'action.hover',
+                                                        alpha(theme.palette.primary.main, 0.05),
                                                     color: 'primary.main',
-                                                },
+                                                    '&:hover': {
+                                                        bgcolor: (theme) =>
+                                                            alpha(theme.palette.primary.main, 0.1),
+                                                    },
+                                                }}
+                                            >
+                                                Show {ungroupedInProject.length - UNGROUPED_LIMIT}{' '}
+                                                more connections
+                                            </Button>
+                                        </Box>
+                                    )}
+                                {showAllUngrouped &&
+                                    ungroupedInProject.length > UNGROUPED_LIMIT && (
+                                        <Box
+                                            sx={{
+                                                textAlign: 'center',
+                                                pt: 1.5,
+                                                borderTop: '1px solid',
+                                                borderColor: 'divider',
+                                                mt: 1.5,
                                             }}
                                         >
-                                            Show less
-                                        </Button>
-                                    </Box>
-                                )}
+                                            <Button
+                                                size="small"
+                                                onClick={() => setShowAllUngrouped(false)}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    fontSize: 13,
+                                                    px: 2,
+                                                    py: 0.75,
+                                                    color: 'text.secondary',
+                                                    '&:hover': {
+                                                        bgcolor: 'action.hover',
+                                                        color: 'primary.main',
+                                                    },
+                                                }}
+                                            >
+                                                Show less
+                                            </Button>
+                                        </Box>
+                                    )}
                             </Box>
                         )}
 

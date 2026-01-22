@@ -22,8 +22,12 @@ export function ProjectsPage() {
     const toast = useToastStore();
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
-    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(undefined);
-    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(undefined);
+    const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(
+        undefined
+    );
+    const [connectionFormGroupId, setConnectionFormGroupId] = useState<string | undefined>(
+        undefined
+    );
     const [projectFormOpen, setProjectFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [groupFormOpen, setGroupFormOpen] = useState(false);
