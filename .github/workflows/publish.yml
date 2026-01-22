@@ -4,8 +4,6 @@ on:
     push:
         branches:
             - master
-        tags:
-            - 'v*'
 
 jobs:
     publish:
@@ -36,22 +34,6 @@ jobs:
             - name: Install dependencies
               run: pnpm install
 
-            - name: Check if version bump needed
-              id: check_version
-              run: |
-                  # If triggered by tag, skip version bump
-                  if [[ $GITHUB_REF == refs/tags/* ]]; then
-                    echo "skip=true" >> $GITHUB_OUTPUT
-                  else
-                    echo "skip=false" >> $GITHUB_OUTPUT
-                  fi
-
-            - name: Bump version and create tag
-              if: steps.check_version.outputs.skip == 'false'
-              run: |
-                  pnpm release:patch
-                  git push --follow-tags
-
             - name: Build package
               run: pnpm build:package
 
@@ -62,12 +44,7 @@ jobs:
 
             - name: Get version tag
               id: get_tag
-              run: |
-                  if [[ $GITHUB_REF == refs/tags/* ]]; then
-                    echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-                  else
-                    echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
-                  fi
+              run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
 
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2
