@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-01-22
+
 ### Added
 
 - **Floating SQL Editor**: Detachable editor dialog to write queries while viewing results
@@ -18,7 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Context-aware templates auto-replace placeholders with selected table and column names
     - Smart column detection by type (text, number, date)
     - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
-- **Screenshots**: Added visual showcase to README with 8 screenshots
+- **Split-view SQL Editor**: Resizable side panel for SQL editor with toggle button
+    - View query results and SQL editor simultaneously
+    - Dark theme support
+    - Integrated toolbar with Run, Explain, Save, and Pop Out actions
+- **Database Engine Validation**: Connections can only be moved to groups with matching database engine
+    - User-friendly error messages for incompatible moves
+    - Prevents accidental mismatching (e.g., PostgreSQL connections in MySQL groups)
+- **Connection Display Limits**: Improved UX for large connection lists
+    - Dashboard shows max 8 connections with "View all" button
+    - Projects page limits 5 connections per project/group with "Show more" buttons
+- **Support Development Section**: Bitcoin donation option in Settings with QR code
 
 ## [0.1.13] - 2026-01-21
 
@@ -235,7 +247,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark/Light theme support
 - Keyboard shortcuts for common actions
 
-[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.13...HEAD
+[Unreleased]: https://github.com/yourusername/db-manager/compare/v0.1.14...HEAD
+[0.1.14]: https://github.com/yourusername/db-manager/compare/v0.1.13...v0.1.14
 [0.1.13]: https://github.com/yourusername/db-manager/compare/v0.1.12...v0.1.13
 [0.1.12]: https://github.com/yourusername/db-manager/compare/v0.1.11...v0.1.12
 [0.1.11]: https://github.com/yourusername/db-manager/compare/v0.1.10...v0.1.11

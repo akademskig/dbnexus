@@ -30,6 +30,9 @@ export function ProjectsPage() {
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
     const [isUngroupedDragOver, setIsUngroupedDragOver] = useState(false);
+    const [showAllUngrouped, setShowAllUngrouped] = useState(false);
+
+    const UNGROUPED_LIMIT = 5;
 
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
@@ -284,6 +287,7 @@ export function ProjectsPage() {
                             project={project}
                             groupsMap={projectGroups}
                             allGroups={groups.filter((g) => g.projectId === project.id)}
+                            allConnections={connections}
                             onEditProject={() => handleEditProject(project)}
                             onAddGroup={() => handleAddGroup(project.id)}
                             onEditGroup={handleEditGroup}
@@ -335,7 +339,10 @@ export function ProjectsPage() {
                         </Typography>
                         {organizedData.ungroupedConnections.length > 0 ? (
                             <Stack spacing={1.5}>
-                                {organizedData.ungroupedConnections.map((connection) => (
+                                {(showAllUngrouped
+                                    ? organizedData.ungroupedConnections
+                                    : organizedData.ungroupedConnections.slice(0, UNGROUPED_LIMIT)
+                                ).map((connection) => (
                                     <ConnectionCard
                                         key={connection.id}
                                         connection={connection}
@@ -344,6 +351,49 @@ export function ProjectsPage() {
                                         onQuery={() => navigate(`/query/${connection.id}`)}
                                     />
                                 ))}
+                                {organizedData.ungroupedConnections.length > UNGROUPED_LIMIT &&
+                                    !showAllUngrouped && (
+                                        <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                            <Button
+                                                size="small"
+                                                onClick={() => setShowAllUngrouped(true)}
+                                                sx={{
+                                                    color: 'text.secondary',
+                                                    textTransform: 'none',
+                                                    fontSize: 12,
+                                                    '&:hover': {
+                                                        bgcolor: 'action.hover',
+                                                        color: 'primary.main',
+                                                    },
+                                                }}
+                                            >
+                                                Show{' '}
+                                                {organizedData.ungroupedConnections.length -
+                                                    UNGROUPED_LIMIT}{' '}
+                                                more...
+                                            </Button>
+                                        </Box>
+                                    )}
+                                {showAllUngrouped &&
+                                    organizedData.ungroupedConnections.length > UNGROUPED_LIMIT && (
+                                        <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                            <Button
+                                                size="small"
+                                                onClick={() => setShowAllUngrouped(false)}
+                                                sx={{
+                                                    color: 'text.secondary',
+                                                    textTransform: 'none',
+                                                    fontSize: 12,
+                                                    '&:hover': {
+                                                        bgcolor: 'action.hover',
+                                                        color: 'primary.main',
+                                                    },
+                                                }}
+                                            >
+                                                Show less
+                                            </Button>
+                                        </Box>
+                                    )}
                             </Stack>
                         ) : (
                             <Typography

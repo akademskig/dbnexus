@@ -11,6 +11,7 @@ import {
     ListItemText,
     Stack,
     alpha,
+    Button,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -23,10 +24,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../../lib/api';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { ConnectionCard } from './ConnectionCard';
+import { useToastStore } from '../../stores/toastStore';
 
 interface DatabaseGroupSectionProps {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
+    allConnections: ConnectionConfig[];
     projectColor: string;
     onEditGroup: () => void;
     onEditConnection: (conn: ConnectionConfig) => void;
@@ -39,6 +42,7 @@ interface DatabaseGroupSectionProps {
 export function DatabaseGroupSection({
     group,
     connections,
+    allConnections,
     projectColor,
     onEditGroup,
     onEditConnection,
@@ -50,7 +54,13 @@ export function DatabaseGroupSection({
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showAll, setShowAll] = useState(false);
     const queryClient = useQueryClient();
+    const toast = useToastStore();
+
+    const LIMIT = 5;
+    const visibleConnections = showAll ? connections : connections.slice(0, LIMIT);
+    const hasMore = connections.length > LIMIT;
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -75,6 +85,28 @@ export function DatabaseGroupSection({
             const data = JSON.parse(e.dataTransfer.getData('application/json'));
             // Move to this group
             if (data.connectionId && data.currentGroupId !== group.id && onMoveConnection) {
+                // Find the connection being dropped
+                const connection = allConnections.find((c) => c.id === data.connectionId);
+
+                if (!connection) {
+                    toast.error('Connection not found');
+                    return;
+                }
+
+                // Validate engine compatibility
+                if (connection.engine !== group.databaseEngine) {
+                    const engineNames: Record<string, string> = {
+                        postgres: 'PostgreSQL',
+                        mysql: 'MySQL',
+                        mariadb: 'MariaDB',
+                        sqlite: 'SQLite',
+                    };
+                    toast.error(
+                        `Cannot move ${engineNames[connection.engine] || connection.engine} connection to ${engineNames[group.databaseEngine] || group.databaseEngine} group`
+                    );
+                    return;
+                }
+
                 onMoveConnection(data.connectionId);
             }
         } catch {
@@ -259,7 +291,7 @@ export function DatabaseGroupSection({
                     }}
                 >
                     <Stack spacing={1}>
-                        {connections.map((conn) => (
+                        {visibleConnections.map((conn) => (
                             <ConnectionCard
                                 key={conn.id}
                                 connection={conn}
@@ -276,6 +308,44 @@ export function DatabaseGroupSection({
                             >
                                 No connections in this group
                             </Typography>
+                        )}
+                        {hasMore && !showAll && (
+                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                <Button
+                                    size="small"
+                                    onClick={() => setShowAll(true)}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        textTransform: 'none',
+                                        fontSize: 12,
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                            color: 'primary.main',
+                                        },
+                                    }}
+                                >
+                                    Show {connections.length - LIMIT} more...
+                                </Button>
+                            </Box>
+                        )}
+                        {showAll && hasMore && (
+                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                <Button
+                                    size="small"
+                                    onClick={() => setShowAll(false)}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        textTransform: 'none',
+                                        fontSize: 12,
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                            color: 'primary.main',
+                                        },
+                                    }}
+                                >
+                                    Show less
+                                </Button>
+                            </Box>
                         )}
                     </Stack>
                 </Box>

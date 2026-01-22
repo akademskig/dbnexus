@@ -321,23 +321,51 @@ export function DashboardPage() {
                                 </Box>
                             </Box>
                         ) : (
-                            connections.map((conn, i) => {
-                                const health = healthStatus[conn.id];
-                                const status: 'online' | 'offline' | 'checking' = health
-                                    ? health.isOnline
-                                        ? 'online'
-                                        : 'offline'
-                                    : 'checking';
-                                return (
-                                    <ConnectionRow
-                                        key={conn.id}
-                                        connection={conn}
-                                        status={status}
-                                        isFirst={i === 0}
-                                        onClick={() => navigate(`/query/${conn.id}`)}
-                                    />
-                                );
-                            })
+                            <>
+                                {connections.slice(0, 5).map((conn, i) => {
+                                    const health = healthStatus[conn.id];
+                                    const status: 'online' | 'offline' | 'checking' = health
+                                        ? health.isOnline
+                                            ? 'online'
+                                            : 'offline'
+                                        : 'checking';
+                                    return (
+                                        <ConnectionRow
+                                            key={conn.id}
+                                            connection={conn}
+                                            status={status}
+                                            isFirst={i === 0}
+                                            onClick={() => navigate(`/query/${conn.id}`)}
+                                        />
+                                    );
+                                })}
+                                {connections.length > 5 && (
+                                    <Box
+                                        sx={{
+                                            textAlign: 'center',
+                                            py: 2,
+                                            borderTop: '1px solid',
+                                            borderColor: 'divider',
+                                        }}
+                                    >
+                                        <Button
+                                            size="small"
+                                            onClick={() => navigate('/projects')}
+                                            sx={{
+                                                color: 'text.secondary',
+                                                textTransform: 'none',
+                                                fontSize: 13,
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover',
+                                                    color: 'primary.main',
+                                                },
+                                            }}
+                                        >
+                                            View all {connections.length} connections
+                                        </Button>
+                                    </Box>
+                                )}
+                            </>
                         )}
                     </GlassCard>
                 </Grid>

@@ -14,7 +14,6 @@ import {
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
     Search as SearchIcon,
-    Code as CodeIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../components/GlassCard';
 import {
@@ -24,6 +23,7 @@ import {
     type QueryTemplate,
 } from './queryTemplates';
 import type { TableInfo, TableSchema } from '@dbnexus/shared';
+import { QueryTemplateIcon } from '@/components/icons/QueryTemplateIcon';
 
 interface TemplatesPanelProps {
     onTemplateSelect: (sql: string) => void;
@@ -85,7 +85,7 @@ export function TemplatesPanel({
             {/* Header */}
             <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <CodeIcon sx={{ color: 'primary.main' }} />
+                    <QueryTemplateIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         Query Templates
                     </Typography>

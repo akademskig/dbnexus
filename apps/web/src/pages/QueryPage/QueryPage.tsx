@@ -1,72 +1,41 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-    Box,
-    Typography,
-    Button,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Chip,
-    IconButton,
-    TextField,
-    InputAdornment,
-    Collapse,
-    LinearProgress,
-    Tabs,
-    Tab,
-    Badge,
-    Drawer,
-    CircularProgress,
-} from '@mui/material';
+import { Group, Panel, Separator } from 'react-resizable-panels';
+import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StorageIcon from '@mui/icons-material/Storage';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import SearchIcon from '@mui/icons-material/Search';
-import KeyIcon from '@mui/icons-material/Key';
-import LinkIcon from '@mui/icons-material/Link';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import GridViewIcon from '@mui/icons-material/GridView';
-import CodeIcon from '@mui/icons-material/Code';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import HistoryIcon from '@mui/icons-material/History';
-import AddIcon from '@mui/icons-material/Add';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import SettingsIcon from '@mui/icons-material/Settings';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
-import { TableListItem } from './TableListItem';
-import { DataTab } from './DataTab';
-import { StructureTab, IndexesTab, ForeignKeysTab, SqlTab } from './SchemaTabs';
-import { HistoryPanel } from './HistoryPanel';
-import { SavedQueriesPanel } from './SavedQueriesPanel';
-import { TemplatesPanel } from './TemplatesPanel';
+import { QueryPageSidebar } from './QueryPageSidebar';
+import { QueryPageHeader } from './QueryPageHeader';
+import { QueryPageTabs } from './QueryPageTabs';
+import { QueryPageDrawers } from './QueryPageDrawers';
+import { SqlEditor } from './SqlEditor';
+import { DeleteRowDialog } from './DeleteRowDialog';
+import { DeleteRowsDialog } from './DeleteRowsDialog';
+import { DeleteSavedQueryDialog } from './DeleteSavedQueryDialog';
+import { AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
+import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import { FloatingEditorDialog } from './FloatingEditorDialog';
-import { AddRowDialog, SyncRowDialog, SaveQueryDialog, ConfirmDialog } from './Dialogs';
 import { EmptyState } from './EmptyState';
 import { ConnectionSelector } from '../../components/ConnectionSelector';
-import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import {
-    SIDEBAR_WIDTH,
     TAB_NAMES,
     getTabIndex,
-    formatBytes,
     quoteIdentifier,
     buildTableName,
     extractTableFromQuery,
 } from './utils';
+import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
 
 export function QueryPage() {
+    const theme = useTheme();
     const { connectionId: routeConnectionId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -117,6 +86,8 @@ export function QueryPage() {
     };
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [tableSearch, setTableSearch] = useState('');
+    const [tablesExpanded, setTablesExpanded] = useState(true);
+    const [viewsExpanded, setViewsExpanded] = useState(true);
     const [sql, setSql] = useState('');
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -129,14 +100,6 @@ export function QueryPage() {
         type: string;
     } | null>(null);
     // Default to showing selected schema expanded
-    const [schemasExpanded, setSchemasExpanded] = useState<Record<string, boolean>>(() => {
-        const initial: Record<string, boolean> = {};
-        const schemaToExpand = urlSchema || lastState?.schema;
-        if (schemaToExpand) {
-            initial[schemaToExpand] = true;
-        }
-        return initial;
-    });
     const [historyOpen, setHistoryOpen] = useState(false);
 
     // Edit dialogs state
@@ -157,6 +120,7 @@ export function QueryPage() {
 
     // Floating editor state
     const [floatingEditorOpen, setFloatingEditorOpen] = useState(false);
+    const [splitViewOpen, setSplitViewOpen] = useState(false);
 
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
@@ -252,7 +216,6 @@ export function QueryPage() {
     const handleSchemaChange = useCallback(
         (newSchema: string) => {
             setSelectedSchema(newSchema);
-            setSchemasExpanded((prev) => ({ ...prev, [newSchema]: true }));
             updateUrl({ schema: newSchema, table: '' });
             setSelectedTable(null);
         },
@@ -298,11 +261,7 @@ export function QueryPage() {
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
 
     // Schemas query
-    const {
-        data: schemas = [],
-        isLoading: schemasLoading,
-        refetch: refetchSchemas,
-    } = useQuery({
+    const { data: schemas = [], refetch: refetchSchemas } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
@@ -388,7 +347,6 @@ export function QueryPage() {
             const schemaFromUrl = urlSchema;
             if (schemaFromUrl && schemas.includes(schemaFromUrl)) {
                 setSelectedSchema(schemaFromUrl);
-                setSchemasExpanded({ [schemaFromUrl]: true });
             } else {
                 const engine = selectedConnection?.engine;
                 let defaultSchema: string | undefined;
@@ -412,7 +370,6 @@ export function QueryPage() {
 
                 if (defaultSchema) {
                     setSelectedSchema(defaultSchema);
-                    setSchemasExpanded({ [defaultSchema]: true });
                     updateUrl({ schema: defaultSchema });
                 }
             }
@@ -458,7 +415,6 @@ export function QueryPage() {
                 if (matchingTable && matchingTable.name !== selectedTable?.name) {
                     setSelectedTable(matchingTable);
                     setSelectedSchema(matchingTable.schema);
-                    setSchemasExpanded((prev) => ({ ...prev, [matchingTable.schema]: true }));
                     updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
                 }
             }
@@ -715,16 +671,6 @@ export function QueryPage() {
     );
 
     // Group tables by schema
-    const tablesBySchema = filteredTables.reduce(
-        (acc, table) => {
-            const schema = table.schema || 'main';
-            acc[schema] ??= [];
-            acc[schema]!.push(table);
-            return acc;
-        },
-        {} as Record<string, TableInfo[]>
-    );
-
     const handleRefresh = () => {
         refetchSchemas();
         refetchTables();
@@ -1201,7 +1147,7 @@ export function QueryPage() {
                         onClick={() => setTemplatesOpen(true)}
                         color={templatesOpen ? 'primary' : 'default'}
                     >
-                        <CodeIcon fontSize="small" />
+                        <QueryTemplateIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
 
@@ -1234,530 +1180,168 @@ export function QueryPage() {
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                {/* Sidebar - Tables Tree */}
-                <Box
-                    sx={{
-                        width: SIDEBAR_WIDTH,
-                        borderRight: 1,
-                        borderColor: 'divider',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        bgcolor: 'background.default',
-                    }}
-                >
-                    {/* Schema Selector */}
-                    {selectedConnectionId && schemas.length > 0 && (
-                        <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                            <FormControl size="small" fullWidth>
-                                <InputLabel>Schema</InputLabel>
-                                <Select
-                                    value={selectedSchema}
-                                    onChange={(e) => handleSchemaChange(e.target.value)}
-                                    label="Schema"
-                                    startAdornment={
-                                        <InputAdornment position="start">
-                                            <GridViewIcon
-                                                fontSize="small"
-                                                sx={{ color: 'primary.main' }}
-                                            />
-                                        </InputAdornment>
-                                    }
-                                >
-                                    {schemas.map((schema) => (
-                                        <MenuItem key={schema} value={schema}>
-                                            {schema}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    )}
-
-                    {/* Search Tables */}
-                    <Box sx={{ p: 1.5 }}>
-                        <TextField
-                            size="small"
-                            placeholder="Search tables..."
-                            value={tableSearch}
-                            onChange={(e) => setTableSearch(e.target.value)}
-                            fullWidth
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon fontSize="small" sx={{ opacity: 0.5 }} />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'background.paper',
-                                },
-                            }}
-                        />
-                    </Box>
-
-                    {/* Tables List */}
-                    <Box sx={{ flex: 1, overflow: 'auto' }}>
-                        {(schemasLoading || tablesLoading) && <LinearProgress />}
-
-                        {!selectedConnectionId && (
-                            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                                <StorageIcon sx={{ fontSize: 36, opacity: 0.3, mb: 1 }} />
-                                <Typography variant="body2" fontWeight={500}>
-                                    Select a connection
-                                </Typography>
-                                <Typography variant="caption" color="text.disabled">
-                                    Choose from the dropdown above
-                                </Typography>
-                            </Box>
-                        )}
-
-                        {selectedConnectionId &&
-                            Object.keys(tablesBySchema).length === 0 &&
-                            !tablesLoading && (
-                                <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                                    <TableChartIcon sx={{ fontSize: 36, opacity: 0.3, mb: 1 }} />
-                                    <Typography variant="body2" fontWeight={500}>
-                                        No tables found
-                                    </Typography>
-                                    <Typography variant="caption" color="text.disabled">
-                                        This schema is empty
-                                    </Typography>
-                                </Box>
-                            )}
-
-                        {Object.entries(tablesBySchema).map(([schema, schemaTables]) => (
-                            <Box key={schema}>
-                                {/* Schema Header */}
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        px: 1.5,
-                                        py: 1,
-                                        cursor: 'pointer',
-                                        '&:hover': { bgcolor: 'action.hover' },
-                                        borderBottom: 1,
-                                        borderColor: 'divider',
-                                    }}
-                                    onClick={() =>
-                                        setSchemasExpanded((prev) => ({
-                                            ...prev,
-                                            [schema]: !prev[schema],
-                                        }))
-                                    }
-                                >
-                                    {schemasExpanded[schema] ? (
-                                        <ExpandLessIcon fontSize="small" sx={{ mr: 0.5 }} />
-                                    ) : (
-                                        <ExpandMoreIcon fontSize="small" sx={{ mr: 0.5 }} />
-                                    )}
-                                    <GridViewIcon
-                                        fontSize="small"
-                                        sx={{ mr: 1, color: 'primary.main' }}
-                                    />
-                                    <Typography variant="body2" fontWeight={600}>
-                                        {schema}
-                                    </Typography>
-                                    <Chip
-                                        label={schemaTables.length}
-                                        size="small"
-                                        sx={{ ml: 'auto', height: 18, fontSize: 10 }}
-                                    />
-                                </Box>
-
-                                {/* Tables in Schema */}
-                                <Collapse in={schemasExpanded[schema]}>
-                                    {schemaTables.map((table) => (
-                                        <TableListItem
-                                            key={`${table.schema}.${table.name}`}
-                                            table={table}
-                                            selected={
-                                                selectedTable?.schema === table.schema &&
-                                                selectedTable?.name === table.name
-                                            }
-                                            onClick={() => handleTableSelect(table)}
-                                        />
-                                    ))}
-                                </Collapse>
-                            </Box>
-                        ))}
-                    </Box>
-
-                    {/* Stats Footer */}
-                    {selectedConnectionId && tables.length > 0 && (
-                        <Box
-                            sx={{
-                                p: 1.5,
-                                borderTop: 1,
-                                borderColor: 'divider',
-                                bgcolor: 'background.paper',
-                            }}
-                        >
-                            <Typography variant="caption" color="text.secondary">
-                                {tables.filter((t) => t.type === 'table').length} tables,{' '}
-                                {tables.filter((t) => t.type === 'view').length} views
-                            </Typography>
-                        </Box>
-                    )}
-                </Box>
+                <QueryPageSidebar
+                    selectedConnectionId={selectedConnectionId}
+                    schemas={schemas}
+                    selectedSchema={selectedSchema}
+                    onSchemaChange={handleSchemaChange}
+                    tableSearch={tableSearch}
+                    onTableSearchChange={setTableSearch}
+                    filteredTables={filteredTables}
+                    selectedTable={selectedTable}
+                    onTableSelect={handleTableSelect}
+                    tablesLoading={tablesLoading}
+                    tablesExpanded={tablesExpanded}
+                    onToggleTablesExpanded={() => setTablesExpanded(!tablesExpanded)}
+                    viewsExpanded={viewsExpanded}
+                    onToggleViewsExpanded={() => setViewsExpanded(!viewsExpanded)}
+                />
 
                 {/* Main Panel */}
                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     {selectedConnectionId ? (
                         <>
-                            {/* Table Header - only show when table is selected */}
                             {selectedTable && (
-                                <Box
-                                    sx={{
-                                        px: 2,
-                                        py: 1.5,
-                                        borderBottom: 1,
-                                        borderColor: 'divider',
-                                        bgcolor: 'background.paper',
+                                <QueryPageHeader
+                                    selectedTable={selectedTable}
+                                    tableSchema={tableSchema}
+                                    onManageTable={() => {
+                                        navigate(
+                                            `/connections/${selectedConnectionId}?tab=management&schema=${encodeURIComponent(
+                                                selectedTable.schema || selectedSchema || 'public'
+                                            )}&table=${encodeURIComponent(selectedTable.name)}`
+                                        );
+                                    }}
+                                    onAddRow={() => setAddRowOpen(true)}
+                                />
+                            )}
+                            {splitViewOpen ? (
+                                <Group
+                                    orientation="horizontal"
+                                    style={{
                                         display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
+                                        flex: 1,
+                                        minHeight: 0,
+                                        height: '100%',
                                     }}
                                 >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        {selectedTable.type === 'view' ? (
-                                            <VisibilityIcon color="secondary" />
-                                        ) : (
-                                            <TableChartIcon color="primary" />
-                                        )}
-                                        <Typography variant="h6" fontWeight={600}>
-                                            {selectedTable.name}
-                                        </Typography>
-                                        <Chip
-                                            label={selectedTable.type}
-                                            size="small"
-                                            color={
-                                                selectedTable.type === 'view'
-                                                    ? 'secondary'
-                                                    : 'default'
-                                            }
-                                            sx={{ textTransform: 'uppercase', fontSize: 10 }}
-                                        />
-                                    </Box>
-
-                                    {selectedTable.rowCount !== undefined && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            ~{selectedTable.rowCount.toLocaleString()} rows
-                                        </Typography>
-                                    )}
-
-                                    {selectedTable.sizeBytes !== undefined && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            {formatBytes(selectedTable.sizeBytes)}
-                                        </Typography>
-                                    )}
-
-                                    <Box sx={{ flex: 1 }} />
-
-                                    {/* Table Actions */}
-                                    <StyledTooltip title="Manage Table">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                navigate(
-                                                    `/connections/${selectedConnectionId}?tab=management&schema=${encodeURIComponent(
-                                                        selectedTable.schema ||
-                                                            selectedSchema ||
-                                                            'public'
-                                                    )}&table=${encodeURIComponent(selectedTable.name)}`
-                                                );
-                                            }}
-                                        >
-                                            <SettingsIcon fontSize="small" />
-                                        </IconButton>
-                                    </StyledTooltip>
-
-                                    {selectedTable.type !== 'view' && (
-                                        <StyledTooltip title="Add Row">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => setAddRowOpen(true)}
-                                                disabled={!tableSchema}
-                                            >
-                                                <AddIcon fontSize="small" />
-                                            </IconButton>
-                                        </StyledTooltip>
-                                    )}
-
-                                    <StyledTooltip title="Explain Query">
-                                        <span>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={
-                                                    explainMutation.isPending ? (
-                                                        <CircularProgress
-                                                            size={16}
-                                                            color="inherit"
-                                                        />
-                                                    ) : (
-                                                        <AccountTreeIcon />
-                                                    )
-                                                }
-                                                onClick={() => handleExplain(false)}
-                                                disabled={!sql.trim() || explainMutation.isPending}
-                                            >
-                                                Explain
-                                            </Button>
-                                        </span>
-                                    </StyledTooltip>
-
-                                    <StyledTooltip title="Run Query (⌘+Enter)">
-                                        <span>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                data-tour="run-query"
-                                                startIcon={
-                                                    executeMutation.isPending ? (
-                                                        <CircularProgress
-                                                            size={16}
-                                                            color="inherit"
-                                                        />
-                                                    ) : (
-                                                        <PlayArrowIcon />
-                                                    )
-                                                }
-                                                onClick={handleExecute}
-                                                disabled={!sql.trim() || executeMutation.isPending}
-                                            >
-                                                Run
-                                            </Button>
-                                        </span>
-                                    </StyledTooltip>
-                                </Box>
-                            )}
-
-                            {/* Tabs */}
-                            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                                <Tabs
-                                    value={activeTab}
-                                    onChange={(_, v) => handleTabChange(v)}
-                                    sx={{ minHeight: 48 }}
-                                >
-                                    <Tab
-                                        label={
-                                            <Badge
-                                                badgeContent={result?.rowCount}
-                                                color="primary"
-                                                max={999}
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        pr: 1,
-                                                    }}
-                                                >
-                                                    <ViewListIcon fontSize="small" />
-                                                    Data
-                                                </Box>
-                                            </Badge>
-                                        }
-                                        sx={{ minHeight: 48, textTransform: 'none' }}
-                                    />
-                                    <Tab
-                                        label={
-                                            <Badge
-                                                badgeContent={tableSchema?.columns.length}
-                                                color="primary"
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        pr: 1,
-                                                    }}
-                                                >
-                                                    <GridViewIcon fontSize="small" />
-                                                    Structure
-                                                </Box>
-                                            </Badge>
-                                        }
-                                        sx={{ minHeight: 48, textTransform: 'none' }}
-                                    />
-                                    <Tab
-                                        label={
-                                            <Badge
-                                                badgeContent={tableSchema?.indexes.length}
-                                                color="primary"
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        pr: 1,
-                                                    }}
-                                                >
-                                                    <KeyIcon fontSize="small" />
-                                                    Indexes
-                                                </Box>
-                                            </Badge>
-                                        }
-                                        sx={{ minHeight: 40, textTransform: 'none' }}
-                                    />
-                                    <Tab
-                                        label={
-                                            <Badge
-                                                badgeContent={tableSchema?.foreignKeys.length}
-                                                color="primary"
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                        pr: 1,
-                                                    }}
-                                                >
-                                                    <LinkIcon fontSize="small" />
-                                                    Foreign Keys
-                                                </Box>
-                                            </Badge>
-                                        }
-                                        sx={{ minHeight: 40, textTransform: 'none' }}
-                                    />
-                                    <Tab
-                                        label={
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.5,
-                                                }}
-                                            >
-                                                <CodeIcon fontSize="small" />
-                                                SQL
-                                            </Box>
-                                        }
-                                        sx={{ minHeight: 40, textTransform: 'none' }}
-                                    />
-                                </Tabs>
-                            </Box>
-
-                            {/* Tab Content */}
-                            <Box
-                                sx={{
-                                    flex: 1,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    minHeight: 0,
-                                }}
-                            >
-                                {activeTab === 0 && (
-                                    <DataTab
-                                        result={result}
-                                        error={error}
-                                        loading={executeMutation.isPending}
-                                        confirmDangerous={confirmDangerous}
-                                        onConfirm={handleConfirmDangerous}
-                                        onCancel={() => setConfirmDangerous(null)}
-                                        totalRowCount={totalRowCount}
-                                        paginationModel={paginationModel}
-                                        onPaginationChange={handlePaginationChange}
-                                        onSearch={handleSearch}
-                                        searchQuery={searchQuery}
-                                        tableSchema={tableSchema}
-                                        onUpdateRow={handleUpdateRow}
-                                        onDeleteRow={handleDeleteRow}
-                                        onDeleteRows={handleDeleteRows}
-                                        onSyncRow={(rows) => {
-                                            setRowsToSync(rows);
-                                            setSyncRowDialogOpen(true);
+                                    <Panel
+                                        defaultSize={50}
+                                        minSize={30}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            overflow: 'hidden',
                                         }}
-                                        onForeignKeyClick={handleForeignKeyClick}
-                                        connectionHost={selectedConnection?.host}
-                                        connectionDatabase={selectedConnection?.database}
-                                        tableName={selectedTable?.name}
+                                    >
+                                        <QueryPageTabs
+                                            activeTab={activeTab}
+                                            onTabChange={handleTabChange}
+                                            result={result}
+                                            error={error}
+                                            loading={executeMutation.isPending}
+                                            confirmDangerous={confirmDangerous}
+                                            onConfirm={handleConfirmDangerous}
+                                            onCancel={() => setConfirmDangerous(null)}
+                                            totalRowCount={totalRowCount}
+                                            paginationModel={paginationModel}
+                                            onPaginationChange={handlePaginationChange}
+                                            onSearch={handleSearch}
+                                            searchQuery={searchQuery}
+                                            tableSchema={tableSchema}
+                                            onUpdateRow={handleUpdateRow}
+                                            onDeleteRow={handleDeleteRow}
+                                            onDeleteRows={handleDeleteRows}
+                                            onSyncRow={(rows) => {
+                                                setRowsToSync(rows);
+                                                setSyncRowDialogOpen(true);
+                                            }}
+                                            onForeignKeyClick={handleForeignKeyClick}
+                                            connectionHost={selectedConnection?.host}
+                                            connectionDatabase={selectedConnection?.database}
+                                            tableName={selectedTable?.name}
+                                            selectedTable={selectedTable}
+                                            tableSchemaLoading={tableSchemaLoading}
+                                            splitViewOpen={splitViewOpen}
+                                            onToggleSplitView={() =>
+                                                setSplitViewOpen(!splitViewOpen)
+                                            }
+                                        />
+                                    </Panel>
+
+                                    <Separator
+                                        style={{
+                                            width: '4px',
+                                            background: theme.palette.divider,
+                                            cursor: 'col-resize',
+                                            position: 'relative',
+                                            transition: 'background 0.2s',
+                                        }}
+                                        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                                            (e.target as HTMLDivElement).style.background =
+                                                theme.palette.primary.main;
+                                        }}
+                                        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                                            (e.target as HTMLDivElement).style.background =
+                                                theme.palette.divider;
+                                        }}
                                     />
-                                )}
 
-                                {activeTab === 1 &&
-                                    (selectedTable ? (
-                                        <StructureTab
-                                            schema={tableSchema}
-                                            loading={tableSchemaLoading}
+                                    <Panel
+                                        defaultSize={50}
+                                        minSize={30}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <SqlEditor
+                                            sql={sql}
+                                            onSqlChange={setSql}
+                                            onExecute={handleExecute}
+                                            onSave={() => setSaveQueryOpen(true)}
+                                            onExplain={() => handleExplain(false)}
+                                            onPopOut={() => setFloatingEditorOpen(true)}
+                                            onKeyDown={handleKeyDown}
+                                            executeLoading={executeMutation.isPending}
+                                            explainLoading={explainMutation.isPending}
                                         />
-                                    ) : (
-                                        <Box
-                                            sx={{
-                                                p: 4,
-                                                textAlign: 'center',
-                                                color: 'text.secondary',
-                                            }}
-                                        >
-                                            <TableChartIcon
-                                                sx={{ fontSize: 48, opacity: 0.3, mb: 1 }}
-                                            />
-                                            <Typography variant="body2">
-                                                Select a table to view its structure
-                                            </Typography>
-                                        </Box>
-                                    ))}
-
-                                {activeTab === 2 &&
-                                    (selectedTable ? (
-                                        <IndexesTab
-                                            schema={tableSchema}
-                                            loading={tableSchemaLoading}
-                                        />
-                                    ) : (
-                                        <Box
-                                            sx={{
-                                                p: 4,
-                                                textAlign: 'center',
-                                                color: 'text.secondary',
-                                            }}
-                                        >
-                                            <KeyIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                            <Typography variant="body2">
-                                                Select a table to view its indexes
-                                            </Typography>
-                                        </Box>
-                                    ))}
-
-                                {activeTab === 3 &&
-                                    (selectedTable ? (
-                                        <ForeignKeysTab
-                                            schema={tableSchema}
-                                            loading={tableSchemaLoading}
-                                        />
-                                    ) : (
-                                        <Box
-                                            sx={{
-                                                p: 4,
-                                                textAlign: 'center',
-                                                color: 'text.secondary',
-                                            }}
-                                        >
-                                            <LinkIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                            <Typography variant="body2">
-                                                Select a table to view its foreign keys
-                                            </Typography>
-                                        </Box>
-                                    ))}
-
-                                {activeTab === 4 && (
-                                    <SqlTab
-                                        sql={sql}
-                                        onSqlChange={setSql}
-                                        onExecute={handleExecute}
-                                        onSave={() => setSaveQueryOpen(true)}
-                                        onKeyDown={handleKeyDown}
-                                        onPopOut={() => setFloatingEditorOpen(true)}
-                                        loading={executeMutation.isPending}
-                                    />
-                                )}
-                            </Box>
+                                    </Panel>
+                                </Group>
+                            ) : (
+                                <QueryPageTabs
+                                    activeTab={activeTab}
+                                    onTabChange={handleTabChange}
+                                    result={result}
+                                    error={error}
+                                    loading={executeMutation.isPending}
+                                    confirmDangerous={confirmDangerous}
+                                    onConfirm={handleConfirmDangerous}
+                                    onCancel={() => setConfirmDangerous(null)}
+                                    totalRowCount={totalRowCount}
+                                    paginationModel={paginationModel}
+                                    onPaginationChange={handlePaginationChange}
+                                    onSearch={handleSearch}
+                                    searchQuery={searchQuery}
+                                    tableSchema={tableSchema}
+                                    onUpdateRow={handleUpdateRow}
+                                    onDeleteRow={handleDeleteRow}
+                                    onDeleteRows={handleDeleteRows}
+                                    onSyncRow={(rows) => {
+                                        setRowsToSync(rows);
+                                        setSyncRowDialogOpen(true);
+                                    }}
+                                    onForeignKeyClick={handleForeignKeyClick}
+                                    connectionHost={selectedConnection?.host}
+                                    connectionDatabase={selectedConnection?.database}
+                                    tableName={selectedTable?.name}
+                                    selectedTable={selectedTable}
+                                    tableSchemaLoading={tableSchemaLoading}
+                                    splitViewOpen={splitViewOpen}
+                                    onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
+                                />
+                            )}
                         </>
                     ) : (
                         <EmptyState connectionSelected={!!selectedConnectionId} />
@@ -1765,163 +1349,101 @@ export function QueryPage() {
                 </Box>
             </Box>
 
-            {/* Query Templates Drawer */}
-            <Drawer
-                anchor="right"
-                open={templatesOpen}
-                onClose={() => setTemplatesOpen(false)}
-                PaperProps={{
-                    sx: { width: 420, bgcolor: 'background.default' },
+            <QueryPageDrawers
+                templatesOpen={templatesOpen}
+                onTemplatesClose={() => setTemplatesOpen(false)}
+                onTemplateSelect={(templateSql) => {
+                    setSql(templateSql);
+                    handleTabChange(0);
+                    setTemplatesOpen(false);
                 }}
-            >
-                <TemplatesPanel
-                    onTemplateSelect={(templateSql) => {
-                        setSql(templateSql);
-                        handleTabChange(4); // Switch to SQL tab
-                        setTemplatesOpen(false);
-                    }}
-                    selectedTable={selectedTable}
-                    tableSchema={tableSchema}
-                    engine={selectedConnection?.engine}
-                />
-            </Drawer>
-
-            {/* Query History Drawer */}
-            <Drawer
-                anchor="right"
-                open={historyOpen}
-                onClose={() => setHistoryOpen(false)}
-                PaperProps={{
-                    sx: { width: 420, bgcolor: 'background.default' },
+                selectedTable={selectedTable}
+                tableSchema={tableSchema}
+                engine={selectedConnection?.engine}
+                historyOpen={historyOpen}
+                onHistoryClose={() => setHistoryOpen(false)}
+                queryHistory={queryHistory}
+                historyConnections={connections}
+                onHistorySelect={(entry) => {
+                    setSql(entry.sql);
+                    if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
+                        handleConnectionChange(entry.connectionId);
+                    }
+                    handleTabChange(0);
+                    setHistoryOpen(false);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: entry.sql });
+                    }, 100);
                 }}
-            >
-                <HistoryPanel
-                    history={queryHistory}
-                    connections={connections}
-                    onSelect={(entry) => {
-                        setSql(entry.sql);
-                        if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
-                            handleConnectionChange(entry.connectionId);
-                        }
-                        handleTabChange(4);
-                        setHistoryOpen(false);
-                    }}
-                    onRerun={(entry) => {
-                        setSql(entry.sql);
-                        if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
-                            handleConnectionChange(entry.connectionId);
-                        }
-                        // Switch to Data tab to show results
-                        handleTabChange(0);
-                        setHistoryOpen(false);
-                        setTimeout(() => {
-                            executeMutation.mutate({ query: entry.sql });
-                        }, 100);
-                    }}
-                    onClear={() => clearHistoryMutation.mutate()}
-                    onClose={() => setHistoryOpen(false)}
-                    onRefresh={() => refetchHistory()}
-                    clearing={clearHistoryMutation.isPending}
-                />
-            </Drawer>
+                onHistoryRerun={(entry) => {
+                    setSql(entry.sql);
+                    if (entry.connectionId && entry.connectionId !== selectedConnectionId) {
+                        handleConnectionChange(entry.connectionId);
+                    }
+                    handleTabChange(0);
+                    setHistoryOpen(false);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: entry.sql });
+                    }, 100);
+                }}
+                onHistoryClear={() => clearHistoryMutation.mutate()}
+                onHistoryRefresh={() => refetchHistory()}
+                historyClearing={clearHistoryMutation.isPending}
+                savedQueriesOpen={savedQueriesOpen}
+                onSavedQueriesClose={() => setSavedQueriesOpen(false)}
+                savedQueries={savedQueries}
+                savedQueryConnections={connections}
+                onSavedQuerySelect={(query) => {
+                    setSql(query.sql);
+                    if (query.connectionId && query.connectionId !== selectedConnectionId) {
+                        handleConnectionChange(query.connectionId);
+                    }
+                    handleTabChange(0);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: query.sql });
+                    }, 100);
+                    setSavedQueriesOpen(false);
+                }}
+                onSavedQueryRun={(query) => {
+                    setSql(query.sql);
+                    if (query.connectionId && query.connectionId !== selectedConnectionId) {
+                        handleConnectionChange(query.connectionId);
+                    }
+                    handleTabChange(0);
+                    setSavedQueriesOpen(false);
+                    setTimeout(() => {
+                        executeMutation.mutate({ query: query.sql });
+                    }, 100);
+                }}
+                onSavedQueryEdit={(query) => {
+                    setEditingQuery(query);
+                    setSaveQueryOpen(true);
+                }}
+                onSavedQueryDelete={(query) => {
+                    setQueryToDelete(query);
+                }}
+                onSavedQueriesRefresh={() => refetchSavedQueries()}
+            />
 
-            {/* Create Table Dialog */}
-            {/* Delete Row Confirmation Dialog */}
-            <ConfirmDialog
+            {/* Delete Row Dialog */}
+            <DeleteRowDialog
                 open={!!rowToDelete}
                 onClose={() => setRowToDelete(null)}
                 onConfirm={confirmDeleteRow}
-                title="Delete Row"
-                message={
-                    <Box>
-                        <Typography gutterBottom>
-                            Are you sure you want to delete this row from{' '}
-                            <strong>{selectedTable?.name}</strong>?
-                        </Typography>
-                        {rowToDelete && tableSchema && (
-                            <Box
-                                sx={{
-                                    mt: 1,
-                                    p: 1.5,
-                                    bgcolor: 'action.hover',
-                                    borderRadius: 1,
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    maxHeight: 150,
-                                    overflow: 'auto',
-                                }}
-                            >
-                                {tableSchema.columns
-                                    .filter((c) => c.isPrimaryKey)
-                                    .map((c) => (
-                                        <Box key={c.name}>
-                                            <strong>{c.name}:</strong> {String(rowToDelete[c.name])}
-                                        </Box>
-                                    ))}
-                            </Box>
-                        )}
-                    </Box>
-                }
-                confirmText="Delete Row"
-                confirmColor="error"
+                row={rowToDelete}
+                tableName={selectedTable?.name}
+                tableSchema={tableSchema}
                 loading={executeMutation.isPending}
             />
 
-            {/* Delete Rows Confirmation Dialog */}
-            <ConfirmDialog
+            {/* Delete Rows Dialog */}
+            <DeleteRowsDialog
                 open={!!rowsToDelete}
                 onClose={() => setRowsToDelete(null)}
                 onConfirm={confirmDeleteRows}
-                title="Delete Rows"
-                message={
-                    <Box>
-                        <Typography gutterBottom>
-                            Are you sure you want to delete{' '}
-                            <strong>{rowsToDelete?.length ?? 0}</strong> rows from{' '}
-                            <strong>{selectedTable?.name}</strong>?
-                        </Typography>
-                        {rowsToDelete && tableSchema && (
-                            <Box
-                                sx={{
-                                    mt: 1,
-                                    p: 1.5,
-                                    bgcolor: 'action.hover',
-                                    borderRadius: 1,
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    maxHeight: 150,
-                                    overflow: 'auto',
-                                }}
-                            >
-                                {rowsToDelete.slice(0, 5).map((row) => {
-                                    const primaryKeys = tableSchema.columns
-                                        .filter((c) => c.isPrimaryKey)
-                                        .map((c) => c.name);
-                                    const key = primaryKeys.length
-                                        ? primaryKeys.map((pk) => String(row[pk])).join('|')
-                                        : JSON.stringify(row);
-
-                                    return (
-                                        <Box key={key} sx={{ mb: 0.5 }}>
-                                            {primaryKeys.map((pk) => (
-                                                <Box key={pk}>
-                                                    <strong>{pk}:</strong> {String(row[pk])}
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    );
-                                })}
-                                {rowsToDelete.length > 5 && (
-                                    <Typography variant="caption" color="text.secondary">
-                                        ...and {rowsToDelete.length - 5} more
-                                    </Typography>
-                                )}
-                            </Box>
-                        )}
-                    </Box>
-                }
-                confirmText="Delete Rows"
-                confirmColor="error"
+                rows={rowsToDelete}
+                tableName={selectedTable?.name}
+                tableSchema={tableSchema}
                 loading={executeMutation.isPending}
             />
 
@@ -1942,7 +1464,7 @@ export function QueryPage() {
                     setRowsToSync([]);
                 }}
                 rows={rowsToSync}
-                sourceConnectionId={selectedConnectionId}
+                sourceConnectionId={selectedConnectionId || ''}
                 sourceConnection={selectedConnection}
                 schema={selectedTable?.schema || selectedSchema || ''}
                 table={selectedTable?.name || ''}
@@ -1950,6 +1472,34 @@ export function QueryPage() {
                     tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || []
                 }
                 connections={connections}
+            />
+
+            {/* Save Query Dialog */}
+            <SaveQueryDialog
+                open={saveQueryOpen}
+                onClose={() => {
+                    setSaveQueryOpen(false);
+                    setEditingQuery(null);
+                }}
+                onSave={(input) => saveQueryMutation.mutate(input)}
+                sql={editingQuery?.sql || sql}
+                connectionId={selectedConnectionId || undefined}
+                connections={connections}
+                editingQuery={editingQuery}
+            />
+
+            {/* Delete Saved Query Dialog */}
+            <DeleteSavedQueryDialog
+                open={!!queryToDelete}
+                onClose={() => setQueryToDelete(null)}
+                onConfirm={() => {
+                    if (queryToDelete) {
+                        deleteQueryMutation.mutate(queryToDelete.id);
+                        setQueryToDelete(null);
+                    }
+                }}
+                query={queryToDelete}
+                loading={deleteQueryMutation.isPending}
             />
 
             {/* Explain Plan Dialog */}
@@ -1961,91 +1511,6 @@ export function QueryPage() {
                 loading={explainMutation.isPending}
             />
 
-            {/* Saved Queries Drawer */}
-            <Drawer
-                anchor="right"
-                open={savedQueriesOpen}
-                onClose={() => setSavedQueriesOpen(false)}
-                PaperProps={{
-                    sx: { width: 420, bgcolor: 'background.default' },
-                }}
-            >
-                <SavedQueriesPanel
-                    queries={savedQueries}
-                    connections={connections}
-                    onSelect={(query) => {
-                        setSql(query.sql);
-                        if (query.connectionId && query.connectionId !== selectedConnectionId) {
-                            handleConnectionChange(query.connectionId);
-                        }
-                        handleTabChange(4);
-                        setSavedQueriesOpen(false);
-                    }}
-                    onRun={(query) => {
-                        setSql(query.sql);
-                        if (query.connectionId && query.connectionId !== selectedConnectionId) {
-                            handleConnectionChange(query.connectionId);
-                        }
-                        // Switch to Data tab to show results
-                        handleTabChange(0);
-                        setSavedQueriesOpen(false);
-                        setTimeout(() => {
-                            executeMutation.mutate({ query: query.sql });
-                        }, 100);
-                    }}
-                    onEdit={(query) => {
-                        setEditingQuery(query);
-                        setSaveQueryOpen(true);
-                    }}
-                    onDelete={(query) => {
-                        setQueryToDelete(query);
-                    }}
-                    onClose={() => setSavedQueriesOpen(false)}
-                    onRefresh={() => refetchSavedQueries()}
-                />
-            </Drawer>
-
-            {/* Save Query Dialog */}
-            <SaveQueryDialog
-                open={saveQueryOpen}
-                onClose={() => {
-                    setSaveQueryOpen(false);
-                    setEditingQuery(null);
-                }}
-                onSave={(input) => saveQueryMutation.mutate(input)}
-                sql={editingQuery?.sql || sql}
-                connectionId={selectedConnectionId}
-                connections={connections}
-                editingQuery={editingQuery}
-            />
-
-            {/* Delete Saved Query Confirmation Dialog */}
-            <ConfirmDialog
-                open={!!queryToDelete}
-                onClose={() => setQueryToDelete(null)}
-                onConfirm={() => {
-                    if (queryToDelete) {
-                        deleteQueryMutation.mutate(queryToDelete.id);
-                        setQueryToDelete(null);
-                    }
-                }}
-                title="Delete Saved Query"
-                message={
-                    <Box>
-                        <Typography gutterBottom>
-                            Are you sure you want to delete the saved query{' '}
-                            <strong>&ldquo;{queryToDelete?.name}&rdquo;</strong>?
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            This action cannot be undone.
-                        </Typography>
-                    </Box>
-                }
-                confirmText="Delete"
-                confirmColor="error"
-                loading={deleteQueryMutation.isPending}
-            />
-
             {/* Floating Editor Dialog */}
             <FloatingEditorDialog
                 open={floatingEditorOpen}
@@ -2054,7 +1519,7 @@ export function QueryPage() {
                 onSqlChange={setSql}
                 onExecute={() => {
                     handleExecute();
-                    handleTabChange(0); // Switch to Data tab to show results
+                    handleTabChange(0);
                 }}
                 onSave={() => setSaveQueryOpen(true)}
                 onExplain={() => handleExplain(false)}

@@ -2,8 +2,8 @@ name: Publish to npm
 
 on:
     push:
-        tags:
-            - 'v*'
+        branches:
+            - master
 
 jobs:
     publish:
@@ -13,6 +13,9 @@ jobs:
             id-token: write
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - uses: pnpm/action-setup@v2
               with:
@@ -22,6 +25,11 @@ jobs:
               with:
                   node-version: '18'
                   registry-url: 'https://registry.npmjs.org'
+
+            - name: Configure Git
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
 
             - name: Install dependencies
               run: pnpm install
@@ -34,7 +42,12 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+            - name: Get version tag
+              id: get_tag
+              run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2
               with:
+                  tag_name: ${{ steps.get_tag.outputs.tag }}
                   generate_release_notes: true

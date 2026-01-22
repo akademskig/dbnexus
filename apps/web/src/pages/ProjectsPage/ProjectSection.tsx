@@ -10,6 +10,7 @@ import {
     ListItemText,
     Stack,
     alpha,
+    Button,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -30,6 +31,7 @@ interface ProjectSectionProps {
     project: Project;
     groupsMap: Map<string | null, ConnectionConfig[]>;
     allGroups: DatabaseGroup[];
+    allConnections: ConnectionConfig[];
     onEditProject: () => void;
     onAddGroup: () => void;
     onEditGroup: (group: DatabaseGroup) => void;
@@ -42,6 +44,7 @@ export function ProjectSection({
     project,
     groupsMap,
     allGroups,
+    allConnections,
     onEditProject,
     onAddGroup,
     onEditGroup,
@@ -52,8 +55,11 @@ export function ProjectSection({
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showAllUngrouped, setShowAllUngrouped] = useState(false);
     const queryClient = useQueryClient();
     const toast = useToastStore();
+
+    const UNGROUPED_LIMIT = 5;
 
     const deleteProjectMutation = useMutation({
         mutationFn: () => projectsApi.delete(project.id),
@@ -270,6 +276,7 @@ export function ProjectSection({
                                 key={group.id}
                                 group={group}
                                 connections={groupsMap.get(group.id) || []}
+                                allConnections={allConnections}
                                 projectColor={projectColor}
                                 onEditGroup={() => onEditGroup(group)}
                                 onEditConnection={onEditConnection}
@@ -303,7 +310,10 @@ export function ProjectSection({
                                     Ungrouped
                                 </Typography>
                                 <Stack spacing={1}>
-                                    {ungroupedInProject.map((conn) => (
+                                    {(showAllUngrouped
+                                        ? ungroupedInProject
+                                        : ungroupedInProject.slice(0, UNGROUPED_LIMIT)
+                                    ).map((conn) => (
                                         <ConnectionCard
                                             key={conn.id}
                                             connection={conn}
@@ -313,6 +323,48 @@ export function ProjectSection({
                                             onQuery={() => onQuery(conn.id)}
                                         />
                                     ))}
+                                    {ungroupedInProject.length > UNGROUPED_LIMIT &&
+                                        !showAllUngrouped && (
+                                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                                <Button
+                                                    size="small"
+                                                    onClick={() => setShowAllUngrouped(true)}
+                                                    sx={{
+                                                        color: 'text.secondary',
+                                                        textTransform: 'none',
+                                                        fontSize: 12,
+                                                        '&:hover': {
+                                                            bgcolor: 'action.hover',
+                                                            color: 'primary.main',
+                                                        },
+                                                    }}
+                                                >
+                                                    Show{' '}
+                                                    {ungroupedInProject.length - UNGROUPED_LIMIT}{' '}
+                                                    more...
+                                                </Button>
+                                            </Box>
+                                        )}
+                                    {showAllUngrouped &&
+                                        ungroupedInProject.length > UNGROUPED_LIMIT && (
+                                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                                <Button
+                                                    size="small"
+                                                    onClick={() => setShowAllUngrouped(false)}
+                                                    sx={{
+                                                        color: 'text.secondary',
+                                                        textTransform: 'none',
+                                                        fontSize: 12,
+                                                        '&:hover': {
+                                                            bgcolor: 'action.hover',
+                                                            color: 'primary.main',
+                                                        },
+                                                    }}
+                                                >
+                                                    Show less
+                                                </Button>
+                                            </Box>
+                                        )}
                                 </Stack>
                             </Box>
                         )}
