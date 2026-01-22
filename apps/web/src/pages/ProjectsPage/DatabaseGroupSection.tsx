@@ -11,6 +11,7 @@ import {
     ListItemText,
     Stack,
     alpha,
+    Button,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -50,7 +51,12 @@ export function DatabaseGroupSection({
     const [expanded, setExpanded] = useState(true);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showAll, setShowAll] = useState(false);
     const queryClient = useQueryClient();
+
+    const LIMIT = 5;
+    const visibleConnections = showAll ? connections : connections.slice(0, LIMIT);
+    const hasMore = connections.length > LIMIT;
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -259,7 +265,7 @@ export function DatabaseGroupSection({
                     }}
                 >
                     <Stack spacing={1}>
-                        {connections.map((conn) => (
+                        {visibleConnections.map((conn) => (
                             <ConnectionCard
                                 key={conn.id}
                                 connection={conn}
@@ -276,6 +282,44 @@ export function DatabaseGroupSection({
                             >
                                 No connections in this group
                             </Typography>
+                        )}
+                        {hasMore && !showAll && (
+                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                <Button
+                                    size="small"
+                                    onClick={() => setShowAll(true)}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        textTransform: 'none',
+                                        fontSize: 12,
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                            color: 'primary.main',
+                                        },
+                                    }}
+                                >
+                                    Show {connections.length - LIMIT} more...
+                                </Button>
+                            </Box>
+                        )}
+                        {showAll && hasMore && (
+                            <Box sx={{ textAlign: 'center', pt: 1 }}>
+                                <Button
+                                    size="small"
+                                    onClick={() => setShowAll(false)}
+                                    sx={{
+                                        color: 'text.secondary',
+                                        textTransform: 'none',
+                                        fontSize: 12,
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                            color: 'primary.main',
+                                        },
+                                    }}
+                                >
+                                    Show less
+                                </Button>
+                            </Box>
                         )}
                     </Stack>
                 </Box>

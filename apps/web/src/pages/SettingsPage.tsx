@@ -557,17 +557,19 @@ function AboutTab() {
                     </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                    A <strong>local-first</strong> database management tool designed for speed, safety,
-                    and clarity. DB Nexus brings together query editing, schema visualization, data
-                    synchronization, and production safety guardrails in one modern experience.
+                    A <strong>local-first</strong> database management tool designed for speed,
+                    safety, and clarity. DB Nexus brings together query editing, schema
+                    visualization, data synchronization, and production safety guardrails in one
+                    modern experience.
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
                     Works seamlessly with <strong>PostgreSQL, MySQL, MariaDB, and SQLite</strong> —
-                    everything runs locally, giving you full control over your data and infrastructure.
+                    everything runs locally, giving you full control over your data and
+                    infrastructure.
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                    Built with React, TypeScript, NestJS, and Material-UI. Open source and designed for
-                    database administrators and developers who value both power and usability.
+                    Built with React, TypeScript, NestJS, and Material-UI. Open source and designed
+                    for database administrators and developers who value both power and usability.
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                     Version {version}
@@ -755,7 +757,7 @@ function AboutTab() {
                                     borderRadius: 1,
                                     border: 1.5,
                                     borderColor: 'divider',
-                                    "&:hover": {
+                                    '&:hover': {
                                         borderColor: 'primary.main',
                                     },
                                 }}
@@ -773,7 +775,6 @@ function AboutTab() {
                                 </Typography>
                                 <IconButton
                                     size="small"
-
                                     onClick={handleCopyAddress}
                                     sx={{
                                         color: addressCopied ? 'success.main' : 'primary.main',
