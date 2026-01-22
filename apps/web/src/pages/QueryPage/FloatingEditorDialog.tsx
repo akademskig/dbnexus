@@ -222,7 +222,7 @@ export function FloatingEditorDialog({
     }
 
     return (
-        <Draggable handle=".drag-handle" nodeRef={nodeRef} bounds="parent">
+        <Draggable handle=".drag-handle" nodeRef={nodeRef}>
             {content}
         </Draggable>
     );
