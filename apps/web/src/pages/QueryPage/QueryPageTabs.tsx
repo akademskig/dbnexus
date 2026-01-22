@@ -49,6 +49,7 @@ interface QueryPageTabsProps {
     onSave: () => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
     onPopOut: () => void;
+    hideSqlTab?: boolean;
 }
 
 export function QueryPageTabs({
@@ -82,9 +83,17 @@ export function QueryPageTabs({
     onSave,
     onKeyDown,
     onPopOut,
+    hideSqlTab = false,
 }: QueryPageTabsProps) {
     return (
-        <>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+            }}
+        >
             {/* Tabs */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 48 }}>
@@ -160,21 +169,23 @@ export function QueryPageTabs({
                         }
                         sx={{ minHeight: 40, textTransform: 'none' }}
                     />
-                    <Tab
-                        label={
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                }}
-                            >
-                                <CodeIcon fontSize="small" />
-                                SQL
-                            </Box>
-                        }
-                        sx={{ minHeight: 40, textTransform: 'none' }}
-                    />
+                    {!hideSqlTab && (
+                        <Tab
+                            label={
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                    }}
+                                >
+                                    <CodeIcon fontSize="small" />
+                                    SQL
+                                </Box>
+                            }
+                            sx={{ minHeight: 40, textTransform: 'none' }}
+                        />
+                    )}
                 </Tabs>
             </Box>
 
@@ -266,7 +277,7 @@ export function QueryPageTabs({
                         </Box>
                     ))}
 
-                {activeTab === 4 && (
+                {!hideSqlTab && activeTab === 4 && (
                     <SqlTab
                         sql={sql}
                         onSqlChange={onSqlChange}
@@ -278,6 +289,6 @@ export function QueryPageTabs({
                     />
                 )}
             </Box>
-        </>
+        </Box>
     );
 }

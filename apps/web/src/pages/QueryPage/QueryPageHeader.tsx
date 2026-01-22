@@ -57,7 +57,11 @@ export function QueryPageHeader({
                 <Chip
                     label={selectedTable.type}
                     size="small"
-                    color={selectedTable.type === 'view' ? 'secondary' : 'default'}
+                    color={
+                        selectedTable.type === 'view'
+                            ? 'secondary'
+                            : 'default'
+                    }
                     sx={{ textTransform: 'uppercase', fontSize: 10 }}
                 />
             </Box>
@@ -78,14 +82,21 @@ export function QueryPageHeader({
 
             {/* Table Actions */}
             <StyledTooltip title="Manage Table">
-                <IconButton size="small" onClick={onManageTable}>
+                <IconButton
+                    size="small"
+                    onClick={onManageTable}
+                >
                     <SettingsIcon fontSize="small" />
                 </IconButton>
             </StyledTooltip>
 
             {selectedTable.type !== 'view' && (
                 <StyledTooltip title="Add Row">
-                    <IconButton size="small" onClick={onAddRow} disabled={!tableSchema}>
+                    <IconButton
+                        size="small"
+                        onClick={onAddRow}
+                        disabled={!tableSchema}
+                    >
                         <AddIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
@@ -98,7 +109,10 @@ export function QueryPageHeader({
                         size="small"
                         startIcon={
                             explainLoading ? (
-                                <CircularProgress size={16} color="inherit" />
+                                <CircularProgress
+                                    size={16}
+                                    color="inherit"
+                                />
                             ) : (
                                 <AccountTreeIcon />
                             )
@@ -119,7 +133,10 @@ export function QueryPageHeader({
                         data-tour="run-query"
                         startIcon={
                             executeLoading ? (
-                                <CircularProgress size={16} color="inherit" />
+                                <CircularProgress
+                                    size={16}
+                                    color="inherit"
+                                />
                             ) : (
                                 <PlayArrowIcon />
                             )

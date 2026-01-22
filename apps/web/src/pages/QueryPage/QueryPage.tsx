@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Box, Typography, Chip, IconButton } from '@mui/material';
+import { Group, Panel, Separator } from 'react-resizable-panels';
+import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CodeIcon from '@mui/icons-material/Code';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import CodeOffIcon from '@mui/icons-material/CodeOff';
 import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
@@ -16,6 +18,7 @@ import { QueryPageSidebar } from './QueryPageSidebar';
 import { QueryPageHeader } from './QueryPageHeader';
 import { QueryPageTabs } from './QueryPageTabs';
 import { QueryPageDrawers } from './QueryPageDrawers';
+import { SqlEditor } from './SqlEditor';
 import { DeleteRowDialog } from './DeleteRowDialog';
 import { DeleteRowsDialog } from './DeleteRowsDialog';
 import { DeleteSavedQueryDialog } from './DeleteSavedQueryDialog';
@@ -33,6 +36,7 @@ import {
 } from './utils';
 
 export function QueryPage() {
+    const theme = useTheme();
     const { connectionId: routeConnectionId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -117,6 +121,7 @@ export function QueryPage() {
 
     // Floating editor state
     const [floatingEditorOpen, setFloatingEditorOpen] = useState(false);
+    const [splitViewOpen, setSplitViewOpen] = useState(false);
 
     // Row deletion state
     const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
@@ -350,13 +355,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1137,6 +1142,20 @@ export function QueryPage() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title={splitViewOpen ? 'Close SQL Editor' : 'Open SQL Editor'}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setSplitViewOpen(!splitViewOpen)}
+                        color={splitViewOpen ? 'primary' : 'default'}
+                    >
+                        {splitViewOpen ? (
+                            <CodeOffIcon fontSize="small" />
+                        ) : (
+                            <CodeIcon fontSize="small" />
+                        )}
+                    </IconButton>
+                </StyledTooltip>
+
                 <StyledTooltip title="Query Templates">
                     <IconButton
                         size="small"
@@ -1216,42 +1235,138 @@ export function QueryPage() {
                                     onExecute={handleExecute}
                                 />
                             )}
+                            {splitViewOpen ? (
+                                <Group
+                                    orientation="horizontal"
+                                    style={{
+                                        display: 'flex',
+                                        flex: 1,
+                                        minHeight: 0,
+                                        height: '100%',
+                                    }}
+                                >
+                                    <Panel
+                                        defaultSize={50}
+                                        minSize={30}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <QueryPageTabs
+                                            activeTab={activeTab}
+                                            onTabChange={handleTabChange}
+                                            result={result}
+                                            error={error}
+                                            loading={executeMutation.isPending}
+                                            confirmDangerous={confirmDangerous}
+                                            onConfirm={handleConfirmDangerous}
+                                            onCancel={() => setConfirmDangerous(null)}
+                                            totalRowCount={totalRowCount}
+                                            paginationModel={paginationModel}
+                                            onPaginationChange={handlePaginationChange}
+                                            onSearch={handleSearch}
+                                            searchQuery={searchQuery}
+                                            tableSchema={tableSchema}
+                                            onUpdateRow={handleUpdateRow}
+                                            onDeleteRow={handleDeleteRow}
+                                            onDeleteRows={handleDeleteRows}
+                                            onSyncRow={(rows) => {
+                                                setRowsToSync(rows);
+                                                setSyncRowDialogOpen(true);
+                                            }}
+                                            onForeignKeyClick={handleForeignKeyClick}
+                                            connectionHost={selectedConnection?.host}
+                                            connectionDatabase={selectedConnection?.database}
+                                            tableName={selectedTable?.name}
+                                            selectedTable={selectedTable}
+                                            tableSchemaLoading={tableSchemaLoading}
+                                            sql={sql}
+                                            onSqlChange={setSql}
+                                            onExecute={handleExecute}
+                                            onSave={() => setSaveQueryOpen(true)}
+                                            onKeyDown={handleKeyDown}
+                                            onPopOut={() => setFloatingEditorOpen(true)}
+                                            hideSqlTab={true}
+                                        />
+                                    </Panel>
 
-                            <QueryPageTabs
-                                activeTab={activeTab}
-                                onTabChange={handleTabChange}
-                                result={result}
-                                error={error}
-                                loading={executeMutation.isPending}
-                                confirmDangerous={confirmDangerous}
-                                onConfirm={handleConfirmDangerous}
-                                onCancel={() => setConfirmDangerous(null)}
-                                totalRowCount={totalRowCount}
-                                paginationModel={paginationModel}
-                                onPaginationChange={handlePaginationChange}
-                                onSearch={handleSearch}
-                                searchQuery={searchQuery}
-                                tableSchema={tableSchema}
-                                onUpdateRow={handleUpdateRow}
-                                onDeleteRow={handleDeleteRow}
-                                onDeleteRows={handleDeleteRows}
-                                onSyncRow={(rows) => {
-                                    setRowsToSync(rows);
-                                    setSyncRowDialogOpen(true);
-                                }}
-                                onForeignKeyClick={handleForeignKeyClick}
-                                connectionHost={selectedConnection?.host}
-                                connectionDatabase={selectedConnection?.database}
-                                tableName={selectedTable?.name}
-                                selectedTable={selectedTable}
-                                tableSchemaLoading={tableSchemaLoading}
-                                sql={sql}
-                                onSqlChange={setSql}
-                                onExecute={handleExecute}
-                                onSave={() => setSaveQueryOpen(true)}
-                                onKeyDown={handleKeyDown}
-                                onPopOut={() => setFloatingEditorOpen(true)}
-                            />
+                                    <Separator
+                                        style={{
+                                            width: '4px',
+                                            background: theme.palette.divider,
+                                            cursor: 'col-resize',
+                                            position: 'relative',
+                                            transition: 'background 0.2s',
+                                        }}
+                                        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                                            (e.target as HTMLDivElement).style.background =
+                                                theme.palette.primary.main;
+                                        }}
+                                        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                                            (e.target as HTMLDivElement).style.background =
+                                                theme.palette.divider;
+                                        }}
+                                    />
+
+                                    <Panel
+                                        defaultSize={50}
+                                        minSize={30}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <SqlEditor
+                                            sql={sql}
+                                            onSqlChange={setSql}
+                                            onExecute={handleExecute}
+                                            onSave={() => setSaveQueryOpen(true)}
+                                            onExplain={() => handleExplain(false)}
+                                            onKeyDown={handleKeyDown}
+                                            loading={executeMutation.isPending}
+                                        />
+                                    </Panel>
+                                </Group>
+                            ) : (
+                                <QueryPageTabs
+                                    activeTab={activeTab}
+                                    onTabChange={handleTabChange}
+                                    result={result}
+                                    error={error}
+                                    loading={executeMutation.isPending}
+                                    confirmDangerous={confirmDangerous}
+                                    onConfirm={handleConfirmDangerous}
+                                    onCancel={() => setConfirmDangerous(null)}
+                                    totalRowCount={totalRowCount}
+                                    paginationModel={paginationModel}
+                                    onPaginationChange={handlePaginationChange}
+                                    onSearch={handleSearch}
+                                    searchQuery={searchQuery}
+                                    tableSchema={tableSchema}
+                                    onUpdateRow={handleUpdateRow}
+                                    onDeleteRow={handleDeleteRow}
+                                    onDeleteRows={handleDeleteRows}
+                                    onSyncRow={(rows) => {
+                                        setRowsToSync(rows);
+                                        setSyncRowDialogOpen(true);
+                                    }}
+                                    onForeignKeyClick={handleForeignKeyClick}
+                                    connectionHost={selectedConnection?.host}
+                                    connectionDatabase={selectedConnection?.database}
+                                    tableName={selectedTable?.name}
+                                    selectedTable={selectedTable}
+                                    tableSchemaLoading={tableSchemaLoading}
+                                    sql={sql}
+                                    onSqlChange={setSql}
+                                    onExecute={handleExecute}
+                                    onSave={() => setSaveQueryOpen(true)}
+                                    onKeyDown={handleKeyDown}
+                                    onPopOut={() => setFloatingEditorOpen(true)}
+                                />
+                            )}
                         </>
                     ) : (
                         <EmptyState connectionSelected={!!selectedConnectionId} />

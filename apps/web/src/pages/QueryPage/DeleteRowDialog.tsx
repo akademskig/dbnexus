@@ -1,5 +1,4 @@
 import { Box, Typography, Chip, Divider, alpha } from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import KeyIcon from '@mui/icons-material/Key';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import { ConfirmDialog } from './Dialogs';
