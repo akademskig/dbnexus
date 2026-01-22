@@ -1,4 +1,15 @@
-import { Box, FormControl, InputLabel, Select, MenuItem, TextField, InputAdornment, Typography, Collapse, LinearProgress } from '@mui/material';
+import {
+    Box,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    TextField,
+    InputAdornment,
+    Typography,
+    Collapse,
+    LinearProgress,
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -65,10 +76,7 @@ export function QueryPageSidebar({
                             label="Schema"
                             startAdornment={
                                 <InputAdornment position="start">
-                                    <GridViewIcon
-                                        fontSize="small"
-                                        sx={{ color: 'primary.main' }}
-                                    />
+                                    <GridViewIcon fontSize="small" sx={{ color: 'primary.main' }} />
                                 </InputAdornment>
                             }
                         >

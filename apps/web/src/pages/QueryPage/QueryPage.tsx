@@ -1,12 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-    Box,
-    Typography,
-    Chip,
-    IconButton,
-} from '@mui/material';
+import { Box, Typography, Chip, IconButton } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CodeIcon from '@mui/icons-material/Code';
@@ -262,10 +257,7 @@ export function QueryPage() {
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
 
     // Schemas query
-    const {
-        data: schemas = [],
-        refetch: refetchSchemas,
-    } = useQuery({
+    const { data: schemas = [], refetch: refetchSchemas } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
@@ -358,13 +350,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                            schemas.includes(selectedConnection.database)
+                        schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                            schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1215,9 +1207,7 @@ export function QueryPage() {
                                     onManageTable={() => {
                                         navigate(
                                             `/connections/${selectedConnectionId}?tab=management&schema=${encodeURIComponent(
-                                                selectedTable.schema ||
-                                                selectedSchema ||
-                                                'public'
+                                                selectedTable.schema || selectedSchema || 'public'
                                             )}&table=${encodeURIComponent(selectedTable.name)}`
                                         );
                                     }}

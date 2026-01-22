@@ -30,7 +30,10 @@ interface QueryPageTabsProps {
     onSearch: (query: string) => void;
     searchQuery: string;
     tableSchema: TableSchema | undefined;
-    onUpdateRow: (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => Promise<void>;
+    onUpdateRow: (
+        oldRow: Record<string, unknown>,
+        newRow: Record<string, unknown>
+    ) => Promise<void>;
     onDeleteRow: (row: Record<string, unknown>) => void;
     onDeleteRows: (rows: Record<string, unknown>[]) => void;
     onSyncRow: (rows: Record<string, unknown>[]) => void;
@@ -84,18 +87,10 @@ export function QueryPageTabs({
         <>
             {/* Tabs */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={(_, v) => onTabChange(v)}
-                    sx={{ minHeight: 48 }}
-                >
+                <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 48 }}>
                     <Tab
                         label={
-                            <Badge
-                                badgeContent={result?.rowCount}
-                                color="primary"
-                                max={999}
-                            >
+                            <Badge badgeContent={result?.rowCount} color="primary" max={999}>
                                 <Box
                                     sx={{
                                         display: 'flex',
@@ -113,10 +108,7 @@ export function QueryPageTabs({
                     />
                     <Tab
                         label={
-                            <Badge
-                                badgeContent={tableSchema?.columns.length}
-                                color="primary"
-                            >
+                            <Badge badgeContent={tableSchema?.columns.length} color="primary">
                                 <Box
                                     sx={{
                                         display: 'flex',
@@ -134,10 +126,7 @@ export function QueryPageTabs({
                     />
                     <Tab
                         label={
-                            <Badge
-                                badgeContent={tableSchema?.indexes.length}
-                                color="primary"
-                            >
+                            <Badge badgeContent={tableSchema?.indexes.length} color="primary">
                                 <Box
                                     sx={{
                                         display: 'flex',
@@ -155,10 +144,7 @@ export function QueryPageTabs({
                     />
                     <Tab
                         label={
-                            <Badge
-                                badgeContent={tableSchema?.foreignKeys.length}
-                                color="primary"
-                            >
+                            <Badge badgeContent={tableSchema?.foreignKeys.length} color="primary">
                                 <Box
                                     sx={{
                                         display: 'flex',
@@ -228,10 +214,7 @@ export function QueryPageTabs({
 
                 {activeTab === 1 &&
                     (selectedTable ? (
-                        <StructureTab
-                            schema={tableSchema}
-                            loading={tableSchemaLoading}
-                        />
+                        <StructureTab schema={tableSchema} loading={tableSchemaLoading} />
                     ) : (
                         <Box
                             sx={{
@@ -240,9 +223,7 @@ export function QueryPageTabs({
                                 color: 'text.secondary',
                             }}
                         >
-                            <TableChartIcon
-                                sx={{ fontSize: 48, opacity: 0.3, mb: 1 }}
-                            />
+                            <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
                             <Typography variant="body2">
                                 Select a table to view its structure
                             </Typography>
@@ -251,10 +232,7 @@ export function QueryPageTabs({
 
                 {activeTab === 2 &&
                     (selectedTable ? (
-                        <IndexesTab
-                            schema={tableSchema}
-                            loading={tableSchemaLoading}
-                        />
+                        <IndexesTab schema={tableSchema} loading={tableSchemaLoading} />
                     ) : (
                         <Box
                             sx={{
@@ -272,10 +250,7 @@ export function QueryPageTabs({
 
                 {activeTab === 3 &&
                     (selectedTable ? (
-                        <ForeignKeysTab
-                            schema={tableSchema}
-                            loading={tableSchemaLoading}
-                        />
+                        <ForeignKeysTab schema={tableSchema} loading={tableSchemaLoading} />
                     ) : (
                         <Box
                             sx={{

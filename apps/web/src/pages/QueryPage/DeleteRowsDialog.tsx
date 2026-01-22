@@ -88,7 +88,12 @@ export function DeleteRowsDialog({
                                     fontWeight={600}
                                     textTransform="uppercase"
                                     color="text.secondary"
-                                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        mb: 1.5,
+                                    }}
                                 >
                                     <KeyIcon sx={{ fontSize: 14 }} />
                                     Preview ({previewRows.length} of {rowCount})
@@ -165,15 +170,24 @@ export function DeleteRowsDialog({
                                                 borderRadius: 1,
                                             }}
                                         >
-                                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                                                ...and {rowCount - 5} more row{rowCount - 5 !== 1 ? 's' : ''}
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                fontWeight={600}
+                                            >
+                                                ...and {rowCount - 5} more row
+                                                {rowCount - 5 !== 1 ? 's' : ''}
                                             </Typography>
                                         </Box>
                                     )}
                                 </Box>
                             </Box>
                             <Divider sx={{ my: 2 }} />
-                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontStyle: 'italic' }}
+                            >
                                 This action cannot be undone.
                             </Typography>
                         </>

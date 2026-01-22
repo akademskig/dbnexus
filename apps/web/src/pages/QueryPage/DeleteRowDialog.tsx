@@ -69,7 +69,12 @@ export function DeleteRowDialog({
                                     fontWeight={600}
                                     textTransform="uppercase"
                                     color="text.secondary"
-                                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        mb: 1.5,
+                                    }}
                                 >
                                     <KeyIcon sx={{ fontSize: 14 }} />
                                     Primary Key Values
@@ -124,7 +129,11 @@ export function DeleteRowDialog({
                                 </Box>
                             </Box>
                             <Divider sx={{ my: 2 }} />
-                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontStyle: 'italic' }}
+                            >
                                 This action cannot be undone.
                             </Typography>
                         </>

@@ -2,7 +2,13 @@ import { Drawer } from '@mui/material';
 import { HistoryPanel } from './HistoryPanel';
 import { SavedQueriesPanel } from './SavedQueriesPanel';
 import { TemplatesPanel } from './TemplatesPanel';
-import type { TableInfo, TableSchema, SavedQuery, QueryHistoryEntry, ConnectionConfig } from '@dbnexus/shared';
+import type {
+    TableInfo,
+    TableSchema,
+    SavedQuery,
+    QueryHistoryEntry,
+    ConnectionConfig,
+} from '@dbnexus/shared';
 
 interface QueryPageDrawersProps {
     // Templates
