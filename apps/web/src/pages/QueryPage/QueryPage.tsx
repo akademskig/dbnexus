@@ -354,13 +354,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                            schemas.includes(selectedConnection.database)
+                        schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                            schemas.includes(selectedConnection.defaultSchema)
+                        schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1268,7 +1268,9 @@ export function QueryPage() {
                                             selectedTable={selectedTable}
                                             tableSchemaLoading={tableSchemaLoading}
                                             splitViewOpen={splitViewOpen}
-                                            onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
+                                            onToggleSplitView={() =>
+                                                setSplitViewOpen(!splitViewOpen)
+                                            }
                                         />
                                     </Panel>
 

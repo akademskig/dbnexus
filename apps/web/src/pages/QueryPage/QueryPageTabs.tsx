@@ -1,4 +1,4 @@
-import { Box, Tabs, Tab, Badge, Typography } from '@mui/material';
+import { Box, Tabs, Tab, Badge, Typography, Button } from '@mui/material';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import GridViewIcon from '@mui/icons-material/GridView';
 import KeyIcon from '@mui/icons-material/Key';
@@ -17,35 +17,35 @@ interface ForeignKeyClickInfo {
 }
 
 interface QueryPageTabsProps {
-    activeTab: number;
-    onTabChange: (tab: number) => void;
-    result: QueryResult | null;
-    error: string | null;
-    loading: boolean;
-    confirmDangerous: { message: string; type: string } | null;
-    onConfirm: () => void;
-    onCancel: () => void;
-    totalRowCount: number | null;
-    paginationModel: { page: number; pageSize: number };
-    onPaginationChange: (model: { page: number; pageSize: number }) => void;
-    onSearch: (query: string) => void;
-    searchQuery: string;
-    tableSchema: TableSchema | undefined;
-    onUpdateRow: (
+    readonly activeTab: number;
+    readonly onTabChange: (tab: number) => void;
+    readonly result: QueryResult | null;
+    readonly error: string | null;
+    readonly loading: boolean;
+    readonly confirmDangerous: { message: string; type: string } | null;
+    readonly onConfirm: () => void;
+    readonly onCancel: () => void;
+    readonly totalRowCount: number | null;
+    readonly paginationModel: { page: number; pageSize: number };
+    readonly onPaginationChange: (model: { page: number; pageSize: number }) => void;
+    readonly onSearch: (query: string) => void;
+    readonly searchQuery: string;
+    readonly tableSchema: TableSchema | undefined;
+    readonly onUpdateRow: (
         oldRow: Record<string, unknown>,
         newRow: Record<string, unknown>
     ) => Promise<void>;
-    onDeleteRow: (row: Record<string, unknown>) => void;
-    onDeleteRows: (rows: Record<string, unknown>[]) => void;
-    onSyncRow: (rows: Record<string, unknown>[]) => void;
-    onForeignKeyClick: (info: ForeignKeyClickInfo) => void;
-    connectionHost: string | undefined;
-    connectionDatabase: string | undefined;
-    tableName: string | undefined;
-    selectedTable: TableInfo | null;
-    tableSchemaLoading: boolean;
-    splitViewOpen?: boolean;
-    onToggleSplitView?: () => void;
+    readonly onDeleteRow: (row: Record<string, unknown>) => void;
+    readonly onDeleteRows: (rows: Record<string, unknown>[]) => void;
+    readonly onSyncRow: (rows: Record<string, unknown>[]) => void;
+    readonly onForeignKeyClick: (info: ForeignKeyClickInfo) => void;
+    readonly connectionHost: string | undefined;
+    readonly connectionDatabase: string | undefined;
+    readonly tableName: string | undefined;
+    readonly selectedTable: TableInfo | null;
+    readonly tableSchemaLoading: boolean;
+    readonly splitViewOpen?: boolean;
+    readonly onToggleSplitView?: () => void;
 }
 
 export function QueryPageTabs({
@@ -94,7 +94,11 @@ export function QueryPageTabs({
                     borderColor: 'divider',
                 }}
             >
-                <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 48, flex: 1 }}>
+                <Tabs
+                    value={activeTab}
+                    onChange={(_, v) => onTabChange(v)}
+                    sx={{ minHeight: 48, flex: 1 }}
+                >
                     <Tab
                         label={
                             <Badge badgeContent={result?.rowCount} color="primary" max={999}>
@@ -170,33 +174,27 @@ export function QueryPageTabs({
 
                     {/* SQL Editor Toggle - Looks like tab but opens side panel */}
                     {onToggleSplitView && (
-                        <Tab
-                            label={
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                    }}
-                                >
-                                    {splitViewOpen ? (
-                                        <CodeOffIcon fontSize="small" />
-                                    ) : (
-                                        <CodeIcon fontSize="small" />
-                                    )}
-                                    SQL
-                                </Box>
+                        <Button
+                            startIcon={
+                                splitViewOpen ? (
+                                    <CodeOffIcon fontSize="small" />
+                                ) : (
+                                    <CodeIcon fontSize="small" />
+                                )
                             }
                             sx={{
                                 minHeight: 40,
                                 textTransform: 'none',
-                                color: splitViewOpen ? 'primary.main' : undefined,
+                                color: splitViewOpen ? 'primary.main' : 'text.secondary',
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onToggleSplitView();
                             }}
-                        />
+                        >
+                            {' '}
+                            SQL
+                        </Button>
                     )}
                 </Tabs>
             </Box>
