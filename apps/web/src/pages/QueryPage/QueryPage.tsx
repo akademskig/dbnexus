@@ -354,13 +354,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1354,7 +1354,7 @@ export function QueryPage() {
                 onTemplatesClose={() => setTemplatesOpen(false)}
                 onTemplateSelect={(templateSql) => {
                     setSql(templateSql);
-                    handleTabChange(4);
+                    handleTabChange(0);
                     setTemplatesOpen(false);
                 }}
                 selectedTable={selectedTable}
