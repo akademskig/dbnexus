@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+### Added
 
-- Documentation now available at custom domain: dbnexus.dev
+- **Auto-scroll for drag-and-drop**: Projects page automatically scrolls when dragging connections near viewport edges, making it easier to drop connections into off-screen groups
+
+### Fixed
+
+- Connection form now correctly initializes with group's database engine when adding connection to a specific group
+- Database engine selection is now locked when adding connection to a group to prevent engine mismatch
+- Smooth drag-and-drop scrolling without jitter using persistent animation loop
 
 ## [0.1.14] - 2026-01-22
 

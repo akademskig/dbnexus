@@ -2,8 +2,12 @@ name: Publish to npm
 
 on:
     push:
-        tags:
-            - 'v*'
+        branches:
+            - master
+        paths-ignore:
+            - 'apps/docs/**'
+            - '**.md'
+            - '.github/workflows/docs.yml'
 
 jobs:
     publish:
