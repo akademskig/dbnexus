@@ -13,6 +13,7 @@ import {
     Button,
     alpha,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { StyledTooltip } from '@/components/StyledTooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -363,21 +364,22 @@ export function ProjectSection({
                                 >
                                     Ungrouped
                                 </Typography>
-                                <Stack spacing={1}>
+                                <Grid container spacing={2}>
                                     {(showAllUngrouped
                                         ? ungroupedInProject
                                         : ungroupedInProject.slice(0, UNGROUPED_LIMIT)
                                     ).map((conn) => (
-                                        <ConnectionCard
-                                            key={conn.id}
-                                            connection={conn}
-                                            compact
-                                            onEdit={() => onEditConnection(conn)}
-                                            onDelete={() => onDeleteConnection(conn.id)}
-                                            onQuery={() => onQuery(conn.id)}
-                                        />
+                                        <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                            <ConnectionCard
+                                                connection={conn}
+                                                compact
+                                                onEdit={() => onEditConnection(conn)}
+                                                onDelete={() => onDeleteConnection(conn.id)}
+                                                onQuery={() => onQuery(conn.id)}
+                                            />
+                                        </Grid>
                                     ))}
-                                </Stack>
+                                </Grid>
                                 {ungroupedInProject.length > UNGROUPED_LIMIT &&
                                     !showAllUngrouped && (
                                         <Box

@@ -135,8 +135,23 @@ export function DataTab({
     };
 
     const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
-        if (onUpdateRow) {
-            await onUpdateRow(oldRow as Record<string, unknown>, newRow as Record<string, unknown>);
+        if (onUpdateRow && result) {
+            // Convert transformed row data back to original format
+            const oldOriginal = oldRow.__originalRow as Record<string, unknown>;
+            const newOriginal: Record<string, unknown> = {};
+
+            result.columns.forEach((col, colIndex) => {
+                const fieldName = `${col.name}_${colIndex}`;
+                newOriginal[col.name] = newRow[fieldName];
+            });
+
+            await onUpdateRow(oldOriginal, newOriginal);
+
+            // Update the __originalRow with new data
+            return {
+                ...newRow,
+                __originalRow: newOriginal,
+            };
         }
         return newRow;
     };
@@ -193,7 +208,7 @@ export function DataTab({
 
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
-        ? result.columns.map((col) => {
+        ? result.columns.map((col, colIndex) => {
               const isPrimaryKey = primaryKeyColumns.includes(col.name);
               const isJson = isJsonColumn(col.dataType);
               // JSON columns are edited via dialog, not inline; PK columns are not editable
@@ -203,8 +218,11 @@ export function DataTab({
               // Check if this column is a foreign key
               const fkInfo = columnToForeignKey.get(col.name);
 
+              // Ensure unique field names by appending index if there are duplicates
+              const fieldName = `${col.name}_${colIndex}`;
+
               return {
-                  field: col.name,
+                  field: fieldName,
                   headerName: col.name,
                   description: col.dataType,
                   flex: 1,
@@ -218,7 +236,7 @@ export function DataTab({
                                   canEditJson
                                       ? (newValue) =>
                                             handleJsonCellSave(
-                                                params.row as Record<string, unknown>,
+                                                params.row.__originalRow as Record<string, unknown>,
                                                 col.name,
                                                 newValue
                                             )
@@ -292,13 +310,26 @@ export function DataTab({
     const columns: GridColDef[] = dataColumns;
 
     // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
+    // Calculate global index based on current page and page size for server-side pagination
+    // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
     const rows = result
-        ? result.rows.map((row, index) => ({
-              __rowIndex: index,
-              ...row,
-          }))
-        : [];
+        ? result.rows.map((row, rowIndex) => {
+              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
+              // Transform row data to match column field names (col_name_index format)
+              const transformedRow: Record<string, unknown> = {
+                  __rowIndex: `row_${globalIndex}`,
+                  __originalRow: row, // Keep original row data for operations
+              };
 
+              // Map each column value to its indexed field name
+              result.columns.forEach((col, colIndex) => {
+                  const fieldName = `${col.name}_${colIndex}`;
+                  transformedRow[fieldName] = row[col.name];
+              });
+
+              return transformedRow;
+          })
+        : [];
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
         return selectedRowIds
@@ -316,9 +347,8 @@ export function DataTab({
                     );
                     return null;
                 }
-                // Remove the internal '__rowIndex' field we added, keep everything else
-                const { __rowIndex: _, ...rowData } = row;
-                return rowData;
+                // Return the original row data
+                return row.__originalRow as Record<string, unknown>;
             })
             .filter(
                 (row): row is Record<string, unknown> => row !== null && Object.keys(row).length > 0
@@ -338,10 +368,9 @@ export function DataTab({
         const selectedRows = selectedRowIds
             .map((id) => rows.find((r) => r.__rowIndex === id))
             .filter(Boolean)
-            .map((row) => {
-                const { __rowIndex: _, ...rowData } = row as Record<string, unknown>;
-                return rowData;
-            });
+            .map(
+                (row) => (row as Record<string, unknown>).__originalRow as Record<string, unknown>
+            );
 
         if (selectedRows.length === 1 && selectedRows[0]) {
             onDeleteRow?.(selectedRows[0]);
@@ -775,7 +804,7 @@ export function DataTab({
 
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>
-                        {result.rows.length > 0 ? (
+                        {rows.length > 0 ? (
                             <DataGrid
                                 rows={rows}
                                 columns={columns}
@@ -791,7 +820,7 @@ export function DataTab({
                                 rowCount={totalRowCount ?? result.rowCount}
                                 paginationModel={paginationModel}
                                 onPaginationModelChange={onPaginationChange}
-                                pageSizeOptions={[50, 100, 250, 500]}
+                                pageSizeOptions={[25, 50, 100, 250, 500]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={setRowModesModel}
