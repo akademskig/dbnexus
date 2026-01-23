@@ -36,6 +36,7 @@ interface ConnectionCardProps {
     readonly onDelete: () => void;
     readonly onQuery: () => void;
     readonly draggable?: boolean;
+    readonly defaultExpanded?: boolean;
 }
 
 export function ConnectionCard({
@@ -45,9 +46,10 @@ export function ConnectionCard({
     onDelete,
     onQuery,
     draggable = true,
+    defaultExpanded = false,
 }: ConnectionCardProps) {
     const navigate = useNavigate();
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(defaultExpanded);
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
         null
@@ -129,6 +131,11 @@ export function ConnectionCard({
                 overflow: 'hidden',
                 transition: 'border-color 0.15s, opacity 0.15s, transform 0.15s',
                 cursor: draggable ? 'grab' : 'default',
+                ...(expanded && {
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }),
                 '&:hover': { borderColor: 'primary.main' },
                 '&:active': draggable ? { cursor: 'grabbing' } : {},
                 '&[draggable="true"]:active': {
@@ -155,14 +162,23 @@ export function ConnectionCard({
                     sx={{ fontSize: compact ? 18 : 20, color: 'primary.main', flexShrink: 0 }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography
-                            variant={compact ? 'body2' : 'body1'}
-                            fontWeight={600}
-                            sx={{ lineHeight: 1.3 }}
-                        >
-                            {connection.name}
-                        </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <StyledTooltip title={connection.name}>
+                            <Typography
+                                variant={compact ? 'body2' : 'body1'}
+                                fontWeight={600}
+                                sx={{
+                                    lineHeight: 1.3,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    flex: '0 1 auto',
+                                    minWidth: 0,
+                                }}
+                            >
+                                {connection.name}
+                            </Typography>
+                        </StyledTooltip>
                         <Chip
                             label={connection.engine.toUpperCase()}
                             size="small"
@@ -216,30 +232,48 @@ export function ConnectionCard({
                             alignItems: 'center',
                             gap: 1.5,
                             mt: 0.25,
-                            flexWrap: 'wrap',
+                            minWidth: 0,
                         }}
                     >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            fontFamily="monospace"
-                            sx={{ fontSize: 11 }}
-                        >
-                            {connectionSummary}
-                        </Typography>
+                        <StyledTooltip title={connectionSummary}>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                fontFamily="monospace"
+                                sx={{
+                                    fontSize: 11,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    flex: '0 1 auto',
+                                    minWidth: 0,
+                                }}
+                            >
+                                {connectionSummary}
+                            </Typography>
+                        </StyledTooltip>
                         {connection.database && connection.engine !== 'sqlite' && (
                             <>
                                 <Typography variant="caption" color="text.disabled">
                                     •
                                 </Typography>
-                                <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    fontFamily="monospace"
-                                    sx={{ fontSize: 11 }}
-                                >
-                                    {connection.database}
-                                </Typography>
+                                <StyledTooltip title={connection.database}>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        fontFamily="monospace"
+                                        sx={{
+                                            fontSize: 11,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            flex: '0 1 auto',
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        {connection.database}
+                                    </Typography>
+                                </StyledTooltip>
                             </>
                         )}
                     </Box>
@@ -346,6 +380,9 @@ export function ConnectionCard({
                     </span>
                 </StyledTooltip>
             </Box>
+
+            {/* Spacer to push expanded content to bottom */}
+            {expanded && <Box sx={{ flex: 1 }} />}
 
             {/* Expanded content */}
             <Collapse in={expanded}>

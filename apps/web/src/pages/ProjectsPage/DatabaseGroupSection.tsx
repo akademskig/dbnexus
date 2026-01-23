@@ -9,10 +9,10 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
-    Stack,
     Button,
     alpha,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -371,18 +371,19 @@ export function DatabaseGroupSection({
                             </Typography>
                         </Box>
                     ) : (
-                        <Stack spacing={1}>
+                        <Grid container spacing={2}>
                             {visibleConnections.map((conn) => (
-                                <ConnectionCard
-                                    key={conn.id}
-                                    connection={conn}
-                                    compact
-                                    onEdit={() => onEditConnection(conn)}
-                                    onDelete={() => onDeleteConnection(conn.id)}
-                                    onQuery={() => onQuery(conn.id)}
-                                />
+                                <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                    <ConnectionCard
+                                        connection={conn}
+                                        compact
+                                        onEdit={() => onEditConnection(conn)}
+                                        onDelete={() => onDeleteConnection(conn.id)}
+                                        onQuery={() => onQuery(conn.id)}
+                                    />
+                                </Grid>
                             ))}
-                        </Stack>
+                        </Grid>
                     )}
                     {hasMore && !showAll && (
                         <Box
