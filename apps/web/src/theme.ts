@@ -56,6 +56,12 @@ export const colorSchemes = {
         primaryDark: '#e11d48',
         primaryRgb: '244, 63, 94',
     },
+    githubGreen: {
+        primary: '#16a34a',
+        primaryLight: '#22c55e',
+        primaryDark: '#16a34a',
+        primaryRgb: '22, 163, 74',
+    },
 };
 
 export type ColorScheme = keyof typeof colorSchemes;
@@ -295,23 +301,23 @@ export const createAppTheme = (mode: PaletteMode, scheme: ColorScheme = 'indigo'
             background:
                 mode === 'dark'
                     ? {
-                          default: '#09090b',
-                          paper: 'rgb(20, 25, 27)',
-                      }
+                        default: '#09090b',
+                        paper: 'rgb(20, 25, 27)',
+                    }
                     : {
-                          default: '#fafafa',
-                          paper: '#ffffff',
-                      },
+                        default: '#fafafa',
+                        paper: '#ffffff',
+                    },
             text:
                 mode === 'dark'
                     ? {
-                          primary: '#fafafa',
-                          secondary: '#a1a1aa',
-                      }
+                        primary: '#fafafa',
+                        secondary: '#a1a1aa',
+                    }
                     : {
-                          primary: '#18181b',
-                          secondary: '#71717a',
-                      },
+                        primary: '#18181b',
+                        secondary: '#71717a',
+                    },
             divider: mode === 'dark' ? '#27272a' : '#e4e4e7',
         },
         typography: {

@@ -204,10 +204,10 @@ export function DatabaseGroupSection({
                         group.databaseEngine === 'postgres'
                             ? 'PostgreSQL'
                             : group.databaseEngine === 'mysql'
-                              ? 'MySQL'
-                              : group.databaseEngine === 'mariadb'
-                                ? 'MariaDB'
-                                : 'SQLite'
+                                ? 'MySQL'
+                                : group.databaseEngine === 'mariadb'
+                                    ? 'MariaDB'
+                                    : 'SQLite'
                     }
                     size="small"
                     sx={{
@@ -224,8 +224,8 @@ export function DatabaseGroupSection({
                             group.syncSchema && group.syncData
                                 ? 'Schema + Data'
                                 : group.syncSchema
-                                  ? 'Schema'
-                                  : 'Data'
+                                    ? 'Schema'
+                                    : 'Data'
                         }
                         size="small"
                         icon={<SyncIcon sx={{ fontSize: 14 }} />}

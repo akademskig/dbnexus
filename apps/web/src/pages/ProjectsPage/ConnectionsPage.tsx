@@ -11,6 +11,7 @@ import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
+import { useDragAutoScroll } from '../../hooks/useDragAutoScroll';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
 import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
@@ -20,6 +21,10 @@ export function ProjectsPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const toast = useToastStore();
+
+    // Enable auto-scroll when dragging near viewport edges
+    useDragAutoScroll({ scrollZone: 300, scrollSpeed: 15 });
+
     const [formOpen, setFormOpen] = useState(false);
     const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
     const [connectionFormProjectId, setConnectionFormProjectId] = useState<string | undefined>(
