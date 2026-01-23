@@ -5,14 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.16]
 
 ### Added
 
 - **2-Column Grid Layout**: Projects page now displays connection cards in a responsive 2-column grid for better space utilization
-    - Automatically adapts to screen size (1 column on mobile, 2 on desktop)
-    - Consistent card heights with action buttons aligned to bottom
-    - Text overflow handling with ellipsis and tooltips for long connection names, hosts, and database names
+  - Automatically adapts to screen size (1 column on mobile, 2 on desktop)
+  - Consistent card heights with action buttons aligned to bottom
+  - Text overflow handling with ellipsis and tooltips for long connection names, hosts, and database names
+
+### Changed
+
+- Query results default page size changed from 100 to 25 rows for better initial load performance
+- Added 25 rows per page option to pagination dropdown (25, 50, 100, 250, 500)
+- Page size preference is now preserved when switching between tables
 
 ### Fixed
 
@@ -37,24 +43,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Floating SQL Editor**: Detachable editor dialog to write queries while viewing results
-    - Pop out from SQL tab to separate window
-    - Fullscreen mode support
-    - Execute, Explain, Save, and Copy actions
-    - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
+  - Pop out from SQL tab to separate window
+  - Fullscreen mode support
+  - Execute, Explain, Save, and Copy actions
+  - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
 - **Query Templates**: Pre-built SQL templates panel with 25+ categorized snippets (SELECT, JOIN, Aggregate, INSERT, UPDATE, DELETE, DDL, Window Functions)
-    - Context-aware templates auto-replace placeholders with selected table and column names
-    - Smart column detection by type (text, number, date)
-    - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
+  - Context-aware templates auto-replace placeholders with selected table and column names
+  - Smart column detection by type (text, number, date)
+  - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
 - **Split-view SQL Editor**: Resizable side panel for SQL editor with toggle button
-    - View query results and SQL editor simultaneously
-    - Dark theme support
-    - Integrated toolbar with Run, Explain, Save, and Pop Out actions
+  - View query results and SQL editor simultaneously
+  - Dark theme support
+  - Integrated toolbar with Run, Explain, Save, and Pop Out actions
 - **Database Engine Validation**: Connections can only be moved to groups with matching database engine
-    - User-friendly error messages for incompatible moves
-    - Prevents accidental mismatching (e.g., PostgreSQL connections in MySQL groups)
+  - User-friendly error messages for incompatible moves
+  - Prevents accidental mismatching (e.g., PostgreSQL connections in MySQL groups)
 - **Connection Display Limits**: Improved UX for large connection lists
-    - Dashboard shows max 8 connections with "View all" button
-    - Projects page limits 5 connections per project/group with "Show more" buttons
+  - Dashboard shows max 8 connections with "View all" button
+  - Projects page limits 5 connections per project/group with "Show more" buttons
 - **Support Development Section**: Bitcoin donation option in Settings with QR code
 
 ## [0.1.13] - 2026-01-21
@@ -166,8 +172,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Drag and drop connections between projects and groups on Projects page
-    - Visual feedback with dashed border on drag over
-    - Drop zones on projects, groups, and ungrouped section
+  - Visual feedback with dashed border on drag over
+  - Drop zones on projects, groups, and ungrouped section
 
 ### Fixed
 
@@ -178,10 +184,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Interactive onboarding tour for new users
-    - Step-by-step walkthrough of main features
-    - Minimizable floating panel
-    - Progress tracking with localStorage persistence
-    - Spotlight indicators for target elements
+  - Step-by-step walkthrough of main features
+  - Minimizable floating panel
+  - Progress tracking with localStorage persistence
+  - Spotlight indicators for target elements
 - Auto-select first connection and default schema when adding connections
 - Auto-select first table on Query page when none is selected
 - Redirect from connection-required pages when no connections exist
@@ -220,11 +226,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Connection scanning feature to auto-discover databases
-    - Port scanning for common database ports
-    - Docker container inspection
-    - Environment file parsing (.env)
-    - Docker Compose file parsing
-    - SQLite file discovery
+  - Port scanning for common database ports
+  - Docker container inspection
+  - Environment file parsing (.env)
+  - Docker Compose file parsing
+  - SQLite file discovery
 - Connection type classification (local, Docker, remote)
 - Edit column functionality in Schema Diagram
 - Centralized SQL utilities for consistent identifier quoting
