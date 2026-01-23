@@ -4,6 +4,10 @@ on:
     push:
         branches:
             - master
+        paths-ignore:
+            - 'apps/docs/**'
+            - '**.md'
+            - '.github/workflows/docs.yml'
 
 jobs:
     publish:
