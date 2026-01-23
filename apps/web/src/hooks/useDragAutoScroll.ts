@@ -15,8 +15,38 @@ export function useDragAutoScroll(options: AutoScrollOptions = {}) {
     const mouseYRef = useRef(0);
 
     useEffect(() => {
+        // Single persistent auto-scroll loop
+        const autoScroll = () => {
+            if (!isDraggingRef.current) return;
+
+            const viewportHeight = window.innerHeight;
+            const distanceFromTop = mouseYRef.current;
+            const distanceFromBottom = viewportHeight - mouseYRef.current;
+
+            let scrollAmount = 0;
+            // Scroll up when near top
+            if (distanceFromTop < scrollZone) {
+                const intensity = 1 - distanceFromTop / scrollZone;
+                scrollAmount = -scrollSpeed * intensity;
+            }
+            // Scroll down when near bottom
+            else if (distanceFromBottom < scrollZone) {
+                const intensity = 1 - distanceFromBottom / scrollZone;
+                scrollAmount = scrollSpeed * intensity;
+            }
+
+            if (scrollAmount !== 0) {
+                window.scrollBy(0, scrollAmount);
+            }
+
+            // Continue loop while dragging
+            animationFrameRef.current = requestAnimationFrame(autoScroll);
+        };
+
         const handleDragStart = () => {
             isDraggingRef.current = true;
+            // Start the persistent animation loop once
+            animationFrameRef.current = requestAnimationFrame(autoScroll);
         };
 
         const handleDragEnd = () => {
@@ -28,40 +58,8 @@ export function useDragAutoScroll(options: AutoScrollOptions = {}) {
         };
 
         const handleDragOver = (e: DragEvent) => {
-            if (!isDraggingRef.current) return;
-
+            // Only update mouse position, don't restart the loop
             mouseYRef.current = e.clientY;
-
-            // Cancel previous animation frame if it exists
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
-
-            // Start auto-scroll loop
-            const autoScroll = () => {
-                const viewportHeight = window.innerHeight;
-                const distanceFromTop = mouseYRef.current;
-                const distanceFromBottom = viewportHeight - mouseYRef.current;
-
-                let scrollAmount = 0;
-                // Scroll up when near top
-                if (distanceFromTop < scrollZone) {
-                    const intensity = 1 - distanceFromTop / scrollZone;
-                    scrollAmount = -scrollSpeed * intensity;
-                }
-                // Scroll down when near bottom
-                else if (distanceFromBottom < scrollZone) {
-                    const intensity = 1 - distanceFromBottom / scrollZone;
-                    scrollAmount = scrollSpeed * intensity;
-                }
-
-                if (scrollAmount !== 0) {
-                    window.scrollBy(0, scrollAmount);
-                    animationFrameRef.current = requestAnimationFrame(autoScroll);
-                }
-            };
-
-            autoScroll();
         };
 
         // Attach event listeners
