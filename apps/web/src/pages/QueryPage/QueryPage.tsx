@@ -92,7 +92,7 @@ export function QueryPage() {
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
-    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
@@ -601,7 +601,7 @@ export function QueryPage() {
         async (table: TableInfo) => {
             setSelectedTable(table);
             setTotalRowCount(null);
-            setPaginationModel({ page: 0, pageSize: 100 });
+            setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
             setSearchQuery('');
             updateUrl({ table: table.name });
 
@@ -616,9 +616,9 @@ export function QueryPage() {
                 setTotalRowCount(null);
             }
 
-            fetchTableData(table, 0, 100);
+            fetchTableData(table, 0, paginationModel.pageSize);
         },
-        [selectedConnectionId, updateUrl, fetchTableData]
+        [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
     );
 
     // Handle pagination change

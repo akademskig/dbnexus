@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **2-Column Grid Layout**: Projects page now displays connection cards in a responsive 2-column grid for better space utilization
+    - Automatically adapts to screen size (1 column on mobile, 2 on desktop)
+    - Consistent card heights with action buttons aligned to bottom
+    - Text overflow handling with ellipsis and tooltips for long connection names, hosts, and database names
+
+### Fixed
+
+- Query results table row indexing now works correctly across paginated pages
+- Duplicate column names in query results (common with JOINs) are now handled properly
+- Query results table edit, delete, and export operations now work correctly with server-side pagination
+
 ## [0.1.15]
 
 ### Added

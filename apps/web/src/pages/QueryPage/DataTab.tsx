@@ -820,7 +820,7 @@ export function DataTab({
                                 rowCount={totalRowCount ?? result.rowCount}
                                 paginationModel={paginationModel}
                                 onPaginationModelChange={onPaginationChange}
-                                pageSizeOptions={[50, 100, 250, 500]}
+                                pageSizeOptions={[25, 50, 100, 250, 500]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={setRowModesModel}
