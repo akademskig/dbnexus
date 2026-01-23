@@ -2,7 +2,6 @@ name: Deploy Docs to GitHub Pages
 
 on:
     push:
-        branches: [master]
         paths:
             - 'apps/docs/**'
             - '.github/workflows/docs.yml'
@@ -40,8 +39,6 @@ jobs:
 
             - name: Build docs
               run: pnpm --filter @dbnexus/docs build
-              env:
-                  BASE_URL: /db-manager/
 
             - name: Setup Pages
               uses: actions/configure-pages@v4

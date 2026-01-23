@@ -26,6 +26,24 @@ export const colorSchemes = {
         primaryDark: '#2563eb',
         primaryRgb: '59, 130, 246',
     },
+    lightblue: {
+        primary: '#0ea5e9',
+        primaryLight: '#38bdf8',
+        primaryDark: '#0284c7',
+        primaryRgb: '14, 165, 233',
+    },
+    lime: {
+        primary: '#84cc16',
+        primaryLight: '#bef264',
+        primaryDark: '#65a30d',
+        primaryRgb: '132, 204, 22',
+    },
+    orange: {
+        primary: '#f97316',
+        primaryLight: '#fb923c',
+        primaryDark: '#ea580c',
+        primaryRgb: '249, 115, 22',
+    },
     emerald: {
         primary: '#10b981',
         primaryLight: '#34d399',
@@ -37,6 +55,12 @@ export const colorSchemes = {
         primaryLight: '#fb7185',
         primaryDark: '#e11d48',
         primaryRgb: '244, 63, 94',
+    },
+    githubGreen: {
+        primary: '#16a34a',
+        primaryLight: '#22c55e',
+        primaryDark: '#16a34a',
+        primaryRgb: '22, 163, 74',
     },
 };
 

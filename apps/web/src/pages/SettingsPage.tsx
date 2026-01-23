@@ -105,6 +105,10 @@ const colorSchemeLabels: Record<ColorScheme, string> = {
     blue: 'Blue',
     emerald: 'Emerald',
     rose: 'Rose',
+    lightblue: 'Light Blue',
+    lime: 'Lime',
+    orange: 'Orange',
+    githubGreen: 'GitHub Green',
 };
 
 // Appearance Tab Content
@@ -219,6 +223,7 @@ function AppearanceTab() {
                                         color: isSelected ? colors.primary : 'text.secondary',
                                         fontWeight: isSelected ? 600 : 400,
                                         fontSize: 11,
+                                        textAlign: 'center',
                                     }}
                                 >
                                     {colorSchemeLabels[scheme]}

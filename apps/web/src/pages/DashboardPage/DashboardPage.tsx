@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button, IconButton } from '@mui/material';
+import { Box, Typography, Grid, Button } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     Add as AddIcon,
-    Refresh as RefreshIcon,
     Hub as HubIcon,
     Bolt as BoltIcon,
     Speed as SpeedIcon,
@@ -41,7 +40,6 @@ export function DashboardPage() {
     const [syncStatuses, setSyncStatuses] = useState<Record<string, InstanceGroupSyncStatus>>({});
     const [syncChecking, setSyncChecking] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
 
     // Use global connection health store
@@ -86,7 +84,6 @@ export function DashboardPage() {
             console.error('Failed to load dashboard data:', error);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     };
 
@@ -113,11 +110,6 @@ export function DashboardPage() {
         return () => clearInterval(intervalId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [syncGroups]);
-
-    const handleRefresh = () => {
-        setRefreshing(true);
-        loadData();
-    };
 
     const totalQueries = history.length;
     const successfulQueries = history.filter((h) => h.success).length;
@@ -155,26 +147,15 @@ export function DashboardPage() {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SearchIcon />}
-                        onClick={() => setScanDialogOpen(true)}
-                    >
-                        Scan
-                    </Button>
-                    <StyledTooltip title="Refresh">
-                        <IconButton
-                            onClick={handleRefresh}
-                            disabled={refreshing}
-                            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                    <StyledTooltip title="Scan for database connections">
+                        <Button
+                            size="large"
+                            variant="outlined"
+                            startIcon={<SearchIcon fontSize="large" />}
+                            onClick={() => setScanDialogOpen(true)}
                         >
-                            <RefreshIcon
-                                sx={{
-                                    animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                                    '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
-                                }}
-                            />
-                        </IconButton>
+                            Scan
+                        </Button>
                     </StyledTooltip>
                 </Box>
             </Box>

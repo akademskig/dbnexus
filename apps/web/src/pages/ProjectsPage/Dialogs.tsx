@@ -322,6 +322,8 @@ interface ConnectionFormDialogProps {
     projects: Project[];
     groups: DatabaseGroup[];
     onClose: () => void;
+    initialProjectId?: string;
+    initialGroupId?: string;
 }
 
 export function ConnectionFormDialog({
@@ -330,6 +332,8 @@ export function ConnectionFormDialog({
     projects,
     groups,
     onClose,
+    initialProjectId,
+    initialGroupId,
 }: ConnectionFormDialogProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -361,6 +365,20 @@ export function ConnectionFormDialog({
         enabled: !!connection?.id && connection?.engine === 'postgres',
     });
 
+    // Get default port based on engine
+    const getDefaultPort = (engine: string) => {
+        switch (engine) {
+            case 'postgres':
+                return 5432;
+            case 'mysql':
+                return 3306;
+            case 'mariadb':
+                return 3306;
+            default:
+                return 0;
+        }
+    };
+
     const handleEnter = () => {
         if (connection) {
             setFormData({
@@ -379,11 +397,18 @@ export function ConnectionFormDialog({
                 groupId: connection.groupId,
             });
         } else {
+            // Determine engine from initial group if provided
+            const initialGroup = initialGroupId
+                ? groups.find((g) => g.id === initialGroupId)
+                : undefined;
+            const engine = initialGroup?.databaseEngine || 'postgres';
+            const port = getDefaultPort(engine);
+
             setFormData({
                 name: '',
-                engine: 'postgres',
+                engine,
                 host: 'localhost',
-                port: 5432,
+                port,
                 database: '',
                 username: '',
                 password: '',
@@ -391,8 +416,8 @@ export function ConnectionFormDialog({
                 defaultSchema: '',
                 tags: [],
                 readOnly: false,
-                projectId: undefined,
-                groupId: undefined,
+                projectId: initialProjectId,
+                groupId: initialGroupId,
             });
         }
         setTestResult(null);
@@ -404,20 +429,6 @@ export function ConnectionFormDialog({
     const availableGroups = groups.filter(
         (g) => g.projectId === formData.projectId && g.databaseEngine === formData.engine
     );
-
-    // Get default port based on engine
-    const getDefaultPort = (engine: string) => {
-        switch (engine) {
-            case 'postgres':
-                return 5432;
-            case 'mysql':
-                return 3306;
-            case 'mariadb':
-                return 3306;
-            default:
-                return 0;
-        }
-    };
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
@@ -583,6 +594,7 @@ export function ConnectionFormDialog({
                                         }
                                     }}
                                     size="small"
+                                    disabled={!!initialGroupId}
                                     sx={{ flexWrap: 'wrap' }}
                                 >
                                     <ToggleButton value="postgres">PostgreSQL</ToggleButton>
@@ -590,6 +602,15 @@ export function ConnectionFormDialog({
                                     <ToggleButton value="mariadb">MariaDB</ToggleButton>
                                     <ToggleButton value="sqlite">SQLite</ToggleButton>
                                 </ToggleButtonGroup>
+                                {initialGroupId && (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ mt: 0.5, display: 'block' }}
+                                    >
+                                        Database engine must match the group&apos;s database engine
+                                    </Typography>
+                                )}
                             </Box>
                         )}
 
