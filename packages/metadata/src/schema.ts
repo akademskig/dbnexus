@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -311,5 +311,29 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_sync_run_logs_started ON sync_run_logs(started_at DESC);
 
   UPDATE schema_version SET version = 13;
+  `,
+
+    // Version 14: Add backups table for database backup/restore tracking
+    `
+  CREATE TABLE IF NOT EXISTS backups (
+    id TEXT PRIMARY KEY,
+    connection_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    database_name TEXT NOT NULL,
+    database_engine TEXT NOT NULL,
+    backup_type TEXT NOT NULL DEFAULT 'full' CHECK(backup_type IN ('full', 'schema', 'data')),
+    compression TEXT NOT NULL DEFAULT 'none' CHECK(compression IN ('none', 'gzip')),
+    status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('in_progress', 'completed', 'failed')),
+    error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_backups_connection ON backups(connection_id);
+  CREATE INDEX IF NOT EXISTS idx_backups_created_at ON backups(created_at DESC);
+
+  UPDATE schema_version SET version = 14;
   `,
 ];

@@ -602,3 +602,76 @@ export const auditApi = {
 
     getLog: (id: string) => fetchApi<AuditLogEntry>(`/audit/logs/${id}`),
 };
+
+// Backup API
+export interface Backup {
+    id: string;
+    connectionId: string;
+    filename: string;
+    filePath: string;
+    fileSize: number;
+    databaseName: string;
+    databaseEngine: string;
+    backupType: 'full' | 'schema' | 'data';
+    compression: 'none' | 'gzip';
+    status: 'in_progress' | 'completed' | 'failed';
+    error?: string;
+    createdAt: string;
+}
+
+export const backupsApi = {
+    create: (data: {
+        connectionId: string;
+        backupType?: 'full' | 'schema' | 'data';
+        compression?: boolean;
+    }): Promise<Backup> => {
+        return fetchApi('/backups', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    getAll: (connectionId?: string): Promise<Backup[]> => {
+        const query = connectionId ? `?connectionId=${connectionId}` : '';
+        return fetchApi(`/backups${query}`);
+    },
+
+    getById: (id: string): Promise<Backup> => {
+        return fetchApi(`/backups/${id}`);
+    },
+
+    download: (id: string): string => {
+        return `${API_BASE}/backups/${id}/download`;
+    },
+
+    upload: async (connectionId: string, file: File): Promise<Backup> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('connectionId', connectionId);
+
+        const response = await fetch(`${API_BASE}/backups/upload`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+            throw new Error(error.message || `HTTP ${response.status}`);
+        }
+
+        return response.json();
+    },
+
+    restore: (backupId: string, connectionId: string): Promise<{ success: boolean; message: string }> => {
+        return fetchApi(`/backups/${backupId}/restore`, {
+            method: 'POST',
+            body: JSON.stringify({ connectionId }),
+        });
+    },
+
+    delete: (id: string): Promise<{ success: boolean; message: string }> => {
+        return fetchApi(`/backups/${id}`, {
+            method: 'DELETE',
+        });
+    },
+};

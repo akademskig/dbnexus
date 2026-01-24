@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Database Backup & Restore**: Comprehensive backup management system
+    - Create database backups (full, schema-only, or data-only)
+    - Optional GZIP compression for smaller file sizes
+    - Download backup files for safekeeping
+    - Upload existing backup files
+    - Restore databases from backup files
+    - Backup metadata tracking (size, timestamp, status)
+    - Support for PostgreSQL (pg_dump/psql), MySQL/MariaDB (mysqldump/mysql), and SQLite
+    - Integrated as a new tab in Connection Management page
 - **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering with visual indicators
     - Filter button with badge showing active filter count
     - Active filter chips displayed below toolbar for quick reference
