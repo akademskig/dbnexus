@@ -564,7 +564,7 @@ export function QueryPage() {
             if (filters && filters.items.length > 0) {
                 filters.items.forEach((filter) => {
                     if (!filter.field || !filter.operator) return;
-                    
+
                     // Remove the column index suffix (_0, _1, etc.) to get original column name
                     const originalField = filter.field.replace(/_\d+$/, '');
                     const quotedField = quoteIdentifier(originalField, engine);
@@ -573,7 +573,7 @@ export function QueryPage() {
                     // Get column data type from schema
                     const column = schema?.columns.find((c) => c.name === originalField);
                     const dataType = column?.dataType.toLowerCase() || '';
-                    
+
                     // Check if column is numeric, JSON, or text-based
                     const isNumeric =
                         dataType.includes('int') ||
@@ -583,7 +583,7 @@ export function QueryPage() {
                         dataType.includes('double') ||
                         dataType.includes('real') ||
                         dataType.includes('serial');
-                    
+
                     const isJson = dataType.includes('json') || dataType.includes('jsonb');
                     const isBoolean = dataType.includes('bool');
 
@@ -592,9 +592,13 @@ export function QueryPage() {
                             if (value) {
                                 const escapedValue = String(value).replaceAll("'", "''");
                                 if (engine === 'postgres') {
-                                    filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}%'`);
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '%${escapedValue}%'`
+                                    );
                                 } else {
-                                    filterConditions.push(`${quotedField} LIKE '%${escapedValue}%'`);
+                                    filterConditions.push(
+                                        `${quotedField} LIKE '%${escapedValue}%'`
+                                    );
                                 }
                             }
                             break;
@@ -603,15 +607,20 @@ export function QueryPage() {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} = ${value}`);
                                 } else if (isBoolean) {
-                                    const boolValue = value === 'true' || value === true ? 'TRUE' : 'FALSE';
+                                    const boolValue =
+                                        value === 'true' || value === true ? 'TRUE' : 'FALSE';
                                     filterConditions.push(`${quotedField} = ${boolValue}`);
                                 } else if (isJson) {
                                     // For JSON, cast to text for comparison
                                     const escapedValue = String(value).replaceAll("'", "''");
                                     if (engine === 'postgres') {
-                                        filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}%'`);
+                                        filterConditions.push(
+                                            `${quotedField}::text ILIKE '%${escapedValue}%'`
+                                        );
                                     } else {
-                                        filterConditions.push(`${quotedField} LIKE '%${escapedValue}%'`);
+                                        filterConditions.push(
+                                            `${quotedField} LIKE '%${escapedValue}%'`
+                                        );
                                     }
                                 } else {
                                     const escapedValue = String(value).replaceAll("'", "''");
@@ -623,7 +632,9 @@ export function QueryPage() {
                             if (value) {
                                 const escapedValue = String(value).replaceAll("'", "''");
                                 if (engine === 'postgres') {
-                                    filterConditions.push(`${quotedField}::text ILIKE '${escapedValue}%'`);
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '${escapedValue}%'`
+                                    );
                                 } else {
                                     filterConditions.push(`${quotedField} LIKE '${escapedValue}%'`);
                                 }
@@ -633,17 +644,23 @@ export function QueryPage() {
                             if (value) {
                                 const escapedValue = String(value).replaceAll("'", "''");
                                 if (engine === 'postgres') {
-                                    filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}'`);
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '%${escapedValue}'`
+                                    );
                                 } else {
                                     filterConditions.push(`${quotedField} LIKE '%${escapedValue}'`);
                                 }
                             }
                             break;
                         case 'isEmpty':
-                            filterConditions.push(`(${quotedField} IS NULL OR ${quotedField} = '')`);
+                            filterConditions.push(
+                                `(${quotedField} IS NULL OR ${quotedField} = '')`
+                            );
                             break;
                         case 'isNotEmpty':
-                            filterConditions.push(`(${quotedField} IS NOT NULL AND ${quotedField} != '')`);
+                            filterConditions.push(
+                                `(${quotedField} IS NOT NULL AND ${quotedField} != '')`
+                            );
                             break;
                         case '>':
                             if (value !== undefined && value !== null) {
@@ -707,7 +724,7 @@ export function QueryPage() {
 
             let query: string;
             const allConditions: string[] = [...filterConditions];
-            
+
             if (search && search.trim() && schema?.columns.length) {
                 const searchTerm = search.replaceAll("'", "''");
                 const textTypes = [
@@ -748,7 +765,7 @@ export function QueryPage() {
             } else {
                 query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
             }
-            
+
             setSql(query);
             executeMutation.mutate({ query });
         },
@@ -819,7 +836,14 @@ export function QueryPage() {
                 );
             }
         },
-        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema, filterModel]
+        [
+            selectedTable,
+            fetchTableData,
+            paginationModel.pageSize,
+            searchQuery,
+            tableSchema,
+            filterModel,
+        ]
     );
 
     // Handle filter change
@@ -839,7 +863,14 @@ export function QueryPage() {
                 );
             }
         },
-        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema, sortModel]
+        [
+            selectedTable,
+            fetchTableData,
+            paginationModel.pageSize,
+            searchQuery,
+            tableSchema,
+            sortModel,
+        ]
     );
 
     // Handle search
