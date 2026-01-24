@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -42,14 +42,24 @@ const COMPARE_CACHE_TIME = 10 * 60 * 1000;
 export function ComparePage() {
     const queryClient = useQueryClient();
     const toast = useToastStore();
-    const [selectedGroupId, setSelectedGroupId] = useState<string>('');
-    const [sourceConnectionId, setSourceConnectionId] = useState<string>('');
-    const [targetConnectionId, setTargetConnectionId] = useState<string>('');
-    const [sourceSchema, setSourceSchema] = useState<string>('');
-    const [targetSchema, setTargetSchema] = useState<string>('');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Initialize state from URL params
+    const urlGroupId = searchParams.get('group');
+    const urlSourceId = searchParams.get('source');
+    const urlTargetId = searchParams.get('target');
+    const urlSourceSchema = searchParams.get('sourceSchema');
+    const urlTargetSchema = searchParams.get('targetSchema');
+    const urlTab = searchParams.get('tab') as CompareTab | null;
+
+    const [selectedGroupId, setSelectedGroupId] = useState<string>(urlGroupId || '');
+    const [sourceConnectionId, setSourceConnectionId] = useState<string>(urlSourceId || '');
+    const [targetConnectionId, setTargetConnectionId] = useState<string>(urlTargetId || '');
+    const [sourceSchema, setSourceSchema] = useState<string>(urlSourceSchema || '');
+    const [targetSchema, setTargetSchema] = useState<string>(urlTargetSchema || '');
     const [hasCompared, setHasCompared] = useState(false);
     const [applying, setApplying] = useState(false);
-    const [activeTab, setActiveTab] = useState<CompareTab>('schema');
+    const [activeTab, setActiveTab] = useState<CompareTab>(urlTab || 'schema');
 
     // Fetch connections
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
@@ -81,6 +91,27 @@ export function ComparePage() {
             setSelectedGroupId(groups[0].id);
         }
     }, [groups, selectedGroupId]);
+
+    // Update URL when state changes
+    useEffect(() => {
+        const params: Record<string, string> = {};
+        if (selectedGroupId) params.group = selectedGroupId;
+        if (sourceConnectionId) params.source = sourceConnectionId;
+        if (targetConnectionId) params.target = targetConnectionId;
+        if (sourceSchema) params.sourceSchema = sourceSchema;
+        if (targetSchema) params.targetSchema = targetSchema;
+        if (activeTab !== 'schema') params.tab = activeTab;
+
+        setSearchParams(params, { replace: true });
+    }, [
+        selectedGroupId,
+        sourceConnectionId,
+        targetConnectionId,
+        sourceSchema,
+        targetSchema,
+        activeTab,
+        setSearchParams,
+    ]);
 
     // Get selected connections
     const sourceConnection = groupedConnections.find((c) => c.id === sourceConnectionId);
