@@ -13,6 +13,7 @@ import {
 import Editor from '@monaco-editor/react';
 import Draggable from 'react-draggable';
 import { useThemeModeStore } from '../../stores/themeModeStore';
+import { StyledTooltip } from '../../components/StyledTooltip';
 
 interface FloatingEditorDialogProps {
     open: boolean;
@@ -162,6 +163,8 @@ export function FloatingEditorDialog({
                         tabSize: 2,
                         wordWrap: 'on',
                         padding: { top: 16, bottom: 16 },
+                        lineNumbersMinChars: 3,
+                        lineDecorationsWidth: 1,
                     }}
                 />
             </Box>
@@ -207,11 +210,11 @@ export function FloatingEditorDialog({
 
                 <Box sx={{ flex: 1 }} />
 
-                <Tooltip title="Copy SQL">
+                <StyledTooltip title="Copy SQL">
                     <IconButton size="small" onClick={handleCopy} disabled={!sql.trim()}>
                         <CopyIcon fontSize="small" />
                     </IconButton>
-                </Tooltip>
+                </StyledTooltip>
             </Box>
         </Paper>
     );

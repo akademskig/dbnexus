@@ -15,6 +15,7 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -27,13 +28,16 @@ import {
     Visibility as ViewIcon,
     GroupWork as GroupIcon,
     Person as PersonIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schemaApi, connectionsApi, groupsApi } from '../../lib/api';
 import type { MigrationLogEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
+import { FilterPanel } from '../QueryPage/FilterPanel';
+import { ActiveFilters } from '../QueryPage/ActiveFilters';
 
 function formatDate(date: string): string {
     const d = new Date(date);
@@ -50,6 +54,8 @@ export function MigrationHistoryTab() {
     const [selectedMigration, setSelectedMigration] = useState<MigrationLogEntry | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [migrationToDelete, setMigrationToDelete] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
     const { data: migrations = [], isLoading } = useQuery({
         queryKey: ['migrationHistory'],
@@ -379,10 +385,48 @@ export function MigrationHistoryTab() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setShowFilters(!showFilters)}
+                        sx={{
+                            color:
+                                showFilters || filterModel.items.length > 0
+                                    ? 'primary.main'
+                                    : 'text.secondary',
+                        }}
+                    >
+                        <Badge
+                            badgeContent={filterModel.items.length}
+                            color="primary"
+                            invisible={filterModel.items.length === 0}
+                        >
+                            <FilterListIcon fontSize="small" />
+                        </Badge>
+                    </IconButton>
+                </StyledTooltip>
+
                 <Typography variant="body2" color="text.secondary">
                     {filteredMigrations.length} migrations
                 </Typography>
             </Box>
+
+            {/* Active Filters Display */}
+            <ActiveFilters
+                filterModel={filterModel}
+                onFilterModelChange={setFilterModel}
+                show={!showFilters}
+                sx={{ px: 1, pt: 0 }}
+            />
+
+            {/* Filter Panel */}
+            <FilterPanel
+                open={showFilters}
+                filterModel={filterModel}
+                columns={columns}
+                onFilterModelChange={setFilterModel}
+                sx={{ px: 1, pt: 0 }}
+            />
 
             {/* Data Grid */}
             <Box sx={{ flex: 1, minHeight: 400 }}>
@@ -395,6 +439,8 @@ export function MigrationHistoryTab() {
                         pagination: { paginationModel: { pageSize: 25 } },
                         sorting: { sortModel: [{ field: 'appliedAt', sort: 'desc' }] },
                     }}
+                    filterModel={filterModel}
+                    onFilterModelChange={setFilterModel}
                     disableRowSelectionOnClick
                     sx={{
                         border: 'none',
@@ -402,6 +448,13 @@ export function MigrationHistoryTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-row': {
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                            },
                         },
                     }}
                 />

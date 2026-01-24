@@ -15,6 +15,7 @@ import {
     DialogContent,
     DialogActions,
     Button,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -27,11 +28,14 @@ import {
     GroupWork as GroupIcon,
     Person as PersonIcon,
     ArrowForward as ArrowIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { syncApi, SyncRun, connectionsApi, groupsApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
+import { FilterPanel } from '../QueryPage/FilterPanel';
+import { ActiveFilters } from '../QueryPage/ActiveFilters';
 
 function formatDate(date: Date): string {
     return date.toLocaleString();
@@ -68,6 +72,8 @@ export function SyncRunsTab() {
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [selectedRun, setSelectedRun] = useState<SyncRun | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
     const { data: syncRuns = [], isLoading } = useQuery({
         queryKey: ['syncRuns'],
@@ -416,16 +422,56 @@ export function SyncRunsTab() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setShowFilters(!showFilters)}
+                        sx={{
+                            color:
+                                showFilters || filterModel.items.length > 0
+                                    ? 'primary.main'
+                                    : 'text.secondary',
+                        }}
+                    >
+                        <Badge
+                            badgeContent={filterModel.items.length}
+                            color="primary"
+                            invisible={filterModel.items.length === 0}
+                        >
+                            <FilterListIcon fontSize="small" />
+                        </Badge>
+                    </IconButton>
+                </StyledTooltip>
+
                 <Typography variant="body2" color="text.secondary">
                     {filteredRuns.length} sync operations
                 </Typography>
             </Box>
+
+            {/* Active Filters Display */}
+            <ActiveFilters
+                filterModel={filterModel}
+                onFilterModelChange={setFilterModel}
+                show={!showFilters}
+                sx={{ px: 1, pt: 0 }}
+            />
+
+            {/* Filter Panel */}
+            <FilterPanel
+                open={showFilters}
+                filterModel={filterModel}
+                columns={columns}
+                onFilterModelChange={setFilterModel}
+                sx={{ px: 1, pt: 0 }}
+            />
 
             {/* Data Grid */}
             <Box sx={{ flex: 1, minHeight: 400 }}>
                 <DataGrid
                     rows={filteredRuns}
                     columns={columns}
+                    filterModel={filterModel}
+                    onFilterModelChange={setFilterModel}
                     loading={isLoading}
                     pageSizeOptions={[25, 50, 100]}
                     initialState={{
@@ -439,6 +485,13 @@ export function SyncRunsTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-row': {
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                            },
                         },
                     }}
                 />

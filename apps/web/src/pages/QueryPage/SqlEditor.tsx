@@ -4,8 +4,10 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
+import { useToastStore } from '../../stores/toastStore';
 
 interface SqlEditorProps {
     sql: string;
@@ -31,6 +33,12 @@ export function SqlEditor({
     explainLoading,
 }: SqlEditorProps) {
     const { mode } = useThemeModeStore();
+    const toast = useToastStore();
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(sql);
+        toast.success('SQL copied to clipboard');
+    };
 
     return (
         <Box
@@ -103,6 +111,14 @@ export function SqlEditor({
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title="Copy SQL">
+                    <span>
+                        <IconButton size="small" onClick={handleCopy} disabled={!sql.trim()}>
+                            <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+
                 <StyledTooltip title="Pop Out Editor">
                     <IconButton size="small" onClick={onPopOut}>
                         <OpenInNewIcon fontSize="small" />
@@ -126,6 +142,10 @@ export function SqlEditor({
                         scrollBeyondLastLine: false,
                         automaticLayout: true,
                         tabSize: 2,
+                        wordWrap: 'on',
+                        wrappingIndent: 'indent',
+                        padding: { top: 12, bottom: 12 },
+                        lineNumbersMinChars: 3,
                     }}
                 />
             </Box>

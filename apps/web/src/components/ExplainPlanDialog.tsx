@@ -13,7 +13,6 @@ import {
     Tabs,
     Tab,
     IconButton,
-    Tooltip,
 } from '@mui/material';
 import { useState } from 'react';
 import { useToastStore } from '../stores/toastStore';
@@ -24,6 +23,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { StatusAlert } from './StatusAlert';
+import { StyledTooltip } from './StyledTooltip';
 
 interface ExplainPlanDialogProps {
     readonly open: boolean;
@@ -99,11 +99,11 @@ export function ExplainPlanDialog({
                             )}
                         </Box>
                     </Box>
-                    <Tooltip title="Copy execution plan">
+                    <StyledTooltip title="Copy execution plan">
                         <IconButton size="small" onClick={handleCopyPlan}>
                             <ContentCopyIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
+                    </StyledTooltip>
                 </Box>
             </DialogTitle>
             <DialogContent sx={{ p: 0 }}>

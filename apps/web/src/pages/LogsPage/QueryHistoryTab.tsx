@@ -15,6 +15,7 @@ import {
     MenuItem,
     TextField,
     InputAdornment,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -25,8 +26,9 @@ import {
     Search as SearchIcon,
     Clear as ClearIcon,
     Visibility as ViewIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
@@ -34,6 +36,8 @@ import type { QueryHistoryEntry } from '@dbnexus/shared';
 import { useToastStore } from '../../stores/toastStore';
 import { StatusAlert } from '@/components/StatusAlert';
 import { classifyQuery, QUERY_TYPES, type QueryCategoryFilter } from '../../utils/queryClassifier';
+import { FilterPanel } from '../QueryPage/FilterPanel';
+import { ActiveFilters } from '../QueryPage/ActiveFilters';
 
 function formatDate(date: Date | string): string {
     const d = new Date(date);
@@ -57,6 +61,8 @@ export function QueryHistoryTab() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [clearDialogOpen, setClearDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<QueryHistoryEntry | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
     const { data: connections = [] } = useQuery({
         queryKey: ['connections'],
@@ -359,6 +365,27 @@ export function QueryHistoryTab() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setShowFilters(!showFilters)}
+                        sx={{
+                            color:
+                                showFilters || filterModel.items.length > 0
+                                    ? 'primary.main'
+                                    : 'text.secondary',
+                        }}
+                    >
+                        <Badge
+                            badgeContent={filterModel.items.length}
+                            color="primary"
+                            invisible={filterModel.items.length === 0}
+                        >
+                            <FilterListIcon fontSize="small" />
+                        </Badge>
+                    </IconButton>
+                </StyledTooltip>
+
                 <Typography variant="body2" color="text.secondary">
                     {filteredHistory.length} entries
                 </Typography>
@@ -374,6 +401,23 @@ export function QueryHistoryTab() {
                 </Button>
             </Box>
 
+            {/* Active Filters Display */}
+            <ActiveFilters
+                filterModel={filterModel}
+                onFilterModelChange={setFilterModel}
+                show={!showFilters}
+                sx={{ px: 1, pt: 0 }}
+            />
+
+            {/* Filter Panel */}
+            <FilterPanel
+                open={showFilters}
+                filterModel={filterModel}
+                columns={columns}
+                onFilterModelChange={setFilterModel}
+                sx={{ px: 1, pt: 0 }}
+            />
+
             {/* Data Grid */}
             <Box sx={{ flex: 1, minHeight: 400 }}>
                 <DataGrid
@@ -385,6 +429,8 @@ export function QueryHistoryTab() {
                         pagination: { paginationModel: { pageSize: 25 } },
                         sorting: { sortModel: [{ field: 'executedAt', sort: 'desc' }] },
                     }}
+                    filterModel={filterModel}
+                    onFilterModelChange={setFilterModel}
                     disableRowSelectionOnClick
                     sx={{
                         border: 'none',
@@ -392,6 +438,13 @@ export function QueryHistoryTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-row': {
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                            },
                         },
                     }}
                 />

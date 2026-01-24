@@ -2,12 +2,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
-import { StyledTooltip } from '../../components/StyledTooltip';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import HistoryIcon from '@mui/icons-material/History';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
-import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
+import { Box, useTheme } from '@mui/material';
+import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
+import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
@@ -24,15 +21,9 @@ import { AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
 import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import { FloatingEditorDialog } from './FloatingEditorDialog';
 import { EmptyState } from './EmptyState';
-import { ConnectionSelector } from '../../components/ConnectionSelector';
-import {
-    TAB_NAMES,
-    getTabIndex,
-    quoteIdentifier,
-    buildTableName,
-    extractTableFromQuery,
-} from './utils';
-import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
+import { TAB_NAMES, getTabIndex, quoteIdentifier, buildTableName } from './utils';
+import { useSavedQueries, useRowOperations, useQueryExecution } from './hooks';
+import { QueryPageToolbar } from './QueryPageToolbar';
 
 export function QueryPage() {
     const theme = useTheme();
@@ -93,17 +84,13 @@ export function QueryPage() {
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
+    const [sortModel, setSortModel] = useState<GridSortModel>([]);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
+    const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
-    const [confirmDangerous, setConfirmDangerous] = useState<{
-        message: string;
-        type: string;
-    } | null>(null);
     // Default to showing selected schema expanded
     const [historyOpen, setHistoryOpen] = useState(false);
-
-    // Edit dialogs state
-    const [addRowOpen, setAddRowOpen] = useState(false);
 
     // Row sync state
     const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
@@ -112,8 +99,16 @@ export function QueryPage() {
     // Saved queries state
     const [savedQueriesOpen, setSavedQueriesOpen] = useState(false);
     const [saveQueryOpen, setSaveQueryOpen] = useState(false);
-    const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
-    const [queryToDelete, setQueryToDelete] = useState<SavedQuery | null>(null);
+    const {
+        savedQueries,
+        editingQuery,
+        queryToDelete,
+        setEditingQuery,
+        setQueryToDelete,
+        saveQueryMutation,
+        deleteQueryMutation,
+        refetchSavedQueries,
+    } = useSavedQueries({ savedQueriesOpen });
 
     // Templates state
     const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -121,22 +116,6 @@ export function QueryPage() {
     // Floating editor state
     const [floatingEditorOpen, setFloatingEditorOpen] = useState(false);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
-
-    // Row deletion state
-    const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
-    const [rowsToDelete, setRowsToDelete] = useState<Record<string, unknown>[] | null>(null);
-
-    // Explain plan state
-    const [explainDialogOpen, setExplainDialogOpen] = useState(false);
-    const [explainPlan, setExplainPlan] = useState<{
-        plan: unknown;
-        planText: string;
-        insights: { type: string; message: string }[];
-        suggestions: string[];
-    } | null>(null);
-
-    // Track last executed query for table selection
-    const lastExecutedQueryRef = useRef<string>('');
 
     // Skip table restoration when doing FK query
     const skipTableRestoreRef = useRef(false);
@@ -306,39 +285,32 @@ export function QueryPage() {
         },
     });
 
-    // Saved queries
-    const { data: savedQueries = [], refetch: refetchSavedQueries } = useQuery({
-        queryKey: ['savedQueries'],
-        queryFn: () => queriesApi.getSaved(),
-        enabled: savedQueriesOpen,
-    });
-
-    // Save query mutation
-    const saveQueryMutation = useMutation({
-        mutationFn: (input: { name: string; sql: string; connectionId?: string }) =>
-            editingQuery
-                ? queriesApi.updateSaved(editingQuery.id, input)
-                : queriesApi.createSaved(input),
-        onSuccess: () => {
-            refetchSavedQueries();
-            toast.success(editingQuery ? 'Query updated' : 'Query saved');
-            setEditingQuery(null);
-        },
-        onError: () => {
-            toast.error('Failed to save query');
-        },
-    });
-
-    // Delete saved query mutation
-    const deleteQueryMutation = useMutation({
-        mutationFn: (id: string) => queriesApi.deleteSaved(id),
-        onSuccess: () => {
-            refetchSavedQueries();
-            toast.success('Query deleted');
-        },
-        onError: () => {
-            toast.error('Failed to delete query');
-        },
+    // Query execution hook
+    const {
+        confirmDangerous,
+        explainDialogOpen,
+        explainPlan,
+        handleExecute,
+        handleExplain,
+        handleConfirmDangerous,
+        setConfirmDangerous,
+        setExplainDialogOpen,
+        executeMutation,
+        explainMutation,
+    } = useQueryExecution({
+        selectedConnectionId,
+        sql,
+        tables,
+        selectedTable,
+        historyOpen,
+        setResult,
+        setError,
+        setActiveTab,
+        setSelectedTable,
+        setSelectedSchema,
+        updateUrl,
+        refetchTables,
+        refetchHistory,
     });
 
     // Set default schema when schemas load
@@ -385,111 +357,6 @@ export function QueryPage() {
     ]);
 
     // Execute mutation
-    const executeMutation = useMutation({
-        mutationFn: async ({ query, confirmed }: { query: string; confirmed?: boolean }) => {
-            if (!selectedConnectionId) throw new Error('No connection selected');
-            lastExecutedQueryRef.current = query;
-            return queriesApi.execute(selectedConnectionId, query, confirmed);
-        },
-        onSuccess: (data) => {
-            setResult(data);
-            setError(null);
-            setConfirmDangerous(null);
-            // Switch to Data tab to show results
-            setActiveTab(0);
-            updateUrl({ tab: 0 });
-
-            // Try to select the table from the query
-            const tableInfo = extractTableFromQuery(lastExecutedQueryRef.current);
-            if (tableInfo && tables.length > 0) {
-                const matchingTable = tables.find((t) => {
-                    const tableMatch = t.name.toLowerCase() === tableInfo.table.toLowerCase();
-                    if (tableInfo.schema) {
-                        return (
-                            tableMatch && t.schema.toLowerCase() === tableInfo.schema.toLowerCase()
-                        );
-                    }
-                    // If no schema in query, match any table with that name (prefer current schema)
-                    return tableMatch;
-                });
-                if (matchingTable && matchingTable.name !== selectedTable?.name) {
-                    setSelectedTable(matchingTable);
-                    setSelectedSchema(matchingTable.schema);
-                    updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
-                }
-            }
-
-            // Invalidate table counts if this was a data-modifying query
-            const queryUpper = lastExecutedQueryRef.current.toUpperCase().trim();
-            if (
-                queryUpper.startsWith('INSERT') ||
-                queryUpper.startsWith('UPDATE') ||
-                queryUpper.startsWith('DELETE') ||
-                queryUpper.startsWith('TRUNCATE') ||
-                queryUpper.startsWith('CREATE') ||
-                queryUpper.startsWith('DROP') ||
-                queryUpper.startsWith('ALTER')
-            ) {
-                refetchTables();
-            }
-
-            if (historyOpen) {
-                refetchHistory();
-            }
-        },
-        onError: (err: Error) => {
-            try {
-                const parsed = JSON.parse(err.message);
-                if (parsed.requiresConfirmation) {
-                    setConfirmDangerous({
-                        message: parsed.message,
-                        type: parsed.dangerousType,
-                    });
-                    return;
-                }
-            } catch {
-                // Not a JSON error
-            }
-            setError(err.message);
-            setResult(null);
-            setConfirmDangerous(null);
-            toast.error('Query failed');
-        },
-    });
-
-    const explainMutation = useMutation({
-        mutationFn: async ({ analyze }: { analyze: boolean }) => {
-            if (!selectedConnectionId) throw new Error('No connection selected');
-            if (!sql.trim()) throw new Error('No query to explain');
-            return queriesApi.explain(selectedConnectionId, sql, analyze);
-        },
-        onSuccess: (data) => {
-            setExplainPlan(data);
-            setExplainDialogOpen(true);
-            toast.success('Query plan generated');
-        },
-        onError: (err: Error) => {
-            toast.error(`Failed to explain query: ${err.message}`);
-        },
-    });
-
-    const handleExecute = useCallback(() => {
-        if (!sql.trim()) return;
-        setConfirmDangerous(null);
-        executeMutation.mutate({ query: sql });
-    }, [executeMutation, sql]);
-
-    const handleExplain = useCallback(
-        (analyze = false) => {
-            if (!sql.trim()) return;
-            explainMutation.mutate({ analyze });
-        },
-        [explainMutation, sql]
-    );
-
-    const handleConfirmDangerous = () => {
-        executeMutation.mutate({ query: sql, confirmed: true });
-    };
 
     // Restore table selection from URL
     useEffect(() => {
@@ -547,13 +414,183 @@ export function QueryPage() {
             page: number,
             pageSize: number,
             search?: string,
-            schema?: TableSchema | null
+            schema?: TableSchema | null,
+            sort?: GridSortModel,
+            filters?: GridFilterModel
         ) => {
-            const offset = page * pageSize;
             const engine = selectedConnection?.engine;
             const tableName = buildTableName(table.schema, table.name, engine);
 
+            // Handle "All" option (pageSize = -1)
+            const isAllRows = pageSize === -1;
+            const offset = isAllRows ? 0 : page * pageSize;
+
+            // Build WHERE clause from filters
+            const filterConditions: string[] = [];
+            if (filters && filters.items.length > 0) {
+                filters.items.forEach((filter) => {
+                    if (!filter.field || !filter.operator) return;
+
+                    // Remove the column index suffix (_0, _1, etc.) to get original column name
+                    const originalField = filter.field.replace(/_\d+$/, '');
+                    const quotedField = quoteIdentifier(originalField, engine);
+                    const value = filter.value;
+
+                    // Get column data type from schema
+                    const column = schema?.columns.find((c) => c.name === originalField);
+                    const dataType = column?.dataType.toLowerCase() || '';
+
+                    // Check if column is numeric, JSON, or text-based
+                    const isNumeric =
+                        dataType.includes('int') ||
+                        dataType.includes('numeric') ||
+                        dataType.includes('decimal') ||
+                        dataType.includes('float') ||
+                        dataType.includes('double') ||
+                        dataType.includes('real') ||
+                        dataType.includes('serial');
+
+                    const isJson = dataType.includes('json') || dataType.includes('jsonb');
+                    const isBoolean = dataType.includes('bool');
+
+                    switch (filter.operator) {
+                        case 'contains':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '%${escapedValue}%'`
+                                    );
+                                } else {
+                                    filterConditions.push(
+                                        `${quotedField} LIKE '%${escapedValue}%'`
+                                    );
+                                }
+                            }
+                            break;
+                        case 'equals':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} = ${value}`);
+                                } else if (isBoolean) {
+                                    const boolValue =
+                                        value === 'true' || value === true ? 'TRUE' : 'FALSE';
+                                    filterConditions.push(`${quotedField} = ${boolValue}`);
+                                } else if (isJson) {
+                                    // For JSON, cast to text for comparison
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    if (engine === 'postgres') {
+                                        filterConditions.push(
+                                            `${quotedField}::text ILIKE '%${escapedValue}%'`
+                                        );
+                                    } else {
+                                        filterConditions.push(
+                                            `${quotedField} LIKE '%${escapedValue}%'`
+                                        );
+                                    }
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} = '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case 'startsWith':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '${escapedValue}%'`
+                                    );
+                                } else {
+                                    filterConditions.push(`${quotedField} LIKE '${escapedValue}%'`);
+                                }
+                            }
+                            break;
+                        case 'endsWith':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(
+                                        `${quotedField}::text ILIKE '%${escapedValue}'`
+                                    );
+                                } else {
+                                    filterConditions.push(`${quotedField} LIKE '%${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case 'isEmpty':
+                            filterConditions.push(
+                                `(${quotedField} IS NULL OR ${quotedField} = '')`
+                            );
+                            break;
+                        case 'isNotEmpty':
+                            filterConditions.push(
+                                `(${quotedField} IS NOT NULL AND ${quotedField} != '')`
+                            );
+                            break;
+                        case '>':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} > ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} > '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '>=':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} >= ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} >= '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '<':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} < ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} < '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '<=':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} <= ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} <= '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                    }
+                });
+            }
+
+            // Build ORDER BY clause
+            let orderByClause = '';
+            if (sort && sort.length > 0) {
+                const orderByParts = sort
+                    .filter((s) => s.sort)
+                    .map((s) => {
+                        // Remove the column index suffix (_0, _1, etc.) to get original column name
+                        const originalField = s.field.replace(/_\d+$/, '');
+                        const quotedField = quoteIdentifier(originalField, engine);
+                        return `${quotedField} ${s.sort!.toUpperCase()}`;
+                    });
+                if (orderByParts.length > 0) {
+                    orderByClause = ` ORDER BY ${orderByParts.join(', ')}`;
+                }
+            }
+
             let query: string;
+            const allConditions: string[] = [...filterConditions];
+
             if (search && search.trim() && schema?.columns.length) {
                 const searchTerm = search.replaceAll("'", "''");
                 const textTypes = [
@@ -573,7 +610,7 @@ export function QueryPage() {
                 );
 
                 if (searchableColumns.length > 0) {
-                    const conditions = searchableColumns.map((col) => {
+                    const searchConditions = searchableColumns.map((col) => {
                         const quotedCol = quoteIdentifier(col.name, engine);
                         if (engine === 'sqlite') {
                             return `${quotedCol} LIKE '%${searchTerm}%'`;
@@ -583,13 +620,20 @@ export function QueryPage() {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
                         }
                     });
-                    query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')} LIMIT ${pageSize} OFFSET ${offset};`;
-                } else {
-                    query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
+                    // Combine search conditions with OR, then add to all conditions
+                    allConditions.push(`(${searchConditions.join(' OR ')})`);
                 }
-            } else {
-                query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
             }
+
+            // Build final query with WHERE clause if there are conditions
+            const limitClause = isAllRows ? '' : ` LIMIT ${pageSize} OFFSET ${offset}`;
+
+            if (allConditions.length > 0) {
+                query = `SELECT * FROM ${tableName} WHERE ${allConditions.join(' AND ')}${orderByClause}${limitClause};`;
+            } else {
+                query = `SELECT * FROM ${tableName}${orderByClause}${limitClause};`;
+            }
+
             setSql(query);
             executeMutation.mutate({ query });
         },
@@ -616,7 +660,9 @@ export function QueryPage() {
                 setTotalRowCount(null);
             }
 
-            fetchTableData(table, 0, paginationModel.pageSize);
+            setSortModel([]);
+            setFilterModel({ items: [] });
+            fetchTableData(table, 0, paginationModel.pageSize, '', null, [], { items: [] });
         },
         [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
     );
@@ -631,11 +677,68 @@ export function QueryPage() {
                     newModel.page,
                     newModel.pageSize,
                     searchQuery,
-                    tableSchema
+                    tableSchema,
+                    sortModel,
+                    filterModel
                 );
             }
         },
-        [selectedTable, fetchTableData, searchQuery, tableSchema]
+        [selectedTable, fetchTableData, searchQuery, tableSchema, sortModel, filterModel]
+    );
+
+    // Handle sort change
+    const handleSortChange = useCallback(
+        (newSortModel: GridSortModel) => {
+            const validSort = newSortModel.filter((s) => s.sort) as GridSortModel;
+            setSortModel(validSort);
+            setPaginationModel((prev) => ({ ...prev, page: 0 }));
+            if (selectedTable) {
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    searchQuery,
+                    tableSchema,
+                    validSort,
+                    filterModel
+                );
+            }
+        },
+        [
+            selectedTable,
+            fetchTableData,
+            paginationModel.pageSize,
+            searchQuery,
+            tableSchema,
+            filterModel,
+        ]
+    );
+
+    // Handle filter change
+    const handleFilterChange = useCallback(
+        (newFilterModel: GridFilterModel) => {
+            setFilterModel(newFilterModel);
+            setPaginationModel((prev) => ({ ...prev, page: 0 }));
+            if (selectedTable) {
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    searchQuery,
+                    tableSchema,
+                    sortModel,
+                    newFilterModel
+                );
+            }
+        },
+        [
+            selectedTable,
+            fetchTableData,
+            paginationModel.pageSize,
+            searchQuery,
+            tableSchema,
+            sortModel,
+        ]
     );
 
     // Handle search
@@ -659,10 +762,26 @@ export function QueryPage() {
                         setTotalRowCount(null);
                     }
                 }
-                fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema);
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    query,
+                    tableSchema,
+                    sortModel,
+                    filterModel
+                );
             }
         },
-        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema]
+        [
+            selectedTable,
+            selectedConnectionId,
+            fetchTableData,
+            paginationModel.pageSize,
+            tableSchema,
+            sortModel,
+            filterModel,
+        ]
     );
 
     // Filter tables by search
@@ -676,357 +795,37 @@ export function QueryPage() {
         refetchTables();
     };
 
-    // Handle add row
-    const handleAddRow = useCallback(
-        (values: Record<string, string>) => {
-            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
-
-            const engine = selectedConnection?.engine;
-            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-            const columns = Object.keys(values).filter((k) => values[k] !== '');
-            const vals = columns.map((k) => {
-                const col = tableSchema.columns.find((c) => c.name === k);
-                const val = values[k] ?? '';
-                if (
-                    col?.dataType.toLowerCase().includes('int') ||
-                    col?.dataType.toLowerCase().includes('numeric') ||
-                    col?.dataType.toLowerCase().includes('decimal') ||
-                    col?.dataType.toLowerCase().includes('float') ||
-                    col?.dataType.toLowerCase().includes('double') ||
-                    col?.dataType.toLowerCase().includes('real')
-                ) {
-                    return val;
-                }
-                return `'${val.replaceAll("'", "''")}'`;
-            });
-
-            const query = `INSERT INTO ${tableName} (${columns.map((c) => quoteIdentifier(c, engine)).join(', ')}) VALUES (${vals.join(', ')});`;
-            setSql(query);
-            executeMutation.mutate(
-                { query },
-                {
-                    onSuccess: () => {
-                        setAddRowOpen(false);
-                        toast.success('Row added successfully');
-                        if (selectedTable) {
-                            fetchTableData(
-                                selectedTable,
-                                paginationModel.page,
-                                paginationModel.pageSize,
-                                searchQuery,
-                                tableSchema
-                            );
-                        }
-                    },
-                }
-            );
-        },
-        [
-            selectedTable,
-            selectedConnectionId,
-            selectedConnection?.engine,
-            tableSchema,
-            executeMutation,
-            fetchTableData,
-            paginationModel,
-            searchQuery,
-            toast,
-        ]
-    );
-
-    // Helper function to format value for SQL
-    const formatSqlValue = useCallback(
-        (value: unknown, colName: string): string => {
-            if (value === null || value === undefined) return 'NULL';
-
-            const col = tableSchema?.columns.find((c) => c.name === colName);
-            const dataType = col?.dataType.toLowerCase() || '';
-
-            if (
-                dataType.includes('int') ||
-                dataType.includes('numeric') ||
-                dataType.includes('decimal') ||
-                dataType.includes('float') ||
-                dataType.includes('double') ||
-                dataType.includes('real')
-            ) {
-                return String(value);
-            }
-
-            if (dataType.includes('bool')) {
-                return String(value);
-            }
-
-            if (dataType.includes('json') || dataType.includes('jsonb')) {
-                const jsonStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
-                return `'${jsonStr.replaceAll("'", "''")}'`;
-            }
-
-            if (typeof value === 'object') {
-                const jsonStr = JSON.stringify(value);
-                return `'${jsonStr.replaceAll("'", "''")}'`;
-            }
-
-            return `'${String(value).replaceAll("'", "''")}'`;
-        },
-        [tableSchema]
-    );
-
-    // Extract table name from SQL query (simple regex for SELECT queries)
-    const extractTableNameFromQuery = (query: string): string | null => {
-        const match = query.match(/FROM\s+([`"]?[\w.]+[`"]?)/i);
-        return match?.[1]?.replace(/[`"]/g, '') ?? null;
-    };
-
-    // Infer primary keys from result columns (for raw queries without tableSchema)
-    const inferPrimaryKeysFromResult = (result: QueryResult | null): string[] => {
-        if (!result) return [];
-        return result.columns
-            .filter((col) => {
-                const name = col.name.toLowerCase();
-                return name === 'id' || name === 'version' || name.endsWith('_id');
-            })
-            .map((col) => col.name);
-    };
-
-    // Handle update row
-    const handleUpdateRow = useCallback(
-        async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
-            if (!selectedConnectionId) return;
-
-            const engine = selectedConnection?.engine;
-
-            // Determine table name and primary keys
-            let tableName: string;
-            let pkColumns: string[];
-
-            if (selectedTable && tableSchema) {
-                // Use selected table info if available
-                tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-                pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-            } else {
-                // For raw queries, try to extract table name from SQL
-                const extractedTable = extractTableNameFromQuery(sql);
-                if (!extractedTable) {
-                    throw new Error('Cannot determine table name for update');
-                }
-                tableName = extractedTable;
-
-                // Infer primary keys from result
-                pkColumns = inferPrimaryKeysFromResult(result);
-                if (pkColumns.length === 0) {
-                    throw new Error(
-                        'Cannot update row: no primary key identified (looking for columns named: id, version, or ending with _id)'
-                    );
-                }
-            }
-
-            const changes: string[] = [];
-            for (const key of Object.keys(newRow)) {
-                if (key === '__rowIndex') continue; // Skip internal row index
-                const oldVal = oldRow[key];
-                const newVal = newRow[key];
-                const hasChanged =
-                    typeof oldVal === 'object' || typeof newVal === 'object'
-                        ? JSON.stringify(oldVal) !== JSON.stringify(newVal)
-                        : oldVal !== newVal;
-                if (hasChanged) {
-                    changes.push(
-                        `${quoteIdentifier(key, engine)} = ${formatSqlValue(newVal, key)}`
-                    );
-                }
-            }
-
-            if (changes.length === 0) {
-                return;
-            }
-
-            const whereConditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(oldRow[pk], pk)}`
-            );
-
-            const query = `UPDATE ${tableName} SET ${changes.join(', ')} WHERE ${whereConditions.join(' AND ')};`;
-            setSql(query);
-
-            return new Promise<void>((resolve, reject) => {
-                executeMutation.mutate(
-                    { query, confirmed: true },
-                    {
-                        onSuccess: () => {
-                            if (selectedTable && tableSchema) {
-                                fetchTableData(
-                                    selectedTable,
-                                    paginationModel.page,
-                                    paginationModel.pageSize,
-                                    searchQuery,
-                                    tableSchema
-                                );
-                            } else {
-                                // For raw queries, re-run the original query
-                                executeMutation.mutate({ query: sql, confirmed: true });
-                            }
-                            toast.success('Row updated');
-                            resolve();
-                        },
-                        onError: (err) => {
-                            toast.error('Failed to update row');
-                            reject(err);
-                        },
-                    }
-                );
-            });
-        },
-        [
-            selectedTable,
-            selectedConnectionId,
-            selectedConnection?.engine,
-            tableSchema,
-            executeMutation,
-            fetchTableData,
-            paginationModel,
-            searchQuery,
-            formatSqlValue,
-            toast,
-            sql,
-            result,
-        ]
-    );
-
-    // Handle delete row - show confirmation
-    const handleDeleteRow = useCallback((row: Record<string, unknown>) => {
-        setRowToDelete(row);
-    }, []);
-
-    const handleDeleteRows = useCallback((rows: Record<string, unknown>[]) => {
-        setRowsToDelete(rows);
-    }, []);
-
-    // Actually perform row deletion
-    const confirmDeleteRow = useCallback(() => {
-        if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
-
-        const engine = selectedConnection?.engine;
-        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-        if (pkColumns.length === 0) {
-            setError('Cannot delete row: no primary key defined');
-            setRowToDelete(null);
-            return;
-        }
-
-        const whereConditions = pkColumns.map(
-            (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(rowToDelete[pk], pk)}`
-        );
-
-        const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
-        setSql(query);
-        executeMutation.mutate(
-            { query, confirmed: true },
-            {
-                onSuccess: () => {
-                    if (selectedTable) {
-                        fetchTableData(
-                            selectedTable,
-                            paginationModel.page,
-                            paginationModel.pageSize,
-                            searchQuery,
-                            tableSchema
-                        );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - 1);
-                    }
-                    toast.success('Row deleted');
-                    setRowToDelete(null);
-                },
-            }
-        );
-    }, [
-        selectedTable,
-        selectedConnectionId,
-        selectedConnection?.engine,
-        tableSchema,
+    // Row operations hook
+    const {
+        addRowOpen,
         rowToDelete,
-        executeMutation,
-        fetchTableData,
-        paginationModel,
-        searchQuery,
-        formatSqlValue,
-        totalRowCount,
-        toast,
-    ]);
-
-    const confirmDeleteRows = useCallback(() => {
-        if (
-            !selectedTable ||
-            !selectedConnectionId ||
-            !tableSchema ||
-            !rowsToDelete ||
-            rowsToDelete.length === 0
-        ) {
-            return;
-        }
-
-        const engine = selectedConnection?.engine;
-        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-        if (pkColumns.length === 0) {
-            setError('Cannot delete rows: no primary key defined');
-            setRowsToDelete(null);
-            return;
-        }
-
-        const rowClauses = rowsToDelete.map((row) => {
-            const conditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(row[pk], pk)}`
-            );
-            return `(${conditions.join(' AND ')})`;
-        });
-
-        const query = `DELETE FROM ${tableName} WHERE ${rowClauses.join(' OR ')};`;
-        setSql(query);
-        executeMutation.mutate(
-            { query, confirmed: true },
-            {
-                onSuccess: () => {
-                    if (selectedTable) {
-                        fetchTableData(
-                            selectedTable,
-                            paginationModel.page,
-                            paginationModel.pageSize,
-                            searchQuery,
-                            tableSchema
-                        );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - rowsToDelete.length);
-                    }
-                    toast.success(`Deleted ${rowsToDelete.length} rows`);
-                    setRowsToDelete(null);
-                },
-                onError: () => {
-                    toast.error('Failed to delete rows');
-                    setRowsToDelete(null);
-                },
-            }
-        );
-    }, [
-        selectedTable,
-        selectedConnectionId,
-        selectedConnection?.engine,
-        tableSchema,
         rowsToDelete,
-        executeMutation,
-        fetchTableData,
+        setAddRowOpen,
+        setRowToDelete,
+        setRowsToDelete,
+        handleAddRow,
+        handleUpdateRow,
+        handleDeleteRow,
+        handleDeleteRows,
+        confirmDeleteRow,
+        confirmDeleteRows,
+    } = useRowOperations({
+        selectedConnectionId,
+        selectedConnection,
+        selectedTable,
+        tableSchema: tableSchema || null,
+        sql,
+        result,
         paginationModel,
+        sortModel,
+        filterModel,
         searchQuery,
-        formatSqlValue,
         totalRowCount,
-        toast,
-    ]);
+        setSql,
+        setTotalRowCount,
+        fetchTableData,
+    });
+
 
     // Handle foreign key click - query the specific referenced row
     const handleForeignKeyClick = useCallback(
@@ -1101,82 +900,18 @@ export function QueryPage() {
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Top Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                }}
-            >
-                <ConnectionSelector
-                    value={selectedConnectionId}
-                    onChange={handleConnectionChange}
-                    disableOffline={true}
-                />
-
-                {selectedConnection && (
-                    <>
-                        <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                            {selectedConnection.engine === 'sqlite'
-                                ? selectedConnection.database.split('/').pop()
-                                : `${selectedConnection.host}/${selectedConnection.database}`}
-                        </Typography>
-                        <Chip
-                            label={selectedConnection.engine.toUpperCase()}
-                            size="small"
-                            sx={{
-                                fontSize: 10,
-                                height: 20,
-                                bgcolor: 'primary.dark',
-                                color: 'primary.contrastText',
-                            }}
-                        />
-                    </>
-                )}
-
-                <Box sx={{ flex: 1 }} />
-
-                <StyledTooltip title="Query Templates">
-                    <IconButton
-                        size="small"
-                        onClick={() => setTemplatesOpen(true)}
-                        color={templatesOpen ? 'primary' : 'default'}
-                    >
-                        <QueryTemplateIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Saved Queries">
-                    <IconButton
-                        size="small"
-                        onClick={() => setSavedQueriesOpen(true)}
-                        color={savedQueriesOpen ? 'primary' : 'default'}
-                    >
-                        <BookmarkIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Query History">
-                    <IconButton
-                        size="small"
-                        onClick={() => setHistoryOpen(true)}
-                        color={historyOpen ? 'primary' : 'default'}
-                    >
-                        <HistoryIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Refresh">
-                    <IconButton size="small" onClick={handleRefresh}>
-                        <RefreshIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-            </Box>
+            <QueryPageToolbar
+                selectedConnectionId={selectedConnectionId}
+                selectedConnection={selectedConnection}
+                templatesOpen={templatesOpen}
+                savedQueriesOpen={savedQueriesOpen}
+                historyOpen={historyOpen}
+                onConnectionChange={handleConnectionChange}
+                onTemplatesToggle={() => setTemplatesOpen(true)}
+                onSavedQueriesToggle={() => setSavedQueriesOpen(true)}
+                onHistoryToggle={() => setHistoryOpen(true)}
+                onRefresh={handleRefresh}
+            />
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
@@ -1246,6 +981,12 @@ export function QueryPage() {
                                             totalRowCount={totalRowCount}
                                             paginationModel={paginationModel}
                                             onPaginationChange={handlePaginationChange}
+                                            sortModel={sortModel}
+                                            onSortChange={handleSortChange}
+                                            filterModel={filterModel}
+                                            onFilterModelChange={handleFilterChange}
+                                            showFilters={showFilters}
+                                            onShowFiltersChange={setShowFilters}
                                             onSearch={handleSearch}
                                             searchQuery={searchQuery}
                                             tableSchema={tableSchema}
@@ -1322,6 +1063,12 @@ export function QueryPage() {
                                     totalRowCount={totalRowCount}
                                     paginationModel={paginationModel}
                                     onPaginationChange={handlePaginationChange}
+                                    sortModel={sortModel}
+                                    onSortChange={handleSortChange}
+                                    filterModel={filterModel}
+                                    onFilterModelChange={handleFilterChange}
+                                    showFilters={showFilters}
+                                    onShowFiltersChange={setShowFilters}
                                     onSearch={handleSearch}
                                     searchQuery={searchQuery}
                                     tableSchema={tableSchema}

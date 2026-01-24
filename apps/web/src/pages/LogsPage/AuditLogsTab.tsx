@@ -15,6 +15,7 @@ import {
     DialogContent,
     DialogActions,
     Button,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -29,11 +30,14 @@ import {
     TableChart as TableIcon,
     ViewColumn as ColumnIcon,
     Settings as SettingsIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, auditApi, type AuditLogEntry } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
+import { FilterPanel } from '../QueryPage/FilterPanel';
+import { ActiveFilters } from '../QueryPage/ActiveFilters';
 
 function formatDate(date: string): string {
     return new Date(date).toLocaleString();
@@ -75,6 +79,8 @@ export function AuditLogsTab() {
     const [entityTypeFilter, setEntityTypeFilter] = useState<string>('all');
     const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
     // Fetch audit logs
     const { data: auditLogs = [], isLoading } = useQuery({
@@ -215,7 +221,7 @@ export function AuditLogsTab() {
 
     return (
         <Box
-            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}
+            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}
         >
             {/* Filters */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
@@ -224,7 +230,7 @@ export function AuditLogsTab() {
                     placeholder="Search audit logs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ minWidth: 300, mr: 1 }}
+                    sx={{ minWidth: 300 }}
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
@@ -273,10 +279,47 @@ export function AuditLogsTab() {
                     </Select>
                 </FormControl>
 
-                <Box sx={{ ml: 'auto' }}>
+                <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                        <IconButton
+                            size="small"
+                            onClick={() => setShowFilters(!showFilters)}
+                            sx={{
+                                color:
+                                    showFilters || filterModel.items.length > 0
+                                        ? 'primary.main'
+                                        : 'text.secondary',
+                            }}
+                        >
+                            <Badge
+                                badgeContent={filterModel.items.length}
+                                color="primary"
+                                invisible={filterModel.items.length === 0}
+                            >
+                                <FilterListIcon fontSize="small" />
+                            </Badge>
+                        </IconButton>
+                    </StyledTooltip>
                     <Chip label={`${filteredLogs.length} events`} size="small" color="primary" />
                 </Box>
             </Box>
+
+            {/* Active Filters Display */}
+            <ActiveFilters
+                filterModel={filterModel}
+                onFilterModelChange={setFilterModel}
+                show={!showFilters}
+                sx={{ px: 1, pt: 0 }}
+            />
+
+            {/* Filter Panel */}
+            <FilterPanel
+                open={showFilters}
+                filterModel={filterModel}
+                columns={columns}
+                onFilterModelChange={setFilterModel}
+                sx={{ px: 1, pt: 0 }}
+            />
 
             {/* Data Grid */}
             <Box
@@ -297,6 +340,8 @@ export function AuditLogsTab() {
                         initialState={{
                             pagination: { paginationModel: { pageSize: 25 } },
                         }}
+                        filterModel={filterModel}
+                        onFilterModelChange={setFilterModel}
                         disableRowSelectionOnClick
                         sx={{
                             border: 'none',
@@ -304,6 +349,13 @@ export function AuditLogsTab() {
                                 fontSize: 12,
                                 display: 'flex',
                                 alignItems: 'center',
+                                borderBottom: '0.5px solid',
+                                borderColor: 'divider',
+                            },
+                            '& .MuiDataGrid-row': {
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                },
                             },
                             '& .MuiDataGrid-columnHeader': {
                                 display: 'flex',

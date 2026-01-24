@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -12,6 +12,10 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
+    Badge,
+    darken,
+    useTheme,
+    Theme,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -19,9 +23,9 @@ import {
     type GridColDef,
     type GridRenderCellParams,
     type GridRowId,
-    type GridRowModel,
-    type GridRowModesModel,
-    GridRowModes,
+    type GridSortModel,
+    type GridFilterModel,
+    type GridRowParams,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -29,15 +33,17 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
 import LinkIcon from '@mui/icons-material/Link';
 import { StatusAlert } from '@/components/StatusAlert';
+import { EditRowDialog } from './EditRowDialog';
+import { FilterPanel } from './FilterPanel';
+import { ActiveFilters } from './ActiveFilters';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -55,6 +61,12 @@ interface DataTabProps {
     readonly totalRowCount: number | null;
     readonly paginationModel: { page: number; pageSize: number };
     readonly onPaginationChange: (model: { page: number; pageSize: number }) => void;
+    readonly sortModel?: GridSortModel;
+    readonly onSortChange?: (model: GridSortModel) => void;
+    readonly filterModel?: GridFilterModel;
+    readonly onFilterModelChange?: (model: GridFilterModel) => void;
+    readonly showFilters?: boolean;
+    readonly onShowFiltersChange?: (show: boolean) => void;
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
@@ -82,23 +94,52 @@ export function DataTab({
     totalRowCount,
     paginationModel,
     onPaginationChange,
+    sortModel = [],
+    onSortChange,
+    filterModel: externalFilterModel,
+    onFilterModelChange,
+    showFilters: externalShowFilters = false,
+    onShowFiltersChange,
     onSearch,
     searchQuery,
     tableSchema,
     onUpdateRow,
-    onDeleteRow,
-    onDeleteRows,
-    onSyncRow,
+    onDeleteRow: _onDeleteRow,
+    onDeleteRows: _onDeleteRows,
+    onSyncRow: _onSyncRow,
     onForeignKeyClick,
     connectionHost,
     connectionDatabase,
     tableName,
 }: DataTabProps) {
+    const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
-    const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+    // Use external state if provided, otherwise use local state
+    const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
+    const filterModel = externalFilterModel || internalFilterModel;
+    const setFilterModel = onFilterModelChange || setInternalFilterModel;
+
+    const showFilters = externalShowFilters;
+    const setShowFilters = onShowFiltersChange || (() => {});
+
     const toast = useToastStore();
+
+    // Wrap pagination change handler to ensure it's called
+    const handlePaginationModelChange = useCallback(
+        (model: { page: number; pageSize: number }) => {
+            // If page size changed, reset to page 0 to avoid invalid page numbers
+            if (model.pageSize !== paginationModel.pageSize) {
+                onPaginationChange({ page: 0, pageSize: model.pageSize });
+            } else {
+                onPaginationChange(model);
+            }
+        },
+        [onPaginationChange, paginationModel.pageSize]
+    );
 
     // Get primary key columns for identifying rows
     const primaryKeyColumns =
@@ -123,41 +164,26 @@ export function DataTab({
     // Check if we have any selected rows
     const hasSelectedRows = selectedRowIds.length > 0;
 
-    const handleSaveClick = (id: GridRowId) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+    // Modal-based editing handlers
+    const handleRowDoubleClick = (params: GridRowParams) => {
+        if (!canEditRows) return;
+        const originalRow = params.row.__originalRow as Record<string, unknown>;
+        setEditingRow(originalRow);
+        setEditDialogOpen(true);
     };
 
-    const handleCancelClick = (id: GridRowId) => () => {
-        setRowModesModel({
-            ...rowModesModel,
-            [id]: { mode: GridRowModes.View, ignoreModifications: true },
-        });
+    const handleEditDialogClose = () => {
+        setEditDialogOpen(false);
+        setEditingRow(null);
     };
 
-    const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
-        if (onUpdateRow && result) {
-            // Convert transformed row data back to original format
-            const oldOriginal = oldRow.__originalRow as Record<string, unknown>;
-            const newOriginal: Record<string, unknown> = {};
-
-            result.columns.forEach((col, colIndex) => {
-                const fieldName = `${col.name}_${colIndex}`;
-                newOriginal[col.name] = newRow[fieldName];
-            });
-
-            await onUpdateRow(oldOriginal, newOriginal);
-
-            // Update the __originalRow with new data
-            return {
-                ...newRow,
-                __originalRow: newOriginal,
-            };
+    const handleEditDialogSave = async (
+        originalRow: Record<string, unknown>,
+        updatedRow: Record<string, unknown>
+    ) => {
+        if (onUpdateRow) {
+            await onUpdateRow(originalRow, updatedRow);
         }
-        return newRow;
-    };
-
-    const handleProcessRowUpdateError = (err: Error) => {
-        console.error('Row update error:', err);
     };
 
     // Check if a column type is JSON-like
@@ -302,10 +328,7 @@ export function DataTab({
           })
         : [];
 
-    // Get the currently editing row id (if any)
-    const editingRowId = Object.entries(rowModesModel).find(
-        ([, mode]) => mode.mode === GridRowModes.Edit
-    )?.[0];
+    // Removed inline editing - now using modal
 
     const columns: GridColDef[] = dataColumns;
 
@@ -357,9 +380,14 @@ export function DataTab({
 
     // Handle toolbar actions
     const handleEditSelected = () => {
-        if (selectedRowIds.length === 1) {
+        if (selectedRowIds.length === 1 && result) {
             const id = selectedRowIds[0];
-            setRowModesModel({ [String(id)]: { mode: GridRowModes.Edit } });
+            const row = rows.find((r) => r.__rowIndex === id);
+            if (row) {
+                const originalRow = row.__originalRow as Record<string, unknown>;
+                setEditingRow(originalRow);
+                setEditDialogOpen(true);
+            }
         }
     };
 
@@ -373,16 +401,16 @@ export function DataTab({
             );
 
         if (selectedRows.length === 1 && selectedRows[0]) {
-            onDeleteRow?.(selectedRows[0]);
+            _onDeleteRow?.(selectedRows[0]);
         } else if (selectedRows.length > 1) {
-            onDeleteRows?.(selectedRows);
+            _onDeleteRows?.(selectedRows);
         }
     };
 
     const handleSyncSelected = () => {
         const selectedRows = getSelectedRows();
-        if (selectedRows.length > 0 && onSyncRow) {
-            onSyncRow(selectedRows);
+        if (selectedRows.length > 0 && _onSyncRow) {
+            _onSyncRow(selectedRows);
         }
     };
 
@@ -394,7 +422,7 @@ export function DataTab({
             tableName || 'query',
         ];
         // Sanitize filename parts (remove special characters)
-        const sanitized = parts.map((p) => p.replace(/[^a-zA-Z0-9_-]/g, '_')).join('-');
+        const sanitized = parts.map((p) => p.replaceAll(/[^a-zA-Z0-9_-]/g, '_')).join('-');
         return `${sanitized}.${extension}`;
     };
 
@@ -421,11 +449,11 @@ export function DataTab({
                         const val = row[h];
                         if (val === null || val === undefined) return '';
                         if (typeof val === 'object')
-                            return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+                            return `"${JSON.stringify(val).replaceAll('"', '""')}"`;
                         const str = String(val);
                         // Escape quotes and wrap in quotes if contains comma, newline, or quote
                         if (str.includes(',') || str.includes('\n') || str.includes('"')) {
-                            return `"${str.replace(/"/g, '""')}"`;
+                            return `"${str.replaceAll('"', '""')}"`;
                         }
                         return str;
                     })
@@ -522,36 +550,7 @@ export function DataTab({
                         }}
                     >
                         {/* Left side: Stats or Selection info */}
-                        {editingRowId ? (
-                            <>
-                                <Typography
-                                    variant="body2"
-                                    color="warning.main"
-                                    sx={{ fontWeight: 500 }}
-                                >
-                                    Editing row...
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={<SaveIcon />}
-                                    onClick={handleSaveClick(editingRowId)}
-                                    sx={{ minWidth: 'auto', px: 1.5 }}
-                                >
-                                    Save
-                                </Button>
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    startIcon={<CancelIcon />}
-                                    onClick={handleCancelClick(editingRowId)}
-                                    sx={{ minWidth: 'auto', px: 1.5 }}
-                                >
-                                    Cancel
-                                </Button>
-                            </>
-                        ) : hasSelectedRows ? (
+                        {hasSelectedRows ? (
                             <>
                                 <Chip
                                     label={`${selectedRowIds.length} selected`}
@@ -599,8 +598,8 @@ export function DataTab({
                                             disabled={
                                                 !canEditRows ||
                                                 selectedRowIds.length === 0 ||
-                                                (!onDeleteRow && !onDeleteRows) ||
-                                                (selectedRowIds.length > 1 && !onDeleteRows)
+                                                (!_onDeleteRow && !_onDeleteRows) ||
+                                                (selectedRowIds.length > 1 && !_onDeleteRows)
                                             }
                                         >
                                             <DeleteIcon fontSize="small" />
@@ -619,7 +618,7 @@ export function DataTab({
                                             size="small"
                                             color="primary"
                                             onClick={handleSyncSelected}
-                                            disabled={!canEditRows || !onSyncRow}
+                                            disabled={!canEditRows || !_onSyncRow}
                                         >
                                             <SyncIcon fontSize="small" />
                                         </IconButton>
@@ -672,6 +671,84 @@ export function DataTab({
 
                         {/* Spacer */}
                         <Box sx={{ flex: 1 }} />
+
+                        {/* Right side: Filter and Search */}
+                        <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                            <IconButton
+                                size="small"
+                                onClick={() => setShowFilters(!showFilters)}
+                                sx={{
+                                    color:
+                                        showFilters || filterModel.items.length > 0
+                                            ? 'primary.main'
+                                            : 'text.secondary',
+                                }}
+                            >
+                                <Badge
+                                    badgeContent={filterModel.items.length}
+                                    color="primary"
+                                    invisible={filterModel.items.length === 0}
+                                >
+                                    <FilterListIcon fontSize="small" />
+                                </Badge>
+                            </IconButton>
+                        </StyledTooltip>
+                        <TextField
+                            size="small"
+                            placeholder="Search..."
+                            value={localSearch}
+                            onChange={(e) => setLocalSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onSearch(localSearch);
+                                }
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon
+                                            fontSize="small"
+                                            sx={{ color: 'text.disabled' }}
+                                        />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: localSearch && (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setLocalSearch('');
+                                                onSearch('');
+                                            }}
+                                        >
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                width: 180,
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: 'background.default',
+                                    height: 32,
+                                },
+                                '& .MuiOutlinedInput-input': {
+                                    py: 0.5,
+                                },
+                            }}
+                        />
+                        {searchQuery && (
+                            <Chip
+                                label={`"${searchQuery}"`}
+                                size="small"
+                                onDelete={() => {
+                                    setLocalSearch('');
+                                    onSearch('');
+                                }}
+                                color="primary"
+                                variant="outlined"
+                            />
+                        )}
 
                         {/* Export button */}
                         {result.rows.length > 0 && (
@@ -742,65 +819,32 @@ export function DataTab({
                                 </Menu>
                             </>
                         )}
-
-                        {/* Right side: Search (always visible) */}
-                        <TextField
-                            size="small"
-                            placeholder="Search..."
-                            value={localSearch}
-                            onChange={(e) => setLocalSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    onSearch(localSearch);
-                                }
-                            }}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon
-                                            fontSize="small"
-                                            sx={{ color: 'text.disabled' }}
-                                        />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: localSearch && (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setLocalSearch('');
-                                                onSearch('');
-                                            }}
-                                        >
-                                            <CloseIcon fontSize="small" />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                width: 180,
-                                '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'background.default',
-                                    height: 32,
-                                },
-                                '& .MuiOutlinedInput-input': {
-                                    py: 0.5,
-                                },
-                            }}
-                        />
-                        {searchQuery && (
-                            <Chip
-                                label={`"${searchQuery}"`}
-                                size="small"
-                                onDelete={() => {
-                                    setLocalSearch('');
-                                    onSearch('');
-                                }}
-                                color="primary"
-                                variant="outlined"
-                            />
-                        )}
                     </Box>
+
+                    {/* Active Filters Display */}
+                    <ActiveFilters
+                        filterModel={filterModel}
+                        onFilterModelChange={(model) => {
+                            setFilterModel(model);
+                            if (onFilterModelChange) {
+                                onFilterModelChange(model);
+                            }
+                        }}
+                        show={!showFilters}
+                    />
+
+                    {/* Filter Panel */}
+                    <FilterPanel
+                        open={showFilters}
+                        filterModel={filterModel}
+                        columns={columns}
+                        onFilterModelChange={(model) => {
+                            setFilterModel(model);
+                            if (onFilterModelChange) {
+                                onFilterModelChange(model);
+                            }
+                        }}
+                    />
 
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -816,30 +860,52 @@ export function DataTab({
                                     setSelectedRowIds(newSelection as GridRowId[])
                                 }
                                 loading={loading}
-                                paginationMode={totalRowCount !== null ? 'server' : 'client'}
+                                pagination
+                                paginationMode={
+                                    totalRowCount !== null && paginationModel.pageSize !== -1
+                                        ? 'server'
+                                        : 'client'
+                                }
                                 rowCount={totalRowCount ?? result.rowCount}
                                 paginationModel={paginationModel}
-                                onPaginationModelChange={onPaginationChange}
-                                pageSizeOptions={[25, 50, 100, 250, 500]}
-                                editMode="row"
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={setRowModesModel}
-                                processRowUpdate={processRowUpdate}
-                                onProcessRowUpdateError={handleProcessRowUpdateError}
+                                onPaginationModelChange={handlePaginationModelChange}
+                                sortingMode={
+                                    totalRowCount !== null && paginationModel.pageSize !== -1
+                                        ? 'server'
+                                        : 'client'
+                                }
+                                sortModel={sortModel}
+                                onSortModelChange={onSortChange}
+                                pageSizeOptions={[25, 50, 100]}
+                                onRowDoubleClick={handleRowDoubleClick}
                                 sx={{
                                     border: 'none',
                                     borderRadius: 0,
+                                    bgcolor:
+                                        theme.palette.mode === 'dark'
+                                            ? darken(theme.palette.background.paper, 0.2)
+                                            : theme.palette.background.paper,
                                     '& .MuiDataGrid-cell': {
                                         fontFamily: 'monospace',
                                         fontSize: 12,
                                         display: 'flex',
                                         alignItems: 'center',
+                                        borderColor: 'divider',
+                                    },
+                                    '& .MuiDataGrid-row': {
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                        },
                                     },
                                     '& .MuiDataGrid-columnHeaders': {
-                                        bgcolor: 'background.paper',
+                                        bgcolor: 'background.default',
                                         borderRadius: 0,
+                                        minHeight: '56px !important',
+                                        maxHeight: '56px !important',
                                     },
                                     '& .MuiDataGrid-columnHeader': {
+                                        minHeight: '56px !important',
+                                        maxHeight: '56px !important',
                                         '&:focus': {
                                             outline: 'none',
                                         },
@@ -847,11 +913,22 @@ export function DataTab({
                                     '& .MuiDataGrid-cell:focus': {
                                         outline: 'none',
                                     },
-                                    '& .MuiDataGrid-row:hover': {
-                                        bgcolor: 'action.hover',
-                                    },
                                     '& .MuiDataGrid-footerContainer': {
                                         borderRadius: 0,
+                                        bgcolor: 'background.default',
+                                        minHeight: 'auto',
+                                    },
+                                    '& .MuiTablePagination-root': {
+                                        overflow: 'visible',
+                                    },
+                                    '& .MuiTablePagination-selectLabel': {
+                                        mb: 0,
+                                    },
+                                    '& .MuiTablePagination-select': {
+                                        pb: 0,
+                                    },
+                                    '& .MuiTablePagination-displayedRows': {
+                                        mb: 0,
                                     },
                                     '& .MuiDataGrid-cell--editing': {
                                         bgcolor: 'action.selected',
@@ -880,6 +957,15 @@ export function DataTab({
                     <Typography variant="body2">Loading data...</Typography>
                 </Box>
             )}
+
+            {/* Edit Row Dialog */}
+            <EditRowDialog
+                open={editDialogOpen}
+                row={editingRow}
+                schema={tableSchema}
+                onClose={handleEditDialogClose}
+                onSave={handleEditDialogSave}
+            />
         </Box>
     );
 }

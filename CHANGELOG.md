@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Query results default page size changed from 100 to 25 rows for better initial load performance
-- Added 25 rows per page option to pagination dropdown (25, 50, 100, 250, 500)
+- Added 25 rows per page option to pagination dropdowRows per pan (25, 50, 100, 250, 500)
 - Page size preference is now preserved when switching between tables
 
 ### Fixed
