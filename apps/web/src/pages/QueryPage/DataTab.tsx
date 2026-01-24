@@ -12,12 +12,10 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
-    Collapse,
-    Select,
-    FormControl,
     darken,
     useTheme,
     Theme,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -27,7 +25,6 @@ import {
     type GridRowId,
     type GridSortModel,
     type GridFilterModel,
-    type GridFilterItem,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -38,13 +35,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import AddIcon from '@mui/icons-material/Add';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
 import LinkIcon from '@mui/icons-material/Link';
 import { StatusAlert } from '@/components/StatusAlert';
 import { EditRowDialog } from './EditRowDialog';
+import { FilterPanel } from './FilterPanel';
+import { ActiveFilters } from './ActiveFilters';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -126,7 +124,7 @@ export function DataTab({
     const setFilterModel = onFilterModelChange || setInternalFilterModel;
 
     const showFilters = externalShowFilters;
-    const setShowFilters = onShowFiltersChange || (() => { });
+    const setShowFilters = onShowFiltersChange || (() => {});
 
     const toast = useToastStore();
 
@@ -153,11 +151,11 @@ export function DataTab({
     const inferredPrimaryKeys =
         !tableSchema && result?.columns
             ? result.columns
-                .filter((col) => {
-                    const name = col.name.toLowerCase();
-                    return name === 'id' || name === 'version' || name.endsWith('_id');
-                })
-                .map((col) => col.name)
+                  .filter((col) => {
+                      const name = col.name.toLowerCase();
+                      return name === 'id' || name === 'version' || name.endsWith('_id');
+                  })
+                  .map((col) => col.name)
             : [];
 
     const effectivePrimaryKeys =
@@ -239,97 +237,97 @@ export function DataTab({
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col, colIndex) => {
-            const isPrimaryKey = primaryKeyColumns.includes(col.name);
-            const isJson = isJsonColumn(col.dataType);
-            // JSON columns are edited via dialog, not inline; PK columns are not editable
-            const isEditable = canEditRows && !isPrimaryKey && !isJson;
-            // JSON columns can be edited via dialog if we have edit capability
-            const canEditJson = canEditRows && !isPrimaryKey && isJson;
-            // Check if this column is a foreign key
-            const fkInfo = columnToForeignKey.get(col.name);
+              const isPrimaryKey = primaryKeyColumns.includes(col.name);
+              const isJson = isJsonColumn(col.dataType);
+              // JSON columns are edited via dialog, not inline; PK columns are not editable
+              const isEditable = canEditRows && !isPrimaryKey && !isJson;
+              // JSON columns can be edited via dialog if we have edit capability
+              const canEditJson = canEditRows && !isPrimaryKey && isJson;
+              // Check if this column is a foreign key
+              const fkInfo = columnToForeignKey.get(col.name);
 
-            // Ensure unique field names by appending index if there are duplicates
-            const fieldName = `${col.name}_${colIndex}`;
+              // Ensure unique field names by appending index if there are duplicates
+              const fieldName = `${col.name}_${colIndex}`;
 
-            return {
-                field: fieldName,
-                headerName: col.name,
-                description: col.dataType,
-                flex: 1,
-                minWidth: 120,
-                editable: isEditable,
-                renderCell: (params: GridRenderCellParams) => {
-                    const cellValue = (
-                        <CellValue
-                            value={params.value}
-                            onSaveJson={
-                                canEditJson
-                                    ? (newValue) =>
-                                        handleJsonCellSave(
-                                            params.row.__originalRow as Record<string, unknown>,
-                                            col.name,
-                                            newValue
-                                        )
-                                    : undefined
-                            }
-                        />
-                    );
-                    // If this is a FK column and we have a click handler, make it clickable
-                    if (fkInfo && onForeignKeyClick && params.value !== null) {
-                        return (
-                            <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
-                                <Box
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onForeignKeyClick({
-                                            referencedTable: fkInfo.referencedTable,
-                                            referencedColumn: fkInfo.referencedColumns[0] ?? '',
-                                            value: params.value,
-                                        });
-                                    }}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                        cursor: 'pointer',
-                                        color: 'primary.main',
-                                        textDecoration: 'underline',
-                                        textDecorationStyle: 'dotted',
-                                        '&:hover': {
-                                            textDecorationStyle: 'solid',
-                                        },
-                                    }}
-                                >
-                                    {cellValue}
-                                    <LinkIcon sx={{ fontSize: 12 }} />
-                                </Box>
-                            </StyledTooltip>
-                        );
-                    }
+              return {
+                  field: fieldName,
+                  headerName: col.name,
+                  description: col.dataType,
+                  flex: 1,
+                  minWidth: 120,
+                  editable: isEditable,
+                  renderCell: (params: GridRenderCellParams) => {
+                      const cellValue = (
+                          <CellValue
+                              value={params.value}
+                              onSaveJson={
+                                  canEditJson
+                                      ? (newValue) =>
+                                            handleJsonCellSave(
+                                                params.row.__originalRow as Record<string, unknown>,
+                                                col.name,
+                                                newValue
+                                            )
+                                      : undefined
+                              }
+                          />
+                      );
+                      // If this is a FK column and we have a click handler, make it clickable
+                      if (fkInfo && onForeignKeyClick && params.value !== null) {
+                          return (
+                              <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
+                                  <Box
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          onForeignKeyClick({
+                                              referencedTable: fkInfo.referencedTable,
+                                              referencedColumn: fkInfo.referencedColumns[0] ?? '',
+                                              value: params.value,
+                                          });
+                                      }}
+                                      sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 0.5,
+                                          cursor: 'pointer',
+                                          color: 'primary.main',
+                                          textDecoration: 'underline',
+                                          textDecorationStyle: 'dotted',
+                                          '&:hover': {
+                                              textDecorationStyle: 'solid',
+                                          },
+                                      }}
+                                  >
+                                      {cellValue}
+                                      <LinkIcon sx={{ fontSize: 12 }} />
+                                  </Box>
+                              </StyledTooltip>
+                          );
+                      }
 
-                    return cellValue;
-                },
-                renderHeader: () => (
-                    <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                {col.name}
-                            </Typography>
-                            {fkInfo && (
-                                <StyledTooltip
-                                    title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
-                                >
-                                    <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                                </StyledTooltip>
-                            )}
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                            {col.dataType}
-                        </Typography>
-                    </Box>
-                ),
-            };
-        })
+                      return cellValue;
+                  },
+                  renderHeader: () => (
+                      <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                  {col.name}
+                              </Typography>
+                              {fkInfo && (
+                                  <StyledTooltip
+                                      title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
+                                  >
+                                      <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                  </StyledTooltip>
+                              )}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                              {col.dataType}
+                          </Typography>
+                      </Box>
+                  ),
+              };
+          })
         : [];
 
     // Removed inline editing - now using modal
@@ -341,21 +339,21 @@ export function DataTab({
     // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
     const rows = result
         ? result.rows.map((row, rowIndex) => {
-            const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
-            // Transform row data to match column field names (col_name_index format)
-            const transformedRow: Record<string, unknown> = {
-                __rowIndex: `row_${globalIndex}`,
-                __originalRow: row, // Keep original row data for operations
-            };
+              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
+              // Transform row data to match column field names (col_name_index format)
+              const transformedRow: Record<string, unknown> = {
+                  __rowIndex: `row_${globalIndex}`,
+                  __originalRow: row, // Keep original row data for operations
+              };
 
-            // Map each column value to its indexed field name
-            result.columns.forEach((col, colIndex) => {
-                const fieldName = `${col.name}_${colIndex}`;
-                transformedRow[fieldName] = row[col.name];
-            });
+              // Map each column value to its indexed field name
+              result.columns.forEach((col, colIndex) => {
+                  const fieldName = `${col.name}_${colIndex}`;
+                  transformedRow[fieldName] = row[col.name];
+              });
 
-            return transformedRow;
-        })
+              return transformedRow;
+          })
         : [];
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
@@ -567,8 +565,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                                ? 'Select 1 row'
-                                                : 'Edit'
+                                              ? 'Select 1 row'
+                                              : 'Edit'
                                     }
                                 >
                                     <span>
@@ -590,8 +588,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length === 1
-                                                ? 'Delete row'
-                                                : 'Delete selected rows'
+                                              ? 'Delete row'
+                                              : 'Delete selected rows'
                                     }
                                 >
                                     <span>
@@ -652,7 +650,7 @@ export function DataTab({
                                             {paginationModel.page * paginationModel.pageSize + 1}-
                                             {Math.min(
                                                 (paginationModel.page + 1) *
-                                                paginationModel.pageSize,
+                                                    paginationModel.pageSize,
                                                 totalRowCount
                                             )}
                                         </Typography>
@@ -682,10 +680,19 @@ export function DataTab({
                                 size="small"
                                 onClick={() => setShowFilters(!showFilters)}
                                 sx={{
-                                    color: showFilters ? 'primary.main' : 'text.secondary',
+                                    color:
+                                        showFilters || filterModel.items.length > 0
+                                            ? 'primary.main'
+                                            : 'text.secondary',
                                 }}
                             >
-                                <FilterListIcon fontSize="small" />
+                                <Badge
+                                    badgeContent={filterModel.items.length}
+                                    color="primary"
+                                    invisible={filterModel.items.length === 0}
+                                >
+                                    <FilterListIcon fontSize="small" />
+                                </Badge>
                             </IconButton>
                         </StyledTooltip>
                         <TextField
@@ -816,149 +823,30 @@ export function DataTab({
                         )}
                     </Box>
 
-                    {/* Inline Filter Panel */}
-                    <Collapse in={showFilters}>
-                        <Box
-                            sx={{
-                                p: 2,
-                                bgcolor: 'background.paper',
-                                borderBottom: 1,
-                                borderColor: 'divider',
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                    Filters
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => {
-                                        const newFilter: GridFilterItem = {
-                                            id: Date.now(),
-                                            field: columns[0]?.field || '',
-                                            operator: 'contains',
-                                            value: '',
-                                        };
-                                        setFilterModel({
-                                            items: [...filterModel.items, newFilter],
-                                        });
-                                    }}
-                                    disabled={columns.length === 0}
-                                >
-                                    Add filter
-                                </Button>
-                                {filterModel.items.length > 0 && (
-                                    <Button
-                                        size="small"
-                                        onClick={() => setFilterModel({ items: [] })}
-                                        color="error"
-                                    >
-                                        Clear all
-                                    </Button>
-                                )}
-                            </Box>
+                    {/* Active Filters Display */}
+                    <ActiveFilters
+                        filterModel={filterModel}
+                        onFilterModelChange={(model) => {
+                            setFilterModel(model);
+                            if (onFilterModelChange) {
+                                onFilterModelChange(model);
+                            }
+                        }}
+                        show={!showFilters}
+                    />
 
-                            {filterModel.items.length === 0 ? (
-                                <Typography variant="body2" color="text.secondary">
-                                    No filters applied. Click &quot;Add filter&quot; to get started.
-                                </Typography>
-                            ) : (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                    {filterModel.items.map((filter, index) => (
-                                        <Box
-                                            key={filter.id}
-                                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                                        >
-                                            {/* Column selector */}
-                                            <FormControl size="small" sx={{ minWidth: 200 }}>
-                                                <Select
-                                                    value={filter.field}
-                                                    onChange={(e) => {
-                                                        const newItems = [...filterModel.items];
-                                                        newItems[index] = {
-                                                            ...filter,
-                                                            field: e.target.value,
-                                                        };
-                                                        setFilterModel({ items: newItems });
-                                                    }}
-                                                >
-                                                    {columns.map((col) => (
-                                                        <MenuItem key={col.field} value={col.field}>
-                                                            {col.headerName}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-
-                                            {/* Operator selector */}
-                                            <FormControl size="small" sx={{ minWidth: 150 }}>
-                                                <Select
-                                                    value={filter.operator}
-                                                    onChange={(e) => {
-                                                        const newItems = [...filterModel.items];
-                                                        newItems[index] = {
-                                                            ...filter,
-                                                            operator: e.target.value,
-                                                        };
-                                                        setFilterModel({ items: newItems });
-                                                    }}
-                                                >
-                                                    <MenuItem value="contains">contains</MenuItem>
-                                                    <MenuItem value="equals">equals</MenuItem>
-                                                    <MenuItem value="startsWith">
-                                                        starts with
-                                                    </MenuItem>
-                                                    <MenuItem value="endsWith">ends with</MenuItem>
-                                                    <MenuItem value="isEmpty">is empty</MenuItem>
-                                                    <MenuItem value="isNotEmpty">
-                                                        is not empty
-                                                    </MenuItem>
-                                                    <MenuItem value=">">{'>'}</MenuItem>
-                                                    <MenuItem value=">=">{'≥'}</MenuItem>
-                                                    <MenuItem value="<">{'<'}</MenuItem>
-                                                    <MenuItem value="<=">{'≤'}</MenuItem>
-                                                </Select>
-                                            </FormControl>
-
-                                            {/* Value input */}
-                                            {filter.operator !== 'isEmpty' &&
-                                                filter.operator !== 'isNotEmpty' && (
-                                                    <TextField
-                                                        size="small"
-                                                        placeholder="Value..."
-                                                        value={filter.value || ''}
-                                                        onChange={(e) => {
-                                                            const newItems = [...filterModel.items];
-                                                            newItems[index] = {
-                                                                ...filter,
-                                                                value: e.target.value,
-                                                            };
-                                                            setFilterModel({ items: newItems });
-                                                        }}
-                                                        sx={{ flex: 1 }}
-                                                    />
-                                                )}
-
-                                            {/* Remove button */}
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    const newItems = filterModel.items.filter(
-                                                        (_, i) => i !== index
-                                                    );
-                                                    setFilterModel({ items: newItems });
-                                                }}
-                                                color="error"
-                                            >
-                                                <CloseIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
-                    </Collapse>
+                    {/* Filter Panel */}
+                    <FilterPanel
+                        open={showFilters}
+                        filterModel={filterModel}
+                        columns={columns}
+                        onFilterModelChange={(model) => {
+                            setFilterModel(model);
+                            if (onFilterModelChange) {
+                                onFilterModelChange(model);
+                            }
+                        }}
+                    />
 
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>

@@ -16,6 +16,7 @@ import {
     DialogContent,
     DialogActions,
     Button,
+    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -30,11 +31,19 @@ import {
     Delete as DeleteIcon,
     CompareArrows as CompareIcon,
     Visibility as ViewIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import {
+    DataGrid,
+    GridColDef,
+    GridRenderCellParams,
+    type GridFilterModel,
+} from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, schemaApi, syncApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
+import { FilterPanel } from '../QueryPage/FilterPanel';
+import { ActiveFilters } from '../QueryPage/ActiveFilters';
 
 interface ActivityDetails {
     connectionId?: string;
@@ -113,6 +122,8 @@ export function ActivityLogTab() {
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [connectionFilter, setConnectionFilter] = useState<string>('all');
     const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
 
     // Fetch data from multiple sources
     const { data: queryHistory = [], isLoading: loadingQueries } = useQuery({
@@ -456,10 +467,46 @@ export function ActivityLogTab() {
 
                 <Box sx={{ flex: 1 }} />
 
+                <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setShowFilters(!showFilters)}
+                        sx={{
+                            color:
+                                showFilters || filterModel.items.length > 0
+                                    ? 'primary.main'
+                                    : 'text.secondary',
+                        }}
+                    >
+                        <Badge
+                            badgeContent={filterModel.items.length}
+                            color="primary"
+                            invisible={filterModel.items.length === 0}
+                        >
+                            <FilterListIcon fontSize="small" />
+                        </Badge>
+                    </IconButton>
+                </StyledTooltip>
+
                 <Typography variant="body2" color="text.secondary">
                     {filteredActivities.length} activities
                 </Typography>
             </Box>
+
+            {/* Active Filters Display */}
+            <ActiveFilters
+                filterModel={filterModel}
+                onFilterModelChange={setFilterModel}
+                show={!showFilters}
+            />
+
+            {/* Filter Panel */}
+            <FilterPanel
+                open={showFilters}
+                filterModel={filterModel}
+                columns={columns}
+                onFilterModelChange={setFilterModel}
+            />
 
             {/* Data Grid */}
             <Box sx={{ flex: 1, minHeight: 400 }}>
@@ -467,6 +514,8 @@ export function ActivityLogTab() {
                     rows={filteredActivities}
                     columns={columns}
                     loading={isLoading}
+                    filterModel={filterModel}
+                    onFilterModelChange={setFilterModel}
                     pageSizeOptions={[25, 50, 100]}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 25 } },
