@@ -81,8 +81,7 @@ export function buildUpdateQuery({
     }
 
     const whereConditions = pkColumns.map(
-        (pk) =>
-            `${quoteIdentifier(pk, engine)} = ${formatSqlValue(oldRow[pk], pk, tableSchema)}`
+        (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(oldRow[pk], pk, tableSchema)}`
     );
 
     return `UPDATE ${tableName} SET ${changes.join(', ')} WHERE ${whereConditions.join(' AND ')};`;

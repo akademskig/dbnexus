@@ -221,10 +221,19 @@ export function AuditLogsTab() {
 
     return (
         <Box
-            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}
+            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 0 }}
         >
             {/* Filters */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    mt: 1,
+                    mb: 2,
+                }}
+            >
                 <TextField
                     size="small"
                     placeholder="Search audit logs..."
