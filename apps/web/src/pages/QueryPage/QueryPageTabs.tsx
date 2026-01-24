@@ -6,6 +6,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import CodeIcon from '@mui/icons-material/Code';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import CodeOffIcon from '@mui/icons-material/CodeOff';
+import type { GridSortModel } from '@mui/x-data-grid';
 import { DataTab } from './DataTab';
 import { StructureTab, IndexesTab, ForeignKeysTab } from './SchemaTabs';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
@@ -28,6 +29,8 @@ interface QueryPageTabsProps {
     readonly totalRowCount: number | null;
     readonly paginationModel: { page: number; pageSize: number };
     readonly onPaginationChange: (model: { page: number; pageSize: number }) => void;
+    readonly sortModel?: GridSortModel;
+    readonly onSortChange?: (model: GridSortModel) => void;
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema: TableSchema | undefined;
@@ -60,6 +63,8 @@ export function QueryPageTabs({
     totalRowCount,
     paginationModel,
     onPaginationChange,
+    sortModel,
+    onSortChange,
     onSearch,
     searchQuery,
     tableSchema,
@@ -219,6 +224,8 @@ export function QueryPageTabs({
                         totalRowCount={totalRowCount}
                         paginationModel={paginationModel}
                         onPaginationChange={onPaginationChange}
+                        sortModel={sortModel}
+                        onSortChange={onSortChange}
                         onSearch={onSearch}
                         searchQuery={searchQuery}
                         tableSchema={tableSchema}

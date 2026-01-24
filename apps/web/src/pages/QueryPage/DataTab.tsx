@@ -21,6 +21,7 @@ import {
     type GridRowId,
     type GridRowModel,
     type GridRowModesModel,
+    type GridSortModel,
     GridRowModes,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -55,6 +56,8 @@ interface DataTabProps {
     readonly totalRowCount: number | null;
     readonly paginationModel: { page: number; pageSize: number };
     readonly onPaginationChange: (model: { page: number; pageSize: number }) => void;
+    readonly sortModel?: GridSortModel;
+    readonly onSortChange?: (model: GridSortModel) => void;
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
@@ -82,6 +85,8 @@ export function DataTab({
     totalRowCount,
     paginationModel,
     onPaginationChange,
+    sortModel = [],
+    onSortChange,
     onSearch,
     searchQuery,
     tableSchema,
@@ -820,6 +825,9 @@ export function DataTab({
                                 rowCount={totalRowCount ?? result.rowCount}
                                 paginationModel={paginationModel}
                                 onPaginationModelChange={onPaginationChange}
+                                sortingMode={totalRowCount !== null ? 'server' : 'client'}
+                                sortModel={sortModel}
+                                onSortModelChange={onSortChange}
                                 pageSizeOptions={[25, 50, 100, 250, 500]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}

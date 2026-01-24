@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
+import type { GridSortModel } from '@mui/x-data-grid';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HistoryIcon from '@mui/icons-material/History';
@@ -93,6 +94,7 @@ export function QueryPage() {
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
+    const [sortModel, setSortModel] = useState<GridSortModel>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
@@ -547,11 +549,28 @@ export function QueryPage() {
             page: number,
             pageSize: number,
             search?: string,
-            schema?: TableSchema | null
+            schema?: TableSchema | null,
+            sort?: GridSortModel
         ) => {
             const offset = page * pageSize;
             const engine = selectedConnection?.engine;
             const tableName = buildTableName(table.schema, table.name, engine);
+
+            // Build ORDER BY clause
+            let orderByClause = '';
+            if (sort && sort.length > 0) {
+                const orderByParts = sort
+                    .filter((s) => s.sort)
+                    .map((s) => {
+                        // Remove the column index suffix (_0, _1, etc.) to get original column name
+                        const originalField = s.field.replace(/_\d+$/, '');
+                        const quotedField = quoteIdentifier(originalField, engine);
+                        return `${quotedField} ${s.sort!.toUpperCase()}`;
+                    });
+                if (orderByParts.length > 0) {
+                    orderByClause = ` ORDER BY ${orderByParts.join(', ')}`;
+                }
+            }
 
             let query: string;
             if (search && search.trim() && schema?.columns.length) {
@@ -583,12 +602,12 @@ export function QueryPage() {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
                         }
                     });
-                    query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')} LIMIT ${pageSize} OFFSET ${offset};`;
+                    query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
                 } else {
-                    query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
+                    query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
                 }
             } else {
-                query = `SELECT * FROM ${tableName} LIMIT ${pageSize} OFFSET ${offset};`;
+                query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
             }
             setSql(query);
             executeMutation.mutate({ query });
@@ -616,6 +635,7 @@ export function QueryPage() {
                 setTotalRowCount(null);
             }
 
+            setSortModel([]);
             fetchTableData(table, 0, paginationModel.pageSize);
         },
         [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
@@ -631,11 +651,32 @@ export function QueryPage() {
                     newModel.page,
                     newModel.pageSize,
                     searchQuery,
-                    tableSchema
+                    tableSchema,
+                    sortModel
                 );
             }
         },
-        [selectedTable, fetchTableData, searchQuery, tableSchema]
+        [selectedTable, fetchTableData, searchQuery, tableSchema, sortModel]
+    );
+
+    // Handle sort change
+    const handleSortChange = useCallback(
+        (newSortModel: GridSortModel) => {
+            const validSort = newSortModel.filter((s) => s.sort) as GridSortModel;
+            setSortModel(validSort);
+            setPaginationModel((prev) => ({ ...prev, page: 0 }));
+            if (selectedTable) {
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    searchQuery,
+                    tableSchema,
+                    validSort
+                );
+            }
+        },
+        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema]
     );
 
     // Handle search
@@ -659,10 +700,10 @@ export function QueryPage() {
                         setTotalRowCount(null);
                     }
                 }
-                fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema);
+                fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema, sortModel);
             }
         },
-        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema]
+        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema, sortModel]
     );
 
     // Filter tables by search
@@ -715,7 +756,8 @@ export function QueryPage() {
                                 paginationModel.page,
                                 paginationModel.pageSize,
                                 searchQuery,
-                                tableSchema
+                                tableSchema,
+                                sortModel
                             );
                         }
                     },
@@ -731,6 +773,7 @@ export function QueryPage() {
             fetchTableData,
             paginationModel,
             searchQuery,
+            sortModel,
             toast,
         ]
     );
@@ -860,7 +903,8 @@ export function QueryPage() {
                                     paginationModel.page,
                                     paginationModel.pageSize,
                                     searchQuery,
-                                    tableSchema
+                                    tableSchema,
+                                    sortModel
                                 );
                             } else {
                                 // For raw queries, re-run the original query
@@ -886,6 +930,7 @@ export function QueryPage() {
             fetchTableData,
             paginationModel,
             searchQuery,
+            sortModel,
             formatSqlValue,
             toast,
             sql,
@@ -932,7 +977,8 @@ export function QueryPage() {
                             paginationModel.page,
                             paginationModel.pageSize,
                             searchQuery,
-                            tableSchema
+                            tableSchema,
+                            sortModel
                         );
                     }
                     if (totalRowCount !== null) {
@@ -953,6 +999,7 @@ export function QueryPage() {
         fetchTableData,
         paginationModel,
         searchQuery,
+        sortModel,
         formatSqlValue,
         totalRowCount,
         toast,
@@ -998,7 +1045,8 @@ export function QueryPage() {
                             paginationModel.page,
                             paginationModel.pageSize,
                             searchQuery,
-                            tableSchema
+                            tableSchema,
+                            sortModel
                         );
                     }
                     if (totalRowCount !== null) {
@@ -1023,6 +1071,7 @@ export function QueryPage() {
         fetchTableData,
         paginationModel,
         searchQuery,
+        sortModel,
         formatSqlValue,
         totalRowCount,
         toast,
@@ -1246,6 +1295,8 @@ export function QueryPage() {
                                             totalRowCount={totalRowCount}
                                             paginationModel={paginationModel}
                                             onPaginationChange={handlePaginationChange}
+                                            sortModel={sortModel}
+                                            onSortChange={handleSortChange}
                                             onSearch={handleSearch}
                                             searchQuery={searchQuery}
                                             tableSchema={tableSchema}
@@ -1322,6 +1373,8 @@ export function QueryPage() {
                                     totalRowCount={totalRowCount}
                                     paginationModel={paginationModel}
                                     onPaginationChange={handlePaginationChange}
+                                    sortModel={sortModel}
+                                    onSortChange={handleSortChange}
                                     onSearch={handleSearch}
                                     searchQuery={searchQuery}
                                     tableSchema={tableSchema}
