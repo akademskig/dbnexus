@@ -32,12 +32,7 @@ import {
     Settings as SettingsIcon,
     FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import {
-    DataGrid,
-    GridColDef,
-    GridRenderCellParams,
-    type GridFilterModel,
-} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, auditApi, type AuditLogEntry } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
@@ -314,6 +309,7 @@ export function AuditLogsTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
+                sx={{ px: 0, py: 1 }}
             />
 
             {/* Filter Panel */}
@@ -322,6 +318,7 @@ export function AuditLogsTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
+                sx={{ px: 0, pt: 0.5, pb: 1 }}
             />
 
             {/* Data Grid */}

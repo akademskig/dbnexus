@@ -18,14 +18,10 @@ interface FilterPanelProps {
     readonly filterModel: GridFilterModel;
     readonly columns: GridColDef[];
     readonly onFilterModelChange: (model: GridFilterModel) => void;
+    readonly sx?: Record<string, unknown>;
 }
 
-export function FilterPanel({
-    open,
-    filterModel,
-    columns,
-    onFilterModelChange,
-}: FilterPanelProps) {
+export function FilterPanel({ open, filterModel, columns, onFilterModelChange, sx }: FilterPanelProps) {
     const handleAddFilter = () => {
         const newFilter: GridFilterItem = {
             id: Date.now(),
@@ -66,6 +62,7 @@ export function FilterPanel({
                     bgcolor: 'background.paper',
                     borderBottom: 1,
                     borderColor: 'divider',
+                    ...sx,
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>

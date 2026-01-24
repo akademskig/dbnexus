@@ -28,12 +28,7 @@ import {
     Visibility as ViewIcon,
     FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import {
-    DataGrid,
-    GridColDef,
-    GridRenderCellParams,
-    type GridFilterModel,
-} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
@@ -411,6 +406,7 @@ export function QueryHistoryTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
+                sx={{ px: 0, py: 1 }}
             />
 
             {/* Filter Panel */}
@@ -419,6 +415,7 @@ export function QueryHistoryTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
+                sx={{ px: 0, pt: 0.5, pb: 1 }}
             />
 
             {/* Data Grid */}

@@ -33,12 +33,7 @@ import {
     Visibility as ViewIcon,
     FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import {
-    DataGrid,
-    GridColDef,
-    GridRenderCellParams,
-    type GridFilterModel,
-} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { connectionsApi, queriesApi, schemaApi, syncApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
@@ -498,6 +493,7 @@ export function ActivityLogTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
+                sx={{ px: 0, py: 1 }}
             />
 
             {/* Filter Panel */}
@@ -506,6 +502,7 @@ export function ActivityLogTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
+                sx={{ px: 0, pt: 0.5, pb: 1 }}
             />
 
             {/* Data Grid */}

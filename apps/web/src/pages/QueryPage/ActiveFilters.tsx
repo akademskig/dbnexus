@@ -5,9 +5,10 @@ interface ActiveFiltersProps {
     readonly filterModel: GridFilterModel;
     readonly onFilterModelChange: (model: GridFilterModel) => void;
     readonly show: boolean;
+    readonly sx?: Record<string, unknown>;
 }
 
-export function ActiveFilters({ filterModel, onFilterModelChange, show }: ActiveFiltersProps) {
+export function ActiveFilters({ filterModel, onFilterModelChange, show, sx }: ActiveFiltersProps) {
     if (!show || filterModel.items.length === 0) {
         return null;
     }
@@ -56,6 +57,7 @@ export function ActiveFilters({ filterModel, onFilterModelChange, show }: Active
                 borderBottom: 1,
                 borderColor: 'divider',
                 flexWrap: 'wrap',
+                ...sx,
             }}
         >
             <Typography variant="caption" color="text.secondary">
@@ -66,9 +68,7 @@ export function ActiveFilters({ filterModel, onFilterModelChange, show }: Active
                 const cleanFieldName = filter.field.replace(/_\d+$/, '');
                 const operatorLabel = getOperatorLabel(filter.operator);
                 const valueDisplay =
-                    filter.value !== undefined && filter.value !== ''
-                        ? ` "${filter.value}"`
-                        : '';
+                    filter.value !== undefined && filter.value !== '' ? ` "${filter.value}"` : '';
 
                 return (
                     <Chip

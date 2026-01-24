@@ -30,12 +30,7 @@ import {
     ArrowForward as ArrowIcon,
     FilterList as FilterListIcon,
 } from '@mui/icons-material';
-import {
-    DataGrid,
-    GridColDef,
-    GridRenderCellParams,
-    type GridFilterModel,
-} from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
 import { useQuery } from '@tanstack/react-query';
 import { syncApi, SyncRun, connectionsApi, groupsApi } from '../../lib/api';
 import { StatusAlert } from '@/components/StatusAlert';
@@ -458,6 +453,7 @@ export function SyncRunsTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
+                sx={{ px: 0, py: 1 }}
             />
 
             {/* Filter Panel */}
@@ -466,6 +462,7 @@ export function SyncRunsTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
+                sx={{ px: 0, pt: 0.5, pb: 1 }}
             />
 
             {/* Data Grid */}
