@@ -12,10 +12,10 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
+    Badge,
     darken,
     useTheme,
     Theme,
-    Badge,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -25,6 +25,7 @@ import {
     type GridRowId,
     type GridSortModel,
     type GridFilterModel,
+    type GridRowParams,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -117,7 +118,6 @@ export function DataTab({
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
-
     // Use external state if provided, otherwise use local state
     const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
     const filterModel = externalFilterModel || internalFilterModel;
@@ -131,8 +131,6 @@ export function DataTab({
     // Wrap pagination change handler to ensure it's called
     const handlePaginationModelChange = useCallback(
         (model: { page: number; pageSize: number }) => {
-            console.log('Pagination model changed:', model);
-
             // If page size changed, reset to page 0 to avoid invalid page numbers
             if (model.pageSize !== paginationModel.pageSize) {
                 onPaginationChange({ page: 0, pageSize: model.pageSize });
@@ -167,7 +165,7 @@ export function DataTab({
     const hasSelectedRows = selectedRowIds.length > 0;
 
     // Modal-based editing handlers
-    const handleRowDoubleClick = (params: any) => {
+    const handleRowDoubleClick = (params: GridRowParams) => {
         if (!canEditRows) return;
         const originalRow = params.row.__originalRow as Record<string, unknown>;
         setEditingRow(originalRow);
@@ -424,7 +422,7 @@ export function DataTab({
             tableName || 'query',
         ];
         // Sanitize filename parts (remove special characters)
-        const sanitized = parts.map((p) => p.replace(/[^a-zA-Z0-9_-]/g, '_')).join('-');
+        const sanitized = parts.map((p) => p.replaceAll(/[^a-zA-Z0-9_-]/g, '_')).join('-');
         return `${sanitized}.${extension}`;
     };
 
@@ -451,11 +449,11 @@ export function DataTab({
                         const val = row[h];
                         if (val === null || val === undefined) return '';
                         if (typeof val === 'object')
-                            return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+                            return `"${JSON.stringify(val).replaceAll('"', '""')}"`;
                         const str = String(val);
                         // Escape quotes and wrap in quotes if contains comma, newline, or quote
                         if (str.includes(',') || str.includes('\n') || str.includes('"')) {
-                            return `"${str.replace(/"/g, '""')}"`;
+                            return `"${str.replaceAll('"', '""')}"`;
                         }
                         return str;
                     })
@@ -883,12 +881,21 @@ export function DataTab({
                                 sx={{
                                     border: 'none',
                                     borderRadius: 0,
-                                    bgcolor: darken(theme.palette.background.paper, 0),
+                                    bgcolor:
+                                        theme.palette.mode === 'dark'
+                                            ? darken(theme.palette.background.paper, 0.2)
+                                            : theme.palette.background.paper,
                                     '& .MuiDataGrid-cell': {
                                         fontFamily: 'monospace',
                                         fontSize: 12,
                                         display: 'flex',
                                         alignItems: 'center',
+                                        borderColor: 'divider',
+                                    },
+                                    '& .MuiDataGrid-row': {
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                        },
                                     },
                                     '& .MuiDataGrid-columnHeaders': {
                                         bgcolor: 'background.default',
@@ -909,6 +916,19 @@ export function DataTab({
                                     '& .MuiDataGrid-footerContainer': {
                                         borderRadius: 0,
                                         bgcolor: 'background.default',
+                                        minHeight: 'auto',
+                                    },
+                                    '& .MuiTablePagination-root': {
+                                        overflow: 'visible',
+                                    },
+                                    '& .MuiTablePagination-selectLabel': {
+                                        mb: 0,
+                                    },
+                                    '& .MuiTablePagination-select': {
+                                        pb: 0,
+                                    },
+                                    '& .MuiTablePagination-displayedRows': {
+                                        mb: 0,
                                     },
                                     '& .MuiDataGrid-cell--editing': {
                                         bgcolor: 'action.selected',

@@ -230,7 +230,7 @@ export function AuditLogsTab() {
                     placeholder="Search audit logs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ minWidth: 300, }}
+                    sx={{ minWidth: 300 }}
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
@@ -349,6 +349,13 @@ export function AuditLogsTab() {
                                 fontSize: 12,
                                 display: 'flex',
                                 alignItems: 'center',
+                                borderBottom: '0.5px solid',
+                                borderColor: 'divider',
+                            },
+                            '& .MuiDataGrid-row': {
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                },
                             },
                             '& .MuiDataGrid-columnHeader': {
                                 display: 'flex',

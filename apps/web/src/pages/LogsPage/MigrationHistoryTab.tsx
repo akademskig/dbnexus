@@ -448,6 +448,13 @@ export function MigrationHistoryTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-row': {
+                            '&:hover': {
+                                bgcolor: 'action.hover',
+                            },
                         },
                     }}
                 />
