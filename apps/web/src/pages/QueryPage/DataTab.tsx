@@ -15,6 +15,9 @@ import {
     Collapse,
     Select,
     FormControl,
+    darken,
+    useTheme,
+    Theme,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -22,12 +25,9 @@ import {
     type GridColDef,
     type GridRenderCellParams,
     type GridRowId,
-    type GridRowModel,
-    type GridRowModesModel,
     type GridSortModel,
     type GridFilterModel,
     type GridFilterItem,
-    GridRowModes,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -35,8 +35,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -46,6 +44,7 @@ import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
 import LinkIcon from '@mui/icons-material/Link';
 import { StatusAlert } from '@/components/StatusAlert';
+import { EditRowDialog } from './EditRowDialog';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -106,18 +105,20 @@ export function DataTab({
     searchQuery,
     tableSchema,
     onUpdateRow,
-    onDeleteRow,
-    onDeleteRows,
-    onSyncRow,
+    onDeleteRow: _onDeleteRow,
+    onDeleteRows: _onDeleteRows,
+    onSyncRow: _onSyncRow,
     onForeignKeyClick,
     connectionHost,
     connectionDatabase,
     tableName,
 }: DataTabProps) {
+    const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
-    const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
 
     // Use external state if provided, otherwise use local state
     const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
@@ -125,7 +126,7 @@ export function DataTab({
     const setFilterModel = onFilterModelChange || setInternalFilterModel;
 
     const showFilters = externalShowFilters;
-    const setShowFilters = onShowFiltersChange || (() => {});
+    const setShowFilters = onShowFiltersChange || (() => { });
 
     const toast = useToastStore();
 
@@ -152,11 +153,11 @@ export function DataTab({
     const inferredPrimaryKeys =
         !tableSchema && result?.columns
             ? result.columns
-                  .filter((col) => {
-                      const name = col.name.toLowerCase();
-                      return name === 'id' || name === 'version' || name.endsWith('_id');
-                  })
-                  .map((col) => col.name)
+                .filter((col) => {
+                    const name = col.name.toLowerCase();
+                    return name === 'id' || name === 'version' || name.endsWith('_id');
+                })
+                .map((col) => col.name)
             : [];
 
     const effectivePrimaryKeys =
@@ -167,41 +168,26 @@ export function DataTab({
     // Check if we have any selected rows
     const hasSelectedRows = selectedRowIds.length > 0;
 
-    const handleSaveClick = (id: GridRowId) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+    // Modal-based editing handlers
+    const handleRowDoubleClick = (params: any) => {
+        if (!canEditRows) return;
+        const originalRow = params.row.__originalRow as Record<string, unknown>;
+        setEditingRow(originalRow);
+        setEditDialogOpen(true);
     };
 
-    const handleCancelClick = (id: GridRowId) => () => {
-        setRowModesModel({
-            ...rowModesModel,
-            [id]: { mode: GridRowModes.View, ignoreModifications: true },
-        });
+    const handleEditDialogClose = () => {
+        setEditDialogOpen(false);
+        setEditingRow(null);
     };
 
-    const processRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
-        if (onUpdateRow && result) {
-            // Convert transformed row data back to original format
-            const oldOriginal = oldRow.__originalRow as Record<string, unknown>;
-            const newOriginal: Record<string, unknown> = {};
-
-            result.columns.forEach((col, colIndex) => {
-                const fieldName = `${col.name}_${colIndex}`;
-                newOriginal[col.name] = newRow[fieldName];
-            });
-
-            await onUpdateRow(oldOriginal, newOriginal);
-
-            // Update the __originalRow with new data
-            return {
-                ...newRow,
-                __originalRow: newOriginal,
-            };
+    const handleEditDialogSave = async (
+        originalRow: Record<string, unknown>,
+        updatedRow: Record<string, unknown>
+    ) => {
+        if (onUpdateRow) {
+            await onUpdateRow(originalRow, updatedRow);
         }
-        return newRow;
-    };
-
-    const handleProcessRowUpdateError = (err: Error) => {
-        console.error('Row update error:', err);
     };
 
     // Check if a column type is JSON-like
@@ -253,103 +239,100 @@ export function DataTab({
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col, colIndex) => {
-              const isPrimaryKey = primaryKeyColumns.includes(col.name);
-              const isJson = isJsonColumn(col.dataType);
-              // JSON columns are edited via dialog, not inline; PK columns are not editable
-              const isEditable = canEditRows && !isPrimaryKey && !isJson;
-              // JSON columns can be edited via dialog if we have edit capability
-              const canEditJson = canEditRows && !isPrimaryKey && isJson;
-              // Check if this column is a foreign key
-              const fkInfo = columnToForeignKey.get(col.name);
+            const isPrimaryKey = primaryKeyColumns.includes(col.name);
+            const isJson = isJsonColumn(col.dataType);
+            // JSON columns are edited via dialog, not inline; PK columns are not editable
+            const isEditable = canEditRows && !isPrimaryKey && !isJson;
+            // JSON columns can be edited via dialog if we have edit capability
+            const canEditJson = canEditRows && !isPrimaryKey && isJson;
+            // Check if this column is a foreign key
+            const fkInfo = columnToForeignKey.get(col.name);
 
-              // Ensure unique field names by appending index if there are duplicates
-              const fieldName = `${col.name}_${colIndex}`;
+            // Ensure unique field names by appending index if there are duplicates
+            const fieldName = `${col.name}_${colIndex}`;
 
-              return {
-                  field: fieldName,
-                  headerName: col.name,
-                  description: col.dataType,
-                  flex: 1,
-                  minWidth: 120,
-                  editable: isEditable,
-                  renderCell: (params: GridRenderCellParams) => {
-                      const cellValue = (
-                          <CellValue
-                              value={params.value}
-                              onSaveJson={
-                                  canEditJson
-                                      ? (newValue) =>
-                                            handleJsonCellSave(
-                                                params.row.__originalRow as Record<string, unknown>,
-                                                col.name,
-                                                newValue
-                                            )
-                                      : undefined
-                              }
-                          />
-                      );
-                      // If this is a FK column and we have a click handler, make it clickable
-                      if (fkInfo && onForeignKeyClick && params.value !== null) {
-                          return (
-                              <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
-                                  <Box
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          onForeignKeyClick({
-                                              referencedTable: fkInfo.referencedTable,
-                                              referencedColumn: fkInfo.referencedColumns[0] ?? '',
-                                              value: params.value,
-                                          });
-                                      }}
-                                      sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
-                                          cursor: 'pointer',
-                                          color: 'primary.main',
-                                          textDecoration: 'underline',
-                                          textDecorationStyle: 'dotted',
-                                          '&:hover': {
-                                              textDecorationStyle: 'solid',
-                                          },
-                                      }}
-                                  >
-                                      {cellValue}
-                                      <LinkIcon sx={{ fontSize: 12 }} />
-                                  </Box>
-                              </StyledTooltip>
-                          );
-                      }
+            return {
+                field: fieldName,
+                headerName: col.name,
+                description: col.dataType,
+                flex: 1,
+                minWidth: 120,
+                editable: isEditable,
+                renderCell: (params: GridRenderCellParams) => {
+                    const cellValue = (
+                        <CellValue
+                            value={params.value}
+                            onSaveJson={
+                                canEditJson
+                                    ? (newValue) =>
+                                        handleJsonCellSave(
+                                            params.row.__originalRow as Record<string, unknown>,
+                                            col.name,
+                                            newValue
+                                        )
+                                    : undefined
+                            }
+                        />
+                    );
+                    // If this is a FK column and we have a click handler, make it clickable
+                    if (fkInfo && onForeignKeyClick && params.value !== null) {
+                        return (
+                            <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
+                                <Box
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onForeignKeyClick({
+                                            referencedTable: fkInfo.referencedTable,
+                                            referencedColumn: fkInfo.referencedColumns[0] ?? '',
+                                            value: params.value,
+                                        });
+                                    }}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        cursor: 'pointer',
+                                        color: 'primary.main',
+                                        textDecoration: 'underline',
+                                        textDecorationStyle: 'dotted',
+                                        '&:hover': {
+                                            textDecorationStyle: 'solid',
+                                        },
+                                    }}
+                                >
+                                    {cellValue}
+                                    <LinkIcon sx={{ fontSize: 12 }} />
+                                </Box>
+                            </StyledTooltip>
+                        );
+                    }
 
-                      return cellValue;
-                  },
-                  renderHeader: () => (
-                      <Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Typography variant="body2" fontWeight={600}>
-                                  {col.name}
-                              </Typography>
-                              {fkInfo && (
-                                  <StyledTooltip
-                                      title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
-                                  >
-                                      <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                                  </StyledTooltip>
-                              )}
-                          </Box>
-                          <Typography variant="caption" color="text.secondary">
-                              {col.dataType}
-                          </Typography>
-                      </Box>
-                  ),
-              };
-          })
+                    return cellValue;
+                },
+                renderHeader: () => (
+                    <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                                {col.name}
+                            </Typography>
+                            {fkInfo && (
+                                <StyledTooltip
+                                    title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
+                                >
+                                    <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                </StyledTooltip>
+                            )}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                            {col.dataType}
+                        </Typography>
+                    </Box>
+                ),
+            };
+        })
         : [];
 
-    // Get the currently editing row id (if any)
-    const editingRowId = Object.entries(rowModesModel).find(
-        ([, mode]) => mode.mode === GridRowModes.Edit
-    )?.[0];
+    // Removed inline editing - now using modal
 
     const columns: GridColDef[] = dataColumns;
 
@@ -358,21 +341,21 @@ export function DataTab({
     // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
     const rows = result
         ? result.rows.map((row, rowIndex) => {
-              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
-              // Transform row data to match column field names (col_name_index format)
-              const transformedRow: Record<string, unknown> = {
-                  __rowIndex: `row_${globalIndex}`,
-                  __originalRow: row, // Keep original row data for operations
-              };
+            const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
+            // Transform row data to match column field names (col_name_index format)
+            const transformedRow: Record<string, unknown> = {
+                __rowIndex: `row_${globalIndex}`,
+                __originalRow: row, // Keep original row data for operations
+            };
 
-              // Map each column value to its indexed field name
-              result.columns.forEach((col, colIndex) => {
-                  const fieldName = `${col.name}_${colIndex}`;
-                  transformedRow[fieldName] = row[col.name];
-              });
+            // Map each column value to its indexed field name
+            result.columns.forEach((col, colIndex) => {
+                const fieldName = `${col.name}_${colIndex}`;
+                transformedRow[fieldName] = row[col.name];
+            });
 
-              return transformedRow;
-          })
+            return transformedRow;
+        })
         : [];
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
@@ -401,9 +384,14 @@ export function DataTab({
 
     // Handle toolbar actions
     const handleEditSelected = () => {
-        if (selectedRowIds.length === 1) {
+        if (selectedRowIds.length === 1 && result) {
             const id = selectedRowIds[0];
-            setRowModesModel({ [String(id)]: { mode: GridRowModes.Edit } });
+            const row = rows.find((r) => r.__rowIndex === id);
+            if (row) {
+                const originalRow = row.__originalRow as Record<string, unknown>;
+                setEditingRow(originalRow);
+                setEditDialogOpen(true);
+            }
         }
     };
 
@@ -417,16 +405,16 @@ export function DataTab({
             );
 
         if (selectedRows.length === 1 && selectedRows[0]) {
-            onDeleteRow?.(selectedRows[0]);
+            _onDeleteRow?.(selectedRows[0]);
         } else if (selectedRows.length > 1) {
-            onDeleteRows?.(selectedRows);
+            _onDeleteRows?.(selectedRows);
         }
     };
 
     const handleSyncSelected = () => {
         const selectedRows = getSelectedRows();
-        if (selectedRows.length > 0 && onSyncRow) {
-            onSyncRow(selectedRows);
+        if (selectedRows.length > 0 && _onSyncRow) {
+            _onSyncRow(selectedRows);
         }
     };
 
@@ -566,36 +554,7 @@ export function DataTab({
                         }}
                     >
                         {/* Left side: Stats or Selection info */}
-                        {editingRowId ? (
-                            <>
-                                <Typography
-                                    variant="body2"
-                                    color="warning.main"
-                                    sx={{ fontWeight: 500 }}
-                                >
-                                    Editing row...
-                                </Typography>
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={<SaveIcon />}
-                                    onClick={handleSaveClick(editingRowId)}
-                                    sx={{ minWidth: 'auto', px: 1.5 }}
-                                >
-                                    Save
-                                </Button>
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    startIcon={<CancelIcon />}
-                                    onClick={handleCancelClick(editingRowId)}
-                                    sx={{ minWidth: 'auto', px: 1.5 }}
-                                >
-                                    Cancel
-                                </Button>
-                            </>
-                        ) : hasSelectedRows ? (
+                        {hasSelectedRows ? (
                             <>
                                 <Chip
                                     label={`${selectedRowIds.length} selected`}
@@ -608,8 +567,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                              ? 'Select 1 row'
-                                              : 'Edit'
+                                                ? 'Select 1 row'
+                                                : 'Edit'
                                     }
                                 >
                                     <span>
@@ -631,8 +590,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length === 1
-                                              ? 'Delete row'
-                                              : 'Delete selected rows'
+                                                ? 'Delete row'
+                                                : 'Delete selected rows'
                                     }
                                 >
                                     <span>
@@ -643,8 +602,8 @@ export function DataTab({
                                             disabled={
                                                 !canEditRows ||
                                                 selectedRowIds.length === 0 ||
-                                                (!onDeleteRow && !onDeleteRows) ||
-                                                (selectedRowIds.length > 1 && !onDeleteRows)
+                                                (!_onDeleteRow && !_onDeleteRows) ||
+                                                (selectedRowIds.length > 1 && !_onDeleteRows)
                                             }
                                         >
                                             <DeleteIcon fontSize="small" />
@@ -663,7 +622,7 @@ export function DataTab({
                                             size="small"
                                             color="primary"
                                             onClick={handleSyncSelected}
-                                            disabled={!canEditRows || !onSyncRow}
+                                            disabled={!canEditRows || !_onSyncRow}
                                         >
                                             <SyncIcon fontSize="small" />
                                         </IconButton>
@@ -693,7 +652,7 @@ export function DataTab({
                                             {paginationModel.page * paginationModel.pageSize + 1}-
                                             {Math.min(
                                                 (paginationModel.page + 1) *
-                                                    paginationModel.pageSize,
+                                                paginationModel.pageSize,
                                                 totalRowCount
                                             )}
                                         </Typography>
@@ -1031,15 +990,12 @@ export function DataTab({
                                 }
                                 sortModel={sortModel}
                                 onSortModelChange={onSortChange}
-                                pageSizeOptions={[25, 50, 100, { value: -1, label: 'All' }]}
-                                editMode="row"
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={setRowModesModel}
-                                processRowUpdate={processRowUpdate}
-                                onProcessRowUpdateError={handleProcessRowUpdateError}
+                                pageSizeOptions={[25, 50, 100]}
+                                onRowDoubleClick={handleRowDoubleClick}
                                 sx={{
                                     border: 'none',
                                     borderRadius: 0,
+                                    bgcolor: darken(theme.palette.background.paper, 0),
                                     '& .MuiDataGrid-cell': {
                                         fontFamily: 'monospace',
                                         fontSize: 12,
@@ -1047,10 +1003,14 @@ export function DataTab({
                                         alignItems: 'center',
                                     },
                                     '& .MuiDataGrid-columnHeaders': {
-                                        bgcolor: 'background.paper',
+                                        bgcolor: 'background.default',
                                         borderRadius: 0,
+                                        minHeight: '56px !important',
+                                        maxHeight: '56px !important',
                                     },
                                     '& .MuiDataGrid-columnHeader': {
+                                        minHeight: '56px !important',
+                                        maxHeight: '56px !important',
                                         '&:focus': {
                                             outline: 'none',
                                         },
@@ -1058,11 +1018,9 @@ export function DataTab({
                                     '& .MuiDataGrid-cell:focus': {
                                         outline: 'none',
                                     },
-                                    '& .MuiDataGrid-row:hover': {
-                                        bgcolor: 'action.hover',
-                                    },
                                     '& .MuiDataGrid-footerContainer': {
                                         borderRadius: 0,
+                                        bgcolor: 'background.default',
                                     },
                                     '& .MuiDataGrid-cell--editing': {
                                         bgcolor: 'action.selected',
@@ -1091,6 +1049,15 @@ export function DataTab({
                     <Typography variant="body2">Loading data...</Typography>
                 </Box>
             )}
+
+            {/* Edit Row Dialog */}
+            <EditRowDialog
+                open={editDialogOpen}
+                row={editingRow}
+                schema={tableSchema}
+                onClose={handleEditDialogClose}
+                onSave={handleEditDialogSave}
+            />
         </Box>
     );
 }
