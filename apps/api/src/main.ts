@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module.js';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,7 +61,7 @@ async function bootstrap() {
             });
 
             // Serve index.html for all non-API routes (SPA fallback)
-            app.use((req: any, res: any, next: any) => {
+            app.use((req: Request, res: Response, next: NextFunction) => {
                 if (req.path.startsWith('/api')) {
                     next();
                 } else {

@@ -18,6 +18,7 @@ function startApiServer(): Promise<void> {
             ? path.join(__dirname, '..', '..', 'api', 'dist', 'main.js')
             : path.join(process.resourcesPath, 'api', 'main.js');
 
+        // eslint-disable-next-line no-console
         console.log('Starting API server from:', apiPath);
 
         apiProcess = spawn('node', [apiPath], {
@@ -31,6 +32,7 @@ function startApiServer(): Promise<void> {
         });
 
         apiProcess.stdout?.on('data', (data) => {
+            // eslint-disable-next-line no-console
             console.log(`API: ${data}`);
             if (data.toString().includes('running on')) {
                 resolve();
@@ -47,6 +49,7 @@ function startApiServer(): Promise<void> {
         });
 
         apiProcess.on('exit', (code) => {
+            // eslint-disable-next-line no-console
             console.log(`API process exited with code ${code}`);
             if (code !== 0 && code !== null) {
                 reject(new Error(`API exited with code ${code}`));

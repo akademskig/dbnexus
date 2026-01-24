@@ -153,6 +153,7 @@ export function skipIfNoDocker(containerType: 'postgres' | 'staging' | 'mysql') 
     return async () => {
         const status = await checkDockerContainers();
         if (!status[containerType]) {
+            // eslint-disable-next-line no-console
             console.log(
                 `⚠️  Skipping test: ${containerType} container not running. Run 'docker compose up -d' first.`
             );
