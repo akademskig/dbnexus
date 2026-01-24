@@ -555,9 +555,12 @@ export function QueryPage() {
             sort?: GridSortModel,
             filters?: GridFilterModel
         ) => {
-            const offset = page * pageSize;
             const engine = selectedConnection?.engine;
             const tableName = buildTableName(table.schema, table.name, engine);
+
+            // Handle "All" option (pageSize = -1)
+            const isAllRows = pageSize === -1;
+            const offset = isAllRows ? 0 : page * pageSize;
 
             // Build WHERE clause from filters
             const filterConditions: string[] = [];
@@ -760,10 +763,12 @@ export function QueryPage() {
             }
 
             // Build final query with WHERE clause if there are conditions
+            const limitClause = isAllRows ? '' : ` LIMIT ${pageSize} OFFSET ${offset}`;
+
             if (allConditions.length > 0) {
-                query = `SELECT * FROM ${tableName} WHERE ${allConditions.join(' AND ')}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
+                query = `SELECT * FROM ${tableName} WHERE ${allConditions.join(' AND ')}${orderByClause}${limitClause};`;
             } else {
-                query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
+                query = `SELECT * FROM ${tableName}${orderByClause}${limitClause};`;
             }
 
             setSql(query);

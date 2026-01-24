@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -125,9 +125,24 @@ export function DataTab({
     const setFilterModel = onFilterModelChange || setInternalFilterModel;
 
     const showFilters = externalShowFilters;
-    const setShowFilters = onShowFiltersChange || (() => { });
+    const setShowFilters = onShowFiltersChange || (() => {});
 
     const toast = useToastStore();
+
+    // Wrap pagination change handler to ensure it's called
+    const handlePaginationModelChange = useCallback(
+        (model: { page: number; pageSize: number }) => {
+            console.log('Pagination model changed:', model);
+
+            // If page size changed, reset to page 0 to avoid invalid page numbers
+            if (model.pageSize !== paginationModel.pageSize) {
+                onPaginationChange({ page: 0, pageSize: model.pageSize });
+            } else {
+                onPaginationChange(model);
+            }
+        },
+        [onPaginationChange, paginationModel.pageSize]
+    );
 
     // Get primary key columns for identifying rows
     const primaryKeyColumns =
@@ -137,11 +152,11 @@ export function DataTab({
     const inferredPrimaryKeys =
         !tableSchema && result?.columns
             ? result.columns
-                .filter((col) => {
-                    const name = col.name.toLowerCase();
-                    return name === 'id' || name === 'version' || name.endsWith('_id');
-                })
-                .map((col) => col.name)
+                  .filter((col) => {
+                      const name = col.name.toLowerCase();
+                      return name === 'id' || name === 'version' || name.endsWith('_id');
+                  })
+                  .map((col) => col.name)
             : [];
 
     const effectivePrimaryKeys =
@@ -238,97 +253,97 @@ export function DataTab({
     // Convert result to DataGrid format
     const dataColumns: GridColDef[] = result
         ? result.columns.map((col, colIndex) => {
-            const isPrimaryKey = primaryKeyColumns.includes(col.name);
-            const isJson = isJsonColumn(col.dataType);
-            // JSON columns are edited via dialog, not inline; PK columns are not editable
-            const isEditable = canEditRows && !isPrimaryKey && !isJson;
-            // JSON columns can be edited via dialog if we have edit capability
-            const canEditJson = canEditRows && !isPrimaryKey && isJson;
-            // Check if this column is a foreign key
-            const fkInfo = columnToForeignKey.get(col.name);
+              const isPrimaryKey = primaryKeyColumns.includes(col.name);
+              const isJson = isJsonColumn(col.dataType);
+              // JSON columns are edited via dialog, not inline; PK columns are not editable
+              const isEditable = canEditRows && !isPrimaryKey && !isJson;
+              // JSON columns can be edited via dialog if we have edit capability
+              const canEditJson = canEditRows && !isPrimaryKey && isJson;
+              // Check if this column is a foreign key
+              const fkInfo = columnToForeignKey.get(col.name);
 
-            // Ensure unique field names by appending index if there are duplicates
-            const fieldName = `${col.name}_${colIndex}`;
+              // Ensure unique field names by appending index if there are duplicates
+              const fieldName = `${col.name}_${colIndex}`;
 
-            return {
-                field: fieldName,
-                headerName: col.name,
-                description: col.dataType,
-                flex: 1,
-                minWidth: 120,
-                editable: isEditable,
-                renderCell: (params: GridRenderCellParams) => {
-                    const cellValue = (
-                        <CellValue
-                            value={params.value}
-                            onSaveJson={
-                                canEditJson
-                                    ? (newValue) =>
-                                        handleJsonCellSave(
-                                            params.row.__originalRow as Record<string, unknown>,
-                                            col.name,
-                                            newValue
-                                        )
-                                    : undefined
-                            }
-                        />
-                    );
-                    // If this is a FK column and we have a click handler, make it clickable
-                    if (fkInfo && onForeignKeyClick && params.value !== null) {
-                        return (
-                            <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
-                                <Box
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onForeignKeyClick({
-                                            referencedTable: fkInfo.referencedTable,
-                                            referencedColumn: fkInfo.referencedColumns[0] ?? '',
-                                            value: params.value,
-                                        });
-                                    }}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                        cursor: 'pointer',
-                                        color: 'primary.main',
-                                        textDecoration: 'underline',
-                                        textDecorationStyle: 'dotted',
-                                        '&:hover': {
-                                            textDecorationStyle: 'solid',
-                                        },
-                                    }}
-                                >
-                                    {cellValue}
-                                    <LinkIcon sx={{ fontSize: 12 }} />
-                                </Box>
-                            </StyledTooltip>
-                        );
-                    }
+              return {
+                  field: fieldName,
+                  headerName: col.name,
+                  description: col.dataType,
+                  flex: 1,
+                  minWidth: 120,
+                  editable: isEditable,
+                  renderCell: (params: GridRenderCellParams) => {
+                      const cellValue = (
+                          <CellValue
+                              value={params.value}
+                              onSaveJson={
+                                  canEditJson
+                                      ? (newValue) =>
+                                            handleJsonCellSave(
+                                                params.row.__originalRow as Record<string, unknown>,
+                                                col.name,
+                                                newValue
+                                            )
+                                      : undefined
+                              }
+                          />
+                      );
+                      // If this is a FK column and we have a click handler, make it clickable
+                      if (fkInfo && onForeignKeyClick && params.value !== null) {
+                          return (
+                              <StyledTooltip title={`Click to view in ${fkInfo.referencedTable}`}>
+                                  <Box
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          onForeignKeyClick({
+                                              referencedTable: fkInfo.referencedTable,
+                                              referencedColumn: fkInfo.referencedColumns[0] ?? '',
+                                              value: params.value,
+                                          });
+                                      }}
+                                      sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 0.5,
+                                          cursor: 'pointer',
+                                          color: 'primary.main',
+                                          textDecoration: 'underline',
+                                          textDecorationStyle: 'dotted',
+                                          '&:hover': {
+                                              textDecorationStyle: 'solid',
+                                          },
+                                      }}
+                                  >
+                                      {cellValue}
+                                      <LinkIcon sx={{ fontSize: 12 }} />
+                                  </Box>
+                              </StyledTooltip>
+                          );
+                      }
 
-                    return cellValue;
-                },
-                renderHeader: () => (
-                    <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                {col.name}
-                            </Typography>
-                            {fkInfo && (
-                                <StyledTooltip
-                                    title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
-                                >
-                                    <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                                </StyledTooltip>
-                            )}
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                            {col.dataType}
-                        </Typography>
-                    </Box>
-                ),
-            };
-        })
+                      return cellValue;
+                  },
+                  renderHeader: () => (
+                      <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                  {col.name}
+                              </Typography>
+                              {fkInfo && (
+                                  <StyledTooltip
+                                      title={`FK → ${fkInfo.referencedTable}.${fkInfo.referencedColumns[0]}`}
+                                  >
+                                      <LinkIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                  </StyledTooltip>
+                              )}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                              {col.dataType}
+                          </Typography>
+                      </Box>
+                  ),
+              };
+          })
         : [];
 
     // Get the currently editing row id (if any)
@@ -343,21 +358,21 @@ export function DataTab({
     // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
     const rows = result
         ? result.rows.map((row, rowIndex) => {
-            const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
-            // Transform row data to match column field names (col_name_index format)
-            const transformedRow: Record<string, unknown> = {
-                __rowIndex: `row_${globalIndex}`,
-                __originalRow: row, // Keep original row data for operations
-            };
+              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
+              // Transform row data to match column field names (col_name_index format)
+              const transformedRow: Record<string, unknown> = {
+                  __rowIndex: `row_${globalIndex}`,
+                  __originalRow: row, // Keep original row data for operations
+              };
 
-            // Map each column value to its indexed field name
-            result.columns.forEach((col, colIndex) => {
-                const fieldName = `${col.name}_${colIndex}`;
-                transformedRow[fieldName] = row[col.name];
-            });
+              // Map each column value to its indexed field name
+              result.columns.forEach((col, colIndex) => {
+                  const fieldName = `${col.name}_${colIndex}`;
+                  transformedRow[fieldName] = row[col.name];
+              });
 
-            return transformedRow;
-        })
+              return transformedRow;
+          })
         : [];
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
@@ -593,8 +608,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length > 1
-                                                ? 'Select 1 row'
-                                                : 'Edit'
+                                              ? 'Select 1 row'
+                                              : 'Edit'
                                     }
                                 >
                                     <span>
@@ -616,8 +631,8 @@ export function DataTab({
                                         !canEditRows
                                             ? 'No primary key'
                                             : selectedRowIds.length === 1
-                                                ? 'Delete row'
-                                                : 'Delete selected rows'
+                                              ? 'Delete row'
+                                              : 'Delete selected rows'
                                     }
                                 >
                                     <span>
@@ -678,7 +693,7 @@ export function DataTab({
                                             {paginationModel.page * paginationModel.pageSize + 1}-
                                             {Math.min(
                                                 (paginationModel.page + 1) *
-                                                paginationModel.pageSize,
+                                                    paginationModel.pageSize,
                                                 totalRowCount
                                             )}
                                         </Typography>
@@ -708,10 +723,7 @@ export function DataTab({
                                 size="small"
                                 onClick={() => setShowFilters(!showFilters)}
                                 sx={{
-                                    color:
-                                        showFilters ?
-                                            'primary.main'
-                                            : 'text.secondary',
+                                    color: showFilters ? 'primary.main' : 'text.secondary',
                                 }}
                             >
                                 <FilterListIcon fontSize="small" />
@@ -1003,14 +1015,23 @@ export function DataTab({
                                     setSelectedRowIds(newSelection as GridRowId[])
                                 }
                                 loading={loading}
-                                paginationMode={totalRowCount !== null ? 'server' : 'client'}
+                                pagination
+                                paginationMode={
+                                    totalRowCount !== null && paginationModel.pageSize !== -1
+                                        ? 'server'
+                                        : 'client'
+                                }
                                 rowCount={totalRowCount ?? result.rowCount}
                                 paginationModel={paginationModel}
-                                onPaginationModelChange={onPaginationChange}
-                                sortingMode={totalRowCount !== null ? 'server' : 'client'}
+                                onPaginationModelChange={handlePaginationModelChange}
+                                sortingMode={
+                                    totalRowCount !== null && paginationModel.pageSize !== -1
+                                        ? 'server'
+                                        : 'client'
+                                }
                                 sortModel={sortModel}
                                 onSortModelChange={onSortChange}
-                                pageSizeOptions={[25, 50, 100, 250, 500]}
+                                pageSizeOptions={[25, 50, 100, { value: -1, label: 'All' }]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={setRowModesModel}
