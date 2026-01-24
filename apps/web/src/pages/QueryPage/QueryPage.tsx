@@ -552,11 +552,142 @@ export function QueryPage() {
             pageSize: number,
             search?: string,
             schema?: TableSchema | null,
-            sort?: GridSortModel
+            sort?: GridSortModel,
+            filters?: GridFilterModel
         ) => {
             const offset = page * pageSize;
             const engine = selectedConnection?.engine;
             const tableName = buildTableName(table.schema, table.name, engine);
+
+            // Build WHERE clause from filters
+            const filterConditions: string[] = [];
+            if (filters && filters.items.length > 0) {
+                filters.items.forEach((filter) => {
+                    if (!filter.field || !filter.operator) return;
+                    
+                    // Remove the column index suffix (_0, _1, etc.) to get original column name
+                    const originalField = filter.field.replace(/_\d+$/, '');
+                    const quotedField = quoteIdentifier(originalField, engine);
+                    const value = filter.value;
+
+                    // Get column data type from schema
+                    const column = schema?.columns.find((c) => c.name === originalField);
+                    const dataType = column?.dataType.toLowerCase() || '';
+                    
+                    // Check if column is numeric, JSON, or text-based
+                    const isNumeric =
+                        dataType.includes('int') ||
+                        dataType.includes('numeric') ||
+                        dataType.includes('decimal') ||
+                        dataType.includes('float') ||
+                        dataType.includes('double') ||
+                        dataType.includes('real') ||
+                        dataType.includes('serial');
+                    
+                    const isJson = dataType.includes('json') || dataType.includes('jsonb');
+                    const isBoolean = dataType.includes('bool');
+
+                    switch (filter.operator) {
+                        case 'contains':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}%'`);
+                                } else {
+                                    filterConditions.push(`${quotedField} LIKE '%${escapedValue}%'`);
+                                }
+                            }
+                            break;
+                        case 'equals':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} = ${value}`);
+                                } else if (isBoolean) {
+                                    const boolValue = value === 'true' || value === true ? 'TRUE' : 'FALSE';
+                                    filterConditions.push(`${quotedField} = ${boolValue}`);
+                                } else if (isJson) {
+                                    // For JSON, cast to text for comparison
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    if (engine === 'postgres') {
+                                        filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}%'`);
+                                    } else {
+                                        filterConditions.push(`${quotedField} LIKE '%${escapedValue}%'`);
+                                    }
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} = '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case 'startsWith':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(`${quotedField}::text ILIKE '${escapedValue}%'`);
+                                } else {
+                                    filterConditions.push(`${quotedField} LIKE '${escapedValue}%'`);
+                                }
+                            }
+                            break;
+                        case 'endsWith':
+                            if (value) {
+                                const escapedValue = String(value).replaceAll("'", "''");
+                                if (engine === 'postgres') {
+                                    filterConditions.push(`${quotedField}::text ILIKE '%${escapedValue}'`);
+                                } else {
+                                    filterConditions.push(`${quotedField} LIKE '%${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case 'isEmpty':
+                            filterConditions.push(`(${quotedField} IS NULL OR ${quotedField} = '')`);
+                            break;
+                        case 'isNotEmpty':
+                            filterConditions.push(`(${quotedField} IS NOT NULL AND ${quotedField} != '')`);
+                            break;
+                        case '>':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} > ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} > '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '>=':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} >= ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} >= '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '<':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} < ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} < '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                        case '<=':
+                            if (value !== undefined && value !== null) {
+                                if (isNumeric) {
+                                    filterConditions.push(`${quotedField} <= ${value}`);
+                                } else {
+                                    const escapedValue = String(value).replaceAll("'", "''");
+                                    filterConditions.push(`${quotedField} <= '${escapedValue}'`);
+                                }
+                            }
+                            break;
+                    }
+                });
+            }
 
             // Build ORDER BY clause
             let orderByClause = '';
@@ -575,6 +706,8 @@ export function QueryPage() {
             }
 
             let query: string;
+            const allConditions: string[] = [...filterConditions];
+            
             if (search && search.trim() && schema?.columns.length) {
                 const searchTerm = search.replaceAll("'", "''");
                 const textTypes = [
@@ -594,7 +727,7 @@ export function QueryPage() {
                 );
 
                 if (searchableColumns.length > 0) {
-                    const conditions = searchableColumns.map((col) => {
+                    const searchConditions = searchableColumns.map((col) => {
                         const quotedCol = quoteIdentifier(col.name, engine);
                         if (engine === 'sqlite') {
                             return `${quotedCol} LIKE '%${searchTerm}%'`;
@@ -604,13 +737,18 @@ export function QueryPage() {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
                         }
                     });
-                    query = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
-                } else {
-                    query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
+                    // Combine search conditions with OR, then add to all conditions
+                    allConditions.push(`(${searchConditions.join(' OR ')})`);
                 }
+            }
+
+            // Build final query with WHERE clause if there are conditions
+            if (allConditions.length > 0) {
+                query = `SELECT * FROM ${tableName} WHERE ${allConditions.join(' AND ')}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
             } else {
                 query = `SELECT * FROM ${tableName}${orderByClause} LIMIT ${pageSize} OFFSET ${offset};`;
             }
+            
             setSql(query);
             executeMutation.mutate({ query });
         },
@@ -638,7 +776,8 @@ export function QueryPage() {
             }
 
             setSortModel([]);
-            fetchTableData(table, 0, paginationModel.pageSize);
+            setFilterModel({ items: [] });
+            fetchTableData(table, 0, paginationModel.pageSize, '', null, [], { items: [] });
         },
         [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
     );
@@ -654,11 +793,12 @@ export function QueryPage() {
                     newModel.pageSize,
                     searchQuery,
                     tableSchema,
-                    sortModel
+                    sortModel,
+                    filterModel
                 );
             }
         },
-        [selectedTable, fetchTableData, searchQuery, tableSchema, sortModel]
+        [selectedTable, fetchTableData, searchQuery, tableSchema, sortModel, filterModel]
     );
 
     // Handle sort change
@@ -674,11 +814,32 @@ export function QueryPage() {
                     paginationModel.pageSize,
                     searchQuery,
                     tableSchema,
-                    validSort
+                    validSort,
+                    filterModel
                 );
             }
         },
-        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema]
+        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema, filterModel]
+    );
+
+    // Handle filter change
+    const handleFilterChange = useCallback(
+        (newFilterModel: GridFilterModel) => {
+            setFilterModel(newFilterModel);
+            setPaginationModel((prev) => ({ ...prev, page: 0 }));
+            if (selectedTable) {
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    searchQuery,
+                    tableSchema,
+                    sortModel,
+                    newFilterModel
+                );
+            }
+        },
+        [selectedTable, fetchTableData, paginationModel.pageSize, searchQuery, tableSchema, sortModel]
     );
 
     // Handle search
@@ -708,7 +869,8 @@ export function QueryPage() {
                     paginationModel.pageSize,
                     query,
                     tableSchema,
-                    sortModel
+                    sortModel,
+                    filterModel
                 );
             }
         },
@@ -719,6 +881,7 @@ export function QueryPage() {
             paginationModel.pageSize,
             tableSchema,
             sortModel,
+            filterModel,
         ]
     );
 
@@ -773,7 +936,8 @@ export function QueryPage() {
                                 paginationModel.pageSize,
                                 searchQuery,
                                 tableSchema,
-                                sortModel
+                                sortModel,
+                                filterModel
                             );
                         }
                     },
@@ -790,6 +954,7 @@ export function QueryPage() {
             paginationModel,
             searchQuery,
             sortModel,
+            filterModel,
             toast,
         ]
     );
@@ -920,7 +1085,8 @@ export function QueryPage() {
                                     paginationModel.pageSize,
                                     searchQuery,
                                     tableSchema,
-                                    sortModel
+                                    sortModel,
+                                    filterModel
                                 );
                             } else {
                                 // For raw queries, re-run the original query
@@ -947,6 +1113,7 @@ export function QueryPage() {
             paginationModel,
             searchQuery,
             sortModel,
+            filterModel,
             formatSqlValue,
             toast,
             sql,
@@ -994,7 +1161,8 @@ export function QueryPage() {
                             paginationModel.pageSize,
                             searchQuery,
                             tableSchema,
-                            sortModel
+                            sortModel,
+                            filterModel
                         );
                     }
                     if (totalRowCount !== null) {
@@ -1016,6 +1184,7 @@ export function QueryPage() {
         paginationModel,
         searchQuery,
         sortModel,
+        filterModel,
         formatSqlValue,
         totalRowCount,
         toast,
@@ -1062,7 +1231,8 @@ export function QueryPage() {
                             paginationModel.pageSize,
                             searchQuery,
                             tableSchema,
-                            sortModel
+                            sortModel,
+                            filterModel
                         );
                     }
                     if (totalRowCount !== null) {
@@ -1088,6 +1258,7 @@ export function QueryPage() {
         paginationModel,
         searchQuery,
         sortModel,
+        filterModel,
         formatSqlValue,
         totalRowCount,
         toast,
@@ -1314,7 +1485,7 @@ export function QueryPage() {
                                             sortModel={sortModel}
                                             onSortChange={handleSortChange}
                                             filterModel={filterModel}
-                                            onFilterModelChange={setFilterModel}
+                                            onFilterModelChange={handleFilterChange}
                                             showFilters={showFilters}
                                             onShowFiltersChange={setShowFilters}
                                             onSearch={handleSearch}
@@ -1396,7 +1567,7 @@ export function QueryPage() {
                                     sortModel={sortModel}
                                     onSortChange={handleSortChange}
                                     filterModel={filterModel}
-                                    onFilterModelChange={setFilterModel}
+                                    onFilterModelChange={handleFilterChange}
                                     showFilters={showFilters}
                                     onShowFiltersChange={setShowFilters}
                                     onSearch={handleSearch}

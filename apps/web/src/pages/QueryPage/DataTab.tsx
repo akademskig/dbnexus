@@ -1010,8 +1010,6 @@ export function DataTab({
                                 sortingMode={totalRowCount !== null ? 'server' : 'client'}
                                 sortModel={sortModel}
                                 onSortModelChange={onSortChange}
-                                filterModel={filterModel}
-                                onFilterModelChange={setFilterModel}
                                 pageSizeOptions={[25, 50, 100, 250, 500]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}
