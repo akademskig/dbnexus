@@ -826,7 +826,6 @@ export function QueryPage() {
         fetchTableData,
     });
 
-
     // Handle foreign key click - query the specific referenced row
     const handleForeignKeyClick = useCallback(
         (info: { referencedTable: string; referencedColumn: string; value: unknown }) => {

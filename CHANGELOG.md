@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering with visual indicators
+    - Filter button with badge showing active filter count
+    - Active filter chips displayed below toolbar for quick reference
+    - Support for text, numeric, boolean, and JSON column filtering
+    - Multiple filter operators: contains, equals, starts with, ends with, greater than, less than, empty, not empty
+- **Enhanced Row Editing**: Improved modal dialog for editing table rows
+    - Monaco editor integration for JSON fields with syntax highlighting
+    - Full-screen JSON editor accessible via icon button
+    - Fixed header and footer with scrollable content area
+    - Save/Cancel actions with proper validation
+- **Pagination Improvements**: Added "All" option to view all rows without pagination (in addition to 25, 50, 100, 250, 500)
+- **Server-side Sorting**: Query results table now supports server-side sorting for better performance with large datasets
+
+### Changed
+
+- **Scrollbar Styling**: Scrollbars now have straight edges (removed border radius) for a cleaner look
+- **Code Organization**: Major refactoring of QueryPage component for better maintainability
+    - Reduced main component from 1815 to 1278 lines (30% reduction)
+    - Extracted query execution logic into `useQueryExecution` hook
+    - Extracted row operations into `useRowOperations` hook
+    - Extracted saved queries logic into `useSavedQueries` hook
+    - Created `sqlHelpers.ts` for SQL formatting utilities
+    - Created `rowOperations.ts` for SQL query builders
+    - Created `QueryPageToolbar` component for connection selector and actions
+
+### Fixed
+
+- Linter compliance: Replaced deprecated `String#replace()` with `String#replaceAll()`
+- Filter panel type compatibility across different DataGrid versions
+
 ## [0.1.16]
 
 ### Added

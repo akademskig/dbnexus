@@ -1,6 +1,5 @@
 import {
     Box,
-    Typography,
     Button,
     TextField,
     Select,
@@ -62,19 +61,14 @@ export function FilterPanel({
         <Collapse in={open}>
             <Box
                 sx={{
-                    p: 2,
-                    py: 1,
-                    pb: 1.5,
+                    p: 1.5,
                     bgcolor: 'background.paper',
                     borderBottom: 1,
                     borderColor: 'divider',
                     ...sx,
                 }}
             >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Filters
-                    </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button
                         size="small"
                         startIcon={<AddIcon />}
@@ -90,12 +84,8 @@ export function FilterPanel({
                     )}
                 </Box>
 
-                {filterModel.items.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                        No filters applied. Click &quot;Add filter&quot; to get started.
-                    </Typography>
-                ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {filterModel.items.length > 0 && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
                         {filterModel.items.map((filter, index) => (
                             <Box
                                 key={filter.id}
