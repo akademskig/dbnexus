@@ -221,7 +221,7 @@ export function AuditLogsTab() {
 
     return (
         <Box
-            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}
+            sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}
         >
             {/* Filters */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
@@ -230,7 +230,7 @@ export function AuditLogsTab() {
                     placeholder="Search audit logs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ minWidth: 300, mr: 1 }}
+                    sx={{ minWidth: 300, }}
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
@@ -309,7 +309,7 @@ export function AuditLogsTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
-                sx={{ px: 0, py: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Filter Panel */}
@@ -318,7 +318,7 @@ export function AuditLogsTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
-                sx={{ px: 0, pt: 0.5, pb: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Data Grid */}

@@ -406,7 +406,7 @@ export function QueryHistoryTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
-                sx={{ px: 0, py: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Filter Panel */}
@@ -415,7 +415,7 @@ export function QueryHistoryTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
-                sx={{ px: 0, pt: 0.5, pb: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Data Grid */}

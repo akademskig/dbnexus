@@ -221,9 +221,9 @@ export function ActivityLogTab() {
             const matchesConnection =
                 activity.details?.connectionId === connectionFilter ||
                 activity.details?.sourceConnection ===
-                    connections.find((c) => c.id === connectionFilter)?.name ||
+                connections.find((c) => c.id === connectionFilter)?.name ||
                 activity.details?.targetConnection ===
-                    connections.find((c) => c.id === connectionFilter)?.name;
+                connections.find((c) => c.id === connectionFilter)?.name;
             if (!matchesConnection) return false;
         }
         if (searchQuery) {
@@ -493,7 +493,7 @@ export function ActivityLogTab() {
                 filterModel={filterModel}
                 onFilterModelChange={setFilterModel}
                 show={!showFilters}
-                sx={{ px: 0, py: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Filter Panel */}
@@ -502,7 +502,7 @@ export function ActivityLogTab() {
                 filterModel={filterModel}
                 columns={columns}
                 onFilterModelChange={setFilterModel}
-                sx={{ px: 0, pt: 0.5, pb: 1 }}
+                sx={{ px: 1, pt: 0 }}
             />
 
             {/* Data Grid */}

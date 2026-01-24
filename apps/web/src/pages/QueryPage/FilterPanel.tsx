@@ -11,17 +11,23 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import type { GridFilterModel, GridFilterItem, GridColDef } from '@mui/x-data-grid';
+import type { GridFilterModel, GridFilterItem } from '@mui/x-data-grid';
 
 interface FilterPanelProps {
     readonly open: boolean;
     readonly filterModel: GridFilterModel;
-    readonly columns: GridColDef[];
+    readonly columns: Array<{ field: string; headerName?: string }>;
     readonly onFilterModelChange: (model: GridFilterModel) => void;
     readonly sx?: Record<string, unknown>;
 }
 
-export function FilterPanel({ open, filterModel, columns, onFilterModelChange, sx }: FilterPanelProps) {
+export function FilterPanel({
+    open,
+    filterModel,
+    columns,
+    onFilterModelChange,
+    sx,
+}: FilterPanelProps) {
     const handleAddFilter = () => {
         const newFilter: GridFilterItem = {
             id: Date.now(),
