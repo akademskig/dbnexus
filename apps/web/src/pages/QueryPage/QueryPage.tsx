@@ -21,14 +21,8 @@ import { AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
 import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import { FloatingEditorDialog } from './FloatingEditorDialog';
 import { EmptyState } from './EmptyState';
-import {
-    TAB_NAMES,
-    getTabIndex,
-    quoteIdentifier,
-    buildTableName,
-    extractTableFromQuery,
-} from './utils';
-import { useSavedQueries } from './hooks';
+import { TAB_NAMES, getTabIndex, quoteIdentifier, buildTableName } from './utils';
+import { useSavedQueries, useRowOperations, useQueryExecution } from './hooks';
 import { QueryPageToolbar } from './QueryPageToolbar';
 
 export function QueryPage() {
@@ -95,15 +89,8 @@ export function QueryPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
-    const [confirmDangerous, setConfirmDangerous] = useState<{
-        message: string;
-        type: string;
-    } | null>(null);
     // Default to showing selected schema expanded
     const [historyOpen, setHistoryOpen] = useState(false);
-
-    // Edit dialogs state
-    const [addRowOpen, setAddRowOpen] = useState(false);
 
     // Row sync state
     const [syncRowDialogOpen, setSyncRowDialogOpen] = useState(false);
@@ -129,22 +116,6 @@ export function QueryPage() {
     // Floating editor state
     const [floatingEditorOpen, setFloatingEditorOpen] = useState(false);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
-
-    // Row deletion state
-    const [rowToDelete, setRowToDelete] = useState<Record<string, unknown> | null>(null);
-    const [rowsToDelete, setRowsToDelete] = useState<Record<string, unknown>[] | null>(null);
-
-    // Explain plan state
-    const [explainDialogOpen, setExplainDialogOpen] = useState(false);
-    const [explainPlan, setExplainPlan] = useState<{
-        plan: unknown;
-        planText: string;
-        insights: { type: string; message: string }[];
-        suggestions: string[];
-    } | null>(null);
-
-    // Track last executed query for table selection
-    const lastExecutedQueryRef = useRef<string>('');
 
     // Skip table restoration when doing FK query
     const skipTableRestoreRef = useRef(false);
@@ -314,6 +285,34 @@ export function QueryPage() {
         },
     });
 
+    // Query execution hook
+    const {
+        confirmDangerous,
+        explainDialogOpen,
+        explainPlan,
+        handleExecute,
+        handleExplain,
+        handleConfirmDangerous,
+        setConfirmDangerous,
+        setExplainDialogOpen,
+        executeMutation,
+        explainMutation,
+    } = useQueryExecution({
+        selectedConnectionId,
+        sql,
+        tables,
+        selectedTable,
+        historyOpen,
+        setResult,
+        setError,
+        setActiveTab,
+        setSelectedTable,
+        setSelectedSchema,
+        updateUrl,
+        refetchTables,
+        refetchHistory,
+    });
+
     // Set default schema when schemas load
     useEffect(() => {
         if (schemas.length > 0 && !selectedSchema) {
@@ -358,111 +357,6 @@ export function QueryPage() {
     ]);
 
     // Execute mutation
-    const executeMutation = useMutation({
-        mutationFn: async ({ query, confirmed }: { query: string; confirmed?: boolean }) => {
-            if (!selectedConnectionId) throw new Error('No connection selected');
-            lastExecutedQueryRef.current = query;
-            return queriesApi.execute(selectedConnectionId, query, confirmed);
-        },
-        onSuccess: (data) => {
-            setResult(data);
-            setError(null);
-            setConfirmDangerous(null);
-            // Switch to Data tab to show results
-            setActiveTab(0);
-            updateUrl({ tab: 0 });
-
-            // Try to select the table from the query
-            const tableInfo = extractTableFromQuery(lastExecutedQueryRef.current);
-            if (tableInfo && tables.length > 0) {
-                const matchingTable = tables.find((t) => {
-                    const tableMatch = t.name.toLowerCase() === tableInfo.table.toLowerCase();
-                    if (tableInfo.schema) {
-                        return (
-                            tableMatch && t.schema.toLowerCase() === tableInfo.schema.toLowerCase()
-                        );
-                    }
-                    // If no schema in query, match any table with that name (prefer current schema)
-                    return tableMatch;
-                });
-                if (matchingTable && matchingTable.name !== selectedTable?.name) {
-                    setSelectedTable(matchingTable);
-                    setSelectedSchema(matchingTable.schema);
-                    updateUrl({ schema: matchingTable.schema, table: matchingTable.name });
-                }
-            }
-
-            // Invalidate table counts if this was a data-modifying query
-            const queryUpper = lastExecutedQueryRef.current.toUpperCase().trim();
-            if (
-                queryUpper.startsWith('INSERT') ||
-                queryUpper.startsWith('UPDATE') ||
-                queryUpper.startsWith('DELETE') ||
-                queryUpper.startsWith('TRUNCATE') ||
-                queryUpper.startsWith('CREATE') ||
-                queryUpper.startsWith('DROP') ||
-                queryUpper.startsWith('ALTER')
-            ) {
-                refetchTables();
-            }
-
-            if (historyOpen) {
-                refetchHistory();
-            }
-        },
-        onError: (err: Error) => {
-            try {
-                const parsed = JSON.parse(err.message);
-                if (parsed.requiresConfirmation) {
-                    setConfirmDangerous({
-                        message: parsed.message,
-                        type: parsed.dangerousType,
-                    });
-                    return;
-                }
-            } catch {
-                // Not a JSON error
-            }
-            setError(err.message);
-            setResult(null);
-            setConfirmDangerous(null);
-            toast.error('Query failed');
-        },
-    });
-
-    const explainMutation = useMutation({
-        mutationFn: async ({ analyze }: { analyze: boolean }) => {
-            if (!selectedConnectionId) throw new Error('No connection selected');
-            if (!sql.trim()) throw new Error('No query to explain');
-            return queriesApi.explain(selectedConnectionId, sql, analyze);
-        },
-        onSuccess: (data) => {
-            setExplainPlan(data);
-            setExplainDialogOpen(true);
-            toast.success('Query plan generated');
-        },
-        onError: (err: Error) => {
-            toast.error(`Failed to explain query: ${err.message}`);
-        },
-    });
-
-    const handleExecute = useCallback(() => {
-        if (!sql.trim()) return;
-        setConfirmDangerous(null);
-        executeMutation.mutate({ query: sql });
-    }, [executeMutation, sql]);
-
-    const handleExplain = useCallback(
-        (analyze = false) => {
-            if (!sql.trim()) return;
-            explainMutation.mutate({ analyze });
-        },
-        [explainMutation, sql]
-    );
-
-    const handleConfirmDangerous = () => {
-        executeMutation.mutate({ query: sql, confirmed: true });
-    };
 
     // Restore table selection from URL
     useEffect(() => {
@@ -901,373 +795,37 @@ export function QueryPage() {
         refetchTables();
     };
 
-    // Handle add row
-    const handleAddRow = useCallback(
-        (values: Record<string, string>) => {
-            if (!selectedTable || !selectedConnectionId || !tableSchema) return;
-
-            const engine = selectedConnection?.engine;
-            const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-            const columns = Object.keys(values).filter((k) => values[k] !== '');
-            const vals = columns.map((k) => {
-                const col = tableSchema.columns.find((c) => c.name === k);
-                const val = values[k] ?? '';
-                if (
-                    col?.dataType.toLowerCase().includes('int') ||
-                    col?.dataType.toLowerCase().includes('numeric') ||
-                    col?.dataType.toLowerCase().includes('decimal') ||
-                    col?.dataType.toLowerCase().includes('float') ||
-                    col?.dataType.toLowerCase().includes('double') ||
-                    col?.dataType.toLowerCase().includes('real')
-                ) {
-                    return val;
-                }
-                return `'${val.replaceAll("'", "''")}'`;
-            });
-
-            const query = `INSERT INTO ${tableName} (${columns.map((c) => quoteIdentifier(c, engine)).join(', ')}) VALUES (${vals.join(', ')});`;
-            setSql(query);
-            executeMutation.mutate(
-                { query },
-                {
-                    onSuccess: () => {
-                        setAddRowOpen(false);
-                        toast.success('Row added successfully');
-                        if (selectedTable) {
-                            fetchTableData(
-                                selectedTable,
-                                paginationModel.page,
-                                paginationModel.pageSize,
-                                searchQuery,
-                                tableSchema,
-                                sortModel,
-                                filterModel
-                            );
-                        }
-                    },
-                }
-            );
-        },
-        [
-            selectedTable,
-            selectedConnectionId,
-            selectedConnection?.engine,
-            tableSchema,
-            executeMutation,
-            fetchTableData,
-            paginationModel,
-            searchQuery,
-            sortModel,
-            filterModel,
-            toast,
-        ]
-    );
-
-    // Helper function to format value for SQL
-    const formatSqlValue = useCallback(
-        (value: unknown, colName: string): string => {
-            if (value === null || value === undefined) return 'NULL';
-
-            const col = tableSchema?.columns.find((c) => c.name === colName);
-            const dataType = col?.dataType.toLowerCase() || '';
-
-            if (
-                dataType.includes('int') ||
-                dataType.includes('numeric') ||
-                dataType.includes('decimal') ||
-                dataType.includes('float') ||
-                dataType.includes('double') ||
-                dataType.includes('real')
-            ) {
-                return String(value);
-            }
-
-            if (dataType.includes('bool')) {
-                return String(value);
-            }
-
-            if (dataType.includes('json') || dataType.includes('jsonb')) {
-                const jsonStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
-                return `'${jsonStr.replaceAll("'", "''")}'`;
-            }
-
-            if (typeof value === 'object') {
-                const jsonStr = JSON.stringify(value);
-                return `'${jsonStr.replaceAll("'", "''")}'`;
-            }
-
-            return `'${String(value).replaceAll("'", "''")}'`;
-        },
-        [tableSchema]
-    );
-
-    // Extract table name from SQL query (simple regex for SELECT queries)
-    const extractTableNameFromQuery = (query: string): string | null => {
-        const match = query.match(/FROM\s+([`"]?[\w.]+[`"]?)/i);
-        return match?.[1]?.replace(/[`"]/g, '') ?? null;
-    };
-
-    // Infer primary keys from result columns (for raw queries without tableSchema)
-    const inferPrimaryKeysFromResult = (result: QueryResult | null): string[] => {
-        if (!result) return [];
-        return result.columns
-            .filter((col) => {
-                const name = col.name.toLowerCase();
-                return name === 'id' || name === 'version' || name.endsWith('_id');
-            })
-            .map((col) => col.name);
-    };
-
-    // Handle update row
-    const handleUpdateRow = useCallback(
-        async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
-            if (!selectedConnectionId) return;
-
-            const engine = selectedConnection?.engine;
-
-            // Determine table name and primary keys
-            let tableName: string;
-            let pkColumns: string[];
-
-            if (selectedTable && tableSchema) {
-                // Use selected table info if available
-                tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-                pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-            } else {
-                // For raw queries, try to extract table name from SQL
-                const extractedTable = extractTableNameFromQuery(sql);
-                if (!extractedTable) {
-                    throw new Error('Cannot determine table name for update');
-                }
-                tableName = extractedTable;
-
-                // Infer primary keys from result
-                pkColumns = inferPrimaryKeysFromResult(result);
-                if (pkColumns.length === 0) {
-                    throw new Error(
-                        'Cannot update row: no primary key identified (looking for columns named: id, version, or ending with _id)'
-                    );
-                }
-            }
-
-            const changes: string[] = [];
-            for (const key of Object.keys(newRow)) {
-                if (key === '__rowIndex') continue; // Skip internal row index
-                const oldVal = oldRow[key];
-                const newVal = newRow[key];
-                const hasChanged =
-                    typeof oldVal === 'object' || typeof newVal === 'object'
-                        ? JSON.stringify(oldVal) !== JSON.stringify(newVal)
-                        : oldVal !== newVal;
-                if (hasChanged) {
-                    changes.push(
-                        `${quoteIdentifier(key, engine)} = ${formatSqlValue(newVal, key)}`
-                    );
-                }
-            }
-
-            if (changes.length === 0) {
-                return;
-            }
-
-            const whereConditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(oldRow[pk], pk)}`
-            );
-
-            const query = `UPDATE ${tableName} SET ${changes.join(', ')} WHERE ${whereConditions.join(' AND ')};`;
-            setSql(query);
-
-            return new Promise<void>((resolve, reject) => {
-                executeMutation.mutate(
-                    { query, confirmed: true },
-                    {
-                        onSuccess: () => {
-                            if (selectedTable && tableSchema) {
-                                fetchTableData(
-                                    selectedTable,
-                                    paginationModel.page,
-                                    paginationModel.pageSize,
-                                    searchQuery,
-                                    tableSchema,
-                                    sortModel,
-                                    filterModel
-                                );
-                            } else {
-                                // For raw queries, re-run the original query
-                                executeMutation.mutate({ query: sql, confirmed: true });
-                            }
-                            toast.success('Row updated');
-                            resolve();
-                        },
-                        onError: (err) => {
-                            toast.error('Failed to update row');
-                            reject(err);
-                        },
-                    }
-                );
-            });
-        },
-        [
-            selectedTable,
-            selectedConnectionId,
-            selectedConnection?.engine,
-            tableSchema,
-            executeMutation,
-            fetchTableData,
-            paginationModel,
-            searchQuery,
-            sortModel,
-            filterModel,
-            formatSqlValue,
-            toast,
-            sql,
-            result,
-        ]
-    );
-
-    // Handle delete row - show confirmation
-    const handleDeleteRow = useCallback((row: Record<string, unknown>) => {
-        setRowToDelete(row);
-    }, []);
-
-    const handleDeleteRows = useCallback((rows: Record<string, unknown>[]) => {
-        setRowsToDelete(rows);
-    }, []);
-
-    // Actually perform row deletion
-    const confirmDeleteRow = useCallback(() => {
-        if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
-
-        const engine = selectedConnection?.engine;
-        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-        if (pkColumns.length === 0) {
-            setError('Cannot delete row: no primary key defined');
-            setRowToDelete(null);
-            return;
-        }
-
-        const whereConditions = pkColumns.map(
-            (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(rowToDelete[pk], pk)}`
-        );
-
-        const query = `DELETE FROM ${tableName} WHERE ${whereConditions.join(' AND ')};`;
-        setSql(query);
-        executeMutation.mutate(
-            { query, confirmed: true },
-            {
-                onSuccess: () => {
-                    if (selectedTable) {
-                        fetchTableData(
-                            selectedTable,
-                            paginationModel.page,
-                            paginationModel.pageSize,
-                            searchQuery,
-                            tableSchema,
-                            sortModel,
-                            filterModel
-                        );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - 1);
-                    }
-                    toast.success('Row deleted');
-                    setRowToDelete(null);
-                },
-            }
-        );
-    }, [
-        selectedTable,
-        selectedConnectionId,
-        selectedConnection?.engine,
-        tableSchema,
+    // Row operations hook
+    const {
+        addRowOpen,
         rowToDelete,
-        executeMutation,
-        fetchTableData,
-        paginationModel,
-        searchQuery,
-        sortModel,
-        filterModel,
-        formatSqlValue,
-        totalRowCount,
-        toast,
-    ]);
-
-    const confirmDeleteRows = useCallback(() => {
-        if (
-            !selectedTable ||
-            !selectedConnectionId ||
-            !tableSchema ||
-            !rowsToDelete ||
-            rowsToDelete.length === 0
-        ) {
-            return;
-        }
-
-        const engine = selectedConnection?.engine;
-        const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
-
-        const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
-        if (pkColumns.length === 0) {
-            setError('Cannot delete rows: no primary key defined');
-            setRowsToDelete(null);
-            return;
-        }
-
-        const rowClauses = rowsToDelete.map((row) => {
-            const conditions = pkColumns.map(
-                (pk) => `${quoteIdentifier(pk, engine)} = ${formatSqlValue(row[pk], pk)}`
-            );
-            return `(${conditions.join(' AND ')})`;
-        });
-
-        const query = `DELETE FROM ${tableName} WHERE ${rowClauses.join(' OR ')};`;
-        setSql(query);
-        executeMutation.mutate(
-            { query, confirmed: true },
-            {
-                onSuccess: () => {
-                    if (selectedTable) {
-                        fetchTableData(
-                            selectedTable,
-                            paginationModel.page,
-                            paginationModel.pageSize,
-                            searchQuery,
-                            tableSchema,
-                            sortModel,
-                            filterModel
-                        );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - rowsToDelete.length);
-                    }
-                    toast.success(`Deleted ${rowsToDelete.length} rows`);
-                    setRowsToDelete(null);
-                },
-                onError: () => {
-                    toast.error('Failed to delete rows');
-                    setRowsToDelete(null);
-                },
-            }
-        );
-    }, [
-        selectedTable,
-        selectedConnectionId,
-        selectedConnection?.engine,
-        tableSchema,
         rowsToDelete,
-        executeMutation,
-        fetchTableData,
+        setAddRowOpen,
+        setRowToDelete,
+        setRowsToDelete,
+        handleAddRow,
+        handleUpdateRow,
+        handleDeleteRow,
+        handleDeleteRows,
+        confirmDeleteRow,
+        confirmDeleteRows,
+    } = useRowOperations({
+        selectedConnectionId,
+        selectedConnection,
+        selectedTable,
+        tableSchema: tableSchema || null,
+        sql,
+        result,
         paginationModel,
-        searchQuery,
         sortModel,
         filterModel,
-        formatSqlValue,
+        searchQuery,
         totalRowCount,
-        toast,
-    ]);
+        setSql,
+        setTotalRowCount,
+        fetchTableData,
+    });
+
 
     // Handle foreign key click - query the specific referenced row
     const handleForeignKeyClick = useCallback(
