@@ -73,7 +73,8 @@ export function LogsPage() {
                 setActiveTab(index);
             }
         }
-    }, [urlTab]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlTab]); // Only react to URL changes, not state changes
 
     // Redirect to dashboard if no connections after loading
     if (!loadingConnections && connections.length === 0) {

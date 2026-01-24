@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
-import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
+import type { TableInfo, TableSchema, QueryResult, DatabaseEngine } from '@dbnexus/shared';
 import { queriesApi } from '../../../lib/api';
 import { useToastStore } from '../../../stores/toastStore';
 import { buildTableName } from '../utils';
@@ -15,7 +15,7 @@ import { extractTableNameFromQuery, inferPrimaryKeysFromResult } from '../sqlHel
 
 interface UseRowOperationsProps {
     selectedConnectionId: string;
-    selectedConnection: { engine: string } | undefined;
+    selectedConnection: { engine: DatabaseEngine } | undefined;
     selectedTable: TableInfo | null;
     tableSchema: TableSchema | null;
     sql: string;
@@ -74,7 +74,7 @@ export function useRowOperations({
                 table: selectedTable,
                 tableSchema,
                 values,
-                engine: selectedConnection?.engine as any,
+                engine: selectedConnection?.engine || 'postgres',
             });
             setSql(query);
             executeMutation.mutate(
@@ -118,7 +118,7 @@ export function useRowOperations({
         async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
             if (!selectedConnectionId) return;
 
-            const engine = selectedConnection?.engine as any;
+            const engine = selectedConnection?.engine || 'postgres';
 
             // Determine table name and primary keys
             let tableName: string;
@@ -215,7 +215,7 @@ export function useRowOperations({
     const confirmDeleteRow = useCallback(() => {
         if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
 
-        const engine = selectedConnection?.engine as any;
+        const engine = selectedConnection?.engine || 'postgres';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -285,7 +285,7 @@ export function useRowOperations({
             return;
         }
 
-        const engine = selectedConnection?.engine as any;
+        const engine = selectedConnection?.engine || 'postgres';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);

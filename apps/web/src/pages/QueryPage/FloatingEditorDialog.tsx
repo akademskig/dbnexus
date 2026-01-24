@@ -39,7 +39,7 @@ export function FloatingEditorDialog({
     const { mode } = useThemeModeStore();
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [size] = useState({ width: 800, height: 600 });
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<unknown>(null);
     const nodeRef = useRef(null);
 
     // Handle Ctrl/Cmd+Enter to execute
@@ -64,9 +64,10 @@ export function FloatingEditorDialog({
         }
     }, [open]);
 
-    const handleEditorMount = (editor: any) => {
+    const handleEditorMount = (editor: unknown) => {
         editorRef.current = editor;
-        editor.focus();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor as any)?.focus?.();
     };
 
     const handleCopy = () => {
