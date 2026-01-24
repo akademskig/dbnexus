@@ -8,7 +8,7 @@ import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import type { TableInfo, TableSchema, QueryResult, SavedQuery } from '@dbnexus/shared';
+import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
@@ -34,6 +34,7 @@ import {
     extractTableFromQuery,
 } from './utils';
 import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
+import { useSavedQueries } from './hooks';
 
 export function QueryPage() {
     const theme = useTheme();
@@ -116,8 +117,16 @@ export function QueryPage() {
     // Saved queries state
     const [savedQueriesOpen, setSavedQueriesOpen] = useState(false);
     const [saveQueryOpen, setSaveQueryOpen] = useState(false);
-    const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
-    const [queryToDelete, setQueryToDelete] = useState<SavedQuery | null>(null);
+    const {
+        savedQueries,
+        editingQuery,
+        queryToDelete,
+        setEditingQuery,
+        setQueryToDelete,
+        saveQueryMutation,
+        deleteQueryMutation,
+        refetchSavedQueries,
+    } = useSavedQueries({ savedQueriesOpen });
 
     // Templates state
     const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -307,41 +316,6 @@ export function QueryPage() {
         onSuccess: () => {
             refetchHistory();
             toast.success('Query history cleared');
-        },
-    });
-
-    // Saved queries
-    const { data: savedQueries = [], refetch: refetchSavedQueries } = useQuery({
-        queryKey: ['savedQueries'],
-        queryFn: () => queriesApi.getSaved(),
-        enabled: savedQueriesOpen,
-    });
-
-    // Save query mutation
-    const saveQueryMutation = useMutation({
-        mutationFn: (input: { name: string; sql: string; connectionId?: string }) =>
-            editingQuery
-                ? queriesApi.updateSaved(editingQuery.id, input)
-                : queriesApi.createSaved(input),
-        onSuccess: () => {
-            refetchSavedQueries();
-            toast.success(editingQuery ? 'Query updated' : 'Query saved');
-            setEditingQuery(null);
-        },
-        onError: () => {
-            toast.error('Failed to save query');
-        },
-    });
-
-    // Delete saved query mutation
-    const deleteQueryMutation = useMutation({
-        mutationFn: (id: string) => queriesApi.deleteSaved(id),
-        onSuccess: () => {
-            refetchSavedQueries();
-            toast.success('Query deleted');
-        },
-        onError: () => {
-            toast.error('Failed to delete query');
         },
     });
 
