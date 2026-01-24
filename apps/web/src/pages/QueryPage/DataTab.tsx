@@ -12,6 +12,9 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
+    Collapse,
+    Select,
+    FormControl,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -22,6 +25,8 @@ import {
     type GridRowModel,
     type GridRowModesModel,
     type GridSortModel,
+    type GridFilterModel,
+    type GridFilterItem,
     GridRowModes,
 } from '@mui/x-data-grid';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -34,6 +39,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import AddIcon from '@mui/icons-material/Add';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -58,6 +65,10 @@ interface DataTabProps {
     readonly onPaginationChange: (model: { page: number; pageSize: number }) => void;
     readonly sortModel?: GridSortModel;
     readonly onSortChange?: (model: GridSortModel) => void;
+    readonly filterModel?: GridFilterModel;
+    readonly onFilterModelChange?: (model: GridFilterModel) => void;
+    readonly showFilters?: boolean;
+    readonly onShowFiltersChange?: (show: boolean) => void;
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
@@ -87,6 +98,10 @@ export function DataTab({
     onPaginationChange,
     sortModel = [],
     onSortChange,
+    filterModel: externalFilterModel,
+    onFilterModelChange,
+    showFilters: externalShowFilters = false,
+    onShowFiltersChange,
     onSearch,
     searchQuery,
     tableSchema,
@@ -103,6 +118,15 @@ export function DataTab({
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [selectedRowIds, setSelectedRowIds] = useState<GridRowId[]>([]);
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+
+    // Use external state if provided, otherwise use local state
+    const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
+    const filterModel = externalFilterModel || internalFilterModel;
+    const setFilterModel = onFilterModelChange || setInternalFilterModel;
+
+    const showFilters = externalShowFilters;
+    const setShowFilters = onShowFiltersChange || (() => {});
+
     const toast = useToastStore();
 
     // Get primary key columns for identifying rows
@@ -678,6 +702,78 @@ export function DataTab({
                         {/* Spacer */}
                         <Box sx={{ flex: 1 }} />
 
+                        {/* Right side: Filter and Search */}
+                        <StyledTooltip title={showFilters ? 'Hide filters' : 'Show filters'}>
+                            <IconButton
+                                size="small"
+                                onClick={() => setShowFilters(!showFilters)}
+                                sx={{
+                                    color:
+                                        filterModel.items.length > 0
+                                            ? 'primary.main'
+                                            : 'text.secondary',
+                                }}
+                            >
+                                <FilterListIcon fontSize="small" />
+                            </IconButton>
+                        </StyledTooltip>
+                        <TextField
+                            size="small"
+                            placeholder="Search..."
+                            value={localSearch}
+                            onChange={(e) => setLocalSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onSearch(localSearch);
+                                }
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon
+                                            fontSize="small"
+                                            sx={{ color: 'text.disabled' }}
+                                        />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: localSearch && (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setLocalSearch('');
+                                                onSearch('');
+                                            }}
+                                        >
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                width: 180,
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: 'background.default',
+                                    height: 32,
+                                },
+                                '& .MuiOutlinedInput-input': {
+                                    py: 0.5,
+                                },
+                            }}
+                        />
+                        {searchQuery && (
+                            <Chip
+                                label={`"${searchQuery}"`}
+                                size="small"
+                                onDelete={() => {
+                                    setLocalSearch('');
+                                    onSearch('');
+                                }}
+                                color="primary"
+                                variant="outlined"
+                            />
+                        )}
+
                         {/* Export button */}
                         {result.rows.length > 0 && (
                             <>
@@ -747,65 +843,151 @@ export function DataTab({
                                 </Menu>
                             </>
                         )}
-
-                        {/* Right side: Search (always visible) */}
-                        <TextField
-                            size="small"
-                            placeholder="Search..."
-                            value={localSearch}
-                            onChange={(e) => setLocalSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    onSearch(localSearch);
-                                }
-                            }}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon
-                                            fontSize="small"
-                                            sx={{ color: 'text.disabled' }}
-                                        />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: localSearch && (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setLocalSearch('');
-                                                onSearch('');
-                                            }}
-                                        >
-                                            <CloseIcon fontSize="small" />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                width: 180,
-                                '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'background.default',
-                                    height: 32,
-                                },
-                                '& .MuiOutlinedInput-input': {
-                                    py: 0.5,
-                                },
-                            }}
-                        />
-                        {searchQuery && (
-                            <Chip
-                                label={`"${searchQuery}"`}
-                                size="small"
-                                onDelete={() => {
-                                    setLocalSearch('');
-                                    onSearch('');
-                                }}
-                                color="primary"
-                                variant="outlined"
-                            />
-                        )}
                     </Box>
+
+                    {/* Inline Filter Panel */}
+                    <Collapse in={showFilters}>
+                        <Box
+                            sx={{
+                                p: 2,
+                                bgcolor: 'background.paper',
+                                borderBottom: 1,
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                    Filters
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => {
+                                        const newFilter: GridFilterItem = {
+                                            id: Date.now(),
+                                            field: columns[0]?.field || '',
+                                            operator: 'contains',
+                                            value: '',
+                                        };
+                                        setFilterModel({
+                                            items: [...filterModel.items, newFilter],
+                                        });
+                                    }}
+                                    disabled={columns.length === 0}
+                                >
+                                    Add filter
+                                </Button>
+                                {filterModel.items.length > 0 && (
+                                    <Button
+                                        size="small"
+                                        onClick={() => setFilterModel({ items: [] })}
+                                        color="error"
+                                    >
+                                        Clear all
+                                    </Button>
+                                )}
+                            </Box>
+
+                            {filterModel.items.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">
+                                    No filters applied. Click &quot;Add filter&quot; to get started.
+                                </Typography>
+                            ) : (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    {filterModel.items.map((filter, index) => (
+                                        <Box
+                                            key={filter.id}
+                                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                                        >
+                                            {/* Column selector */}
+                                            <FormControl size="small" sx={{ minWidth: 200 }}>
+                                                <Select
+                                                    value={filter.field}
+                                                    onChange={(e) => {
+                                                        const newItems = [...filterModel.items];
+                                                        newItems[index] = {
+                                                            ...filter,
+                                                            field: e.target.value,
+                                                        };
+                                                        setFilterModel({ items: newItems });
+                                                    }}
+                                                >
+                                                    {columns.map((col) => (
+                                                        <MenuItem key={col.field} value={col.field}>
+                                                            {col.headerName}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+
+                                            {/* Operator selector */}
+                                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                                                <Select
+                                                    value={filter.operator}
+                                                    onChange={(e) => {
+                                                        const newItems = [...filterModel.items];
+                                                        newItems[index] = {
+                                                            ...filter,
+                                                            operator: e.target.value,
+                                                        };
+                                                        setFilterModel({ items: newItems });
+                                                    }}
+                                                >
+                                                    <MenuItem value="contains">contains</MenuItem>
+                                                    <MenuItem value="equals">equals</MenuItem>
+                                                    <MenuItem value="startsWith">
+                                                        starts with
+                                                    </MenuItem>
+                                                    <MenuItem value="endsWith">ends with</MenuItem>
+                                                    <MenuItem value="isEmpty">is empty</MenuItem>
+                                                    <MenuItem value="isNotEmpty">
+                                                        is not empty
+                                                    </MenuItem>
+                                                    <MenuItem value=">">{'>'}</MenuItem>
+                                                    <MenuItem value=">=">{'≥'}</MenuItem>
+                                                    <MenuItem value="<">{'<'}</MenuItem>
+                                                    <MenuItem value="<=">{'≤'}</MenuItem>
+                                                </Select>
+                                            </FormControl>
+
+                                            {/* Value input */}
+                                            {filter.operator !== 'isEmpty' &&
+                                                filter.operator !== 'isNotEmpty' && (
+                                                    <TextField
+                                                        size="small"
+                                                        placeholder="Value..."
+                                                        value={filter.value || ''}
+                                                        onChange={(e) => {
+                                                            const newItems = [...filterModel.items];
+                                                            newItems[index] = {
+                                                                ...filter,
+                                                                value: e.target.value,
+                                                            };
+                                                            setFilterModel({ items: newItems });
+                                                        }}
+                                                        sx={{ flex: 1 }}
+                                                    />
+                                                )}
+
+                                            {/* Remove button */}
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => {
+                                                    const newItems = filterModel.items.filter(
+                                                        (_, i) => i !== index
+                                                    );
+                                                    setFilterModel({ items: newItems });
+                                                }}
+                                                color="error"
+                                            >
+                                                <CloseIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                    </Collapse>
 
                     {/* Results DataGrid */}
                     <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -828,6 +1010,8 @@ export function DataTab({
                                 sortingMode={totalRowCount !== null ? 'server' : 'client'}
                                 sortModel={sortModel}
                                 onSortModelChange={onSortChange}
+                                filterModel={filterModel}
+                                onFilterModelChange={setFilterModel}
                                 pageSizeOptions={[25, 50, 100, 250, 500]}
                                 editMode="row"
                                 rowModesModel={rowModesModel}

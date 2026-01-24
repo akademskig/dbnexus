@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
-import type { GridSortModel } from '@mui/x-data-grid';
+import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HistoryIcon from '@mui/icons-material/History';
@@ -95,6 +95,8 @@ export function QueryPage() {
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
     const [sortModel, setSortModel] = useState<GridSortModel>([]);
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
+    const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [confirmDangerous, setConfirmDangerous] = useState<{
@@ -700,10 +702,24 @@ export function QueryPage() {
                         setTotalRowCount(null);
                     }
                 }
-                fetchTableData(selectedTable, 0, paginationModel.pageSize, query, tableSchema, sortModel);
+                fetchTableData(
+                    selectedTable,
+                    0,
+                    paginationModel.pageSize,
+                    query,
+                    tableSchema,
+                    sortModel
+                );
             }
         },
-        [selectedTable, selectedConnectionId, fetchTableData, paginationModel.pageSize, tableSchema, sortModel]
+        [
+            selectedTable,
+            selectedConnectionId,
+            fetchTableData,
+            paginationModel.pageSize,
+            tableSchema,
+            sortModel,
+        ]
     );
 
     // Filter tables by search
@@ -1297,6 +1313,10 @@ export function QueryPage() {
                                             onPaginationChange={handlePaginationChange}
                                             sortModel={sortModel}
                                             onSortChange={handleSortChange}
+                                            filterModel={filterModel}
+                                            onFilterModelChange={setFilterModel}
+                                            showFilters={showFilters}
+                                            onShowFiltersChange={setShowFilters}
                                             onSearch={handleSearch}
                                             searchQuery={searchQuery}
                                             tableSchema={tableSchema}
@@ -1375,6 +1395,10 @@ export function QueryPage() {
                                     onPaginationChange={handlePaginationChange}
                                     sortModel={sortModel}
                                     onSortChange={handleSortChange}
+                                    filterModel={filterModel}
+                                    onFilterModelChange={setFilterModel}
+                                    showFilters={showFilters}
+                                    onShowFiltersChange={setShowFilters}
                                     onSearch={handleSearch}
                                     searchQuery={searchQuery}
                                     tableSchema={tableSchema}
