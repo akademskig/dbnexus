@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Save/Cancel actions with proper validation
 - **Pagination Improvements**: Added "All" option to view all rows without pagination (in addition to 25, 50, 100, 250, 500)
 - **Server-side Sorting**: Query results table now supports server-side sorting for better performance with large datasets
+- **URL Parameters**: Added URL parameters for better navigation and bookmarking
+    - Logs page tabs can be bookmarked and shared (query-history, migrations, data-sync, activity, audit-logs)
+    - Compare page preserves group, connections, schemas, and active tab in URL
+    - All major pages now support deep linking
+- **Entry Count Badges**: All Logs page tabs now display entry counts with chip badges for better visibility
 
 ### Changed
 
@@ -34,11 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Created `sqlHelpers.ts` for SQL formatting utilities
     - Created `rowOperations.ts` for SQL query builders
     - Created `QueryPageToolbar` component for connection selector and actions
+- **DataGrid Layout**: Fixed width issues in Logs page tables to ensure proper full-width display
+- **Query History**: Removed "Clear History" functionality from Query History tab
 
 ### Fixed
 
 - Linter compliance: Replaced deprecated `String#replace()` with `String#replaceAll()`
 - Filter panel type compatibility across different DataGrid versions
+- All linter warnings resolved (proper TypeScript types, Express middleware types)
+- DataGrid column sizing in Sync Runs tab (connections column now uses flex layout)
 
 ## [0.1.16]
 
