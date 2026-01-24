@@ -444,9 +444,11 @@ export function SyncRunsTab() {
                     </IconButton>
                 </StyledTooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {filteredRuns.length} sync operations
-                </Typography>
+                <Chip
+                    label={`${filteredRuns.length} sync operations`}
+                    size="small"
+                    color="primary"
+                />
             </Box>
 
             {/* Active Filters Display */}

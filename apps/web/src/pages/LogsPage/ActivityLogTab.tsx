@@ -221,9 +221,9 @@ export function ActivityLogTab() {
             const matchesConnection =
                 activity.details?.connectionId === connectionFilter ||
                 activity.details?.sourceConnection ===
-                connections.find((c) => c.id === connectionFilter)?.name ||
+                    connections.find((c) => c.id === connectionFilter)?.name ||
                 activity.details?.targetConnection ===
-                connections.find((c) => c.id === connectionFilter)?.name;
+                    connections.find((c) => c.id === connectionFilter)?.name;
             if (!matchesConnection) return false;
         }
         if (searchQuery) {
@@ -483,9 +483,11 @@ export function ActivityLogTab() {
                     </IconButton>
                 </StyledTooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {filteredActivities.length} activities
-                </Typography>
+                <Chip
+                    label={`${filteredActivities.length} activities`}
+                    size="small"
+                    color="primary"
+                />
             </Box>
 
             {/* Active Filters Display */}

@@ -406,9 +406,11 @@ export function MigrationHistoryTab() {
                     </IconButton>
                 </StyledTooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {filteredMigrations.length} migrations
-                </Typography>
+                <Chip
+                    label={`${filteredMigrations.length} migrations`}
+                    size="small"
+                    color="primary"
+                />
             </Box>
 
             {/* Active Filters Display */}

@@ -21,7 +21,6 @@ import { StyledTooltip } from '../../components/StyledTooltip';
 import {
     ContentCopy as CopyIcon,
     Check as CheckIcon,
-    Delete as DeleteIcon,
     PlayArrow as PlayIcon,
     Search as SearchIcon,
     Clear as ClearIcon,
@@ -29,7 +28,7 @@ import {
     FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRenderCellParams, type GridFilterModel } from '@mui/x-data-grid';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { queriesApi, connectionsApi, projectsApi } from '../../lib/api';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
@@ -52,14 +51,12 @@ function formatDuration(ms: number): string {
 
 export function QueryHistoryTab() {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
     const toast = useToastStore();
     const [selectedConnection, setSelectedConnection] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
     const [typeFilter, setTypeFilter] = useState<QueryCategoryFilter>('all');
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [clearDialogOpen, setClearDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<QueryHistoryEntry | null>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] });
@@ -77,15 +74,6 @@ export function QueryHistoryTab() {
     const { data: history = [], isLoading } = useQuery({
         queryKey: ['queryHistory', selectedConnection],
         queryFn: () => queriesApi.getHistory(selectedConnection || undefined, 500),
-    });
-
-    const clearMutation = useMutation({
-        mutationFn: () => queriesApi.clearHistory(selectedConnection || undefined),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['queryHistory'] });
-            setClearDialogOpen(false);
-            toast.success('Query history cleared');
-        },
     });
 
     const handleCopy = (sql: string, id: string) => {
@@ -386,19 +374,7 @@ export function QueryHistoryTab() {
                     </IconButton>
                 </StyledTooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {filteredHistory.length} entries
-                </Typography>
-
-                <Button
-                    size="small"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => setClearDialogOpen(true)}
-                    disabled={history.length === 0}
-                >
-                    Clear History
-                </Button>
+                <Chip label={`${filteredHistory.length} queries`} size="small" color="primary" />
             </Box>
 
             {/* Active Filters Display */}
@@ -448,31 +424,6 @@ export function QueryHistoryTab() {
                     }}
                 />
             </Box>
-
-            {/* Clear Confirmation Dialog */}
-            <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
-                <DialogTitle>Clear Query History</DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Are you sure you want to clear{' '}
-                        {selectedConnection
-                            ? `history for ${getConnectionName(selectedConnection)}`
-                            : 'all query history'}
-                        ? This action cannot be undone.
-                    </Typography>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setClearDialogOpen(false)}>Cancel</Button>
-                    <Button
-                        color="error"
-                        variant="contained"
-                        onClick={() => clearMutation.mutate()}
-                        disabled={clearMutation.isPending}
-                    >
-                        Clear
-                    </Button>
-                </DialogActions>
-            </Dialog>
 
             {/* Entry Details Dialog */}
             <Dialog
