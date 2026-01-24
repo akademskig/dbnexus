@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Backup Authentication**: Fixed password prompts during backup/restore operations by using environment variables (PGPASSWORD, MYSQL_PWD) instead of command-line arguments
 - Linter compliance: Replaced deprecated `String#replace()` with `String#replaceAll()`
 - Filter panel type compatibility across different DataGrid versions
 
