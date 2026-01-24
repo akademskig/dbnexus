@@ -69,10 +69,7 @@ export class BackupController {
 
     @Post(':id/restore')
     @HttpCode(HttpStatus.OK)
-    async restoreBackup(
-        @Param('id') id: string,
-        @Body('connectionId') connectionId: string
-    ) {
+    async restoreBackup(@Param('id') id: string, @Body('connectionId') connectionId: string) {
         return this.backupService.restoreBackup({
             connectionId,
             backupId: id,

@@ -98,7 +98,14 @@ export class BackupService {
     }
 
     private async performBackup(
-        connection: { engine: DatabaseEngine; host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            engine: DatabaseEngine;
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string,
         backupType: 'full' | 'schema' | 'data',
         compression: boolean
@@ -117,18 +124,30 @@ export class BackupService {
     }
 
     private async performPostgresBackup(
-        connection: { host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string,
         backupType: 'full' | 'schema' | 'data',
         compression: boolean
     ): Promise<void> {
         const args = [
-            '-h', connection.host,
-            '-p', String(connection.port),
-            '-U', connection.username,
-            '-d', connection.database,
-            '-F', 'p', // Plain text format
-            '-f', filePath,
+            '-h',
+            connection.host,
+            '-p',
+            String(connection.port),
+            '-U',
+            connection.username,
+            '-d',
+            connection.database,
+            '-F',
+            'p', // Plain text format
+            '-f',
+            filePath,
         ];
 
         // Add backup type options
@@ -142,10 +161,11 @@ export class BackupService {
             args.push('-Z', '6'); // Compression level 6
         }
 
-        const env = { ...process.env };
-        if (connection.password) {
-            env.PGPASSWORD = connection.password;
-        }
+        // Set password via environment variable to avoid interactive prompt
+        const env = {
+            ...process.env,
+            PGPASSWORD: connection.password || '',
+        };
 
         return new Promise((resolve, reject) => {
             const proc = spawn('pg_dump', args, { env });
@@ -170,21 +190,26 @@ export class BackupService {
     }
 
     private async performMySQLBackup(
-        connection: { host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string,
         backupType: 'full' | 'schema' | 'data',
         compression: boolean
     ): Promise<void> {
         const args = [
-            '-h', connection.host,
-            '-P', String(connection.port),
-            '-u', connection.username,
+            '-h',
+            connection.host,
+            '-P',
+            String(connection.port),
+            '-u',
+            connection.username,
             connection.database,
         ];
-
-        if (connection.password) {
-            args.push(`-p${connection.password}`);
-        }
 
         // Add backup type options
         if (backupType === 'schema') {
@@ -195,8 +220,14 @@ export class BackupService {
 
         args.push('--result-file', filePath);
 
+        // Set password via environment variable to avoid interactive prompt
+        const env = {
+            ...process.env,
+            MYSQL_PWD: connection.password || '',
+        };
+
         return new Promise((resolve, reject) => {
-            const proc = spawn('mysqldump', args);
+            const proc = spawn('mysqldump', args, { env });
 
             let stderr = '';
             proc.stderr?.on('data', (data) => {
@@ -277,7 +308,14 @@ export class BackupService {
     }
 
     private async performRestore(
-        connection: { engine: DatabaseEngine; host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            engine: DatabaseEngine;
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string
     ): Promise<void> {
         switch (connection.engine) {
@@ -294,21 +332,33 @@ export class BackupService {
     }
 
     private async performPostgresRestore(
-        connection: { host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string
     ): Promise<void> {
         const args = [
-            '-h', connection.host,
-            '-p', String(connection.port),
-            '-U', connection.username,
-            '-d', connection.database,
-            '-f', filePath,
+            '-h',
+            connection.host,
+            '-p',
+            String(connection.port),
+            '-U',
+            connection.username,
+            '-d',
+            connection.database,
+            '-f',
+            filePath,
         ];
 
-        const env = { ...process.env };
-        if (connection.password) {
-            env.PGPASSWORD = connection.password;
-        }
+        // Set password via environment variable to avoid interactive prompt
+        const env = {
+            ...process.env,
+            PGPASSWORD: connection.password || '',
+        };
 
         return new Promise((resolve, reject) => {
             const proc = spawn('psql', args, { env });
@@ -333,22 +383,33 @@ export class BackupService {
     }
 
     private async performMySQLRestore(
-        connection: { host: string; port: number; database: string; username: string; password?: string },
+        connection: {
+            host: string;
+            port: number;
+            database: string;
+            username: string;
+            password?: string;
+        },
         filePath: string
     ): Promise<void> {
         const args = [
-            '-h', connection.host,
-            '-P', String(connection.port),
-            '-u', connection.username,
+            '-h',
+            connection.host,
+            '-P',
+            String(connection.port),
+            '-u',
+            connection.username,
             connection.database,
         ];
 
-        if (connection.password) {
-            args.push(`-p${connection.password}`);
-        }
+        // Set password via environment variable to avoid interactive prompt
+        const env = {
+            ...process.env,
+            MYSQL_PWD: connection.password || '',
+        };
 
         return new Promise((resolve, reject) => {
-            const proc = spawn('mysql', args);
+            const proc = spawn('mysql', args, { env });
 
             // Pipe the backup file to mysql
             fs.readFile(filePath).then((data) => {
@@ -429,11 +490,7 @@ export class BackupService {
         return backup.filePath;
     }
 
-    async uploadBackup(
-        connectionId: string,
-        filename: string,
-        fileBuffer: Buffer
-    ) {
+    async uploadBackup(connectionId: string, filename: string, fileBuffer: Buffer) {
         // Get connection details
         const connection = this.connectionsService.findById(connectionId);
         if (!connection) {

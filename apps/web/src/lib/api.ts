@@ -662,7 +662,10 @@ export const backupsApi = {
         return response.json();
     },
 
-    restore: (backupId: string, connectionId: string): Promise<{ success: boolean; message: string }> => {
+    restore: (
+        backupId: string,
+        connectionId: string
+    ): Promise<{ success: boolean; message: string }> => {
         return fetchApi(`/backups/${backupId}/restore`, {
             method: 'POST',
             body: JSON.stringify({ connectionId }),

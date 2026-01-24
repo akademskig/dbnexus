@@ -199,7 +199,13 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
             <GlassCard>
                 {/* Header */}
                 <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
                         <Box>
                             <Typography variant="h6" fontWeight={600} gutterBottom>
                                 Database Backups
@@ -300,13 +306,21 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    gap: 0.5,
+                                                    justifyContent: 'flex-end',
+                                                }}
+                                            >
                                                 {backup.status === 'completed' && (
                                                     <>
                                                         <StyledTooltip title="Download">
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleDownload(backup)}
+                                                                onClick={() =>
+                                                                    handleDownload(backup)
+                                                                }
                                                             >
                                                                 <DownloadIcon fontSize="small" />
                                                             </IconButton>
@@ -314,7 +328,9 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                                         <StyledTooltip title="Restore">
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleRestoreClick(backup)}
+                                                                onClick={() =>
+                                                                    handleRestoreClick(backup)
+                                                                }
                                                             >
                                                                 <RestoreIcon fontSize="small" />
                                                             </IconButton>
@@ -341,7 +357,12 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
             </GlassCard>
 
             {/* Create Backup Dialog */}
-            <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog
+                open={createDialogOpen}
+                onClose={() => setCreateDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Create Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -350,7 +371,9 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                             <Select
                                 value={backupType}
                                 label="Backup Type"
-                                onChange={(e) => setBackupType(e.target.value as 'full' | 'schema' | 'data')}
+                                onChange={(e) =>
+                                    setBackupType(e.target.value as 'full' | 'schema' | 'data')
+                                }
                             >
                                 <MenuItem value="full">Full (Schema + Data)</MenuItem>
                                 <MenuItem value="schema">Schema Only</MenuItem>
@@ -369,9 +392,12 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                         />
 
                         <Alert severity="info">
-                            This will create a backup of the <strong>{connectionName}</strong> database.
-                            {backupType === 'schema' && ' Only the database schema will be backed up.'}
-                            {backupType === 'data' && ' Only the data will be backed up (no schema).'}
+                            This will create a backup of the <strong>{connectionName}</strong>{' '}
+                            database.
+                            {backupType === 'schema' &&
+                                ' Only the database schema will be backed up.'}
+                            {backupType === 'data' &&
+                                ' Only the data will be backed up (no schema).'}
                         </Alert>
                     </Box>
                 </DialogContent>
@@ -389,7 +415,12 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
             </Dialog>
 
             {/* Upload Backup Dialog */}
-            <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog
+                open={uploadDialogOpen}
+                onClose={() => setUploadDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Upload Backup File</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
@@ -407,7 +438,8 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                             </Box>
                         )}
                         <Alert severity="info">
-                            The backup file will be uploaded and associated with <strong>{connectionName}</strong>.
+                            The backup file will be uploaded and associated with{' '}
+                            <strong>{connectionName}</strong>.
                         </Alert>
                     </Box>
                 </DialogContent>
@@ -425,13 +457,18 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
             </Dialog>
 
             {/* Restore Backup Dialog */}
-            <Dialog open={restoreDialogOpen} onClose={() => setRestoreDialogOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog
+                open={restoreDialogOpen}
+                onClose={() => setRestoreDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Restore Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
                         <Alert severity="warning" sx={{ mb: 2 }}>
-                            <strong>Warning:</strong> This will restore the database from the backup file.
-                            This action cannot be undone.
+                            <strong>Warning:</strong> This will restore the database from the backup
+                            file. This action cannot be undone.
                         </Alert>
                         {selectedBackup && (
                             <Box>
@@ -463,16 +500,23 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
             </Dialog>
 
             {/* Delete Backup Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Delete Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
                         <Alert severity="error" sx={{ mb: 2 }}>
-                            This will permanently delete the backup file. This action cannot be undone.
+                            This will permanently delete the backup file. This action cannot be
+                            undone.
                         </Alert>
                         {selectedBackup && (
                             <Typography variant="body2">
-                                Are you sure you want to delete <strong>{selectedBackup.filename}</strong>?
+                                Are you sure you want to delete{' '}
+                                <strong>{selectedBackup.filename}</strong>?
                             </Typography>
                         )}
                     </Box>
