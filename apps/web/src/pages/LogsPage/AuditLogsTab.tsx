@@ -358,7 +358,6 @@ export function AuditLogsTab() {
                                 fontSize: 12,
                                 display: 'flex',
                                 alignItems: 'center',
-                                borderBottom: '0.5px solid',
                                 borderColor: 'divider',
                             },
                             '& .MuiDataGrid-row': {

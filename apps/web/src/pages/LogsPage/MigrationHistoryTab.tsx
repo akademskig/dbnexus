@@ -429,7 +429,7 @@ export function MigrationHistoryTab() {
             />
 
             {/* Data Grid */}
-            <Box sx={{ flex: 1, minHeight: 400 }}>
+            <Box sx={{ flex: 1, minHeight: 400, width: '100%' }}>
                 <DataGrid
                     rows={filteredMigrations}
                     columns={columns}
@@ -448,7 +448,6 @@ export function MigrationHistoryTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
-                            borderBottom: '1px solid',
                             borderColor: 'divider',
                         },
                         '& .MuiDataGrid-row': {

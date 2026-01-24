@@ -221,9 +221,9 @@ export function ActivityLogTab() {
             const matchesConnection =
                 activity.details?.connectionId === connectionFilter ||
                 activity.details?.sourceConnection ===
-                    connections.find((c) => c.id === connectionFilter)?.name ||
+                connections.find((c) => c.id === connectionFilter)?.name ||
                 activity.details?.targetConnection ===
-                    connections.find((c) => c.id === connectionFilter)?.name;
+                connections.find((c) => c.id === connectionFilter)?.name;
             if (!matchesConnection) return false;
         }
         if (searchQuery) {
@@ -506,7 +506,7 @@ export function ActivityLogTab() {
             />
 
             {/* Data Grid */}
-            <Box sx={{ flex: 1, minHeight: 400 }}>
+            <Box sx={{ flex: 1, minHeight: 400, width: '100%' }}>
                 <DataGrid
                     rows={filteredActivities}
                     columns={columns}
@@ -525,7 +525,6 @@ export function ActivityLogTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
-                            borderBottom: '1px solid',
                             borderColor: 'divider',
                         },
                         '& .MuiDataGrid-row': {

@@ -419,7 +419,7 @@ export function QueryHistoryTab() {
             />
 
             {/* Data Grid */}
-            <Box sx={{ flex: 1, minHeight: 400 }}>
+            <Box sx={{ flex: 1, minHeight: 400, width: '100%' }}>
                 <DataGrid
                     rows={filteredHistory}
                     columns={columns}
@@ -438,7 +438,6 @@ export function QueryHistoryTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
-                            borderBottom: '1px solid',
                             borderColor: 'divider',
                         },
                         '& .MuiDataGrid-row': {
