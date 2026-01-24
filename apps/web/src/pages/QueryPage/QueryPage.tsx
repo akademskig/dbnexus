@@ -2,12 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Group, Panel, Separator } from 'react-resizable-panels';
-import { Box, Typography, Chip, IconButton, useTheme } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
-import { StyledTooltip } from '../../components/StyledTooltip';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import HistoryIcon from '@mui/icons-material/History';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
@@ -25,7 +21,6 @@ import { AddRowDialog, SyncRowDialog, SaveQueryDialog } from './Dialogs';
 import { ExplainPlanDialog } from '../../components/ExplainPlanDialog';
 import { FloatingEditorDialog } from './FloatingEditorDialog';
 import { EmptyState } from './EmptyState';
-import { ConnectionSelector } from '../../components/ConnectionSelector';
 import {
     TAB_NAMES,
     getTabIndex,
@@ -33,8 +28,8 @@ import {
     buildTableName,
     extractTableFromQuery,
 } from './utils';
-import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
 import { useSavedQueries } from './hooks';
+import { QueryPageToolbar } from './QueryPageToolbar';
 
 export function QueryPage() {
     const theme = useTheme();
@@ -1347,82 +1342,18 @@ export function QueryPage() {
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Top Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                }}
-            >
-                <ConnectionSelector
-                    value={selectedConnectionId}
-                    onChange={handleConnectionChange}
-                    disableOffline={true}
-                />
-
-                {selectedConnection && (
-                    <>
-                        <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                            {selectedConnection.engine === 'sqlite'
-                                ? selectedConnection.database.split('/').pop()
-                                : `${selectedConnection.host}/${selectedConnection.database}`}
-                        </Typography>
-                        <Chip
-                            label={selectedConnection.engine.toUpperCase()}
-                            size="small"
-                            sx={{
-                                fontSize: 10,
-                                height: 20,
-                                bgcolor: 'primary.dark',
-                                color: 'primary.contrastText',
-                            }}
-                        />
-                    </>
-                )}
-
-                <Box sx={{ flex: 1 }} />
-
-                <StyledTooltip title="Query Templates">
-                    <IconButton
-                        size="small"
-                        onClick={() => setTemplatesOpen(true)}
-                        color={templatesOpen ? 'primary' : 'default'}
-                    >
-                        <QueryTemplateIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Saved Queries">
-                    <IconButton
-                        size="small"
-                        onClick={() => setSavedQueriesOpen(true)}
-                        color={savedQueriesOpen ? 'primary' : 'default'}
-                    >
-                        <BookmarkIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Query History">
-                    <IconButton
-                        size="small"
-                        onClick={() => setHistoryOpen(true)}
-                        color={historyOpen ? 'primary' : 'default'}
-                    >
-                        <HistoryIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-
-                <StyledTooltip title="Refresh">
-                    <IconButton size="small" onClick={handleRefresh}>
-                        <RefreshIcon fontSize="small" />
-                    </IconButton>
-                </StyledTooltip>
-            </Box>
+            <QueryPageToolbar
+                selectedConnectionId={selectedConnectionId}
+                selectedConnection={selectedConnection}
+                templatesOpen={templatesOpen}
+                savedQueriesOpen={savedQueriesOpen}
+                historyOpen={historyOpen}
+                onConnectionChange={handleConnectionChange}
+                onTemplatesToggle={() => setTemplatesOpen(true)}
+                onSavedQueriesToggle={() => setSavedQueriesOpen(true)}
+                onHistoryToggle={() => setHistoryOpen(true)}
+                onRefresh={handleRefresh}
+            />
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
