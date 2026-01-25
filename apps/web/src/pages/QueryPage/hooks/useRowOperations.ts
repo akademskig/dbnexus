@@ -76,7 +76,7 @@ export function useRowOperations({
                 table: selectedTable,
                 tableSchema,
                 values,
-                engine: selectedConnection?.engine as any,
+                engine: selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite',
             });
             setSql(query);
             executeMutation.mutate(
@@ -120,7 +120,7 @@ export function useRowOperations({
         async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
             if (!selectedConnectionId) return;
 
-            const engine = selectedConnection?.engine as any;
+            const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
 
             // Determine table name and primary keys
             let tableName: string;
@@ -217,7 +217,7 @@ export function useRowOperations({
     const confirmDeleteRow = useCallback(() => {
         if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
 
-        const engine = selectedConnection?.engine as any;
+        const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -293,7 +293,7 @@ export function useRowOperations({
             return;
         }
 
-        const engine = selectedConnection?.engine as any;
+        const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);

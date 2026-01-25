@@ -424,6 +424,7 @@ describe('Data Sync Integration Tests', () => {
             expect(result).toBeDefined();
 
             // Log for debugging
+            // eslint-disable-next-line no-console
             console.log(
                 `Full sync result: inserted=${result.inserted}, updated=${result.updated}, deleted=${result.deleted}`
             );
@@ -556,6 +557,7 @@ describe('Data Sync Integration Tests', () => {
             expect(diff.different).toBeDefined();
 
             // Log actual state for debugging
+            // eslint-disable-next-line no-console
             console.log(
                 `Categories diff: ${diff.missingInTarget.length} missing in target, ${diff.missingInSource.length} missing in source, ${diff.different.length} different`
             );
