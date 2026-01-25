@@ -578,8 +578,8 @@ function AboutTab() {
                     infrastructure.
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                    Built with React, TypeScript, NestJS, and Material-UI. Open source and designed
-                    for database administrators and developers who value both power and usability.
+                    Open source and designed for database administrators and developers who value
+                    both power and usability.
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                     Version {version}
