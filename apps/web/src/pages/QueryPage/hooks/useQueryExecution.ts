@@ -19,6 +19,7 @@ interface UseQueryExecutionProps {
     updateUrl: (params: { tab?: number; schema?: string; table?: string }) => void;
     refetchTables: () => void;
     refetchHistory: () => void;
+    setLastSuccessfulQuery?: (query: string) => void;
 }
 
 export function useQueryExecution({
@@ -35,6 +36,7 @@ export function useQueryExecution({
     updateUrl,
     refetchTables,
     refetchHistory,
+    setLastSuccessfulQuery,
 }: UseQueryExecutionProps) {
     const toast = useToastStore();
     const [confirmDangerous, setConfirmDangerous] = useState<{
@@ -60,6 +62,12 @@ export function useQueryExecution({
             setResult(data);
             setError(null);
             setConfirmDangerous(null);
+
+            // Track successful query
+            if (setLastSuccessfulQuery) {
+                setLastSuccessfulQuery(lastExecutedQueryRef.current);
+            }
+
             // Switch to Data tab to show results
             setActiveTab(0);
             updateUrl({ tab: 0 });

@@ -89,6 +89,7 @@ export function QueryPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
+    const [lastSuccessfulQuery, setLastSuccessfulQuery] = useState<string | null>(null);
     // Default to showing selected schema expanded
     const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -311,6 +312,7 @@ export function QueryPage() {
         updateUrl,
         refetchTables,
         refetchHistory,
+        setLastSuccessfulQuery,
     });
 
     // Set default schema when schemas load
@@ -406,6 +408,13 @@ export function QueryPage() {
         },
         [handleExecute, sql]
     );
+
+    // Handle refresh - re-run last successful query
+    const rerunLastQuery = useCallback(() => {
+        if (lastSuccessfulQuery) {
+            executeMutation.mutate({ query: lastSuccessfulQuery });
+        }
+    }, [lastSuccessfulQuery, executeMutation]);
 
     // Fetch data with pagination and optional search
     const fetchTableData = useCallback(
@@ -1018,6 +1027,8 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
+                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
+                                    refreshing={executeMutation.isPending}
                                 />
                             )}
                             {splitViewOpen ? (
@@ -1077,12 +1088,15 @@ export function QueryPage() {
                                             onToggleSplitView={() =>
                                                 setSplitViewOpen(!splitViewOpen)
                                             }
+                                            onRefresh={
+                                                lastSuccessfulQuery ? rerunLastQuery : undefined
+                                            }
                                         />
                                     </Panel>
 
                                     <Separator
                                         style={{
-                                            width: '4px',
+                                            width: '2px',
                                             background: theme.palette.divider,
                                             cursor: 'col-resize',
                                             position: 'relative',
@@ -1117,6 +1131,8 @@ export function QueryPage() {
                                             onKeyDown={handleKeyDown}
                                             executeLoading={executeMutation.isPending}
                                             explainLoading={explainMutation.isPending}
+                                            result={result}
+                                            error={error}
                                         />
                                     </Panel>
                                 </Group>
@@ -1157,6 +1173,7 @@ export function QueryPage() {
                                     tableSchemaLoading={tableSchemaLoading}
                                     splitViewOpen={splitViewOpen}
                                     onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
+                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
                                 />
                             )}
                         </>

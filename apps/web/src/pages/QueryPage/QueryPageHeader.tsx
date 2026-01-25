@@ -1,8 +1,9 @@
-import { Box, Typography, Chip, IconButton } from '@mui/material';
+import { Box, Typography, Chip, IconButton, CircularProgress } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { formatBytes } from './utils';
 import type { TableInfo, TableSchema } from '@dbnexus/shared';
@@ -12,6 +13,8 @@ interface QueryPageHeaderProps {
     tableSchema: TableSchema | undefined;
     onManageTable: () => void;
     onAddRow: () => void;
+    onRefresh?: () => void;
+    refreshing?: boolean;
 }
 
 export function QueryPageHeader({
@@ -19,6 +22,8 @@ export function QueryPageHeader({
     tableSchema,
     onManageTable,
     onAddRow,
+    onRefresh,
+    refreshing = false,
 }: QueryPageHeaderProps) {
     return (
         <Box
@@ -65,6 +70,20 @@ export function QueryPageHeader({
             <Box sx={{ flex: 1 }} />
 
             {/* Table Actions */}
+            {onRefresh && (
+                <StyledTooltip title="Refresh Data">
+                    <span>
+                        <IconButton size="small" onClick={onRefresh} disabled={refreshing}>
+                            {refreshing ? (
+                                <CircularProgress size={16} />
+                            ) : (
+                                <RefreshIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+            )}
+
             <StyledTooltip title="Manage Table">
                 <IconButton size="small" onClick={onManageTable}>
                     <SettingsIcon fontSize="small" />
