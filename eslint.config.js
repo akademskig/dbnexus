@@ -15,6 +15,8 @@ export default tseslint.config(
             '**/*.min.js',
             '**/coverage/**',
             '**/*.cjs', // Ignore CommonJS config files (Jest, etc.)
+            'docker/init/*.js', // Test data scripts
+            'packages/metadata/create-test-db.js', // Test data scripts
         ],
     },
 
