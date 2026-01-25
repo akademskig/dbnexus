@@ -119,6 +119,10 @@ export function FilterPanel({
                                         <MenuItem value="equals">Equals</MenuItem>
                                         <MenuItem value="startsWith">Starts with</MenuItem>
                                         <MenuItem value="endsWith">Ends with</MenuItem>
+                                        <MenuItem value=">">Greater than</MenuItem>
+                                        <MenuItem value=">=">Greater than or equal</MenuItem>
+                                        <MenuItem value="<">Less than</MenuItem>
+                                        <MenuItem value="<=">Less than or equal</MenuItem>
                                         <MenuItem value="isEmpty">Is empty</MenuItem>
                                         <MenuItem value="isNotEmpty">Is not empty</MenuItem>
                                     </Select>
