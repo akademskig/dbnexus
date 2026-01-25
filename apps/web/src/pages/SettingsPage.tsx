@@ -37,6 +37,7 @@ import {
     Palette as PaletteIcon,
     Label as LabelIcon,
     ContentCopy as ContentCopyIcon,
+    Build as BuildIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
@@ -46,6 +47,10 @@ import { colorSchemes, type ColorScheme } from '../theme';
 import { KEYBOARD_SHORTCUTS, formatShortcut } from '../hooks/useKeyboardShortcuts';
 import { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour';
 import { useToastStore } from '../stores/toastStore';
+import { backupsApi } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { StatusAlert } from '../components/StatusAlert';
+import { CircularProgress } from '@mui/material';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -901,6 +906,273 @@ function KeyboardShortcutsTab() {
     );
 }
 
+// System Tools Tab Content
+function SystemToolsTab() {
+    const toast = useToastStore();
+    const queryClient = useQueryClient();
+    const [installDialogOpen, setInstallDialogOpen] = useState(false);
+
+    const { data: toolsStatus, isLoading } = useQuery({
+        queryKey: ['backup-tools-status'],
+        queryFn: () => backupsApi.checkTools(),
+    });
+
+    const installMutation = useMutation({
+        mutationFn: () => backupsApi.installTools(),
+        onSuccess: (result) => {
+            if (result.success) {
+                toast.success(result.message);
+                queryClient.invalidateQueries({ queryKey: ['backup-tools-status'] });
+            } else {
+                toast.error(result.message);
+            }
+        },
+        onError: (error: Error) => {
+            toast.error(`Installation failed: ${error.message}`);
+        },
+    });
+
+    const handleCopyCommands = () => {
+        if (!toolsStatus?.instructions) return;
+
+        const commands = toolsStatus.instructions.instructions
+            .filter((line) => line.trim() && !line.includes(':'))
+            .join('\n');
+
+        navigator.clipboard.writeText(commands);
+        toast.success('Installation commands copied to clipboard');
+    };
+
+    const handleAutoInstall = () => {
+        setInstallDialogOpen(false);
+        installMutation.mutate();
+    };
+
+    if (isLoading) {
+        return (
+            <GlassCard>
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Checking system tools...
+                    </Typography>
+                </Box>
+            </GlassCard>
+        );
+    }
+
+    return (
+        <GlassCard>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                <BuildIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    Database Tools
+                </Typography>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+                Database backup tools are required for native backup/restore functionality. The
+                SQL-based method works without these tools but may be slower for large databases.
+            </Typography>
+
+            {/* Tools Status Table */}
+            <TableContainer sx={{ mb: 3 }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>Tool</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Version</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {toolsStatus?.tools.map((tool) => (
+                            <TableRow key={tool.name}>
+                                <TableCell>
+                                    <Typography variant="body2" fontFamily="monospace">
+                                        {tool.name}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={tool.installed ? 'Installed' : 'Not Installed'}
+                                        size="small"
+                                        color={tool.installed ? 'success' : 'default'}
+                                        sx={{ minWidth: 100 }}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        fontFamily="monospace"
+                                        fontSize={12}
+                                    >
+                                        {tool.version || '-'}
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            {/* Installation Instructions */}
+            {toolsStatus && !toolsStatus.allInstalled && toolsStatus.instructions && (
+                <Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2,
+                        }}
+                    >
+                        <Typography variant="subtitle2" fontWeight={600}>
+                            Installation Commands ({toolsStatus.instructions.platform})
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                size="small"
+                                startIcon={<ContentCopyIcon />}
+                                onClick={handleCopyCommands}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                Copy
+                            </Button>
+                            {toolsStatus.instructions.canAutoInstall && (
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={
+                                        installMutation.isPending ? (
+                                            <CircularProgress size={16} />
+                                        ) : (
+                                            <BuildIcon />
+                                        )
+                                    }
+                                    onClick={() => setInstallDialogOpen(true)}
+                                    disabled={installMutation.isPending}
+                                    sx={{ textTransform: 'none' }}
+                                >
+                                    {installMutation.isPending ? 'Installing...' : 'Auto Install'}
+                                </Button>
+                            )}
+                        </Box>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderRadius: 1,
+                            border: 1,
+                            borderColor: 'primary.main',
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                            overflowX: 'auto',
+                        }}
+                    >
+                        {toolsStatus.instructions.instructions.map((line, i) => (
+                            <Typography
+                                key={i}
+                                variant="body2"
+                                sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    color: line.includes(':') ? 'text.secondary' : 'text.primary',
+                                    fontWeight: line.includes(':') ? 600 : 400,
+                                }}
+                            >
+                                {line}
+                            </Typography>
+                        ))}
+                    </Box>
+
+                    <StatusAlert severity="info" sx={{ mt: 2 }}>
+                        {toolsStatus.instructions.canAutoInstall ? (
+                            <>
+                                Click <strong>Auto Install</strong> to automatically install the
+                                tools, or copy the commands and run them manually in your terminal.
+                                Administrator privileges are required.
+                            </>
+                        ) : (
+                            <>
+                                Copy and paste these commands into your terminal to install the
+                                required tools. You may need administrator privileges.
+                            </>
+                        )}
+                    </StatusAlert>
+                </Box>
+            )}
+
+            {/* All tools installed message */}
+            {toolsStatus?.allInstalled && (
+                <StatusAlert severity="success">
+                    All database tools are installed and ready to use!
+                </StatusAlert>
+            )}
+
+            {/* Install Confirmation Dialog */}
+            <Dialog
+                open={installDialogOpen}
+                onClose={() => setInstallDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Install Database Tools</DialogTitle>
+                <DialogContent>
+                    <StatusAlert severity="warning" sx={{ mb: 2 }}>
+                        This will prompt for your sudo/administrator password to install system
+                        packages.
+                    </StatusAlert>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                        The following tools will be installed:
+                    </Typography>
+                    <Box
+                        component="ul"
+                        sx={{ pl: 2, mb: 2, color: 'text.secondary', fontSize: 14 }}
+                    >
+                        {toolsStatus?.tools
+                            .filter((tool) => !tool.installed)
+                            .map((tool) => (
+                                <li key={tool.name}>{tool.name}</li>
+                            ))}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        Commands to be executed:
+                    </Typography>
+                    <Box
+                        sx={{
+                            mt: 1,
+                            p: 1.5,
+                            borderRadius: 1,
+                            border: 1,
+                            borderColor: 'primary.main',
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                        }}
+                    >
+                        {toolsStatus?.instructions.instructions.map((line, i) => (
+                            <Typography
+                                key={i}
+                                variant="body2"
+                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
+                            >
+                                {line}
+                            </Typography>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 2, pb: 2 }}>
+                    <Button onClick={() => setInstallDialogOpen(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={handleAutoInstall} autoFocus>
+                        Install
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </GlassCard>
+    );
+}
+
 // Help Tab Content
 function HelpTab() {
     const toast = useToastStore();
@@ -949,14 +1221,15 @@ export function SettingsPage() {
         if (tabParam === 'appearance') setTab(0);
         else if (tabParam === 'tags') setTab(1);
         else if (tabParam === 'shortcuts') setTab(2);
-        else if (tabParam === 'help') setTab(3);
-        else if (tabParam === 'about') setTab(4);
+        else if (tabParam === 'tools') setTab(3);
+        else if (tabParam === 'help') setTab(4);
+        else if (tabParam === 'about') setTab(5);
     }, [searchParams]);
 
     // Update URL when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setTab(newValue);
-        const tabNames = ['appearance', 'tags', 'shortcuts', 'help', 'about'];
+        const tabNames = ['appearance', 'tags', 'shortcuts', 'tools', 'help', 'about'];
         const tabName = tabNames[newValue];
         if (tabName) {
             setSearchParams({ tab: tabName });
@@ -1024,6 +1297,11 @@ export function SettingsPage() {
                                 label="Keyboard Shortcuts"
                             />
                             <Tab
+                                icon={<BuildIcon fontSize="small" />}
+                                iconPosition="start"
+                                label="System Tools"
+                            />
+                            <Tab
                                 icon={<SchoolIcon fontSize="small" />}
                                 iconPosition="start"
                                 label="Help"
@@ -1041,8 +1319,9 @@ export function SettingsPage() {
                 {tab === 0 && <AppearanceTab />}
                 {tab === 1 && <TagsTab />}
                 {tab === 2 && <KeyboardShortcutsTab />}
-                {tab === 3 && <HelpTab />}
-                {tab === 4 && <AboutTab />}
+                {tab === 3 && <SystemToolsTab />}
+                {tab === 4 && <HelpTab />}
+                {tab === 5 && <AboutTab />}
             </Box>
         </Box>
     );

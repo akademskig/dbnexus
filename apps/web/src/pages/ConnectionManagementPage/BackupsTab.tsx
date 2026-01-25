@@ -23,7 +23,6 @@ import {
     FormControlLabel,
     Checkbox,
     CircularProgress,
-    Alert,
 } from '@mui/material';
 import {
     Download as DownloadIcon,
@@ -32,6 +31,7 @@ import {
     Restore as RestoreIcon,
     Add as AddIcon,
     CloudDownload as BackupIcon,
+    ContentCopy as CopyIcon,
 } from '@mui/icons-material';
 import { backupsApi, type Backup } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
@@ -39,13 +39,15 @@ import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { StatusAlert } from '@/components/StatusAlert';
 
 interface BackupsTabProps {
     connectionId: string;
     connectionName: string;
+    engine: string;
 }
 
-export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
+export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabProps) {
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,12 +61,23 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
     // Form state
     const [backupType, setBackupType] = useState<'full' | 'schema' | 'data'>('full');
     const [compression, setCompression] = useState(false);
+    const [backupMethod, setBackupMethod] = useState<'native' | 'sql'>('sql');
+    const [restoreMethod, setRestoreMethod] = useState<'native' | 'sql'>('native');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [showToolsSetup, setShowToolsSetup] = useState(false);
+    const [installDialogOpen, setInstallDialogOpen] = useState(false);
 
     // Fetch backups
     const { data: backups = [], isLoading } = useQuery({
         queryKey: ['backups', connectionId],
         queryFn: () => backupsApi.getAll(connectionId),
+    });
+
+    // Fetch tool status
+    const { data: toolsStatus } = useQuery({
+        queryKey: ['backup-tools-status'],
+        queryFn: () => backupsApi.checkTools(),
+        staleTime: 60000, // Cache for 1 minute
     });
 
     // Create backup mutation
@@ -74,6 +87,7 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                 connectionId,
                 backupType,
                 compression,
+                method: backupMethod,
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['backups', connectionId] });
@@ -82,6 +96,23 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
         },
         onError: (error: Error) => {
             toast.error(`Failed to create backup: ${error.message}`);
+        },
+    });
+
+    // Install tools mutation
+    const installToolsMutation = useMutation({
+        mutationFn: () => backupsApi.installTools(),
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: ['backup-tools-status'] });
+            if (result.success) {
+                toast.success('Database tools installed successfully');
+                setShowToolsSetup(false);
+            } else {
+                toast.error(`Installation failed: ${result.message}`);
+            }
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to install tools: ${error.message}`);
         },
     });
 
@@ -101,7 +132,7 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
 
     // Restore backup mutation
     const restoreMutation = useMutation({
-        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId),
+        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId, restoreMethod),
         onSuccess: () => {
             setRestoreDialogOpen(false);
             setSelectedBackup(null);
@@ -154,6 +185,8 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
 
     const handleRestoreClick = (backup: Backup) => {
         setSelectedBackup(backup);
+        // Pre-select restore method based on backup method
+        setRestoreMethod(backup.method);
         setRestoreDialogOpen(true);
     };
 
@@ -215,6 +248,16 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                             </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1 }}>
+                            {toolsStatus && !toolsStatus.allInstalled && (
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => setShowToolsSetup(true)}
+                                    sx={{ mr: 1 }}
+                                >
+                                    Setup Tools
+                                </Button>
+                            )}
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -254,6 +297,7 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                 <TableRow>
                                     <TableCell>Filename</TableCell>
                                     <TableCell>Type</TableCell>
+                                    <TableCell>Method</TableCell>
                                     <TableCell>Size</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Created</TableCell>
@@ -284,6 +328,14 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                                         ? 'primary'
                                                         : 'default'
                                                 }
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={backup.method === 'sql' ? 'SQL' : 'Native'}
+                                                size="small"
+                                                variant="outlined"
+                                                color={backup.method === 'sql' ? 'info' : 'default'}
                                             />
                                         </TableCell>
                                         <TableCell>{formatFileSize(backup.fileSize)}</TableCell>
@@ -381,6 +433,31 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                             </Select>
                         </FormControl>
 
+                        {/* SQLite doesn't need backup method selector - always uses native file copy */}
+                        {engine !== 'sqlite' && (
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Backup Method</InputLabel>
+                                <Select
+                                    value={backupMethod}
+                                    onChange={(e) =>
+                                        setBackupMethod(e.target.value as 'native' | 'sql')
+                                    }
+                                    label="Backup Method"
+                                >
+                                    <MenuItem value="sql">SQL-based (No tools required)</MenuItem>
+                                    <MenuItem
+                                        value="native"
+                                        disabled={toolsStatus && !toolsStatus.allInstalled}
+                                    >
+                                        Native (pg_dump/mysqldump){' '}
+                                        {toolsStatus &&
+                                            !toolsStatus.allInstalled &&
+                                            '- Tools not installed'}
+                                    </MenuItem>
+                                </Select>
+                            </FormControl>
+                        )}
+
                         <FormControlLabel
                             control={
                                 <Checkbox
@@ -391,17 +468,20 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                             label="Enable compression (GZIP)"
                         />
 
-                        <Alert severity="info">
+                        <StatusAlert severity="info">
                             This will create a backup of the <strong>{connectionName}</strong>{' '}
-                            database.
+                            database
+                            {engine === 'sqlite'
+                                ? ' by copying the database file.'
+                                : ` using the ${backupMethod === 'sql' ? 'SQL-based' : 'native'} method.`}
                             {backupType === 'schema' &&
                                 ' Only the database schema will be backed up.'}
                             {backupType === 'data' &&
                                 ' Only the data will be backed up (no schema).'}
-                        </Alert>
+                        </StatusAlert>
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
                     <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -437,13 +517,13 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                 </Typography>
                             </Box>
                         )}
-                        <Alert severity="info">
+                        <StatusAlert severity="info">
                             The backup file will be uploaded and associated with{' '}
                             <strong>{connectionName}</strong>.
-                        </Alert>
+                        </StatusAlert>
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
                     <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -466,10 +546,10 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                 <DialogTitle>Restore Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <Alert severity="warning" sx={{ mb: 2 }}>
+                        <StatusAlert severity="warning" sx={{ mb: 2 }}>
                             <strong>Warning:</strong> This will restore the database from the backup
                             file. This action cannot be undone.
-                        </Alert>
+                        </StatusAlert>
                         {selectedBackup && (
                             <Box>
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -478,14 +558,72 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                                 <Typography variant="body1" fontWeight={500} gutterBottom>
                                     {selectedBackup.filename}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
                                     Created: {formatDate(selectedBackup.createdAt)}
                                 </Typography>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Backup method:{' '}
+                                    {selectedBackup.method === 'sql' ? 'SQL-based' : 'Native'}
+                                </Typography>
+
+                                {/* SQLite doesn't need restore method selector - always uses native */}
+                                {engine !== 'sqlite' && (
+                                    <>
+                                        <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                                            <InputLabel>Restore Method</InputLabel>
+                                            <Select
+                                                value={restoreMethod}
+                                                onChange={(e) =>
+                                                    setRestoreMethod(
+                                                        e.target.value as 'native' | 'sql'
+                                                    )
+                                                }
+                                                label="Restore Method"
+                                                disabled={true}
+                                            >
+                                                <MenuItem value="sql">
+                                                    SQL-based (No tools required)
+                                                </MenuItem>
+                                                <MenuItem
+                                                    value="native"
+                                                    disabled={
+                                                        toolsStatus && !toolsStatus.allInstalled
+                                                    }
+                                                >
+                                                    Native (pg_dump/mysqldump){' '}
+                                                    {toolsStatus &&
+                                                        !toolsStatus.allInstalled &&
+                                                        '- Tools not installed'}
+                                                </MenuItem>
+                                            </Select>
+                                        </FormControl>
+
+                                        <StatusAlert severity="info" sx={{ mt: 2 }}>
+                                            Restore method is automatically selected based on how
+                                            the backup was created.
+                                            {selectedBackup.method === 'native' &&
+                                                toolsStatus &&
+                                                !toolsStatus.allInstalled && (
+                                                    <>
+                                                        {' '}
+                                                        Native restore requires database client
+                                                        tools to be installed.
+                                                    </>
+                                                )}
+                                        </StatusAlert>
+                                    </>
+                                )}
+
+                                {engine === 'sqlite' && (
+                                    <StatusAlert severity="info" sx={{ mt: 2 }}>
+                                        SQLite backups are restored by replacing the database file.
+                                    </StatusAlert>
+                                )}
                             </Box>
                         )}
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
                     <Button onClick={() => setRestoreDialogOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -509,10 +647,10 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                 <DialogTitle>Delete Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <Alert severity="error" sx={{ mb: 2 }}>
+                        <StatusAlert severity="error" sx={{ mb: 2 }}>
                             This will permanently delete the backup file. This action cannot be
                             undone.
-                        </Alert>
+                        </StatusAlert>
                         {selectedBackup && (
                             <Typography variant="body2">
                                 Are you sure you want to delete{' '}
@@ -521,7 +659,7 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                         )}
                     </Box>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
                     <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
                     <Button
                         variant="contained"
@@ -531,6 +669,224 @@ export function BackupsTab({ connectionId, connectionName }: BackupsTabProps) {
                         startIcon={deleteMutation.isPending && <CircularProgress size={16} />}
                     >
                         Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Tools Setup Dialog */}
+            <Dialog
+                open={showToolsSetup}
+                onClose={() => setShowToolsSetup(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Database Backup Tools Setup</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 2 }}>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            Native backup tools provide faster and more complete backups. The
+                            SQL-based method works without these tools but may be slower for large
+                            databases.
+                        </Typography>
+
+                        {/* Tool Status */}
+                        {toolsStatus && (
+                            <>
+                                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                                    Tool Status
+                                </Typography>
+                                <TableContainer sx={{ mb: 3 }}>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Tool</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                <TableCell>Version</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {toolsStatus.tools.map((tool) => (
+                                                <TableRow key={tool.command}>
+                                                    <TableCell>{tool.name}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={
+                                                                tool.installed
+                                                                    ? 'Installed'
+                                                                    : 'Not Installed'
+                                                            }
+                                                            color={
+                                                                tool.installed
+                                                                    ? 'success'
+                                                                    : 'default'
+                                                            }
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="text.secondary"
+                                                        >
+                                                            {tool.version || '-'}
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+
+                                {/* Installation Instructions */}
+                                {!toolsStatus.allInstalled && (
+                                    <>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                mb: 1,
+                                            }}
+                                        >
+                                            <Typography variant="subtitle2" fontWeight={600}>
+                                                Installation Instructions (
+                                                {toolsStatus.instructions.platform})
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                startIcon={<CopyIcon />}
+                                                onClick={() => {
+                                                    const commands =
+                                                        toolsStatus.instructions.instructions
+                                                            .filter(
+                                                                (line) =>
+                                                                    line.trim() &&
+                                                                    !line.includes(':')
+                                                            )
+                                                            .join('\n');
+                                                    navigator.clipboard.writeText(commands);
+                                                    toast.success('Commands copied to clipboard');
+                                                }}
+                                            >
+                                                Copy Commands
+                                            </Button>
+                                        </Box>
+                                        <Box
+                                            sx={{
+                                                p: 2,
+                                                borderRadius: 1,
+                                                border: 1,
+                                                borderColor: 'primary.main',
+                                                fontFamily: 'monospace',
+                                                fontSize: '0.875rem',
+                                                mb: 2,
+                                            }}
+                                        >
+                                            {toolsStatus.instructions.instructions.map(
+                                                (line, i) => (
+                                                    <Typography
+                                                        key={i}
+                                                        variant="body2"
+                                                        sx={{ fontFamily: 'monospace' }}
+                                                    >
+                                                        {line}
+                                                    </Typography>
+                                                )
+                                            )}
+                                        </Box>
+
+                                        {toolsStatus.instructions.canAutoInstall && (
+                                            <StatusAlert severity="info" sx={{ mb: 2 }}>
+                                                Click &quot;Auto Install&quot; to automatically
+                                                install the required tools. You will be prompted for
+                                                your sudo/administrator password.
+                                            </StatusAlert>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
+                    <Button onClick={() => setShowToolsSetup(false)}>Close</Button>
+                    {toolsStatus?.instructions.canAutoInstall && !toolsStatus.allInstalled && (
+                        <Button
+                            variant="contained"
+                            onClick={() => setInstallDialogOpen(true)}
+                            disabled={installToolsMutation.isPending}
+                            startIcon={
+                                installToolsMutation.isPending && <CircularProgress size={16} />
+                            }
+                        >
+                            {installToolsMutation.isPending ? 'Installing...' : 'Auto Install'}
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
+
+            {/* Install Confirmation Dialog */}
+            <Dialog
+                open={installDialogOpen}
+                onClose={() => setInstallDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Install Database Tools</DialogTitle>
+                <DialogContent>
+                    <StatusAlert severity="warning" sx={{ mb: 2 }}>
+                        This will prompt for your sudo/administrator password to install system
+                        packages.
+                    </StatusAlert>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                        The following tools will be installed:
+                    </Typography>
+                    <Box
+                        component="ul"
+                        sx={{ pl: 2, mb: 2, color: 'text.secondary', fontSize: 14 }}
+                    >
+                        {toolsStatus?.tools
+                            .filter((tool) => !tool.installed)
+                            .map((tool) => (
+                                <li key={tool.name}>{tool.name}</li>
+                            ))}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        Commands to be executed:
+                    </Typography>
+                    <Box
+                        sx={{
+                            mt: 1,
+                            p: 1.5,
+                            borderRadius: 1,
+                            border: 1,
+                            borderColor: 'primary.main',
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                        }}
+                    >
+                        {toolsStatus?.instructions.instructions.map((line, i) => (
+                            <Typography
+                                key={i}
+                                variant="body2"
+                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
+                            >
+                                {line}
+                            </Typography>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 2, pb: 2 }}>
+                    <Button onClick={() => setInstallDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            setInstallDialogOpen(false);
+                            installToolsMutation.mutate();
+                        }}
+                        autoFocus
+                    >
+                        Install
                     </Button>
                 </DialogActions>
             </Dialog>
