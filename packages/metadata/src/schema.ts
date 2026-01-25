@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -324,6 +324,7 @@ export const MIGRATIONS: string[] = [
     database_name TEXT NOT NULL,
     database_engine TEXT NOT NULL,
     backup_type TEXT NOT NULL DEFAULT 'full' CHECK(backup_type IN ('full', 'schema', 'data')),
+    method TEXT NOT NULL DEFAULT 'native' CHECK(method IN ('native', 'sql')),
     compression TEXT NOT NULL DEFAULT 'none' CHECK(compression IN ('none', 'gzip')),
     status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('in_progress', 'completed', 'failed')),
     error TEXT,
@@ -335,5 +336,13 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_backups_created_at ON backups(created_at DESC);
 
   UPDATE schema_version SET version = 14;
+  `,
+
+    // Version 15: Add method column to existing backups table
+    `
+  -- Add method column to backups table (for existing databases)
+  ALTER TABLE backups ADD COLUMN method TEXT NOT NULL DEFAULT 'native';
+
+  UPDATE schema_version SET version = 15;
   `,
 ];

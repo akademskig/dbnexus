@@ -850,6 +850,7 @@ export function DataTab({
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {rows.length > 0 ? (
                             <DataGrid
+                                key={`datagrid-${totalRowCount}`}
                                 rows={rows}
                                 columns={columns}
                                 getRowId={(row) => row.__rowIndex}

@@ -20,4 +20,11 @@ export type {
     AuditEntityType,
 } from './audit-log.repository.js';
 export { BackupRepository } from './backup.repository.js';
-export type { Backup, CreateBackupInput } from './backup.repository.js';
+export type {
+    Backup,
+    CreateBackupInput,
+    BackupMethod,
+    BackupStatus,
+    BackupCompression,
+    BackupBackupType,
+} from './backup.repository.js';

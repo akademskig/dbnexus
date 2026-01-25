@@ -789,10 +789,39 @@ export function QueryPage() {
         t.name.toLowerCase().includes(tableSearch.toLowerCase())
     );
 
+    // Sync selectedTable with updated tables list
+    useEffect(() => {
+        if (selectedTable && tables.length > 0) {
+            const updatedTable = tables.find((t) => t.name === selectedTable.name);
+            if (updatedTable && updatedTable.rowCount !== selectedTable.rowCount) {
+                setSelectedTable(updatedTable);
+            }
+        }
+    }, [tables, selectedTable]);
+
+    // Refetch row count for current table
+    const refetchRowCount = useCallback(async () => {
+        if (selectedTable && selectedConnectionId) {
+            try {
+                const { count } = await schemaApi.getTableRowCount(
+                    selectedConnectionId,
+                    selectedTable.schema || 'main',
+                    selectedTable.name
+                );
+                setTotalRowCount(count);
+                // Also refetch the tables list to update row counts in sidebar
+                refetchTables();
+            } catch {
+                setTotalRowCount(null);
+            }
+        }
+    }, [selectedTable, selectedConnectionId, refetchTables]);
+
     // Group tables by schema
     const handleRefresh = () => {
         refetchSchemas();
         refetchTables();
+        refetchRowCount();
     };
 
     // Row operations hook
@@ -824,6 +853,8 @@ export function QueryPage() {
         setSql,
         setTotalRowCount,
         fetchTableData,
+        refetchRowCount,
+        refetchTables,
     });
 
     // Handle foreign key click - query the specific referenced row

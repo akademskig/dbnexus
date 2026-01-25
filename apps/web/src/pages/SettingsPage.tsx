@@ -970,8 +970,7 @@ function SystemToolsTab() {
             </Box>
 
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                Database backup tools are required for native backup/restore functionality. The
-                SQL-based method works without these tools but may be slower for large databases.
+                Database backup tools are required for native backup/restore functionality.
             </Typography>
 
             {/* Tools Status Table */}

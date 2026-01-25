@@ -431,7 +431,11 @@ export function ConnectionManagementPage() {
                 />
             )}
             {activeTab === 5 && connection && (
-                <BackupsTab connectionId={connectionId} connectionName={connection.name} />
+                <BackupsTab
+                    connectionId={connectionId}
+                    connectionName={connection.name}
+                    engine={connection.engine}
+                />
             )}
         </Box>
     );

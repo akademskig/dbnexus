@@ -17,6 +17,9 @@ dist-package/
 .dbnexus-test/
 dbnexus.config.json
 
+# Data directory (metadata DB and backups)
+data/
+
 # IDE
 .idea/
 .vscode/

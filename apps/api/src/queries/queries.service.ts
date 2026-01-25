@@ -23,7 +23,7 @@ export class QueriesService {
     constructor(
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService
-    ) { }
+    ) {}
 
     /**
      * Validate a query without executing
@@ -418,15 +418,7 @@ export class QueriesService {
 
         // Check if the query type supports EXPLAIN
         const queryUpper = cleanedSql.toUpperCase().trim();
-        const unsupportedDDL = [
-            'CREATE',
-            'ALTER',
-            'DROP',
-            'TRUNCATE',
-            'RENAME',
-            'GRANT',
-            'REVOKE',
-        ];
+        const unsupportedDDL = ['CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'RENAME', 'GRANT', 'REVOKE'];
 
         const startsWithUnsupported = unsupportedDDL.some((keyword) =>
             queryUpper.startsWith(keyword)
