@@ -135,6 +135,11 @@ export function LogsPage() {
                         label="Data Sync"
                     />
                     <Tab
+                        icon={<BackupIcon sx={{ fontSize: 18 }} />}
+                        iconPosition="start"
+                        label="Backup & Restore"
+                    />
+                    <Tab
                         icon={<ActivityIcon sx={{ fontSize: 18 }} />}
                         iconPosition="start"
                         label="Activity"
@@ -143,11 +148,6 @@ export function LogsPage() {
                         icon={<AuditIcon sx={{ fontSize: 18 }} />}
                         iconPosition="start"
                         label="Audit Logs"
-                    />
-                    <Tab
-                        icon={<BackupIcon sx={{ fontSize: 18 }} />}
-                        iconPosition="start"
-                        label="Backups"
                     />
                 </Tabs>
 
