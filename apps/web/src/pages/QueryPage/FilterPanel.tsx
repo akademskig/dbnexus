@@ -57,27 +57,6 @@ export function FilterPanel({
         onFilterModelChange({ items: newItems });
     };
 
-    // Check if a filter value is required but empty
-    const isFilterValueInvalid = (filter: GridFilterItem): boolean => {
-        const operatorsRequiringValue = new Set([
-            'contains',
-            'equals',
-            'startsWith',
-            'endsWith',
-            '>',
-            '>=',
-            '<',
-            '<=',
-        ]);
-
-        if (operatorsRequiringValue.has(filter.operator)) {
-            const value = filter.value;
-            return value === undefined || value === null || value === '';
-        }
-
-        return false;
-    };
-
     return (
         <Collapse in={open}>
             <Box
@@ -160,12 +139,6 @@ export function FilterPanel({
                                                 handleUpdateFilter(index, {
                                                     value: e.target.value,
                                                 })
-                                            }
-                                            error={isFilterValueInvalid(filter)}
-                                            helperText={
-                                                isFilterValueInvalid(filter)
-                                                    ? 'Value is required'
-                                                    : undefined
                                             }
                                             sx={{ flex: 1 }}
                                         />
