@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.17] - 2026-01-24
+## [0.2.0] - 2026-01-25
 
 ### Added
 
@@ -19,6 +19,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Database tools setup wizard with auto-install capability
     - Engine-specific tool validation (only checks for tools needed by the current database)
     - Integrated as a new tab in Connection Management page
+- **Backup & Restore Logs**: Comprehensive logging for all backup operations
+    - New "Backup & Restore" tab in Logs page showing operation history
+    - Track backup creation, restoration, deletion, and upload operations
+    - Detailed metadata including duration, file size, status, and error messages
+    - Filter logs by operation type, connection, and status
+- **SQL Editor Output Panel**: Split-view SQL editor with integrated output display
+    - Resizable bottom panel for query results and errors
+    - Toggle button with status indicator (success/error color)
+    - View SQL output without switching tabs
+
+### Changed
+
+- **Backup UI**: Simplified backup creation to only support full backups (schema + data)
+
+### Fixed
+
+- **Query Execution Validation**: Prevent execution of queries with invalid filter values
+    - Comparison operators (>, >=, <, <=) now require non-empty values
+    - Clear error indication when filters are invalid
+- **Query Page Layout**: Improved panel dividers and spacing for better visual separation
+- **Backup File Deletion**: Gracefully handle cases where backup files are already deleted from disk
+- **Query Page Data Refresh**: Auto-refresh data after successful database restore
+
+## [0.1.17] - 2026-01-24
+
+### Added
+
 - **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering
     - Filter button with badge showing active filter count
     - Active filter chips displayed below toolbar
@@ -32,7 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Scrollbar Styling**: Scrollbars now have straight edges for a cleaner look
-- **Backup UI**: Simplified backup creation to only support full backups (schema + data)
 
 ### Fixed
 
@@ -41,8 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Show clear error message when attempting to EXPLAIN DDL statements (ALTER, CREATE, DROP, etc.)
     - Normalize line endings for consistent SQL processing
 - **Table Row Counts**: Fixed inaccurate row counts in MySQL after delete operations
-- **Backup File Deletion**: Gracefully handle cases where backup files are already deleted from disk
-- **Query Page Data Refresh**: Auto-refresh data after successful database restore
 
 ## [0.1.16]
 
