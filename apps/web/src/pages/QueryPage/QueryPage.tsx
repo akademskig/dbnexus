@@ -529,7 +529,7 @@ export function QueryPage() {
                             );
                             break;
                         case '>':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} > ${value}`);
                                 } else {
@@ -539,7 +539,7 @@ export function QueryPage() {
                             }
                             break;
                         case '>=':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} >= ${value}`);
                                 } else {
@@ -549,7 +549,7 @@ export function QueryPage() {
                             }
                             break;
                         case '<':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} < ${value}`);
                                 } else {
@@ -559,7 +559,7 @@ export function QueryPage() {
                             }
                             break;
                         case '<=':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} <= ${value}`);
                                 } else {
