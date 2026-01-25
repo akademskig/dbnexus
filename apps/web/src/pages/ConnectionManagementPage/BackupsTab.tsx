@@ -16,10 +16,6 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     FormControlLabel,
     Checkbox,
     CircularProgress,
@@ -33,7 +29,6 @@ import {
     CloudDownload as BackupIcon,
     ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-import type { BackupType } from '@dbnexus/shared';
 import { backupsApi, type Backup } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -60,7 +55,6 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
     const [selectedBackup, setSelectedBackup] = useState<Backup | null>(null);
 
     // Form state
-    const [backupType, setBackupType] = useState<BackupType>('full');
     const [compression, setCompression] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [showToolsSetup, setShowToolsSetup] = useState(false);
@@ -98,12 +92,12 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         return false;
     };
 
-    // Create backup mutation - always use native method
+    // Create backup mutation - always use native method with full backup
     const createMutation = useMutation({
         mutationFn: () =>
             backupsApi.create({
                 connectionId,
-                backupType,
+                backupType: 'full',
                 compression,
                 method: 'native',
             }),
@@ -541,28 +535,6 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                 <DialogTitle>Create Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Backup Type</InputLabel>
-                            <Select
-                                value={backupType}
-                                label="Backup Type"
-                                onChange={(e) => setBackupType(e.target.value as BackupType)}
-                            >
-                                <MenuItem value="full">Full (Schema + Data)</MenuItem>
-                                <MenuItem value="schema">Schema Only</MenuItem>
-                                <MenuItem value="data">Data Only</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        {/* Native tools info */}
-                        {engine !== 'sqlite' && (
-                            <StatusAlert severity="success">
-                                Using native backup tools (
-                                {engine === 'postgres' ? 'pg_dump' : 'mysqldump'}) for optimal
-                                performance and reliability.
-                            </StatusAlert>
-                        )}
-
                         <FormControlLabel
                             control={
                                 <Checkbox
@@ -574,15 +546,8 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                         />
 
                         <StatusAlert severity="info">
-                            This will create a backup of the <strong>{connectionName}</strong>{' '}
-                            database
-                            {engine === 'sqlite'
-                                ? ' by copying the database file.'
-                                : ' using native database tools.'}
-                            {backupType === 'schema' &&
-                                ' Only the database schema will be backed up.'}
-                            {backupType === 'data' &&
-                                ' Only the data will be backed up (no schema).'}
+                            This will create a full backup (schema + data) of the{' '}
+                            <strong>{connectionName}</strong> database.
                         </StatusAlert>
                     </Box>
                 </DialogContent>
@@ -622,10 +587,6 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                 </Typography>
                             </Box>
                         )}
-                        <StatusAlert severity="info">
-                            The backup file will be uploaded and associated with{' '}
-                            <strong>{connectionName}</strong>.
-                        </StatusAlert>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ pb: 2, px: 2 }}>
@@ -666,25 +627,6 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     Created: {formatDate(selectedBackup.createdAt)}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                    Backup method:{' '}
-                                    {selectedBackup.method === 'sql' ? 'SQL-based' : 'Native'}
-                                </Typography>
-
-                                {/* Restore info */}
-                                <StatusAlert severity="info" sx={{ mt: 2 }}>
-                                    {engine === 'sqlite' ? (
-                                        <>
-                                            SQLite backups are restored by replacing the database
-                                            file.
-                                        </>
-                                    ) : (
-                                        <>
-                                            This backup will be restored using native database tools
-                                            ({engine === 'postgres' ? 'psql' : 'mysql'}).
-                                        </>
-                                    )}
-                                </StatusAlert>
                             </Box>
                         )}
                     </Box>
@@ -713,14 +655,11 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                 <DialogTitle>Delete Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <StatusAlert severity="error" sx={{ mb: 2 }}>
-                            This will permanently delete the backup file. This action cannot be
-                            undone.
-                        </StatusAlert>
                         {selectedBackup && (
                             <Typography variant="body2">
-                                Are you sure you want to delete{' '}
-                                <strong>{selectedBackup.filename}</strong>?
+                                Are you sure you want to permanently delete{' '}
+                                <strong>{selectedBackup.filename}</strong>? This action cannot be
+                                undone.
                             </Typography>
                         )}
                     </Box>
@@ -749,11 +688,17 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                 <DialogTitle>Delete Multiple Backups</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <StatusAlert severity="error" sx={{ mb: 2 }}>
-                            This will permanently delete {selectedBackupIds.size} backup
-                            {selectedBackupIds.size > 1 ? 's' : ''}. This action cannot be undone.
-                        </StatusAlert>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography variant="body2" gutterBottom>
+                            Are you sure you want to permanently delete {selectedBackupIds.size}{' '}
+                            backup
+                            {selectedBackupIds.size > 1 ? 's' : ''}? This action cannot be undone.
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                            sx={{ mt: 2 }}
+                        >
                             Selected backups:
                         </Typography>
                         <Box
@@ -801,10 +746,9 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                 <DialogTitle>Database Backup Tools Setup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <Typography variant="body2" color="text.secondary" paragraph>
-                            Native backup tools provide faster and more complete backups. The
-                            SQL-based method works without these tools but may be slower for large
-                            databases.
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Native backup tools are required for creating and restoring database
+                            backups.
                         </Typography>
 
                         {/* Tool Status */}
