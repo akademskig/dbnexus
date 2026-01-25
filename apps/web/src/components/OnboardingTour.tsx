@@ -78,7 +78,7 @@ export function OnboardingTour({
                     'Compare environments side-by-side',
                     'Sync databases effortlessly',
                 ],
-                hint: '✨ Supports PostgreSQL, MySQL, MariaDB, and SQLite',
+                hint: '✨ Supports PostgreSQL, MySQL, and SQLite',
                 icon: <RocketLaunchIcon />,
                 route: '/dashboard',
                 color: theme.palette.primary.main,

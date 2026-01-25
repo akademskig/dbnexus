@@ -309,7 +309,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 - Query Editor with syntax highlighting and auto-completion
-- Multi-database support (PostgreSQL, MySQL, MariaDB, SQLite)
+- Multi-database support (PostgreSQL, MySQL, SQLite)
 - Connection management with secure credential storage
 - Table browsing and data exploration
 - Inline cell editing

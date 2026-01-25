@@ -21,6 +21,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    CircularProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,7 +51,6 @@ import { useToastStore } from '../stores/toastStore';
 import { backupsApi } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusAlert } from '../components/StatusAlert';
-import { CircularProgress } from '@mui/material';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -573,7 +573,7 @@ function AboutTab() {
                     modern experience.
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                    Works seamlessly with <strong>PostgreSQL, MySQL, MariaDB, and SQLite</strong> —
+                    Works seamlessly with <strong>PostgreSQL, MySQL, and SQLite</strong> —
                     everything runs locally, giving you full control over your data and
                     infrastructure.
                 </Typography>

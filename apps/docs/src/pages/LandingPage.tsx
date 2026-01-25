@@ -482,7 +482,7 @@ export function LandingPage() {
             <DatabasesSection>
                 <SectionTitle>Works with your stack</SectionTitle>
                 <SectionSubtitle>
-                    Connect to PostgreSQL, MySQL, MariaDB, and SQLite databases. More coming soon.
+                    Connect to PostgreSQL, MySQL, and SQLite databases. More coming soon.
                 </SectionSubtitle>
                 <DatabasesGrid>
                     {databases.map((db, index) => (
