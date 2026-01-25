@@ -320,7 +320,7 @@ NODE_ENV=production node apps/api/dist/main.js
 For testing with multiple database instances:
 
 ```bash
-# Start test databases (PostgreSQL, MySQL, MariaDB)
+# Start test databases (PostgreSQL, MySQL)
 docker-compose up -d
 
 # Stop test databases

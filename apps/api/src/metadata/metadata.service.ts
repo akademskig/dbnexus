@@ -9,6 +9,8 @@ import {
     SyncRunLogsRepository,
     SchemaSnapshotRepository,
     AuditLogRepository,
+    BackupRepository,
+    BackupLogsRepository,
 } from '@dbnexus/metadata';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -25,6 +27,8 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _syncRunLogsRepository!: SyncRunLogsRepository;
     private _schemaSnapshotRepository!: SchemaSnapshotRepository;
     private _auditLogRepository!: AuditLogRepository;
+    private _backupRepository!: BackupRepository;
+    private _backupLogsRepository!: BackupLogsRepository;
 
     onModuleInit() {
         // Get data directory path
@@ -65,6 +69,8 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this._syncRunLogsRepository = new SyncRunLogsRepository(this.db);
         this._schemaSnapshotRepository = new SchemaSnapshotRepository(this.db);
         this._auditLogRepository = new AuditLogRepository(this.db);
+        this._backupRepository = new BackupRepository(this.db.db);
+        this._backupLogsRepository = new BackupLogsRepository(this.db.db);
 
         this.logger.log(`📦 Metadata database initialized at ${dbPath}`);
     }
@@ -103,6 +109,14 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get auditLogRepository(): AuditLogRepository {
         return this._auditLogRepository;
+    }
+
+    get backupRepository(): BackupRepository {
+        return this._backupRepository;
+    }
+
+    get backupLogsRepository(): BackupLogsRepository {
+        return this._backupLogsRepository;
     }
 
     get database(): MetadataDatabase {

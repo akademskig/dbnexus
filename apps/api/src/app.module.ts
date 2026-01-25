@@ -11,6 +11,7 @@ import { SyncModule } from './sync/sync.module.js';
 import { HealthModule } from './health/health.module.js';
 import { ScannerModule } from './scanner/scanner.module.js';
 import { AuditModule } from './audit/audit.module.js';
+import { BackupModule } from './backup/backup.module.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -34,6 +35,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         HealthModule,
         ScannerModule,
         AuditModule,
+        BackupModule,
     ],
 })
 export class AppModule {}

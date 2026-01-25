@@ -62,7 +62,7 @@ export function DeleteRowDialog({
                     {row && tableSchema && primaryKeys.length > 0 && (
                         <>
                             <Divider sx={{ my: 2 }} />
-                            <Box sx={{ mb: 1 }}>
+                            <Box>
                                 <Typography
                                     variant="caption"
                                     fontWeight={600}
@@ -80,49 +80,43 @@ export function DeleteRowDialog({
                                 </Typography>
                                 <Box
                                     sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 1,
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
                                     }}
                                 >
-                                    {primaryKeys.map((c) => (
+                                    {primaryKeys.map((c, index) => (
                                         <Box
                                             key={c.name}
                                             sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 1.5,
                                                 p: 1.5,
-                                                bgcolor: (theme) =>
-                                                    alpha(theme.palette.error.main, 0.05),
-                                                borderLeft: 3,
-                                                borderColor: 'error.main',
-                                                borderRadius: 1,
+                                                borderBottom:
+                                                    index < primaryKeys.length - 1 ? 1 : 0,
+                                                borderColor: 'divider',
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover',
+                                                },
                                             }}
                                         >
-                                            <Typography
-                                                variant="body2"
-                                                fontWeight={600}
-                                                color="text.secondary"
-                                                sx={{ minWidth: 100 }}
-                                            >
-                                                {c.name}
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                fontFamily="monospace"
+                                            <Box
                                                 sx={{
-                                                    flex: 1,
-                                                    px: 1.5,
-                                                    py: 0.5,
-                                                    bgcolor: 'background.paper',
-                                                    borderRadius: 0.5,
-                                                    border: 1,
-                                                    borderColor: 'divider',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 1,
                                                 }}
                                             >
-                                                {String(row[c.name])}
-                                            </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={600}
+                                                    color="text.secondary"
+                                                    sx={{ minWidth: 100 }}
+                                                >
+                                                    {c.name}:
+                                                </Typography>
+                                                <Typography variant="body2" fontFamily="monospace">
+                                                    {String(row[c.name])}
+                                                </Typography>
+                                            </Box>
                                         </Box>
                                     ))}
                                 </Box>

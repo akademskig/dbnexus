@@ -89,6 +89,7 @@ export function QueryPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState(getInitialTab());
+    const [lastSuccessfulQuery, setLastSuccessfulQuery] = useState<string | null>(null);
     // Default to showing selected schema expanded
     const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -311,6 +312,7 @@ export function QueryPage() {
         updateUrl,
         refetchTables,
         refetchHistory,
+        setLastSuccessfulQuery,
     });
 
     // Set default schema when schemas load
@@ -406,6 +408,13 @@ export function QueryPage() {
         },
         [handleExecute, sql]
     );
+
+    // Handle refresh - re-run last successful query
+    const rerunLastQuery = useCallback(() => {
+        if (lastSuccessfulQuery) {
+            executeMutation.mutate({ query: lastSuccessfulQuery });
+        }
+    }, [lastSuccessfulQuery, executeMutation]);
 
     // Fetch data with pagination and optional search
     const fetchTableData = useCallback(
@@ -529,7 +538,7 @@ export function QueryPage() {
                             );
                             break;
                         case '>':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} > ${value}`);
                                 } else {
@@ -539,7 +548,7 @@ export function QueryPage() {
                             }
                             break;
                         case '>=':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} >= ${value}`);
                                 } else {
@@ -549,7 +558,7 @@ export function QueryPage() {
                             }
                             break;
                         case '<':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} < ${value}`);
                                 } else {
@@ -559,7 +568,7 @@ export function QueryPage() {
                             }
                             break;
                         case '<=':
-                            if (value !== undefined && value !== null) {
+                            if (value !== undefined && value !== null && value !== '') {
                                 if (isNumeric) {
                                     filterConditions.push(`${quotedField} <= ${value}`);
                                 } else {
@@ -714,12 +723,51 @@ export function QueryPage() {
         ]
     );
 
+    // Validate filter model - check if all filters have valid values
+    const validateFilters = useCallback((filters: GridFilterModel): boolean => {
+        if (!filters || !filters.items || filters.items.length === 0) {
+            return true; // No filters is valid
+        }
+
+        // Operators that require a value
+        const operatorsRequiringValue = new Set([
+            'contains',
+            'equals',
+            'startsWith',
+            'endsWith',
+            '>',
+            '>=',
+            '<',
+            '<=',
+        ]);
+
+        // Check each filter
+        for (const filter of filters.items) {
+            if (!filter.field || !filter.operator) {
+                continue; // Skip incomplete filters
+            }
+
+            // If operator requires a value, check if value is provided
+            if (operatorsRequiringValue.has(filter.operator)) {
+                const value = filter.value;
+                // Value is invalid if it's undefined, null, or empty string
+                if (value === undefined || value === null || value === '') {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }, []);
+
     // Handle filter change
     const handleFilterChange = useCallback(
         (newFilterModel: GridFilterModel) => {
             setFilterModel(newFilterModel);
             setPaginationModel((prev) => ({ ...prev, page: 0 }));
-            if (selectedTable) {
+
+            // Only fetch data if filters are valid
+            if (selectedTable && validateFilters(newFilterModel)) {
                 fetchTableData(
                     selectedTable,
                     0,
@@ -738,6 +786,7 @@ export function QueryPage() {
             searchQuery,
             tableSchema,
             sortModel,
+            validateFilters,
         ]
     );
 
@@ -789,10 +838,39 @@ export function QueryPage() {
         t.name.toLowerCase().includes(tableSearch.toLowerCase())
     );
 
+    // Sync selectedTable with updated tables list
+    useEffect(() => {
+        if (selectedTable && tables.length > 0) {
+            const updatedTable = tables.find((t) => t.name === selectedTable.name);
+            if (updatedTable && updatedTable.rowCount !== selectedTable.rowCount) {
+                setSelectedTable(updatedTable);
+            }
+        }
+    }, [tables, selectedTable]);
+
+    // Refetch row count for current table
+    const refetchRowCount = useCallback(async () => {
+        if (selectedTable && selectedConnectionId) {
+            try {
+                const { count } = await schemaApi.getTableRowCount(
+                    selectedConnectionId,
+                    selectedTable.schema || 'main',
+                    selectedTable.name
+                );
+                setTotalRowCount(count);
+                // Also refetch the tables list to update row counts in sidebar
+                refetchTables();
+            } catch {
+                setTotalRowCount(null);
+            }
+        }
+    }, [selectedTable, selectedConnectionId, refetchTables]);
+
     // Group tables by schema
     const handleRefresh = () => {
         refetchSchemas();
         refetchTables();
+        refetchRowCount();
     };
 
     // Row operations hook
@@ -824,6 +902,8 @@ export function QueryPage() {
         setSql,
         setTotalRowCount,
         fetchTableData,
+        refetchRowCount,
+        refetchTables,
     });
 
     // Handle foreign key click - query the specific referenced row
@@ -947,6 +1027,8 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
+                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
+                                    refreshing={executeMutation.isPending}
                                 />
                             )}
                             {splitViewOpen ? (
@@ -1006,12 +1088,15 @@ export function QueryPage() {
                                             onToggleSplitView={() =>
                                                 setSplitViewOpen(!splitViewOpen)
                                             }
+                                            onRefresh={
+                                                lastSuccessfulQuery ? rerunLastQuery : undefined
+                                            }
                                         />
                                     </Panel>
 
                                     <Separator
                                         style={{
-                                            width: '4px',
+                                            width: '2px',
                                             background: theme.palette.divider,
                                             cursor: 'col-resize',
                                             position: 'relative',
@@ -1046,6 +1131,8 @@ export function QueryPage() {
                                             onKeyDown={handleKeyDown}
                                             executeLoading={executeMutation.isPending}
                                             explainLoading={explainMutation.isPending}
+                                            result={result}
+                                            error={error}
                                         />
                                     </Panel>
                                 </Group>
@@ -1086,6 +1173,7 @@ export function QueryPage() {
                                     tableSchemaLoading={tableSchemaLoading}
                                     splitViewOpen={splitViewOpen}
                                     onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
+                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
                                 />
                             )}
                         </>

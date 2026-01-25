@@ -6,7 +6,7 @@ import Database from 'better-sqlite3';
 import { MIGRATIONS, SCHEMA_VERSION } from './schema.js';
 
 export class MetadataDatabase {
-    private db: Database.Database;
+    public db: Database.Database;
 
     constructor(dbPath: string) {
         this.db = new Database(dbPath);

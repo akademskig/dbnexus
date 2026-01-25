@@ -8,7 +8,7 @@
 ## Features
 
 - 🖥️ **Modern Web UI** - Beautiful interface for database management
-- 🔌 **Multiple Databases** - PostgreSQL, MySQL, MariaDB, SQLite
+- 🔌 **Multiple Databases** - PostgreSQL, MySQL, SQLite
 - 🔄 **Schema Sync** - Compare and migrate schemas between databases
 - 📊 **Data Sync** - Synchronize table data with conflict resolution
 - 🗺️ **Schema Diagram** - Visual database schema editor with drag-and-drop
@@ -112,7 +112,7 @@ DBNEXUS_DATA_DIR=/custom/path dbnexus
 ## Requirements
 
 - Node.js 18 or higher
-- One of: PostgreSQL, MySQL, MariaDB, or SQLite
+- One of: PostgreSQL, MySQL, or SQLite
 
 ## Supported Databases
 
@@ -159,4 +159,4 @@ AGPL-3.0 © DB Nexus Team
 
 ---
 
-**Like Prisma Studio, but for any database** - Manage PostgreSQL, MySQL, MariaDB, and SQLite databases with a beautiful web interface.
+**Like Prisma Studio, but for any database** - Manage PostgreSQL, MySQL,and SQLite databases with a beautiful web interface.

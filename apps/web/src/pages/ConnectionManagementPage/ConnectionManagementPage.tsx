@@ -21,6 +21,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import BackupIcon from '@mui/icons-material/Backup';
 import { connectionsApi, schemaApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -31,6 +32,7 @@ import { SchemasTab } from './SchemasTab';
 import { MaintenanceTab } from './MaintenanceTab';
 import { TablesTab } from './TablesTab';
 import { TableDetailsTab } from './TableDetailsTab';
+import { BackupsTab } from './BackupsTab';
 
 const TAB_ICONS = [
     <DashboardIcon key="overview" fontSize="small" />,
@@ -38,6 +40,7 @@ const TAB_ICONS = [
     <TableChartIcon key="tables" fontSize="small" />,
     <SettingsIcon key="table-management" fontSize="small" />,
     <BuildIcon key="maintenance" fontSize="small" />,
+    <BackupIcon key="backups" fontSize="small" />,
 ];
 
 export function ConnectionManagementPage() {
@@ -212,7 +215,7 @@ export function ConnectionManagementPage() {
                 {/* Tabs skeleton */}
                 <GlassCard sx={{ mb: 3, p: 0 }}>
                     <Box sx={{ display: 'flex', gap: 2, p: 2 }}>
-                        {[1, 2, 3, 4, 5].map((i) => (
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
                             <Skeleton key={i} width={100} height={40} />
                         ))}
                     </Box>
@@ -348,6 +351,7 @@ export function ConnectionManagementPage() {
                         <Tab icon={TAB_ICONS[2]} iconPosition="start" label="Tables" />
                         <Tab icon={TAB_ICONS[3]} iconPosition="start" label="Table Management" />
                         <Tab icon={TAB_ICONS[4]} iconPosition="start" label="Maintenance" />
+                        <Tab icon={TAB_ICONS[5]} iconPosition="start" label="Backups" />
                     </Tabs>
 
                     {/* Schema Diagram shortcut */}
@@ -424,6 +428,13 @@ export function ConnectionManagementPage() {
                     schemas={schemas}
                     selectedSchema={selectedSchema}
                     onSchemaChange={handleSchemaChange}
+                />
+            )}
+            {activeTab === 5 && connection && (
+                <BackupsTab
+                    connectionId={connectionId}
+                    connectionName={connection.name}
+                    engine={connection.engine}
                 />
             )}
         </Box>

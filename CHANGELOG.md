@@ -5,49 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-25
+
+### Added
+
+- **Database Backup & Restore**: Full-featured backup management system
+    - Create full database backups using native tools (pg_dump, mysqldump) or file copy (SQLite)
+    - Optional GZIP compression for smaller backup files
+    - Download and upload backup files
+    - Restore databases from backup files with automatic data refresh
+    - Multi-select bulk deletion of backups
+    - Backup metadata tracking (size, timestamp, status, compression)
+    - Database tools setup wizard with auto-install capability
+    - Engine-specific tool validation (only checks for tools needed by the current database)
+    - Integrated as a new tab in Connection Management page
+- **Backup & Restore Logs**: Comprehensive logging for all backup operations
+    - New "Backup & Restore" tab in Logs page showing operation history
+    - Track backup creation, restoration, deletion, and upload operations
+    - Detailed metadata including duration, file size, status, and error messages
+    - Filter logs by operation type, connection, and status
+- **SQL Editor Output Panel**: Split-view SQL editor with integrated output display
+    - Resizable bottom panel for query results and errors
+    - Toggle button with status indicator (success/error color)
+    - View SQL output without switching tabs
+
+### Changed
+
+- **Backup UI**: Simplified backup creation to only support full backups (schema + data)
+
+### Fixed
+
+- **Query Execution Validation**: Prevent execution of queries with invalid filter values
+    - Comparison operators (>, >=, <, <=) now require non-empty values
+    - Clear error indication when filters are invalid
+- **Query Page Layout**: Improved panel dividers and spacing for better visual separation
+- **Backup File Deletion**: Gracefully handle cases where backup files are already deleted from disk
+- **Query Page Data Refresh**: Auto-refresh data after successful database restore
+
 ## [0.1.17] - 2026-01-24
 
 ### Added
 
-- **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering with visual indicators
+- **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering
     - Filter button with badge showing active filter count
-    - Active filter chips displayed below toolbar for quick reference
+    - Active filter chips displayed below toolbar
     - Support for text, numeric, boolean, and JSON column filtering
-    - Multiple filter operators: contains, equals, starts with, ends with, greater than, less than, empty, not empty
+    - Multiple filter operators: contains, equals, starts with, ends with, greater than, greater than or equal, less than, less than or equal, is empty, is not empty
 - **Enhanced Row Editing**: Improved modal dialog for editing table rows
     - Monaco editor integration for JSON fields with syntax highlighting
     - Full-screen JSON editor accessible via icon button
     - Fixed header and footer with scrollable content area
-    - Save/Cancel actions with proper validation
-- **Pagination Improvements**: Added "All" option to view all rows without pagination (in addition to 25, 50, 100, 250, 500)
-- **Server-side Sorting**: Query results table now supports server-side sorting for better performance with large datasets
-- **URL Parameters**: Added URL parameters for better navigation and bookmarking
-    - Logs page tabs can be bookmarked and shared (query-history, migrations, data-sync, activity, audit-logs)
-    - Compare page preserves group, connections, schemas, and active tab in URL
-    - All major pages now support deep linking
-- **Entry Count Badges**: All Logs page tabs now display entry counts with chip badges for better visibility
 
 ### Changed
 
-- **Scrollbar Styling**: Scrollbars now have straight edges (removed border radius) for a cleaner look
-- **Filter Panel UI**: Simplified filter panel with more compact layout (removed redundant labels)
-- **Code Organization**: Major refactoring of QueryPage component for better maintainability
-    - Reduced main component from 1815 to 1278 lines (30% reduction)
-    - Extracted query execution logic into `useQueryExecution` hook
-    - Extracted row operations into `useRowOperations` hook
-    - Extracted saved queries logic into `useSavedQueries` hook
-    - Created `sqlHelpers.ts` for SQL formatting utilities
-    - Created `rowOperations.ts` for SQL query builders
-    - Created `QueryPageToolbar` component for connection selector and actions
-- **DataGrid Layout**: Fixed width issues in Logs page tables to ensure proper full-width display
-- **Query History**: Removed "Clear History" functionality from Query History tab
+- **Scrollbar Styling**: Scrollbars now have straight edges for a cleaner look
 
 ### Fixed
 
-- Linter compliance: Replaced deprecated `String#replace()` with `String#replaceAll()`
-- Filter panel type compatibility across different DataGrid versions
-- All linter warnings resolved (proper TypeScript types, Express middleware types)
-- DataGrid column sizing in Sync Runs tab (connections column now uses flex layout)
+- **EXPLAIN Command**: Fixed EXPLAIN failures for SQL with leading comments or DDL statements
+    - Strip leading comments before executing EXPLAIN
+    - Show clear error message when attempting to EXPLAIN DDL statements (ALTER, CREATE, DROP, etc.)
+    - Normalize line endings for consistent SQL processing
+- **Table Row Counts**: Fixed inaccurate row counts in MySQL after delete operations
 
 ## [0.1.16]
 
@@ -314,7 +333,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 - Query Editor with syntax highlighting and auto-completion
-- Multi-database support (PostgreSQL, MySQL, MariaDB, SQLite)
+- Multi-database support (PostgreSQL, MySQL, SQLite)
 - Connection management with secure credential storage
 - Table browsing and data exploration
 - Inline cell editing

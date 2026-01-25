@@ -36,6 +36,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -44,6 +45,7 @@ import { StatusAlert } from '@/components/StatusAlert';
 import { EditRowDialog } from './EditRowDialog';
 import { FilterPanel } from './FilterPanel';
 import { ActiveFilters } from './ActiveFilters';
+import { CloseOutlined } from '@mui/icons-material';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -82,6 +84,7 @@ interface DataTabProps {
     readonly connectionHost?: string;
     readonly connectionDatabase?: string;
     readonly tableName?: string;
+    readonly onRefresh?: () => void;
 }
 
 export function DataTab({
@@ -111,6 +114,7 @@ export function DataTab({
     connectionHost,
     connectionDatabase,
     tableName,
+    onRefresh,
 }: DataTabProps) {
     const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -526,12 +530,31 @@ export function DataTab({
             )}
 
             {error && (
-                <StatusAlert severity="error" sx={{ m: 2 }}>
-                    <Typography variant="subtitle2">Query Error</Typography>
-                    <Typography variant="body2" fontFamily="monospace">
-                        {error}
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 2,
+                        p: 4,
+                        color: 'error.main',
+                    }}
+                >
+                    <CloseOutlined sx={{ fontSize: 48, opacity: 1, color: 'error.main' }} />
+                    <Typography variant="h6" fontWeight={600} color="error.main">
+                        Query Error
                     </Typography>
-                </StatusAlert>
+                    <Typography variant="body2" color="text.secondary">
+                        Check the SQL editor output panel for error details
+                    </Typography>
+                    {onRefresh && (
+                        <IconButton size="large" onClick={onRefresh} sx={{ mt: 1 }}>
+                            <RefreshIcon fontSize="large" />
+                        </IconButton>
+                    )}
+                </Box>
             )}
 
             {result && (
@@ -850,6 +873,7 @@ export function DataTab({
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {rows.length > 0 ? (
                             <DataGrid
+                                key={`datagrid-${totalRowCount}`}
                                 rows={rows}
                                 columns={columns}
                                 getRowId={(row) => row.__rowIndex}

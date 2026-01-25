@@ -53,6 +53,7 @@ interface QueryPageTabsProps {
     readonly tableSchemaLoading: boolean;
     readonly splitViewOpen?: boolean;
     readonly onToggleSplitView?: () => void;
+    readonly onRefresh?: () => void;
 }
 
 export function QueryPageTabs({
@@ -88,6 +89,7 @@ export function QueryPageTabs({
     tableSchemaLoading,
     splitViewOpen = false,
     onToggleSplitView,
+    onRefresh,
 }: QueryPageTabsProps) {
     return (
         <Box
@@ -249,6 +251,7 @@ export function QueryPageTabs({
                         connectionHost={connectionHost}
                         connectionDatabase={connectionDatabase}
                         tableName={tableName}
+                        onRefresh={onRefresh}
                     />
                 )}
 

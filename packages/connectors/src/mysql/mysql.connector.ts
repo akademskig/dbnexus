@@ -144,7 +144,6 @@ export class MysqlConnector implements DatabaseConnector {
                 TABLE_SCHEMA as \`schema\`,
                 TABLE_NAME as name,
                 TABLE_TYPE as type,
-                TABLE_ROWS as row_count,
                 DATA_LENGTH + INDEX_LENGTH as size_bytes
             FROM information_schema.TABLES 
             WHERE TABLE_SCHEMA = ?
@@ -153,21 +152,41 @@ export class MysqlConnector implements DatabaseConnector {
             [dbName]
         );
 
-        return (
-            rows as {
-                schema: string;
-                name: string;
-                type: string;
-                row_count: number | null;
-                size_bytes: number | null;
-            }[]
-        ).map((row) => ({
-            schema: row.schema,
-            name: row.name,
-            type: row.type === 'VIEW' ? 'view' : 'table',
-            rowCount: row.row_count ?? undefined,
-            sizeBytes: row.size_bytes ?? undefined,
-        }));
+        const tables: TableInfo[] = [];
+
+        for (const row of rows as {
+            schema: string;
+            name: string;
+            type: string;
+            size_bytes: number | null;
+        }[]) {
+            let rowCount: number | undefined;
+
+            // Get accurate row count for tables (not views)
+            if (row.type === 'BASE TABLE') {
+                try {
+                    const [countResult] = await this.pool.execute(
+                        `SELECT COUNT(*) as count FROM \`${row.schema}\`.\`${row.name}\``
+                    );
+                    const countRow = (countResult as { count: number }[])[0];
+                    if (countRow) {
+                        rowCount = Number(countRow.count);
+                    }
+                } catch {
+                    // Ignore errors getting count - rowCount will be undefined
+                }
+            }
+
+            tables.push({
+                schema: row.schema,
+                name: row.name,
+                type: row.type === 'VIEW' ? 'view' : 'table',
+                rowCount,
+                sizeBytes: row.size_bytes ?? undefined,
+            });
+        }
+
+        return tables;
     }
 
     async getTableSchema(schema: string, table: string): Promise<TableSchema> {

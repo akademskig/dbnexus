@@ -36,6 +36,8 @@ interface UseRowOperationsProps {
         sort: GridSortModel,
         filter: GridFilterModel
     ) => void;
+    refetchRowCount: () => Promise<void>;
+    refetchTables: () => void;
 }
 
 export function useRowOperations({
@@ -49,10 +51,10 @@ export function useRowOperations({
     sortModel,
     filterModel,
     searchQuery,
-    totalRowCount,
     setSql,
-    setTotalRowCount,
     fetchTableData,
+    refetchRowCount,
+    refetchTables,
 }: UseRowOperationsProps) {
     const toast = useToastStore();
     const [addRowOpen, setAddRowOpen] = useState(false);
@@ -74,7 +76,7 @@ export function useRowOperations({
                 table: selectedTable,
                 tableSchema,
                 values,
-                engine: selectedConnection?.engine || 'postgres',
+                engine: selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite',
             });
             setSql(query);
             executeMutation.mutate(
@@ -118,7 +120,7 @@ export function useRowOperations({
         async (oldRow: Record<string, unknown>, newRow: Record<string, unknown>) => {
             if (!selectedConnectionId) return;
 
-            const engine = selectedConnection?.engine || 'postgres';
+            const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
 
             // Determine table name and primary keys
             let tableName: string;
@@ -215,7 +217,7 @@ export function useRowOperations({
     const confirmDeleteRow = useCallback(() => {
         if (!selectedTable || !selectedConnectionId || !tableSchema || !rowToDelete) return;
 
-        const engine = selectedConnection?.engine || 'postgres';
+        const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -236,7 +238,7 @@ export function useRowOperations({
         executeMutation.mutate(
             { query, confirmed: true },
             {
-                onSuccess: () => {
+                onSuccess: async () => {
                     if (selectedTable && tableSchema) {
                         fetchTableData(
                             selectedTable,
@@ -247,11 +249,17 @@ export function useRowOperations({
                             sortModel,
                             filterModel
                         );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - 1);
+
+                        // Refetch the total row count after deletion
+                        await refetchRowCount();
+                        // Refetch tables list to update row counts in sidebar
+                        refetchTables();
                     }
                     toast.success('Row deleted');
+                    setRowToDelete(null);
+                },
+                onError: () => {
+                    toast.error('Failed to delete row');
                     setRowToDelete(null);
                 },
             }
@@ -268,10 +276,10 @@ export function useRowOperations({
         searchQuery,
         sortModel,
         filterModel,
-        totalRowCount,
         toast,
         setSql,
-        setTotalRowCount,
+        refetchRowCount,
+        refetchTables,
     ]);
 
     const confirmDeleteRows = useCallback(() => {
@@ -285,7 +293,7 @@ export function useRowOperations({
             return;
         }
 
-        const engine = selectedConnection?.engine || 'postgres';
+        const engine = selectedConnection?.engine as 'postgres' | 'mysql' | 'sqlite';
         const tableName = buildTableName(selectedTable.schema, selectedTable.name, engine);
 
         const pkColumns = tableSchema.columns.filter((c) => c.isPrimaryKey).map((c) => c.name);
@@ -306,7 +314,7 @@ export function useRowOperations({
         executeMutation.mutate(
             { query, confirmed: true },
             {
-                onSuccess: () => {
+                onSuccess: async () => {
                     if (selectedTable && tableSchema) {
                         fetchTableData(
                             selectedTable,
@@ -317,9 +325,11 @@ export function useRowOperations({
                             sortModel,
                             filterModel
                         );
-                    }
-                    if (totalRowCount !== null) {
-                        setTotalRowCount(totalRowCount - rowsToDelete.length);
+
+                        // Refetch the total row count after deletion
+                        await refetchRowCount();
+                        // Refetch tables list to update row counts in sidebar
+                        refetchTables();
                     }
                     toast.success(`Deleted ${rowsToDelete.length} rows`);
                     setRowsToDelete(null);
@@ -342,10 +352,10 @@ export function useRowOperations({
         searchQuery,
         sortModel,
         filterModel,
-        totalRowCount,
         toast,
         setSql,
-        setTotalRowCount,
+        refetchRowCount,
+        refetchTables,
     ]);
 
     return {

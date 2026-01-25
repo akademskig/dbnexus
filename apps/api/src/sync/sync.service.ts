@@ -221,7 +221,7 @@ export class SyncService {
         targetConnectionId: string
     ): Promise<InstanceGroupTargetStatus | null> {
         const group = this.metadataService.databaseGroupRepository.findById(groupId);
-        if (!group || !group.sourceConnectionId) return null;
+        if (!group?.sourceConnectionId) return null;
 
         const connections = this.metadataService.connectionRepository.findByGroup(groupId);
         const sourceConnection = connections.find((c) => c.id === group.sourceConnectionId);

@@ -289,7 +289,10 @@ export function MaintenanceTab({
                     )}
 
                     {/* Schema and Table Selectors */}
-                    {(selectedScope === 'schema' || selectedScope === 'table') &&
+                    {/* Show for PostgreSQL when scope is schema/table, or always for MySQL (table-only operations) */}
+                    {(selectedScope === 'schema' ||
+                        selectedScope === 'table' ||
+                        connection?.engine === 'mysql') &&
                         schemas.length > 0 && (
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                                 {/* Schema Selector */}
@@ -309,32 +312,34 @@ export function MaintenanceTab({
                                 </FormControl>
 
                                 {/* Table Selector */}
-                                {selectedScope === 'table' && selectedSchema && (
-                                    <FormControl size="small" sx={{ minWidth: 200 }}>
-                                        <InputLabel>Table</InputLabel>
-                                        <Select
-                                            value={selectedTable}
-                                            onChange={(e) => setSelectedTable(e.target.value)}
-                                            label="Table"
-                                            disabled={tables.length === 0}
-                                        >
-                                            {tables.map((table) => (
-                                                <MenuItem key={table.name} value={table.name}>
-                                                    {table.name}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                        {tables.length === 0 && (
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                sx={{ mt: 0.5, display: 'block' }}
+                                {/* Show for PostgreSQL when scope is table, or always for MySQL */}
+                                {(selectedScope === 'table' || connection?.engine === 'mysql') &&
+                                    selectedSchema && (
+                                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                                            <InputLabel>Table</InputLabel>
+                                            <Select
+                                                value={selectedTable}
+                                                onChange={(e) => setSelectedTable(e.target.value)}
+                                                label="Table"
+                                                disabled={tables.length === 0}
                                             >
-                                                No tables found
-                                            </Typography>
-                                        )}
-                                    </FormControl>
-                                )}
+                                                {tables.map((table) => (
+                                                    <MenuItem key={table.name} value={table.name}>
+                                                        {table.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {tables.length === 0 && (
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{ mt: 0.5, display: 'block' }}
+                                                >
+                                                    No tables found
+                                                </Typography>
+                                            )}
+                                        </FormControl>
+                                    )}
                             </Box>
                         )}
                 </GlassCard>

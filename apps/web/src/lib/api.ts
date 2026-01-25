@@ -24,6 +24,7 @@ import type {
     InstanceGroup,
     InstanceGroupSyncStatus,
     InstanceGroupTargetStatus,
+    BackupType,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -601,4 +602,130 @@ export const auditApi = {
     },
 
     getLog: (id: string) => fetchApi<AuditLogEntry>(`/audit/logs/${id}`),
+};
+
+// Backup API
+export interface Backup {
+    id: string;
+    connectionId: string;
+    filename: string;
+    filePath: string;
+    fileSize: number;
+    databaseName: string;
+    databaseEngine: string;
+    backupType: BackupType;
+    method: 'native' | 'sql';
+    compression: 'none' | 'gzip';
+    status: 'in_progress' | 'completed' | 'failed';
+    error?: string;
+    createdAt: string;
+}
+
+export interface BackupLog {
+    id: string;
+    operation: 'backup_created' | 'backup_restored' | 'backup_deleted' | 'backup_uploaded';
+    backupId?: string;
+    connectionId: string;
+    databaseName: string;
+    databaseEngine: string;
+    backupType?: string;
+    method?: string;
+    fileSize?: number;
+    duration?: number;
+    status: 'success' | 'failed';
+    error?: string;
+    createdAt: string;
+    connectionName?: string;
+    backupFilename?: string;
+}
+
+export const backupsApi = {
+    create: (data: {
+        connectionId: string;
+        backupType?: BackupType;
+        compression?: boolean;
+        method?: 'native' | 'sql';
+    }): Promise<Backup> => {
+        return fetchApi('/backups', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    checkTools: (): Promise<{
+        tools: Array<{ name: string; command: string; installed: boolean; version?: string }>;
+        allInstalled: boolean;
+        instructions: { platform: string; instructions: string[]; canAutoInstall: boolean };
+    }> => {
+        return fetchApi('/backups/tools/status');
+    },
+
+    installTools: (): Promise<{ success: boolean; message: string; output?: string }> => {
+        return fetchApi('/backups/tools/install', { method: 'POST' });
+    },
+
+    getAll: (connectionId?: string): Promise<Backup[]> => {
+        const query = connectionId ? `?connectionId=${connectionId}` : '';
+        return fetchApi(`/backups${query}`);
+    },
+
+    getById: (id: string): Promise<Backup> => {
+        return fetchApi(`/backups/${id}`);
+    },
+
+    download: (id: string): string => {
+        return `${API_BASE}/backups/${id}/download`;
+    },
+
+    upload: async (connectionId: string, file: File): Promise<Backup> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('connectionId', connectionId);
+
+        const response = await fetch(`${API_BASE}/backups/upload`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+            throw new Error(error.message || `HTTP ${response.status}`);
+        }
+
+        return response.json();
+    },
+
+    restore: (
+        backupId: string,
+        connectionId: string,
+        method?: 'native' | 'sql'
+    ): Promise<{ success: boolean; message: string }> => {
+        return fetchApi(`/backups/${backupId}/restore`, {
+            method: 'POST',
+            body: JSON.stringify({ connectionId, method }),
+        });
+    },
+
+    delete: (id: string): Promise<{ success: boolean; message: string }> => {
+        return fetchApi(`/backups/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
+    getLogs: (params?: {
+        connectionId?: string;
+        operation?: string;
+        limit?: number;
+    }): Promise<BackupLog[]> => {
+        const searchParams = new URLSearchParams();
+        if (params?.connectionId) searchParams.append('connectionId', params.connectionId);
+        if (params?.operation) searchParams.append('operation', params.operation);
+        if (params?.limit) searchParams.append('limit', params.limit.toString());
+        const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+        return fetchApi(`/backups/logs${query}`);
+    },
+
+    getLogById: (id: string): Promise<BackupLog> => {
+        return fetchApi(`/backups/logs/${id}`);
+    },
 };

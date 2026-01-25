@@ -237,7 +237,7 @@ const changelog = [
             },
             {
                 type: 'added' as const,
-                text: 'Multi-database support (PostgreSQL, MySQL, MariaDB, SQLite)',
+                text: 'Multi-database support (PostgreSQL, MySQL, SQLite)',
             },
             {
                 type: 'added' as const,

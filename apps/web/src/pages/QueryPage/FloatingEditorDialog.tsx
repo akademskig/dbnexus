@@ -10,7 +10,7 @@ import {
     FullscreenExit as FullscreenExitIcon,
     DragIndicator as DragIcon,
 } from '@mui/icons-material';
-import Editor from '@monaco-editor/react';
+import Editor, { type OnMount } from '@monaco-editor/react';
 import Draggable from 'react-draggable';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { StyledTooltip } from '../../components/StyledTooltip';
@@ -39,7 +39,7 @@ export function FloatingEditorDialog({
     const { mode } = useThemeModeStore();
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [size] = useState({ width: 800, height: 600 });
-    const editorRef = useRef<unknown>(null);
+    const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
     const nodeRef = useRef(null);
 
     // Handle Ctrl/Cmd+Enter to execute
@@ -64,10 +64,9 @@ export function FloatingEditorDialog({
         }
     }, [open]);
 
-    const handleEditorMount = (editor: unknown) => {
-        editorRef.current = editor;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (editor as any)?.focus?.();
+    const handleEditorMount: OnMount = (editorInstance) => {
+        editorRef.current = editorInstance;
+        editorInstance.focus();
     };
 
     const handleCopy = () => {

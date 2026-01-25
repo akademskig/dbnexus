@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, NotFoundException } from '@nestjs/common';
 import { SyncService, TableDataDiff, DataSyncResult } from './sync.service.js';
 import { MetadataService } from '../metadata/metadata.service.js';
 import type { InstanceGroupSyncStatus, InstanceGroupTargetStatus } from '@dbnexus/shared';
@@ -16,7 +16,7 @@ export class SyncController {
     @Get('runs')
     getSyncRuns(@Query('limit') limit?: string) {
         return this.metadataService.syncRunLogsRepository.findRecent(
-            limit ? parseInt(limit, 10) : 500
+            limit ? Number.parseInt(limit, 10) : 500
         );
     }
 
@@ -159,8 +159,8 @@ export class SyncController {
     ): Promise<DataSyncResult[]> {
         // Get group and source
         const status = await this.syncService.getGroupSyncStatus(groupId);
-        if (!status || !status.sourceConnectionId) {
-            throw new Error('Group not found or no source connection set');
+        if (!status?.sourceConnectionId) {
+            throw new NotFoundException('Group not found or no source connection set');
         }
 
         // Get table row counts to find tables

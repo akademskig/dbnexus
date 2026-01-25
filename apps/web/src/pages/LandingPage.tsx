@@ -67,7 +67,7 @@ const features = [
         icon: <DatabaseIcon />,
         title: 'Multi-Database Support',
         description:
-            'Connect to PostgreSQL, MySQL, MariaDB, and SQLite databases. Manage all your databases from a single interface.',
+            'Connect to PostgreSQL, MySQL, and SQLite databases. Manage all your databases from a single interface.',
     },
     {
         icon: <CompareIcon />,
@@ -104,7 +104,6 @@ const features = [
 const databases = [
     { name: 'PostgreSQL', color: '#336791' },
     { name: 'MySQL', color: '#4479A1' },
-    { name: 'MariaDB', color: '#003545' },
     { name: 'SQLite', color: '#003B57' },
 ];
 

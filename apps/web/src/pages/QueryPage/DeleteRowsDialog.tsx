@@ -6,13 +6,13 @@ import { ConfirmDialog } from './Dialogs';
 import type { TableSchema } from '@dbnexus/shared';
 
 interface DeleteRowsDialogProps {
-    open: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    rows: Record<string, unknown>[] | null;
-    tableName: string | undefined;
-    tableSchema: TableSchema | undefined;
-    loading: boolean;
+    readonly open: boolean;
+    readonly onClose: () => void;
+    readonly onConfirm: () => void;
+    readonly rows: Record<string, unknown>[] | null;
+    readonly tableName: string | undefined;
+    readonly tableSchema: TableSchema | undefined;
+    readonly loading: boolean;
 }
 
 export function DeleteRowsDialog({
@@ -26,8 +26,6 @@ export function DeleteRowsDialog({
 }: DeleteRowsDialogProps) {
     const primaryKeys = tableSchema?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name) || [];
     const rowCount = rows?.length ?? 0;
-    const previewRows = rows?.slice(0, 5) || [];
-    const hasMore = rowCount > 5;
 
     return (
         <ConfirmDialog
@@ -78,11 +76,11 @@ export function DeleteRowsDialog({
                         </Typography>
                     </Box>
 
-                    {/* Preview Rows */}
+                    {/* Rows List */}
                     {rows && tableSchema && primaryKeys.length > 0 && (
                         <>
                             <Divider sx={{ my: 2 }} />
-                            <Box sx={{ mb: 1 }}>
+                            <Box>
                                 <Typography
                                     variant="caption"
                                     fontWeight={600}
@@ -96,18 +94,18 @@ export function DeleteRowsDialog({
                                     }}
                                 >
                                     <KeyIcon sx={{ fontSize: 14 }} />
-                                    Preview ({previewRows.length} of {rowCount})
+                                    Rows to delete ({rowCount})
                                 </Typography>
                                 <Box
                                     sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 1,
                                         maxHeight: 300,
                                         overflow: 'auto',
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
                                     }}
                                 >
-                                    {previewRows.map((row) => {
+                                    {rows.map((row, index) => {
                                         const key = primaryKeys.length
                                             ? primaryKeys.map((pk) => String(row[pk])).join('|')
                                             : JSON.stringify(row);
@@ -117,21 +115,25 @@ export function DeleteRowsDialog({
                                                 key={key}
                                                 sx={{
                                                     p: 1.5,
-                                                    bgcolor: (theme) =>
-                                                        alpha(theme.palette.error.main, 0.05),
-                                                    borderLeft: 3,
-                                                    borderColor: 'error.main',
-                                                    borderRadius: 1,
+                                                    py: 1,
+                                                    borderBottom: index < rows.length - 1 ? 1 : 0,
+                                                    borderColor: 'divider',
+                                                    '&:hover': {
+                                                        bgcolor: 'action.hover',
+                                                    },
                                                 }}
                                             >
-                                                {primaryKeys.map((pk) => (
+                                                {primaryKeys.map((pk, pkIndex) => (
                                                     <Box
                                                         key={pk}
                                                         sx={{
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             gap: 1,
-                                                            mb: primaryKeys.length > 1 ? 0.5 : 0,
+                                                            mb:
+                                                                pkIndex < primaryKeys.length - 1
+                                                                    ? 0.5
+                                                                    : 0,
                                                         }}
                                                     >
                                                         <Typography
@@ -145,14 +147,6 @@ export function DeleteRowsDialog({
                                                         <Typography
                                                             variant="caption"
                                                             fontFamily="monospace"
-                                                            sx={{
-                                                                px: 1,
-                                                                py: 0.25,
-                                                                bgcolor: 'background.paper',
-                                                                borderRadius: 0.5,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                            }}
                                                         >
                                                             {String(row[pk])}
                                                         </Typography>
@@ -161,25 +155,6 @@ export function DeleteRowsDialog({
                                             </Box>
                                         );
                                     })}
-                                    {hasMore && (
-                                        <Box
-                                            sx={{
-                                                p: 1.5,
-                                                textAlign: 'center',
-                                                bgcolor: 'action.hover',
-                                                borderRadius: 1,
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                fontWeight={600}
-                                            >
-                                                ...and {rowCount - 5} more row
-                                                {rowCount - 5 !== 1 ? 's' : ''}
-                                            </Typography>
-                                        </Box>
-                                    )}
                                 </Box>
                             </Box>
                             <Divider sx={{ my: 2 }} />

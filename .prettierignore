@@ -19,3 +19,7 @@ pnpm-lock.yaml
 
 # Coverage
 coverage/
+
+# Test data
+docker/init/*.js
+packages/metadata/create-test-db.js
