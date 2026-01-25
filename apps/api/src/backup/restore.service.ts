@@ -79,6 +79,7 @@ export class RestoreService {
             database: string;
             username: string;
             password?: string;
+            defaultSchema?: string;
         },
         filePath: string
     ): Promise<void> {
@@ -102,6 +103,7 @@ export class RestoreService {
             database: string;
             username: string;
             password?: string;
+            defaultSchema?: string;
         },
         filePath: string
     ): Promise<void> {
@@ -186,56 +188,141 @@ export class RestoreService {
         database: string;
         username: string;
         password?: string;
+        defaultSchema?: string;
     }): Promise<void> {
         this.logger.log('Cleaning Postgres database before restore...');
 
-        const sql = `
-            DROP SCHEMA IF EXISTS public CASCADE;
+        // Determine which schemas to clean
+        // If defaultSchema is specified, only clean that schema
+        // Otherwise, clean all non-system schemas
+        let schemasToClean: string[];
+
+        if (connection.defaultSchema) {
+            // Only clean the specified schema
+            schemasToClean = [connection.defaultSchema];
+            this.logger.log(`Cleaning only schema: ${connection.defaultSchema}`);
+        } else {
+            // Get all non-system schemas
+            const getSchemasSQL = `
+                SELECT schema_name 
+                FROM information_schema.schemata 
+                WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+                AND schema_name NOT LIKE 'pg_temp_%'
+                AND schema_name NOT LIKE 'pg_toast_temp_%';
+            `;
+
+            const args = [
+                '-h',
+                connection.host,
+                '-p',
+                String(connection.port),
+                '-U',
+                connection.username,
+                '-d',
+                connection.database,
+                '-t', // Tuples only (no headers)
+                '-c',
+                getSchemasSQL,
+            ];
+
+            const env = {
+                ...process.env,
+                PGPASSWORD: connection.password || '',
+            };
+
+            schemasToClean = await new Promise<string[]>((resolve, reject) => {
+                const proc = spawn('psql', args, { env });
+
+                let stdout = '';
+                let stderr = '';
+                proc.stdout?.on('data', (data) => {
+                    stdout += data.toString();
+                });
+                proc.stderr?.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
+                proc.on('close', (code) => {
+                    if (code === 0) {
+                        const schemaList = stdout
+                            .split('\n')
+                            .map((s) => s.trim())
+                            .filter((s) => s.length > 0);
+                        resolve(schemaList);
+                    } else {
+                        this.logger.error(`Failed to get schemas: ${stderr}`);
+                        reject(new Error(`Failed to get schemas: ${stderr}`));
+                    }
+                });
+
+                proc.on('error', (error) => {
+                    reject(new Error(`Failed to spawn psql: ${error.message}`));
+                });
+            });
+
+            this.logger.log(`Found schemas to drop: ${schemasToClean.join(', ')}`);
+        }
+
+        // Drop the schemas
+        if (schemasToClean.length > 0) {
+            const dropSQL = schemasToClean
+                .map((schema) => `DROP SCHEMA IF EXISTS "${schema}" CASCADE;`)
+                .join('\n');
+
+            // Recreate public schema if it was dropped
+            const recreatePublic = schemasToClean.includes('public')
+                ? `
             CREATE SCHEMA public;
             GRANT ALL ON SCHEMA public TO "${connection.username}";
             GRANT ALL ON SCHEMA public TO public;
-        `;
+            `
+                : '';
 
-        const args = [
-            '-h',
-            connection.host,
-            '-p',
-            String(connection.port),
-            '-U',
-            connection.username,
-            '-d',
-            connection.database,
-            '-c',
-            sql,
-        ];
+            const cleanSQL = dropSQL + recreatePublic;
 
-        const env = {
-            ...process.env,
-            PGPASSWORD: connection.password || '',
-        };
+            const env = {
+                ...process.env,
+                PGPASSWORD: connection.password || '',
+            };
 
-        await new Promise<void>((resolve, reject) => {
-            const proc = spawn('psql', args, { env });
+            const cleanArgs = [
+                '-h',
+                connection.host,
+                '-p',
+                String(connection.port),
+                '-U',
+                connection.username,
+                '-d',
+                connection.database,
+                '-c',
+                cleanSQL,
+            ];
 
-            let stderr = '';
-            proc.stderr?.on('data', (data) => {
-                stderr += data.toString();
+            await new Promise<void>((resolve, reject) => {
+                const proc = spawn('psql', cleanArgs, { env });
+
+                let stderr = '';
+                proc.stderr?.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
+                proc.on('close', (code) => {
+                    if (code === 0) {
+                        this.logger.log('Database cleaned successfully');
+                        resolve();
+                    } else {
+                        this.logger.error(`Clean stderr: ${stderr}`);
+                        reject(new Error(`Failed to clean database: ${stderr}`));
+                    }
+                });
+
+                proc.on('error', (error) => {
+                    reject(new Error(`Failed to spawn psql for cleaning: ${error.message}`));
+                });
             });
-
-            proc.on('close', (code) => {
-                if (code === 0) {
-                    this.logger.log('Database cleaned successfully');
-                    resolve();
-                } else {
-                    this.logger.error(`Clean stderr: ${stderr}`);
-                    reject(new Error(`Failed to clean database: ${stderr}`));
-                }
-            });
-
-            proc.on('error', (error) => {
-                reject(new Error(`Failed to spawn psql for cleaning: ${error.message}`));
-            });
-        });
+        } else {
+            this.logger.log('No schemas to drop');
+        }
     }
 
     private async performMySQLRestore(
@@ -469,6 +556,7 @@ export class RestoreService {
 
     /**
      * SQL-based restore - executes SQL file directly using database connector
+     * This method doesn't require external CLI tools (pg_dump, mysql, etc.)
      */
     private async performSQLRestore(connectionId: string, filePath: string): Promise<void> {
         this.logger.log(`Performing SQL-based restore for connection: ${connectionId}`);
@@ -491,30 +579,46 @@ export class RestoreService {
             // Read SQL file
             const sqlContent = await fs.readFile(actualFilePath, 'utf8');
 
-            // SQLite doesn't use SQL method (always uses native file copy)
-            // This is only for PostgreSQL and MySQL
+            // Get connector
             const connector = await this.connectionsService.getConnector(connectionId);
 
             // Split into statements (simple split by semicolon)
-            // Note: This is a simple implementation and may not handle all edge cases
+            // This is basic but works for most SQL dumps
             const statements = sqlContent
                 .split(';')
                 .map((s) => s.trim())
-                .filter((s) => s && !s.startsWith('--'));
+                .filter((s) => s && !s.startsWith('--') && !s.startsWith('/*'));
 
             this.logger.log(`Executing ${statements.length} SQL statements...`);
+
+            let successCount = 0;
+            let errorCount = 0;
 
             // Execute each statement
             for (const statement of statements) {
                 try {
                     await connector.execute(statement);
+                    successCount++;
                 } catch (error) {
+                    errorCount++;
                     // Log error but continue with other statements
-                    this.logger.warn(`Failed to execute statement: ${error}`);
+                    // Many errors are expected (e.g., DROP TABLE IF NOT EXISTS, privilege statements)
+                    this.logger.warn(
+                        `Statement failed (${errorCount}/${statements.length}): ${error instanceof Error ? error.message : String(error)}`
+                    );
                 }
             }
 
-            this.logger.log('SQL-based restore completed');
+            this.logger.log(
+                `SQL-based restore completed: ${successCount} succeeded, ${errorCount} failed`
+            );
+
+            // If more than 50% failed, consider it a failure
+            if (errorCount > successCount) {
+                throw new Error(
+                    `Too many errors during restore: ${errorCount} failed out of ${statements.length} statements`
+                );
+            }
         } finally {
             // Clean up decompressed file if we created it
             if (isCompressed && actualFilePath !== filePath) {

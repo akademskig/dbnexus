@@ -33,6 +33,7 @@ import {
     CloudDownload as BackupIcon,
     ContentCopy as CopyIcon,
 } from '@mui/icons-material';
+import type { BackupType } from '@dbnexus/shared';
 import { backupsApi, type Backup } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -59,13 +60,13 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
     const [selectedBackup, setSelectedBackup] = useState<Backup | null>(null);
 
     // Form state
-    const [backupType, setBackupType] = useState<'full' | 'schema' | 'data'>('full');
+    const [backupType, setBackupType] = useState<BackupType>('full');
     const [compression, setCompression] = useState(false);
-    const [backupMethod, setBackupMethod] = useState<'native' | 'sql'>('sql');
-    const [restoreMethod, setRestoreMethod] = useState<'native' | 'sql'>('native');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [showToolsSetup, setShowToolsSetup] = useState(false);
     const [installDialogOpen, setInstallDialogOpen] = useState(false);
+    const [selectedBackupIds, setSelectedBackupIds] = useState<Set<string>>(new Set());
+    const [deleteMultipleDialogOpen, setDeleteMultipleDialogOpen] = useState(false);
 
     // Fetch backups
     const { data: backups = [], isLoading } = useQuery({
@@ -80,14 +81,31 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         staleTime: 60000, // Cache for 1 minute
     });
 
-    // Create backup mutation
+    // Check if tools for the current engine are installed
+    const areToolsInstalled = (): boolean => {
+        if (engine === 'sqlite') return true; // SQLite doesn't need external tools
+        if (!toolsStatus) return false;
+
+        if (engine === 'postgres') {
+            const pgDump = toolsStatus.tools.find((t) => t.command === 'pg_dump');
+            const psql = toolsStatus.tools.find((t) => t.command === 'psql');
+            return !!(pgDump?.installed && psql?.installed);
+        } else if (engine === 'mysql') {
+            const mysqldump = toolsStatus.tools.find((t) => t.command === 'mysqldump');
+            const mysql = toolsStatus.tools.find((t) => t.command === 'mysql');
+            return !!(mysqldump?.installed && mysql?.installed);
+        }
+        return false;
+    };
+
+    // Create backup mutation - always use native method
     const createMutation = useMutation({
         mutationFn: () =>
             backupsApi.create({
                 connectionId,
                 backupType,
                 compression,
-                method: backupMethod,
+                method: 'native',
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['backups', connectionId] });
@@ -132,11 +150,15 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
     // Restore backup mutation
     const restoreMutation = useMutation({
-        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId, restoreMethod),
+        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId, 'native'),
         onSuccess: () => {
             setRestoreDialogOpen(false);
             setSelectedBackup(null);
             toast.success('Backup restored successfully');
+            // Invalidate all queries related to this connection to refresh data
+            queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
+            queryClient.invalidateQueries({ queryKey: ['schemas', connectionId] });
+            queryClient.invalidateQueries({ queryKey: ['query-results'] });
         },
         onError: (error: Error) => {
             toast.error(`Failed to restore backup: ${error.message}`);
@@ -154,6 +176,22 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         },
         onError: (error: Error) => {
             toast.error(`Failed to delete backup: ${error.message}`);
+        },
+    });
+
+    // Delete multiple backups mutation
+    const deleteMultipleMutation = useMutation({
+        mutationFn: async (backupIds: string[]) => {
+            await Promise.all(backupIds.map((id) => backupsApi.delete(id)));
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['backups', connectionId] });
+            setDeleteMultipleDialogOpen(false);
+            setSelectedBackupIds(new Set());
+            toast.success('Backups deleted successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to delete backups: ${error.message}`);
         },
     });
 
@@ -185,8 +223,6 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
     const handleRestoreClick = (backup: Backup) => {
         setSelectedBackup(backup);
-        // Pre-select restore method based on backup method
-        setRestoreMethod(backup.method);
         setRestoreDialogOpen(true);
     };
 
@@ -205,6 +241,34 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         if (selectedBackup) {
             deleteMutation.mutate(selectedBackup.id);
         }
+    };
+
+    const handleToggleBackup = (backupId: string) => {
+        setSelectedBackupIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(backupId)) {
+                next.delete(backupId);
+            } else {
+                next.add(backupId);
+            }
+            return next;
+        });
+    };
+
+    const handleToggleAll = () => {
+        if (selectedBackupIds.size === backups.length) {
+            setSelectedBackupIds(new Set());
+        } else {
+            setSelectedBackupIds(new Set(backups.map((b) => b.id)));
+        }
+    };
+
+    const handleDeleteMultiple = () => {
+        setDeleteMultipleDialogOpen(true);
+    };
+
+    const handleConfirmDeleteMultiple = () => {
+        deleteMultipleMutation.mutate(Array.from(selectedBackupIds));
     };
 
     const formatFileSize = (bytes: number): string => {
@@ -231,7 +295,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         <>
             <GlassCard>
                 {/* Header */}
-                <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+                <Box sx={{ p: 1, pt: 0, pb: 2, borderBottom: 1, borderColor: 'divider' }}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -247,8 +311,28 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                 Create, upload, and restore database backups for {connectionName}
                             </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            {toolsStatus && !toolsStatus.allInstalled && (
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            {selectedBackupIds.size > 0 && (
+                                <>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ mr: 1 }}
+                                    >
+                                        {selectedBackupIds.size} selected
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        size="small"
+                                        startIcon={<DeleteIcon />}
+                                        onClick={handleDeleteMultiple}
+                                    >
+                                        Delete Selected
+                                    </Button>
+                                </>
+                            )}
+                            {!areToolsInstalled() && (
                                 <Button
                                     variant="outlined"
                                     size="small"
@@ -272,13 +356,24 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                             >
                                 Upload
                             </Button>
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => setCreateDialogOpen(true)}
+                            <StyledTooltip
+                                title={
+                                    !areToolsInstalled()
+                                        ? `Database tools required. Click "Setup Tools" to install ${engine === 'postgres' ? 'pg_dump/psql' : 'mysqldump/mysql'}.`
+                                        : ''
+                                }
                             >
-                                Create Backup
-                            </Button>
+                                <span>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => setCreateDialogOpen(true)}
+                                        disabled={!areToolsInstalled()}
+                                    >
+                                        Create Backup
+                                    </Button>
+                                </span>
+                            </StyledTooltip>
                         </Box>
                     </Box>
                 </Box>
@@ -295,6 +390,19 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                         <Table>
                             <TableHead>
                                 <TableRow>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            checked={
+                                                backups.length > 0 &&
+                                                selectedBackupIds.size === backups.length
+                                            }
+                                            indeterminate={
+                                                selectedBackupIds.size > 0 &&
+                                                selectedBackupIds.size < backups.length
+                                            }
+                                            onChange={handleToggleAll}
+                                        />
+                                    </TableCell>
                                     <TableCell>Filename</TableCell>
                                     <TableCell>Type</TableCell>
                                     <TableCell>Method</TableCell>
@@ -307,6 +415,12 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                             <TableBody>
                                 {backups.map((backup) => (
                                     <TableRow key={backup.id} hover>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                checked={selectedBackupIds.has(backup.id)}
+                                                onChange={() => handleToggleBackup(backup.id)}
+                                            />
+                                        </TableCell>
                                         <TableCell>
                                             <Typography variant="body2" fontWeight={500}>
                                                 {backup.filename}
@@ -377,15 +491,24 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                                                 <DownloadIcon fontSize="small" />
                                                             </IconButton>
                                                         </StyledTooltip>
-                                                        <StyledTooltip title="Restore">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() =>
-                                                                    handleRestoreClick(backup)
-                                                                }
-                                                            >
-                                                                <RestoreIcon fontSize="small" />
-                                                            </IconButton>
+                                                        <StyledTooltip
+                                                            title={
+                                                                !areToolsInstalled()
+                                                                    ? 'Database tools required'
+                                                                    : 'Restore'
+                                                            }
+                                                        >
+                                                            <span>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() =>
+                                                                        handleRestoreClick(backup)
+                                                                    }
+                                                                    disabled={!areToolsInstalled()}
+                                                                >
+                                                                    <RestoreIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </span>
                                                         </StyledTooltip>
                                                     </>
                                                 )}
@@ -423,9 +546,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                             <Select
                                 value={backupType}
                                 label="Backup Type"
-                                onChange={(e) =>
-                                    setBackupType(e.target.value as 'full' | 'schema' | 'data')
-                                }
+                                onChange={(e) => setBackupType(e.target.value as BackupType)}
                             >
                                 <MenuItem value="full">Full (Schema + Data)</MenuItem>
                                 <MenuItem value="schema">Schema Only</MenuItem>
@@ -433,29 +554,13 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                             </Select>
                         </FormControl>
 
-                        {/* SQLite doesn't need backup method selector - always uses native file copy */}
+                        {/* Native tools info */}
                         {engine !== 'sqlite' && (
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Backup Method</InputLabel>
-                                <Select
-                                    value={backupMethod}
-                                    onChange={(e) =>
-                                        setBackupMethod(e.target.value as 'native' | 'sql')
-                                    }
-                                    label="Backup Method"
-                                >
-                                    <MenuItem value="sql">SQL-based (No tools required)</MenuItem>
-                                    <MenuItem
-                                        value="native"
-                                        disabled={toolsStatus && !toolsStatus.allInstalled}
-                                    >
-                                        Native (pg_dump/mysqldump){' '}
-                                        {toolsStatus &&
-                                            !toolsStatus.allInstalled &&
-                                            '- Tools not installed'}
-                                    </MenuItem>
-                                </Select>
-                            </FormControl>
+                            <StatusAlert severity="success">
+                                Using native backup tools (
+                                {engine === 'postgres' ? 'pg_dump' : 'mysqldump'}) for optimal
+                                performance and reliability.
+                            </StatusAlert>
                         )}
 
                         <FormControlLabel
@@ -473,7 +578,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                             database
                             {engine === 'sqlite'
                                 ? ' by copying the database file.'
-                                : ` using the ${backupMethod === 'sql' ? 'SQL-based' : 'native'} method.`}
+                                : ' using native database tools.'}
                             {backupType === 'schema' &&
                                 ' Only the database schema will be backed up.'}
                             {backupType === 'data' &&
@@ -566,59 +671,20 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                     {selectedBackup.method === 'sql' ? 'SQL-based' : 'Native'}
                                 </Typography>
 
-                                {/* SQLite doesn't need restore method selector - always uses native */}
-                                {engine !== 'sqlite' && (
-                                    <>
-                                        <FormControl fullWidth size="small" sx={{ mt: 2 }}>
-                                            <InputLabel>Restore Method</InputLabel>
-                                            <Select
-                                                value={restoreMethod}
-                                                onChange={(e) =>
-                                                    setRestoreMethod(
-                                                        e.target.value as 'native' | 'sql'
-                                                    )
-                                                }
-                                                label="Restore Method"
-                                                disabled={true}
-                                            >
-                                                <MenuItem value="sql">
-                                                    SQL-based (No tools required)
-                                                </MenuItem>
-                                                <MenuItem
-                                                    value="native"
-                                                    disabled={
-                                                        toolsStatus && !toolsStatus.allInstalled
-                                                    }
-                                                >
-                                                    Native (pg_dump/mysqldump){' '}
-                                                    {toolsStatus &&
-                                                        !toolsStatus.allInstalled &&
-                                                        '- Tools not installed'}
-                                                </MenuItem>
-                                            </Select>
-                                        </FormControl>
-
-                                        <StatusAlert severity="info" sx={{ mt: 2 }}>
-                                            Restore method is automatically selected based on how
-                                            the backup was created.
-                                            {selectedBackup.method === 'native' &&
-                                                toolsStatus &&
-                                                !toolsStatus.allInstalled && (
-                                                    <>
-                                                        {' '}
-                                                        Native restore requires database client
-                                                        tools to be installed.
-                                                    </>
-                                                )}
-                                        </StatusAlert>
-                                    </>
-                                )}
-
-                                {engine === 'sqlite' && (
-                                    <StatusAlert severity="info" sx={{ mt: 2 }}>
-                                        SQLite backups are restored by replacing the database file.
-                                    </StatusAlert>
-                                )}
+                                {/* Restore info */}
+                                <StatusAlert severity="info" sx={{ mt: 2 }}>
+                                    {engine === 'sqlite' ? (
+                                        <>
+                                            SQLite backups are restored by replacing the database
+                                            file.
+                                        </>
+                                    ) : (
+                                        <>
+                                            This backup will be restored using native database tools
+                                            ({engine === 'postgres' ? 'psql' : 'mysql'}).
+                                        </>
+                                    )}
+                                </StatusAlert>
                             </Box>
                         )}
                     </Box>
@@ -669,6 +735,58 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                         startIcon={deleteMutation.isPending && <CircularProgress size={16} />}
                     >
                         Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Multiple Backups Dialog */}
+            <Dialog
+                open={deleteMultipleDialogOpen}
+                onClose={() => setDeleteMultipleDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Delete Multiple Backups</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 2 }}>
+                        <StatusAlert severity="error" sx={{ mb: 2 }}>
+                            This will permanently delete {selectedBackupIds.size} backup
+                            {selectedBackupIds.size > 1 ? 's' : ''}. This action cannot be undone.
+                        </StatusAlert>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Selected backups:
+                        </Typography>
+                        <Box
+                            component="ul"
+                            sx={{
+                                pl: 2,
+                                maxHeight: 200,
+                                overflowY: 'auto',
+                                color: 'text.secondary',
+                                fontSize: 14,
+                            }}
+                        >
+                            {backups
+                                .filter((b) => selectedBackupIds.has(b.id))
+                                .map((backup) => (
+                                    <li key={backup.id}>{backup.filename}</li>
+                                ))}
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ pb: 2, px: 2 }}>
+                    <Button onClick={() => setDeleteMultipleDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmDeleteMultiple}
+                        disabled={deleteMultipleMutation.isPending}
+                        startIcon={
+                            deleteMultipleMutation.isPending && <CircularProgress size={16} />
+                        }
+                    >
+                        Delete {selectedBackupIds.size} Backup
+                        {selectedBackupIds.size > 1 ? 's' : ''}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -14,18 +14,24 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import type { BackupType } from '@dbnexus/shared';
 import { BackupService } from './backup.service.js';
+import { RestoreService } from './restore.service.js';
+import { BackupToolsSetup } from './setup-tools.js';
 
 @Controller('backups')
 export class BackupController {
-    constructor(private backupService: BackupService) {}
+    constructor(
+        private readonly backupService: BackupService,
+        private readonly restoreService: RestoreService
+    ) {}
 
     @Post()
     async createBackup(
         @Body()
         body: {
             connectionId: string;
-            backupType?: 'full' | 'schema' | 'data';
+            backupType?: BackupType;
             compression?: boolean;
         }
     ) {
@@ -69,10 +75,15 @@ export class BackupController {
 
     @Post(':id/restore')
     @HttpCode(HttpStatus.OK)
-    async restoreBackup(@Param('id') id: string, @Body('connectionId') connectionId: string) {
-        return this.backupService.restoreBackup({
+    async restoreBackup(
+        @Param('id') id: string,
+        @Body('connectionId') connectionId: string,
+        @Body('method') method?: 'native' | 'sql'
+    ) {
+        return this.restoreService.restoreBackup({
             connectionId,
             backupId: id,
+            method,
         });
     }
 
@@ -80,5 +91,23 @@ export class BackupController {
     @HttpCode(HttpStatus.OK)
     async deleteBackup(@Param('id') id: string) {
         return this.backupService.deleteBackup(id);
+    }
+
+    @Get('tools/status')
+    async getToolsStatus() {
+        const tools = await BackupToolsSetup.checkTools();
+        const instructions = BackupToolsSetup.getInstallInstructions();
+
+        return {
+            tools,
+            allInstalled: tools.every((t) => t.installed),
+            instructions,
+        };
+    }
+
+    @Post('tools/install')
+    @HttpCode(HttpStatus.OK)
+    async installTools() {
+        return BackupToolsSetup.autoInstall();
     }
 }

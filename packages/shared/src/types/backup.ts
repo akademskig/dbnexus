@@ -1,3 +1,5 @@
+export type BackupType = 'full' | 'schema' | 'data';
+
 export interface DatabaseBackup {
     id: string;
     connectionId: string;

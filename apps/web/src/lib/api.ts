@@ -24,6 +24,7 @@ import type {
     InstanceGroup,
     InstanceGroupSyncStatus,
     InstanceGroupTargetStatus,
+    BackupType,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -612,7 +613,8 @@ export interface Backup {
     fileSize: number;
     databaseName: string;
     databaseEngine: string;
-    backupType: 'full' | 'schema' | 'data';
+    backupType: BackupType;
+    method: 'native' | 'sql';
     compression: 'none' | 'gzip';
     status: 'in_progress' | 'completed' | 'failed';
     error?: string;
@@ -622,13 +624,26 @@ export interface Backup {
 export const backupsApi = {
     create: (data: {
         connectionId: string;
-        backupType?: 'full' | 'schema' | 'data';
+        backupType?: BackupType;
         compression?: boolean;
+        method?: 'native' | 'sql';
     }): Promise<Backup> => {
         return fetchApi('/backups', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+    },
+
+    checkTools: (): Promise<{
+        tools: Array<{ name: string; command: string; installed: boolean; version?: string }>;
+        allInstalled: boolean;
+        instructions: { platform: string; instructions: string[]; canAutoInstall: boolean };
+    }> => {
+        return fetchApi('/backups/tools/status');
+    },
+
+    installTools: (): Promise<{ success: boolean; message: string; output?: string }> => {
+        return fetchApi('/backups/tools/install', { method: 'POST' });
     },
 
     getAll: (connectionId?: string): Promise<Backup[]> => {
@@ -664,11 +679,12 @@ export const backupsApi = {
 
     restore: (
         backupId: string,
-        connectionId: string
+        connectionId: string,
+        method?: 'native' | 'sql'
     ): Promise<{ success: boolean; message: string }> => {
         return fetchApi(`/backups/${backupId}/restore`, {
             method: 'POST',
-            body: JSON.stringify({ connectionId }),
+            body: JSON.stringify({ connectionId, method }),
         });
     },
 

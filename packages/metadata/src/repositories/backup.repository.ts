@@ -1,5 +1,9 @@
 import type { Database } from 'better-sqlite3';
 
+export type BackupMethod = 'native' | 'sql';
+export type BackupStatus = 'in_progress' | 'completed' | 'failed';
+export type BackupCompression = 'none' | 'gzip';
+export type BackupBackupType = 'full' | 'schema' | 'data';
 export interface Backup {
     id: string;
     connectionId: string;
@@ -8,9 +12,10 @@ export interface Backup {
     fileSize: number;
     databaseName: string;
     databaseEngine: string;
-    backupType: 'full' | 'schema' | 'data';
-    compression: 'none' | 'gzip';
-    status: 'in_progress' | 'completed' | 'failed';
+    backupType: BackupBackupType;
+    method: BackupMethod;
+    compression: BackupCompression;
+    status: BackupStatus;
     error?: string;
     createdAt: string;
 }
@@ -23,9 +28,10 @@ export interface CreateBackupInput {
     fileSize: number;
     databaseName: string;
     databaseEngine: string;
-    backupType: 'full' | 'schema' | 'data';
-    compression: 'none' | 'gzip';
-    status?: 'in_progress' | 'completed' | 'failed';
+    backupType: BackupBackupType;
+    method: BackupMethod;
+    compression: BackupCompression;
+    status?: BackupStatus;
     error?: string;
 }
 
@@ -36,8 +42,8 @@ export class BackupRepository {
         const stmt = this.db.prepare(`
       INSERT INTO backups (
         id, connection_id, filename, file_path, file_size,
-        database_name, database_engine, backup_type, compression, status, error
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        database_name, database_engine, backup_type, method, compression, status, error
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
         stmt.run(
@@ -49,6 +55,7 @@ export class BackupRepository {
             input.databaseName,
             input.databaseEngine,
             input.backupType,
+            input.method,
             input.compression,
             input.status || 'completed',
             input.error || null
@@ -63,7 +70,7 @@ export class BackupRepository {
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        compression, status, error, created_at as createdAt
+        method, compression, status, error, created_at as createdAt
       FROM backups
       WHERE id = ?
     `);
@@ -77,7 +84,7 @@ export class BackupRepository {
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        compression, status, error, created_at as createdAt
+        method, compression, status, error, created_at as createdAt
       FROM backups
       WHERE connection_id = ?
       ORDER BY created_at DESC
@@ -92,7 +99,7 @@ export class BackupRepository {
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        compression, status, error, created_at as createdAt
+        method, compression, status, error, created_at as createdAt
       FROM backups
       ORDER BY created_at DESC
     `);
