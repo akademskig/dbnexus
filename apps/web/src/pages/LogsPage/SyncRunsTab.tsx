@@ -224,7 +224,8 @@ export function SyncRunsTab() {
         {
             field: 'connections',
             headerName: 'Connections',
-            width: 220,
+            flex: 1,
+            minWidth: 220,
             valueGetter: (_value, row) =>
                 `${row.sourceConnectionName || '?'} → ${row.targetConnectionName || '?'}`,
             renderCell: (params: GridRenderCellParams<SyncRun>) => (
@@ -443,9 +444,11 @@ export function SyncRunsTab() {
                     </IconButton>
                 </StyledTooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {filteredRuns.length} sync operations
-                </Typography>
+                <Chip
+                    label={`${filteredRuns.length} sync operations`}
+                    size="small"
+                    color="primary"
+                />
             </Box>
 
             {/* Active Filters Display */}
@@ -466,7 +469,7 @@ export function SyncRunsTab() {
             />
 
             {/* Data Grid */}
-            <Box sx={{ flex: 1, minHeight: 400 }}>
+            <Box sx={{ flex: 1, minHeight: 400, width: '100%' }}>
                 <DataGrid
                     rows={filteredRuns}
                     columns={columns}
@@ -485,7 +488,6 @@ export function SyncRunsTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
-                            borderBottom: '1px solid',
                             borderColor: 'divider',
                         },
                         '& .MuiDataGrid-row': {

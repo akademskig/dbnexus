@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
-import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
+import type { TableInfo, TableSchema, QueryResult, DatabaseEngine } from '@dbnexus/shared';
 import { queriesApi } from '../../../lib/api';
 import { useToastStore } from '../../../stores/toastStore';
 import { buildTableName } from '../utils';
@@ -15,7 +15,7 @@ import { extractTableNameFromQuery, inferPrimaryKeysFromResult } from '../sqlHel
 
 interface UseRowOperationsProps {
     selectedConnectionId: string;
-    selectedConnection: { engine: string } | undefined;
+    selectedConnection: { engine: DatabaseEngine } | undefined;
     selectedTable: TableInfo | null;
     tableSchema: TableSchema | null;
     sql: string;

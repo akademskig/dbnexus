@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Box, Typography, Tabs, Tab, Paper } from '@mui/material';
 import {
@@ -39,14 +39,42 @@ function TabPanel({ children, value, index }: TabPanelProps) {
     );
 }
 
+const TAB_NAMES = ['query-history', 'migrations', 'data-sync', 'activity', 'audit-logs'];
+
+function getTabIndex(tabName: string): number {
+    const index = TAB_NAMES.indexOf(tabName);
+    return index >= 0 ? index : 0;
+}
+
 export function LogsPage() {
-    const [activeTab, setActiveTab] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const urlTab = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(urlTab ? getTabIndex(urlTab) : 0);
 
     // Fetch connections to check if any exist
     const { data: connections = [], isLoading: loadingConnections } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
+
+    // Update URL when tab changes
+    useEffect(() => {
+        const currentTab = TAB_NAMES[activeTab];
+        if (currentTab) {
+            setSearchParams({ tab: currentTab }, { replace: true });
+        }
+    }, [activeTab, setSearchParams]);
+
+    // Sync tab from URL
+    useEffect(() => {
+        if (urlTab) {
+            const index = getTabIndex(urlTab);
+            if (index !== activeTab) {
+                setActiveTab(index);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlTab]); // Only react to URL changes, not state changes
 
     // Redirect to dashboard if no connections after loading
     if (!loadingConnections && connections.length === 0) {
