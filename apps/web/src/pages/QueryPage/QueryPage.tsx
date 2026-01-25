@@ -714,12 +714,51 @@ export function QueryPage() {
         ]
     );
 
+    // Validate filter model - check if all filters have valid values
+    const validateFilters = useCallback((filters: GridFilterModel): boolean => {
+        if (!filters || !filters.items || filters.items.length === 0) {
+            return true; // No filters is valid
+        }
+
+        // Operators that require a value
+        const operatorsRequiringValue = new Set([
+            'contains',
+            'equals',
+            'startsWith',
+            'endsWith',
+            '>',
+            '>=',
+            '<',
+            '<=',
+        ]);
+
+        // Check each filter
+        for (const filter of filters.items) {
+            if (!filter.field || !filter.operator) {
+                continue; // Skip incomplete filters
+            }
+
+            // If operator requires a value, check if value is provided
+            if (operatorsRequiringValue.has(filter.operator)) {
+                const value = filter.value;
+                // Value is invalid if it's undefined, null, or empty string
+                if (value === undefined || value === null || value === '') {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }, []);
+
     // Handle filter change
     const handleFilterChange = useCallback(
         (newFilterModel: GridFilterModel) => {
             setFilterModel(newFilterModel);
             setPaginationModel((prev) => ({ ...prev, page: 0 }));
-            if (selectedTable) {
+
+            // Only fetch data if filters are valid
+            if (selectedTable && validateFilters(newFilterModel)) {
                 fetchTableData(
                     selectedTable,
                     0,
@@ -738,6 +777,7 @@ export function QueryPage() {
             searchQuery,
             tableSchema,
             sortModel,
+            validateFilters,
         ]
     );
 
