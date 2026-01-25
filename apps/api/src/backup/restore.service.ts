@@ -25,6 +25,7 @@ export class RestoreService {
 
     async restoreBackup(options: RestoreBackupOptions) {
         const { connectionId, backupId, method = 'native' } = options;
+        const startTime = Date.now();
 
         // Get backup details
         const backup = this.metadataService.backupRepository.getById(backupId);
@@ -48,7 +49,22 @@ export class RestoreService {
         try {
             await fs.access(backup.filePath);
         } catch {
-            throw new Error('Backup file not found');
+            const errorMessage = 'Backup file not found';
+
+            // Log failed restore
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_restored',
+                backupId,
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                method,
+                duration: Date.now() - startTime,
+                status: 'failed',
+                error: errorMessage,
+            });
+
+            throw new Error(errorMessage);
         }
 
         // For SQLite, disconnect before restoring to release file locks
@@ -61,14 +77,50 @@ export class RestoreService {
             }
         }
 
-        // Perform restore based on method
-        if (method === 'sql') {
-            await this.performSQLRestore(connectionId, backup.filePath);
-        } else {
-            await this.performRestore({ ...connection, password }, backup.filePath);
-        }
+        try {
+            // Perform restore based on method
+            if (method === 'sql') {
+                await this.performSQLRestore(connectionId, backup.filePath);
+            } else {
+                await this.performRestore({ ...connection, password }, backup.filePath);
+            }
 
-        return { success: true, message: 'Backup restored successfully' };
+            const duration = Date.now() - startTime;
+
+            // Log successful restore
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_restored',
+                backupId,
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                backupType: backup.backupType,
+                method,
+                fileSize: backup.fileSize,
+                duration,
+                status: 'success',
+            });
+
+            return { success: true, message: 'Backup restored successfully' };
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            // Log failed restore
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_restored',
+                backupId,
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                method,
+                duration,
+                status: 'failed',
+                error: errorMessage,
+            });
+
+            throw error;
+        }
     }
 
     private async performRestore(

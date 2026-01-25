@@ -18,12 +18,14 @@ import type { BackupType } from '@dbnexus/shared';
 import { BackupService } from './backup.service.js';
 import { RestoreService } from './restore.service.js';
 import { BackupToolsSetup } from './setup-tools.js';
+import { MetadataService } from '../metadata/metadata.service.js';
 
 @Controller('backups')
 export class BackupController {
     constructor(
         private readonly backupService: BackupService,
-        private readonly restoreService: RestoreService
+        private readonly restoreService: RestoreService,
+        private readonly metadataService: MetadataService
     ) {}
 
     @Post()
@@ -41,6 +43,29 @@ export class BackupController {
     @Get()
     async getBackups(@Query('connectionId') connectionId?: string) {
         return this.backupService.getBackups(connectionId);
+    }
+
+    @Get('logs')
+    async getBackupLogs(
+        @Query('connectionId') connectionId?: string,
+        @Query('operation') operation?: string,
+        @Query('limit') limit?: string
+    ) {
+        const logs = this.metadataService.backupLogsRepository.findAll({
+            connectionId,
+            operation,
+            limit: limit ? Number.parseInt(limit, 10) : undefined,
+        });
+        return logs;
+    }
+
+    @Get('logs/:id')
+    async getBackupLog(@Param('id') id: string) {
+        const log = this.metadataService.backupLogsRepository.findById(id);
+        if (!log) {
+            throw new Error('Backup log not found');
+        }
+        return log;
     }
 
     @Get(':id')

@@ -8,12 +8,14 @@ import {
     Sync as SyncIcon,
     Timeline as ActivityIcon,
     Security as AuditIcon,
+    Backup as BackupIcon,
 } from '@mui/icons-material';
 import { QueryHistoryTab } from './QueryHistoryTab';
 import { MigrationHistoryTab } from './MigrationHistoryTab';
 import { SyncRunsTab } from './SyncRunsTab';
 import { ActivityLogTab } from './ActivityLogTab';
 import { AuditLogsTab } from './AuditLogsTab';
+import { BackupLogsTab } from './BackupLogsTab';
 import { connectionsApi } from '../../lib/api';
 
 interface TabPanelProps {
@@ -39,7 +41,7 @@ function TabPanel({ children, value, index }: TabPanelProps) {
     );
 }
 
-const TAB_NAMES = ['query-history', 'migrations', 'data-sync', 'activity', 'audit-logs'];
+const TAB_NAMES = ['query-history', 'migrations', 'data-sync', 'activity', 'audit-logs', 'backups'];
 
 function getTabIndex(tabName: string): number {
     const index = TAB_NAMES.indexOf(tabName);
@@ -142,6 +144,11 @@ export function LogsPage() {
                         iconPosition="start"
                         label="Audit Logs"
                     />
+                    <Tab
+                        icon={<BackupIcon sx={{ fontSize: 18 }} />}
+                        iconPosition="start"
+                        label="Backups"
+                    />
                 </Tabs>
 
                 <Box
@@ -168,6 +175,9 @@ export function LogsPage() {
                     </TabPanel>
                     <TabPanel value={activeTab} index={4}>
                         <AuditLogsTab />
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={5}>
+                        <BackupLogsTab />
                     </TabPanel>
                 </Box>
             </Paper>

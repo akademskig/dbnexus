@@ -621,6 +621,24 @@ export interface Backup {
     createdAt: string;
 }
 
+export interface BackupLog {
+    id: string;
+    operation: 'backup_created' | 'backup_restored' | 'backup_deleted' | 'backup_uploaded';
+    backupId?: string;
+    connectionId: string;
+    databaseName: string;
+    databaseEngine: string;
+    backupType?: string;
+    method?: string;
+    fileSize?: number;
+    duration?: number;
+    status: 'success' | 'failed';
+    error?: string;
+    createdAt: string;
+    connectionName?: string;
+    backupFilename?: string;
+}
+
 export const backupsApi = {
     create: (data: {
         connectionId: string;
@@ -692,5 +710,22 @@ export const backupsApi = {
         return fetchApi(`/backups/${id}`, {
             method: 'DELETE',
         });
+    },
+
+    getLogs: (params?: {
+        connectionId?: string;
+        operation?: string;
+        limit?: number;
+    }): Promise<BackupLog[]> => {
+        const searchParams = new URLSearchParams();
+        if (params?.connectionId) searchParams.append('connectionId', params.connectionId);
+        if (params?.operation) searchParams.append('operation', params.operation);
+        if (params?.limit) searchParams.append('limit', params.limit.toString());
+        const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+        return fetchApi(`/backups/logs${query}`);
+    },
+
+    getLogById: (id: string): Promise<BackupLog> => {
+        return fetchApi(`/backups/logs/${id}`);
     },
 };

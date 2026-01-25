@@ -45,6 +45,8 @@ export class BackupService {
             method = 'native',
         } = options;
 
+        const startTime = Date.now();
+
         // Get connection details
         const connection = this.connectionsService.findById(connectionId);
         if (!connection) {
@@ -95,6 +97,7 @@ export class BackupService {
 
             // Get file size (check finalPath which includes .gz if compressed)
             const stats = await fs.stat(finalPath);
+            const duration = Date.now() - startTime;
 
             // Update backup record with file size and status
             this.metadataService.backupRepository.updateStatus(backupId, 'completed');
@@ -104,14 +107,42 @@ export class BackupService {
             );
             updateSizeStmt.run(stats.size, backupId);
 
+            // Log successful backup
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_created',
+                backupId,
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                backupType,
+                method: actualMethod,
+                fileSize: stats.size,
+                duration,
+                status: 'success',
+            });
+
             return this.metadataService.backupRepository.getById(backupId);
         } catch (error) {
-            this.logger.error(`Backup failed: ${error}`);
-            this.metadataService.backupRepository.updateStatus(
+            const duration = Date.now() - startTime;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            this.logger.error(`Backup failed: ${errorMessage}`);
+            this.metadataService.backupRepository.updateStatus(backupId, 'failed', errorMessage);
+
+            // Log failed backup
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_created',
                 backupId,
-                'failed',
-                error instanceof Error ? error.message : String(error)
-            );
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                backupType,
+                method: actualMethod,
+                duration,
+                status: 'failed',
+                error: errorMessage,
+            });
+
             throw error;
         }
     }
@@ -520,6 +551,18 @@ export class BackupService {
                 this.logger.error(
                     `Failed to delete backup file ${backup.filePath}: ${errorMessage}`
                 );
+
+                // Log failed deletion
+                this.metadataService.backupLogsRepository.create({
+                    operation: 'backup_deleted',
+                    backupId: id,
+                    connectionId: backup.connectionId,
+                    databaseName: backup.databaseName,
+                    databaseEngine: backup.databaseEngine,
+                    status: 'failed',
+                    error: errorMessage,
+                });
+
                 // File exists but couldn't be deleted - this is a real error
                 throw new Error(
                     `Failed to delete backup file: ${errorMessage}. The database record will not be removed.`
@@ -529,6 +572,17 @@ export class BackupService {
 
         // Delete the database record
         this.metadataService.backupRepository.delete(id);
+
+        // Log successful deletion
+        this.metadataService.backupLogsRepository.create({
+            operation: 'backup_deleted',
+            backupId: id,
+            connectionId: backup.connectionId,
+            databaseName: backup.databaseName,
+            databaseEngine: backup.databaseEngine,
+            fileSize: backup.fileSize,
+            status: 'success',
+        });
 
         const message = fileExists
             ? 'Backup deleted successfully'
@@ -565,25 +619,54 @@ export class BackupService {
         const newFilename = `${connection.name}_uploaded_${timestamp}_${sanitizedFilename}`;
         const filePath = path.join(this.backupsDir, newFilename);
 
-        // Write file
-        await fs.writeFile(filePath, fileBuffer);
+        try {
+            // Write file
+            await fs.writeFile(filePath, fileBuffer);
 
-        // Create backup record
-        const backupId = randomUUID();
-        const backup = this.metadataService.backupRepository.create({
-            id: backupId,
-            connectionId,
-            filename: newFilename,
-            filePath,
-            fileSize: fileBuffer.length,
-            databaseName: connection.database,
-            databaseEngine: connection.engine,
-            backupType: 'full',
-            method: 'native', // Uploaded files are assumed to be native format
-            compression: filename.endsWith('.gz') ? 'gzip' : 'none',
-            status: 'completed',
-        });
+            // Create backup record
+            const backupId = randomUUID();
+            const backup = this.metadataService.backupRepository.create({
+                id: backupId,
+                connectionId,
+                filename: newFilename,
+                filePath,
+                fileSize: fileBuffer.length,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                backupType: 'full',
+                method: 'native', // Uploaded files are assumed to be native format
+                compression: filename.endsWith('.gz') ? 'gzip' : 'none',
+                status: 'completed',
+            });
 
-        return backup;
+            // Log successful upload
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_uploaded',
+                backupId,
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                backupType: 'full',
+                method: 'native',
+                fileSize: fileBuffer.length,
+                status: 'success',
+            });
+
+            return backup;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            // Log failed upload
+            this.metadataService.backupLogsRepository.create({
+                operation: 'backup_uploaded',
+                connectionId,
+                databaseName: connection.database,
+                databaseEngine: connection.engine,
+                status: 'failed',
+                error: errorMessage,
+            });
+
+            throw error;
+        }
     }
 }

@@ -338,10 +338,30 @@ export const MIGRATIONS: string[] = [
   UPDATE schema_version SET version = 14;
   `,
 
-    // Version 15: Add method column to existing backups table
+    // Version 15: Add backup_logs table for tracking backup/restore operations
     `
-  -- Add method column to backups table (for existing databases)
-  ALTER TABLE backups ADD COLUMN method TEXT NOT NULL DEFAULT 'native';
+  CREATE TABLE IF NOT EXISTS backup_logs (
+    id TEXT PRIMARY KEY,
+    operation TEXT NOT NULL CHECK(operation IN ('backup_created', 'backup_restored', 'backup_deleted', 'backup_uploaded')),
+    backup_id TEXT,
+    connection_id TEXT NOT NULL,
+    database_name TEXT NOT NULL,
+    database_engine TEXT NOT NULL,
+    backup_type TEXT,
+    method TEXT,
+    file_size INTEGER,
+    duration INTEGER,
+    status TEXT NOT NULL CHECK(status IN ('success', 'failed')),
+    error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (backup_id) REFERENCES backups(id) ON DELETE SET NULL,
+    FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_backup_logs_connection ON backup_logs(connection_id);
+  CREATE INDEX IF NOT EXISTS idx_backup_logs_backup ON backup_logs(backup_id);
+  CREATE INDEX IF NOT EXISTS idx_backup_logs_operation ON backup_logs(operation);
+  CREATE INDEX IF NOT EXISTS idx_backup_logs_created_at ON backup_logs(created_at DESC);
 
   UPDATE schema_version SET version = 15;
   `,
