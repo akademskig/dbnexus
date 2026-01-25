@@ -23,7 +23,7 @@ export class QueriesService {
     constructor(
         private readonly metadataService: MetadataService,
         private readonly connectionsService: ConnectionsService
-    ) {}
+    ) { }
 
     /**
      * Validate a query without executing
@@ -396,10 +396,52 @@ export class QueriesService {
         const connection = this.connectionsService.findById(connectionId);
         const connector = await this.connectionsService.getConnector(connectionId);
 
+        // Normalize line endings and clean SQL for EXPLAIN
+        let cleanedSql = sql.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        // Remove leading comments and whitespace for EXPLAIN to work properly
+        // Split by lines, filter out comment-only lines at the start, then rejoin
+        const lines = cleanedSql.split('\n');
+        let startIndex = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (!line) continue;
+            const trimmed = line.trim();
+            // Skip empty lines and comment-only lines at the start
+            if (trimmed === '' || trimmed.startsWith('--')) {
+                startIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+        cleanedSql = lines.slice(startIndex).join('\n').trim();
+
+        // Check if the query type supports EXPLAIN
+        const queryUpper = cleanedSql.toUpperCase().trim();
+        const unsupportedDDL = [
+            'CREATE',
+            'ALTER',
+            'DROP',
+            'TRUNCATE',
+            'RENAME',
+            'GRANT',
+            'REVOKE',
+        ];
+
+        const startsWithUnsupported = unsupportedDDL.some((keyword) =>
+            queryUpper.startsWith(keyword)
+        );
+
+        if (startsWithUnsupported) {
+            throw new BadRequestException(
+                'EXPLAIN is only supported for DML statements (SELECT, INSERT, UPDATE, DELETE). '
+            );
+        }
+
         try {
             const { explainSql, parsePlan } = this.getExplainStrategy(
                 connection.engine,
-                sql,
+                cleanedSql,
                 analyze
             );
             const result = await connector.query(explainSql);
