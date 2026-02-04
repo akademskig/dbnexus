@@ -8,6 +8,9 @@ export type AuditAction =
     | 'connection_created'
     | 'connection_updated'
     | 'connection_deleted'
+    | 'server_created'
+    | 'server_updated'
+    | 'server_deleted'
     | 'project_created'
     | 'project_updated'
     | 'project_deleted'
@@ -31,6 +34,7 @@ export type AuditAction =
 
 export type AuditEntityType =
     | 'connection'
+    | 'server'
     | 'project'
     | 'database_group'
     | 'query'
@@ -74,7 +78,7 @@ export interface AuditLogCreateInput {
 }
 
 export class AuditLogRepository {
-    constructor(private readonly db: MetadataDatabase) {}
+    constructor(private readonly db: MetadataDatabase) { }
 
     /**
      * Create a new audit log entry

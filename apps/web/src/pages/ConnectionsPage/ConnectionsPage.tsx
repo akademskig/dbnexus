@@ -5,7 +5,7 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
-import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
+import { connectionsApi, projectsApi, groupsApi, serversApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -40,6 +40,11 @@ export function ConnectionsPage() {
     const { data: groups = [] } = useQuery({
         queryKey: ['groups'],
         queryFn: () => groupsApi.getAll(),
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
     });
 
     const isLoading = loadingConnections || loadingProjects;
@@ -87,7 +92,7 @@ export function ConnectionsPage() {
         mutationFn: connectionsApi.delete,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection deleted');
+            toast.success('Database deleted');
         },
     });
 
@@ -142,7 +147,7 @@ export function ConnectionsPage() {
             >
                 <Box>
                     <Typography variant="h4" fontWeight={600} gutterBottom>
-                        Connections
+                        Databases
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
                         Organize database connections by project and group
@@ -161,7 +166,7 @@ export function ConnectionsPage() {
                         startIcon={<AddIcon />}
                         onClick={() => setFormOpen(true)}
                     >
-                        Add Connection
+                        Add Database
                     </Button>
                 </Box>
             </Box>
@@ -172,6 +177,7 @@ export function ConnectionsPage() {
                 connection={editingConnection}
                 projects={projects}
                 groups={groups}
+                servers={servers}
                 onClose={handleCloseForm}
             />
             <ProjectFormDialog
@@ -193,10 +199,10 @@ export function ConnectionsPage() {
                 <GlassCard>
                     <EmptyState
                         icon={<StorageIcon />}
-                        title="No connections yet"
-                        description="Add your first database connection to start exploring your data. Organize connections into projects and instance groups for better management."
+                        title="No databases yet"
+                        description="Add your first database to start exploring your data. Organize databases into projects and instance groups for better management."
                         action={{
-                            label: 'Add Connection',
+                            label: 'Add Database',
                             onClick: () => setFormOpen(true),
                         }}
                         secondaryAction={{

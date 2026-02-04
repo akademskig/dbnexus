@@ -90,7 +90,7 @@ export function ProjectSection({
         }) => connectionsApi.update(connectionId, { projectId, groupId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection moved');
+            toast.success('Database moved');
         },
         onError: () => {
             toast.error('Failed to move connection');

@@ -30,6 +30,7 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FolderIcon from '@mui/icons-material/Folder';
+import DnsIcon from '@mui/icons-material/Dns';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi } from '../lib/api';
@@ -71,6 +72,7 @@ const useSidebarStore = create<SidebarStore>()(
 
 const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', requiresConnections: false },
+    { to: '/servers', icon: <DnsIcon />, label: 'Servers', requiresConnections: false },
     { to: '/projects', icon: <FolderIcon />, label: 'Projects', requiresConnections: false },
     { to: '/query', icon: <TerminalIcon />, label: 'Query', requiresConnections: true },
     {
@@ -280,8 +282,8 @@ export function Layout() {
                                 ? `${label} (No connections)`
                                 : label
                             : isDisabled
-                              ? 'No connections available'
-                              : '';
+                                ? 'No connections available'
+                                : '';
 
                         return (
                             <StyledTooltip key={to} title={tooltipTitle} placement="right" arrow>
@@ -305,8 +307,8 @@ export function Layout() {
                                                 color: isActive
                                                     ? 'primary.main'
                                                     : isDisabled
-                                                      ? 'text.disabled'
-                                                      : 'text.secondary',
+                                                        ? 'text.disabled'
+                                                        : 'text.secondary',
                                             }}
                                         >
                                             {icon}
@@ -499,7 +501,7 @@ export function Layout() {
                                     <StorageIcon />
                                 </ListItemIcon>
                                 <ListItemText
-                                    primary="Connections"
+                                    primary="Databases"
                                     primaryTypographyProps={{ fontSize: 14 }}
                                 />
                                 {connectionsExpanded ? (
@@ -528,13 +530,13 @@ export function Layout() {
                                             const statusColor = isOnline
                                                 ? 'success.main'
                                                 : isOffline
-                                                  ? 'error.main'
-                                                  : 'text.disabled';
+                                                    ? 'error.main'
+                                                    : 'text.disabled';
                                             const statusText = isOnline
                                                 ? 'Online'
                                                 : isOffline
-                                                  ? 'Offline'
-                                                  : 'Unknown';
+                                                    ? 'Offline'
+                                                    : 'Unknown';
 
                                             const tooltipContent = (
                                                 <Box sx={{ p: 0.5 }}>
@@ -626,8 +628,8 @@ export function Layout() {
                                                                     bgcolor: isOnline
                                                                         ? 'success.main'
                                                                         : isOffline
-                                                                          ? 'error.main'
-                                                                          : 'text.disabled',
+                                                                            ? 'error.main'
+                                                                            : 'text.disabled',
                                                                     ml: 1,
                                                                     mr: 2,
                                                                     flexShrink: 0,
@@ -659,7 +661,7 @@ export function Layout() {
                     {/* Collapsed connections icon with menu */}
                     {collapsed && connections.length > 0 && (
                         <>
-                            <StyledTooltip title="Connections" placement="right" arrow>
+                            <StyledTooltip title="Databases" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
                                     selected={isConnectionsActive}
@@ -691,7 +693,7 @@ export function Layout() {
                                     variant="caption"
                                     sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
                                 >
-                                    Connections
+                                    Databases
                                 </Typography>
                                 <Divider />
                                 {connections.map((conn) => {
@@ -758,8 +760,8 @@ export function Layout() {
                                                             bgcolor: isOnline
                                                                 ? 'success.main'
                                                                 : isOffline
-                                                                  ? 'error.main'
-                                                                  : 'text.disabled',
+                                                                    ? 'error.main'
+                                                                    : 'text.disabled',
                                                             ml: 1,
                                                             mr: 2,
                                                             flexShrink: 0,

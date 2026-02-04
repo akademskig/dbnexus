@@ -11,6 +11,7 @@ import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
 import { DiagramEditorPage } from './pages/DiagramEditorPage';
+import { ServersPage } from './pages/ServersPage';
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="servers" element={<ServersPage />} />
                 <Route path="projects" element={<ProjectsPage />} />
                 <Route path="connections/:connectionId" element={<ConnectionManagementPage />} />
                 <Route path="query" element={<QueryPage />} />

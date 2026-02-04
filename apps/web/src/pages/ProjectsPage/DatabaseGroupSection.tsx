@@ -97,7 +97,7 @@ export function DatabaseGroupSection({
                 const connection = allConnections.find((c) => c.id === data.connectionId);
 
                 if (!connection) {
-                    toast.error('Connection not found');
+                    toast.error('Database not found');
                     return;
                 }
 
@@ -204,10 +204,10 @@ export function DatabaseGroupSection({
                         group.databaseEngine === 'postgres'
                             ? 'PostgreSQL'
                             : group.databaseEngine === 'mysql'
-                              ? 'MySQL'
-                              : group.databaseEngine === 'mariadb'
-                                ? 'MariaDB'
-                                : 'SQLite'
+                                ? 'MySQL'
+                                : group.databaseEngine === 'mariadb'
+                                    ? 'MariaDB'
+                                    : 'SQLite'
                     }
                     size="small"
                     sx={{
@@ -224,8 +224,8 @@ export function DatabaseGroupSection({
                             group.syncSchema && group.syncData
                                 ? 'Schema + Data'
                                 : group.syncSchema
-                                  ? 'Schema'
-                                  : 'Data'
+                                    ? 'Schema'
+                                    : 'Data'
                         }
                         size="small"
                         icon={<SyncIcon sx={{ fontSize: 14 }} />}
@@ -241,7 +241,7 @@ export function DatabaseGroupSection({
                 )}
                 {/* Quick Action */}
                 {onAddConnection && (
-                    <StyledTooltip title="Add Connection">
+                    <StyledTooltip title="Add Database">
                         <IconButton
                             size="small"
                             onClick={(e) => {
