@@ -21,11 +21,11 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         // Serve static files from web build in production
         ...(process.env.NODE_ENV === 'production'
             ? [
-                ServeStaticModule.forRoot({
-                    rootPath: join(__dirname, '..', '..', '..', 'web', 'dist'),
-                    exclude: ['/api*'],
-                }),
-            ]
+                  ServeStaticModule.forRoot({
+                      rootPath: join(__dirname, '..', '..', '..', 'web', 'dist'),
+                      exclude: ['/api*'],
+                  }),
+              ]
             : []),
         MetadataModule,
         ConnectionsModule,
@@ -40,4 +40,4 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         ServersModule,
     ],
 })
-export class AppModule { }
+export class AppModule {}

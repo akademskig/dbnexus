@@ -289,10 +289,10 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                     group.databaseEngine === 'postgres'
                                         ? 'PostgreSQL'
                                         : group.databaseEngine === 'mysql'
-                                            ? 'MySQL'
-                                            : group.databaseEngine === 'mariadb'
-                                                ? 'MariaDB'
-                                                : 'SQLite'
+                                          ? 'MySQL'
+                                          : group.databaseEngine === 'mariadb'
+                                            ? 'MariaDB'
+                                            : 'SQLite'
                                 }
                                 disabled
                                 fullWidth
@@ -420,9 +420,7 @@ export function ConnectionFormDialog({
         (g) => g.projectId === formData.projectId && g.databaseEngine === formData.engine
     );
     // Filter servers by database engine (SQLite doesn't use servers)
-    const availableServers = isSqlite
-        ? []
-        : servers.filter((s) => s.engine === formData.engine);
+    const availableServers = isSqlite ? [] : servers.filter((s) => s.engine === formData.engine);
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
@@ -493,10 +491,11 @@ export function ConnectionFormDialog({
                 <DialogContent>
                     <Stack spacing={3} sx={{ mt: 1 }}>
                         <TextField
-                            label="Connection Name"
+                            label="Display Name"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             placeholder="My Database"
+                            helperText="A friendly name to identify this database connection"
                             required
                             fullWidth
                         />
@@ -614,7 +613,10 @@ export function ConnectionFormDialog({
                                 >
                                     {availableServers.length === 0 ? (
                                         <MenuItem disabled>
-                                            <em>No {formData.engine} servers available - create one first</em>
+                                            <em>
+                                                No {formData.engine} servers available - create one
+                                                first
+                                            </em>
                                         </MenuItem>
                                     ) : (
                                         availableServers.map((s) => (
@@ -681,7 +683,9 @@ export function ConnectionFormDialog({
                                             setFormData({ ...formData, password: e.target.value })
                                         }
                                         placeholder={connection ? '••••••••' : ''}
-                                        helperText={connection ? 'Leave empty to keep current' : undefined}
+                                        helperText={
+                                            connection ? 'Leave empty to keep current' : undefined
+                                        }
                                         required={!connection}
                                         sx={{ flex: 1 }}
                                     />
