@@ -118,7 +118,10 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (server) {
-            updateMutation.mutate({ id: server.id, data: formData });
+            // Only include password if user entered a new one
+            const { password, ...rest } = formData;
+            const updateData = password ? { ...rest, password } : rest;
+            updateMutation.mutate({ id: server.id, data: updateData as ServerCreateInput });
         } else {
             createMutation.mutate(formData);
         }
@@ -193,7 +196,11 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                                 <ToggleButton value="mariadb">MariaDB</ToggleButton>
                             </ToggleButtonGroup>
                             {server && (
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mt: 0.5, display: 'block' }}
+                                >
                                     Database engine cannot be changed after creation
                                 </Typography>
                             )}
@@ -203,9 +210,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                             <TextField
                                 label="Host"
                                 value={formData.host}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, host: e.target.value })
-                                }
+                                onChange={(e) => setFormData({ ...formData, host: e.target.value })}
                                 placeholder="localhost"
                                 required
                                 sx={{ flex: 2 }}
@@ -229,8 +234,13 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                 Admin Credentials (Optional)
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
-                                Only needed if you have admin access to create databases or scan for existing ones
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ mb: 1.5, display: 'block' }}
+                            >
+                                Only needed if you have admin access to create databases or scan for
+                                existing ones
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 2 }}>
                                 <TextField

@@ -6,4 +6,4 @@ import { MetadataModule } from '../metadata/metadata.module.js';
     imports: [MetadataModule],
     controllers: [ServersController],
 })
-export class ServersModule { }
+export class ServersModule {}

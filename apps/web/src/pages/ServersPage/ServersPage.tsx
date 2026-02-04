@@ -24,7 +24,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { serversApi, projectsApi, groupsApi, connectionsApi } from '../../lib/api';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -53,6 +55,7 @@ const ENGINE_LABELS: Record<DatabaseEngine, string> = {
 interface ServerCardProps {
     server: ServerConfig;
     databases: ConnectionConfig[];
+    onManage: () => void;
     onEdit: () => void;
     onDelete: () => void;
     onAddDatabase: () => void;
@@ -64,7 +67,18 @@ interface ServerCardProps {
 
 const LIMIT = 5;
 
-function ServerCard({ server, databases, onEdit, onDelete, onAddDatabase, onEditDatabase, onDeleteDatabase, onQueryDatabase, tagColors }: ServerCardProps) {
+function ServerCard({
+    server,
+    databases,
+    onManage,
+    onEdit,
+    onDelete,
+    onAddDatabase,
+    onEditDatabase,
+    onDeleteDatabase,
+    onQueryDatabase,
+    tagColors,
+}: ServerCardProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [expanded, setExpanded] = useState(true);
     const [showAll, setShowAll] = useState(false);
@@ -136,7 +150,13 @@ function ServerCard({ server, databases, onEdit, onDelete, onAddDatabase, onEdit
                             }}
                         />
                         {server.ssl && (
-                            <Chip label="SSL" size="small" color="success" variant="outlined" sx={{ height: 22 }} />
+                            <Chip
+                                label="SSL"
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                sx={{ height: 22 }}
+                            />
                         )}
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
@@ -178,7 +198,25 @@ function ServerCard({ server, databases, onEdit, onDelete, onAddDatabase, onEdit
                         );
                     })}
                 </Box>
-                <IconButton size="small" sx={{ ml: 1 }}>
+                <StyledTooltip title="Manage Server">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onManage();
+                        }}
+                        sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                                color: 'primary.main',
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                            },
+                        }}
+                    >
+                        <SettingsIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
+                <IconButton size="small" sx={{ ml: 0.5 }}>
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
                 <IconButton size="small" onClick={handleMenuClick} sx={{ color: 'text.secondary' }}>
@@ -194,6 +232,17 @@ function ServerCard({ server, databases, onEdit, onDelete, onAddDatabase, onEdit
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
+                <MenuItem
+                    onClick={() => {
+                        handleMenuClose();
+                        onManage();
+                    }}
+                >
+                    <ListItemIcon>
+                        <SettingsIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Manage Server</ListItemText>
+                </MenuItem>
                 <MenuItem
                     onClick={() => {
                         handleMenuClose();
@@ -312,7 +361,8 @@ function ServerCard({ server, databases, onEdit, onDelete, onAddDatabase, onEdit
                                             borderRadius: 1,
                                             color: 'primary.main',
                                             '&:hover': {
-                                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                                bgcolor: (theme) =>
+                                                    alpha(theme.palette.primary.main, 0.1),
                                             },
                                         }}
                                     >
@@ -518,11 +568,7 @@ export function ServersPage() {
             </Box>
 
             {/* Server Form Dialog */}
-            <ServerFormDialog
-                open={formOpen}
-                server={editingServer}
-                onClose={handleCloseForm}
-            />
+            <ServerFormDialog open={formOpen} server={editingServer} onClose={handleCloseForm} />
 
             {/* Delete Confirmation */}
             <ConfirmDialog
@@ -565,6 +611,7 @@ export function ServersPage() {
                             key={server.id}
                             server={server}
                             databases={connectionsByServer[server.id] || []}
+                            onManage={() => navigate(`/servers/${server.id}`)}
                             onEdit={() => handleEdit(server)}
                             onDelete={() => handleDeleteClick(server)}
                             onAddDatabase={() => handleAddDatabase(server)}

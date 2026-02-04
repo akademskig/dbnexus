@@ -93,15 +93,15 @@ export function ProjectsPage() {
         const query = searchQuery.toLowerCase().trim();
         const filteredConnections = query
             ? connections.filter((conn) => {
-                const matchesName = conn.name.toLowerCase().includes(query);
-                const matchesHost = conn.host?.toLowerCase().includes(query);
-                const matchesDatabase = conn.database?.toLowerCase().includes(query);
-                const matchesEngine = conn.engine.toLowerCase().includes(query);
-                const matchesType = conn.connectionType?.toLowerCase().includes(query);
-                return (
-                    matchesName || matchesHost || matchesDatabase || matchesEngine || matchesType
-                );
-            })
+                  const matchesName = conn.name.toLowerCase().includes(query);
+                  const matchesHost = conn.host?.toLowerCase().includes(query);
+                  const matchesDatabase = conn.database?.toLowerCase().includes(query);
+                  const matchesEngine = conn.engine.toLowerCase().includes(query);
+                  const matchesType = conn.connectionType?.toLowerCase().includes(query);
+                  return (
+                      matchesName || matchesHost || matchesDatabase || matchesEngine || matchesType
+                  );
+              })
             : connections;
 
         // Group connections
@@ -127,9 +127,9 @@ export function ProjectsPage() {
         // Filter projects to only show those with connections (when searching)
         const filteredProjects = query
             ? projects.filter((p) => {
-                const hasConnections = (projectConnections.get(p.id)?.size ?? 0) > 0;
-                return hasConnections;
-            })
+                  const hasConnections = (projectConnections.get(p.id)?.size ?? 0) > 0;
+                  return hasConnections;
+              })
             : projects;
 
         return {

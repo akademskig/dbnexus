@@ -135,6 +135,22 @@ export const serversApi = {
         fetchApi<{ success: boolean; message: string }>(`/servers/${id}/test`, {
             method: 'POST',
         }),
+
+    getPassword: (id: string) => fetchApi<{ password: string | null }>(`/servers/${id}/password`),
+
+    createDatabase: (
+        id: string,
+        input: { databaseName: string; username?: string; password?: string }
+    ) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/create-database`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    listDatabases: (id: string) =>
+        fetchApi<{ success: boolean; databases?: string[]; message?: string }>(
+            `/servers/${id}/list-databases`
+        ),
 };
 
 // ============ Queries ============
