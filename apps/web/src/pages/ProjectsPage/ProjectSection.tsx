@@ -369,7 +369,7 @@ export function ProjectSection({
                                         ? ungroupedInProject
                                         : ungroupedInProject.slice(0, UNGROUPED_LIMIT)
                                     ).map((conn) => (
-                                        <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                        <Grid size={{ xs: 12 }} key={conn.id}>
                                             <ConnectionCard
                                                 connection={conn}
                                                 compact

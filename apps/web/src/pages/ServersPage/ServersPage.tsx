@@ -327,7 +327,7 @@ function ServerCard({
                         <>
                             <Grid container spacing={2}>
                                 {visibleDatabases.map((db) => (
-                                    <Grid size={{ xs: 12, md: 6 }} key={db.id}>
+                                    <Grid size={{ xs: 12 }} key={db.id}>
                                         <ConnectionCard
                                             connection={db}
                                             compact

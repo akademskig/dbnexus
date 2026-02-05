@@ -204,10 +204,10 @@ export function DatabaseGroupSection({
                         group.databaseEngine === 'postgres'
                             ? 'PostgreSQL'
                             : group.databaseEngine === 'mysql'
-                              ? 'MySQL'
-                              : group.databaseEngine === 'mariadb'
-                                ? 'MariaDB'
-                                : 'SQLite'
+                                ? 'MySQL'
+                                : group.databaseEngine === 'mariadb'
+                                    ? 'MariaDB'
+                                    : 'SQLite'
                     }
                     size="small"
                     sx={{
@@ -224,8 +224,8 @@ export function DatabaseGroupSection({
                             group.syncSchema && group.syncData
                                 ? 'Schema + Data'
                                 : group.syncSchema
-                                  ? 'Schema'
-                                  : 'Data'
+                                    ? 'Schema'
+                                    : 'Data'
                         }
                         size="small"
                         icon={<SyncIcon sx={{ fontSize: 14 }} />}
@@ -373,7 +373,7 @@ export function DatabaseGroupSection({
                     ) : (
                         <Grid container spacing={2}>
                             {visibleConnections.map((conn) => (
-                                <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                <Grid size={{ xs: 12 }} key={conn.id}>
                                     <ConnectionCard
                                         connection={conn}
                                         compact

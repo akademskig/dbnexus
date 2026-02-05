@@ -526,7 +526,7 @@ export function ServerManagementPage() {
                     ) : (
                         <Grid container spacing={2} sx={{ mb: 3 }}>
                             {databases.map((db) => (
-                                <Grid size={{ xs: 12, md: 6 }} key={db.id}>
+                                <Grid size={{ xs: 12 }} key={db.id}>
                                     <ConnectionCard
                                         connection={db}
                                         compact
@@ -606,7 +606,7 @@ export function ServerManagementPage() {
                                 if (trackedConnection) {
                                     // Use ConnectionCard for tracked databases
                                     return (
-                                        <Grid size={{ xs: 12, md: 6 }} key={db.name}>
+                                        <Grid size={{ xs: 12 }} key={db.name}>
                                             <ConnectionCard
                                                 connection={trackedConnection}
                                                 compact
@@ -653,7 +653,7 @@ export function ServerManagementPage() {
 
                                 // Untracked database - styled like ConnectionCard
                                 return (
-                                    <Grid size={{ xs: 12, md: 6 }} key={db.name}>
+                                    <Grid size={{ xs: 12 }} key={db.name}>
                                         <Box
                                             sx={{
                                                 bgcolor: 'background.paper',
