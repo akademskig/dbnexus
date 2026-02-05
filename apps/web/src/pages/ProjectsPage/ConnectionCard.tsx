@@ -37,6 +37,7 @@ interface ConnectionCardProps {
     readonly onQuery: () => void;
     readonly draggable?: boolean;
     readonly defaultExpanded?: boolean;
+    readonly extra?: React.ReactNode;
 }
 
 export function ConnectionCard({
@@ -47,6 +48,7 @@ export function ConnectionCard({
     onQuery,
     draggable = true,
     defaultExpanded = false,
+    extra,
 }: ConnectionCardProps) {
     const navigate = useNavigate();
     const [expanded, setExpanded] = useState(defaultExpanded);
@@ -338,14 +340,17 @@ export function ConnectionCard({
                             }),
                             ...(!isOnline &&
                                 !isOffline && {
-                                    bgcolor: 'rgba(107, 114, 128, 0.15)',
-                                    color: '#6b7280',
-                                    border: '1px solid rgba(107, 114, 128, 0.3)',
-                                    '& .MuiChip-icon': { color: '#6b7280' },
-                                }),
+                                bgcolor: 'rgba(107, 114, 128, 0.15)',
+                                color: '#6b7280',
+                                border: '1px solid rgba(107, 114, 128, 0.3)',
+                                '& .MuiChip-icon': { color: '#6b7280' },
+                            }),
                         }}
                     />
                 </StyledTooltip>
+
+                {/* Extra content slot */}
+                {extra}
 
                 <IconButton
                     size="small"

@@ -148,9 +148,35 @@ export const serversApi = {
         }),
 
     listDatabases: (id: string) =>
-        fetchApi<{ success: boolean; databases?: string[]; message?: string }>(
-            `/servers/${id}/list-databases`
-        ),
+        fetchApi<{
+            success: boolean;
+            databases?: Array<{
+                name: string;
+                size: string;
+                owner?: string;
+                tracked: boolean;
+                connectionId?: string;
+            }>;
+            message?: string;
+        }>(`/servers/${id}/list-databases`),
+
+    getInfo: (id: string) =>
+        fetchApi<{
+            success: boolean;
+            info?: {
+                version: string;
+                uptime: string;
+                activeConnections: number;
+                maxConnections: number;
+                currentDatabase: string;
+            };
+            message?: string;
+        }>(`/servers/${id}/info`),
+
+    dropDatabase: (id: string, dbName: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/databases/${dbName}`, {
+            method: 'DELETE',
+        }),
 };
 
 // ============ Queries ============

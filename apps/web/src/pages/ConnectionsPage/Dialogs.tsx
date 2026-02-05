@@ -289,10 +289,10 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                     group.databaseEngine === 'postgres'
                                         ? 'PostgreSQL'
                                         : group.databaseEngine === 'mysql'
-                                          ? 'MySQL'
-                                          : group.databaseEngine === 'mariadb'
-                                            ? 'MariaDB'
-                                            : 'SQLite'
+                                            ? 'MySQL'
+                                            : group.databaseEngine === 'mariadb'
+                                                ? 'MariaDB'
+                                                : 'SQLite'
                                 }
                                 disabled
                                 fullWidth
@@ -449,7 +449,7 @@ export function ConnectionFormDialog({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (connection) {
+        if (connection?.id) {
             updateMutation.mutate({ id: connection.id, data: formData });
         } else {
             createMutation.mutate(formData);

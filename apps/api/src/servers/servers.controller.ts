@@ -21,7 +21,7 @@ import type {
 
 @Controller('servers')
 export class ServersController {
-    constructor(private readonly metadataService: MetadataService) {}
+    constructor(private readonly metadataService: MetadataService) { }
 
     @Get()
     getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
@@ -243,9 +243,17 @@ export class ServersController {
     }
 
     @Get(':id/list-databases')
-    async listDatabases(
-        @Param('id') id: string
-    ): Promise<{ success: boolean; databases?: string[]; message?: string }> {
+    async listDatabases(@Param('id') id: string): Promise<{
+        success: boolean;
+        databases?: Array<{
+            name: string;
+            size: string;
+            owner?: string;
+            tracked: boolean;
+            connectionId?: string;
+        }>;
+        message?: string;
+    }> {
         const server = this.metadataService.serverRepository.findById(id);
         if (!server) {
             return { success: false, message: 'Server not found' };
@@ -260,20 +268,67 @@ export class ServersController {
             const connector = this.createServerConnector(server, password);
             await connector.connect();
 
-            let databases: string[] = [];
+            // Get tracked connections for this server
+            const trackedConnections = this.metadataService.connectionRepository
+                .findAll()
+                .filter((c) => c.serverId === id);
+            const trackedDbNames = new Set(trackedConnections.map((c) => c.database));
+
+            let databases: Array<{
+                name: string;
+                size: string;
+                owner?: string;
+                tracked: boolean;
+                connectionId?: string;
+            }> = [];
+
             if (server.engine === 'postgres') {
-                const result = await connector.query(
-                    `SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres') ORDER BY datname`
-                );
-                databases = result.rows.map(
-                    (row: Record<string, unknown>) => row.datname as string
-                );
+                const result = await connector.query(`
+                    SELECT 
+                        d.datname as name,
+                        pg_size_pretty(pg_database_size(d.datname)) as size,
+                        r.rolname as owner
+                    FROM pg_database d
+                    JOIN pg_roles r ON d.datdba = r.oid
+                    WHERE d.datistemplate = false 
+                    AND d.datname NOT IN ('postgres')
+                    ORDER BY d.datname
+                `);
+                databases = result.rows.map((row: Record<string, unknown>) => {
+                    const name = row.name as string;
+                    const tracked = trackedDbNames.has(name);
+                    const connection = trackedConnections.find((c) => c.database === name);
+                    return {
+                        name,
+                        size: row.size as string,
+                        owner: row.owner as string,
+                        tracked,
+                        connectionId: connection?.id,
+                    };
+                });
             } else {
-                const result = await connector.query(`SHOW DATABASES`);
-                const systemDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
-                databases = result.rows
-                    .map((row: Record<string, unknown>) => Object.values(row)[0] as string)
-                    .filter((db: string) => !systemDbs.includes(db));
+                // MySQL/MariaDB
+                const result = await connector.query(`
+                    SELECT 
+                        table_schema as name,
+                        ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb
+                    FROM information_schema.tables
+                    WHERE table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
+                    GROUP BY table_schema
+                    ORDER BY table_schema
+                `);
+                databases = result.rows.map((row: Record<string, unknown>) => {
+                    const name = row.name as string;
+                    const sizeMb = row.size_mb as number;
+                    const tracked = trackedDbNames.has(name);
+                    const connection = trackedConnections.find((c) => c.database === name);
+                    return {
+                        name,
+                        size: sizeMb ? `${sizeMb} MB` : '0 MB',
+                        tracked,
+                        connectionId: connection?.id,
+                    };
+                });
             }
 
             await connector.disconnect();
@@ -283,6 +338,207 @@ export class ServersController {
                 success: false,
                 message: error instanceof Error ? error.message : 'Failed to list databases',
             };
+        }
+    }
+
+    @Get(':id/info')
+    async getServerInfo(@Param('id') id: string): Promise<{
+        success: boolean;
+        info?: {
+            version: string;
+            uptime: string;
+            activeConnections: number;
+            maxConnections: number;
+            currentDatabase: string;
+        };
+        message?: string;
+    }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        const password = this.metadataService.serverRepository.getPassword(id);
+        if (!password || !server.username) {
+            return { success: false, message: 'Server admin credentials not configured' };
+        }
+
+        try {
+            const connector = this.createServerConnector(server, password);
+            await connector.connect();
+
+            let info: {
+                version: string;
+                uptime: string;
+                activeConnections: number;
+                maxConnections: number;
+                currentDatabase: string;
+            };
+
+            if (server.engine === 'postgres') {
+                const versionResult = await connector.query(`SELECT version()`);
+                const version = (versionResult.rows[0]?.version as string) || 'Unknown';
+
+                const uptimeResult = await connector.query(
+                    `SELECT EXTRACT(EPOCH FROM (now() - pg_postmaster_start_time()))::int as uptime_seconds`
+                );
+                const uptimeSeconds = (uptimeResult.rows[0]?.uptime_seconds as number) || 0;
+
+                const connectionsResult = await connector.query(
+                    `SELECT count(*) as active FROM pg_stat_activity WHERE state = 'active'`
+                );
+                const activeConnections = parseInt(
+                    String(connectionsResult.rows[0]?.active || 0),
+                    10
+                );
+
+                const maxConnResult = await connector.query(`SHOW max_connections`);
+                const maxConnections = parseInt(
+                    String(maxConnResult.rows[0]?.max_connections || 100),
+                    10
+                );
+
+                info = {
+                    version: version.split(',')[0] || version,
+                    uptime: this.formatUptime(uptimeSeconds),
+                    activeConnections,
+                    maxConnections,
+                    currentDatabase: 'postgres',
+                };
+            } else {
+                // MySQL/MariaDB
+                const versionResult = await connector.query(`SELECT VERSION() as version`);
+                const version = (versionResult.rows[0]?.version as string) || 'Unknown';
+
+                const uptimeResult = await connector.query(
+                    `SHOW GLOBAL STATUS LIKE 'Uptime'`
+                );
+                const uptimeSeconds = parseInt(
+                    String(uptimeResult.rows[0]?.Value || 0),
+                    10
+                );
+
+                const connectionsResult = await connector.query(
+                    `SHOW STATUS LIKE 'Threads_connected'`
+                );
+                const activeConnections = parseInt(
+                    String(connectionsResult.rows[0]?.Value || 0),
+                    10
+                );
+
+                const maxConnResult = await connector.query(
+                    `SHOW VARIABLES LIKE 'max_connections'`
+                );
+                const maxConnections = parseInt(
+                    String(maxConnResult.rows[0]?.Value || 100),
+                    10
+                );
+
+                info = {
+                    version,
+                    uptime: this.formatUptime(uptimeSeconds),
+                    activeConnections,
+                    maxConnections,
+                    currentDatabase: server.engine === 'mysql' ? 'MySQL' : 'MariaDB',
+                };
+            }
+
+            await connector.disconnect();
+            return { success: true, info };
+        } catch (error) {
+            return {
+                success: false,
+                message: error instanceof Error ? error.message : 'Failed to get server info',
+            };
+        }
+    }
+
+    @Delete(':id/databases/:dbName')
+    async dropDatabase(
+        @Param('id') id: string,
+        @Param('dbName') dbName: string
+    ): Promise<{ success: boolean; message: string }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        const password = this.metadataService.serverRepository.getPassword(id);
+        if (!password || !server.username) {
+            return { success: false, message: 'Server admin credentials not configured' };
+        }
+
+        // Validate database name
+        if (!dbName || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(dbName)) {
+            return { success: false, message: 'Invalid database name' };
+        }
+
+        // Prevent dropping system databases
+        const systemDbs =
+            server.engine === 'postgres'
+                ? ['postgres', 'template0', 'template1']
+                : ['information_schema', 'mysql', 'performance_schema', 'sys'];
+        if (systemDbs.includes(dbName.toLowerCase())) {
+            return { success: false, message: 'Cannot drop system database' };
+        }
+
+        try {
+            const connector = this.createServerConnector(server, password);
+            await connector.connect();
+
+            if (server.engine === 'postgres') {
+                // Terminate active connections to the database
+                await connector.query(`
+                    SELECT pg_terminate_backend(pid) 
+                    FROM pg_stat_activity 
+                    WHERE datname = '${dbName}' AND pid <> pg_backend_pid()
+                `);
+                await connector.query(`DROP DATABASE IF EXISTS "${dbName}"`);
+            } else {
+                await connector.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+            }
+
+            await connector.disconnect();
+
+            // Remove any tracked connections for this database
+            const trackedConnections = this.metadataService.connectionRepository
+                .findAll()
+                .filter((c) => c.serverId === id && c.database === dbName);
+            for (const conn of trackedConnections) {
+                this.metadataService.connectionRepository.delete(conn.id);
+            }
+
+            // Audit log
+            this.metadataService.auditLogRepository.create({
+                action: 'database_deleted',
+                entityType: 'server',
+                entityId: id,
+                details: {
+                    serverName: server.name,
+                    databaseName: dbName,
+                },
+            });
+
+            return { success: true, message: `Database "${dbName}" dropped successfully` };
+        } catch (error) {
+            return {
+                success: false,
+                message: error instanceof Error ? error.message : 'Failed to drop database',
+            };
+        }
+    }
+
+    private formatUptime(seconds: number): string {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+
+        if (days > 0) {
+            return `${days}d ${hours}h ${minutes}m`;
+        } else if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else {
+            return `${minutes}m`;
         }
     }
 
