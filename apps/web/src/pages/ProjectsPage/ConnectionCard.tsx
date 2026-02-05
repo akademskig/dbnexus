@@ -340,11 +340,11 @@ export function ConnectionCard({
                             }),
                             ...(!isOnline &&
                                 !isOffline && {
-                                bgcolor: 'rgba(107, 114, 128, 0.15)',
-                                color: '#6b7280',
-                                border: '1px solid rgba(107, 114, 128, 0.3)',
-                                '& .MuiChip-icon': { color: '#6b7280' },
-                            }),
+                                    bgcolor: 'rgba(107, 114, 128, 0.15)',
+                                    color: '#6b7280',
+                                    border: '1px solid rgba(107, 114, 128, 0.3)',
+                                    '& .MuiChip-icon': { color: '#6b7280' },
+                                }),
                         }}
                     />
                 </StyledTooltip>

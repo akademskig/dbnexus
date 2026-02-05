@@ -289,10 +289,10 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                     group.databaseEngine === 'postgres'
                                         ? 'PostgreSQL'
                                         : group.databaseEngine === 'mysql'
-                                            ? 'MySQL'
-                                            : group.databaseEngine === 'mariadb'
-                                                ? 'MariaDB'
-                                                : 'SQLite'
+                                          ? 'MySQL'
+                                          : group.databaseEngine === 'mariadb'
+                                            ? 'MariaDB'
+                                            : 'SQLite'
                                 }
                                 disabled
                                 fullWidth

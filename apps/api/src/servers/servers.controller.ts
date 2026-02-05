@@ -21,7 +21,7 @@ import type {
 
 @Controller('servers')
 export class ServersController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
     getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
@@ -410,13 +410,8 @@ export class ServersController {
                 const versionResult = await connector.query(`SELECT VERSION() as version`);
                 const version = (versionResult.rows[0]?.version as string) || 'Unknown';
 
-                const uptimeResult = await connector.query(
-                    `SHOW GLOBAL STATUS LIKE 'Uptime'`
-                );
-                const uptimeSeconds = parseInt(
-                    String(uptimeResult.rows[0]?.Value || 0),
-                    10
-                );
+                const uptimeResult = await connector.query(`SHOW GLOBAL STATUS LIKE 'Uptime'`);
+                const uptimeSeconds = parseInt(String(uptimeResult.rows[0]?.Value || 0), 10);
 
                 const connectionsResult = await connector.query(
                     `SHOW STATUS LIKE 'Threads_connected'`
@@ -429,10 +424,7 @@ export class ServersController {
                 const maxConnResult = await connector.query(
                     `SHOW VARIABLES LIKE 'max_connections'`
                 );
-                const maxConnections = parseInt(
-                    String(maxConnResult.rows[0]?.Value || 100),
-                    10
-                );
+                const maxConnections = parseInt(String(maxConnResult.rows[0]?.Value || 100), 10);
 
                 info = {
                     version,
