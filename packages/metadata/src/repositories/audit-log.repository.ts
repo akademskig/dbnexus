@@ -80,7 +80,7 @@ export interface AuditLogCreateInput {
 }
 
 export class AuditLogRepository {
-    constructor(private readonly db: MetadataDatabase) {}
+    constructor(private readonly db: MetadataDatabase) { }
 
     /**
      * Create a new audit log entry
