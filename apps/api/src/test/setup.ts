@@ -71,6 +71,32 @@ export const TEST_CONNECTIONS = {
     },
 };
 
+// Docker container server configs (for server-level operations)
+export const TEST_SERVERS = {
+    postgresServer: {
+        name: 'Test Postgres Server',
+        engine: 'postgres' as const,
+        host: 'localhost',
+        port: 5450,
+        connectionType: 'local' as const,
+        ssl: false,
+        username: 'demo',
+        password: 'demo123',
+        tags: ['test'],
+    },
+    mysqlServer: {
+        name: 'Test MySQL Server',
+        engine: 'mysql' as const,
+        host: 'localhost',
+        port: 3350,
+        connectionType: 'local' as const,
+        ssl: false,
+        username: 'demo',
+        password: 'demo123',
+        tags: ['test'],
+    },
+};
+
 // Create NestJS app for integration tests
 export async function createTestApp(): Promise<INestApplication> {
     const moduleFixture: TestingModule = await Test.createTestingModule({
