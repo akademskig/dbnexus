@@ -810,3 +810,65 @@ export const backupsApi = {
         return fetchApi(`/backups/logs/${id}`);
     },
 };
+
+// ============ Settings ============
+
+export interface Tag {
+    id: string;
+    name: string;
+    color: string;
+}
+
+export const settingsApi = {
+    getAll: (): Promise<Record<string, unknown>> => {
+        return fetchApi('/settings');
+    },
+
+    get: <T>(key: string): Promise<T> => {
+        return fetchApi(`/settings/${key}`);
+    },
+
+    set: <T>(key: string, value: T): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+        });
+    },
+
+    delete: (key: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/${key}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // Tag-specific endpoints
+    getTags: (): Promise<Tag[]> => {
+        return fetchApi('/settings/tags/all');
+    },
+
+    createTag: (tag: Omit<Tag, 'id'>): Promise<Tag> => {
+        return fetchApi('/settings/tags', {
+            method: 'POST',
+            body: JSON.stringify(tag),
+        });
+    },
+
+    updateTag: (id: string, updates: Partial<Omit<Tag, 'id'>>): Promise<Tag | null> => {
+        return fetchApi(`/settings/tags/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updates),
+        });
+    },
+
+    deleteTag: (id: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/tags/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
+    resetTags: (): Promise<Tag[]> => {
+        return fetchApi('/settings/tags/reset', {
+            method: 'POST',
+        });
+    },
+};
