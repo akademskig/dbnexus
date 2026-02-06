@@ -21,7 +21,7 @@ import type {
 
 @Controller('servers')
 export class ServersController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
     getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
