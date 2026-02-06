@@ -526,7 +526,8 @@ export class BackupService {
     async deleteBackup(id: string) {
         const backup = this.metadataService.backupRepository.getById(id);
         if (!backup) {
-            throw new Error('Backup not found');
+            // Idempotent delete - if already deleted, return success
+            return { success: true, message: 'Backup already deleted or does not exist' };
         }
 
         // Check if file exists before attempting to delete
@@ -570,10 +571,7 @@ export class BackupService {
             }
         }
 
-        // Delete the database record
-        this.metadataService.backupRepository.delete(id);
-
-        // Log successful deletion
+        // Log successful deletion BEFORE deleting the record (to satisfy FK constraint)
         this.metadataService.backupLogsRepository.create({
             operation: 'backup_deleted',
             backupId: id,
@@ -583,6 +581,9 @@ export class BackupService {
             fileSize: backup.fileSize,
             status: 'success',
         });
+
+        // Delete the database record
+        this.metadataService.backupRepository.delete(id);
 
         const message = fileExists
             ? 'Backup deleted successfully'

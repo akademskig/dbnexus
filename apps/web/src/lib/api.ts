@@ -7,6 +7,9 @@ import type {
     ConnectionCreateInput,
     ConnectionUpdateInput,
     ConnectionTestResult,
+    ServerConfig,
+    ServerCreateInput,
+    ServerUpdateInput,
     QueryResult,
     QueryValidationResult,
     SavedQuery,
@@ -25,6 +28,7 @@ import type {
     InstanceGroupSyncStatus,
     InstanceGroupTargetStatus,
     BackupType,
+    DatabaseEngine,
 } from '@dbnexus/shared';
 
 const API_BASE = '/api';
@@ -96,6 +100,83 @@ export const connectionsApi = {
         }),
 
     getStatus: (id: string) => fetchApi<{ connected: boolean }>(`/connections/${id}/status`),
+};
+
+// ============ Servers ============
+
+export const serversApi = {
+    getAll: (engine?: DatabaseEngine) => {
+        const params = engine ? `?engine=${engine}` : '';
+        return fetchApi<ServerConfig[]>(`/servers${params}`);
+    },
+
+    getById: (id: string) => fetchApi<ServerConfig>(`/servers/${id}`),
+
+    getDatabases: (id: string) => fetchApi<ConnectionConfig[]>(`/servers/${id}/databases`),
+
+    create: (input: ServerCreateInput) =>
+        fetchApi<ServerConfig>('/servers', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    update: (id: string, input: ServerUpdateInput) =>
+        fetchApi<ServerConfig>(`/servers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message?: string }>(`/servers/${id}`, {
+            method: 'DELETE',
+        }),
+
+    test: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/test`, {
+            method: 'POST',
+        }),
+
+    getPassword: (id: string) => fetchApi<{ password: string | null }>(`/servers/${id}/password`),
+
+    createDatabase: (
+        id: string,
+        input: { databaseName: string; username?: string; password?: string }
+    ) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/create-database`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    listDatabases: (id: string) =>
+        fetchApi<{
+            success: boolean;
+            databases?: Array<{
+                name: string;
+                size: string;
+                owner?: string;
+                tracked: boolean;
+                connectionId?: string;
+            }>;
+            message?: string;
+        }>(`/servers/${id}/list-databases`),
+
+    getInfo: (id: string) =>
+        fetchApi<{
+            success: boolean;
+            info?: {
+                version: string;
+                uptime: string;
+                activeConnections: number;
+                maxConnections: number;
+                currentDatabase: string;
+            };
+            message?: string;
+        }>(`/servers/${id}/info`),
+
+    dropDatabase: (id: string, dbName: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/databases/${dbName}`, {
+            method: 'DELETE',
+        }),
 };
 
 // ============ Queries ============

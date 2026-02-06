@@ -8,6 +8,11 @@ export type AuditAction =
     | 'connection_created'
     | 'connection_updated'
     | 'connection_deleted'
+    | 'server_created'
+    | 'server_updated'
+    | 'server_deleted'
+    | 'database_created'
+    | 'database_deleted'
     | 'project_created'
     | 'project_updated'
     | 'project_deleted'
@@ -31,6 +36,7 @@ export type AuditAction =
 
 export type AuditEntityType =
     | 'connection'
+    | 'server'
     | 'project'
     | 'database_group'
     | 'query'

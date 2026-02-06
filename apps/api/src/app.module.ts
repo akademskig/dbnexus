@@ -12,6 +12,7 @@ import { HealthModule } from './health/health.module.js';
 import { ScannerModule } from './scanner/scanner.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { BackupModule } from './backup/backup.module.js';
+import { ServersModule } from './servers/servers.module.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -36,6 +37,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         ScannerModule,
         AuditModule,
         BackupModule,
+        ServersModule,
     ],
 })
 export class AppModule {}

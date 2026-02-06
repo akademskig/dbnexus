@@ -11,8 +11,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
-import { connectionsApi, schemaApi, projectsApi, groupsApi } from '../../lib/api';
-import { ConnectionFormDialog } from '../ProjectsPage/Dialogs';
+import { connectionsApi, schemaApi, projectsApi, groupsApi, serversApi } from '../../lib/api';
+import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
 import { StatusAlert } from '@/components/StatusAlert';
 
 interface StatCardProps {
@@ -105,6 +105,11 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
     const { data: groups = [] } = useQuery<DatabaseGroup[]>({
         queryKey: ['groups'],
         queryFn: () => groupsApi.getAll(),
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
     });
 
     const handleTest = async () => {
@@ -268,6 +273,7 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
                 connection={connection || null}
                 projects={projects}
                 groups={groups}
+                servers={servers}
                 onClose={() => setEditDialogOpen(false)}
             />
         </Box>

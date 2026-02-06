@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 17;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -364,5 +364,38 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_backup_logs_created_at ON backup_logs(created_at DESC);
 
   UPDATE schema_version SET version = 15;
+  `,
+
+    // Version 16: Add servers table for grouping connections by database server
+    `
+  -- Servers table to store database server credentials
+  CREATE TABLE IF NOT EXISTS servers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    engine TEXT NOT NULL CHECK(engine IN ('postgres', 'mysql', 'mariadb')),
+    connection_type TEXT NOT NULL DEFAULT 'local' CHECK(connection_type IN ('local', 'docker', 'remote')),
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    encrypted_password TEXT,
+    ssl INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Add server_id to connections (nullable - SQLite connections don't have a server)
+  ALTER TABLE connections ADD COLUMN server_id TEXT REFERENCES servers(id) ON DELETE SET NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_connections_server ON connections(server_id);
+  CREATE INDEX IF NOT EXISTS idx_servers_engine ON servers(engine);
+
+  UPDATE schema_version SET version = 16;
+  `,
+
+    // Version 17: Add tags to servers
+    `
+  ALTER TABLE servers ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
+
+  UPDATE schema_version SET version = 17;
   `,
 ];

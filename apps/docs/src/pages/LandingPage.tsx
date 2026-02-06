@@ -354,7 +354,6 @@ const features = [
 const databases = [
     { name: 'PostgreSQL', icon: 'P', bg: '#336791' },
     { name: 'MySQL', icon: 'M', bg: '#00758f' },
-    { name: 'MariaDB', icon: 'Ma', bg: '#c0765a' },
     { name: 'SQLite', icon: 'S', bg: '#003b57' },
 ];
 

@@ -29,6 +29,7 @@ import type {
     ConnectionCreateInput,
     Project,
     DatabaseGroup,
+    ServerConfig,
 } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
 import { PROJECT_COLORS } from './constants';
@@ -321,6 +322,10 @@ interface ConnectionFormDialogProps {
     connection: ConnectionConfig | null;
     projects: Project[];
     groups: DatabaseGroup[];
+    servers: ServerConfig[];
+    preselectedServerId?: string;
+    initialProjectId?: string;
+    initialGroupId?: string;
     onClose: () => void;
 }
 
@@ -329,6 +334,10 @@ export function ConnectionFormDialog({
     connection,
     projects,
     groups,
+    servers,
+    preselectedServerId,
+    initialProjectId,
+    initialGroupId,
     onClose,
 }: ConnectionFormDialogProps) {
     const queryClient = useQueryClient();
@@ -346,6 +355,7 @@ export function ConnectionFormDialog({
         defaultSchema: '',
         tags: [],
         readOnly: false,
+        serverId: undefined,
         projectId: undefined,
         groupId: undefined,
     });
@@ -368,15 +378,25 @@ export function ConnectionFormDialog({
                 defaultSchema: connection.defaultSchema || '',
                 tags: connection.tags,
                 readOnly: connection.readOnly,
+                serverId: connection.serverId,
                 projectId: connection.projectId,
                 groupId: connection.groupId,
             });
         } else {
+            // Determine engine from preselected server or initial group
+            const preselectedServer = preselectedServerId
+                ? servers.find((s) => s.id === preselectedServerId)
+                : undefined;
+            const initialGroup = initialGroupId
+                ? groups.find((g) => g.id === initialGroupId)
+                : undefined;
+            const engine = preselectedServer?.engine || initialGroup?.databaseEngine || 'postgres';
+
             setFormData({
                 name: '',
-                engine: 'postgres',
-                host: 'localhost',
-                port: 5432,
+                engine,
+                host: '',
+                port: 0,
                 database: '',
                 username: '',
                 password: '',
@@ -384,8 +404,9 @@ export function ConnectionFormDialog({
                 defaultSchema: '',
                 tags: [],
                 readOnly: false,
-                projectId: undefined,
-                groupId: undefined,
+                serverId: preselectedServerId,
+                projectId: initialProjectId,
+                groupId: initialGroupId,
             });
         }
         setTestResult(null);
@@ -393,30 +414,19 @@ export function ConnectionFormDialog({
 
     const isSqlite = formData.engine === 'sqlite';
     const isMysql = formData.engine === 'mysql' || formData.engine === 'mariadb';
+    const hasServer = !!formData.serverId;
     // Filter groups by project AND database engine
     const availableGroups = groups.filter(
         (g) => g.projectId === formData.projectId && g.databaseEngine === formData.engine
     );
-
-    // Get default port based on engine
-    const getDefaultPort = (engine: string) => {
-        switch (engine) {
-            case 'postgres':
-                return 5432;
-            case 'mysql':
-                return 3306;
-            case 'mariadb':
-                return 3306;
-            default:
-                return 0;
-        }
-    };
+    // Filter servers by database engine (SQLite doesn't use servers)
+    const availableServers = isSqlite ? [] : servers.filter((s) => s.engine === formData.engine);
 
     const createMutation = useMutation({
         mutationFn: connectionsApi.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection created');
+            toast.success('Database added');
             onClose();
         },
     });
@@ -425,20 +435,21 @@ export function ConnectionFormDialog({
         mutationFn: ({ id, data }: { id: string; data: ConnectionCreateInput }) =>
             connectionsApi.update(id, {
                 ...data,
-                // Convert undefined to null for clearing project/group
+                // Convert undefined to null for clearing server/project/group
+                serverId: data.serverId === undefined ? null : data.serverId,
                 projectId: data.projectId === undefined ? null : data.projectId,
                 groupId: data.groupId === undefined ? null : data.groupId,
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection updated');
+            toast.success('Database updated');
             onClose();
         },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (connection) {
+        if (connection?.id) {
             updateMutation.mutate({ id: connection.id, data: formData });
         } else {
             createMutation.mutate(formData);
@@ -449,7 +460,13 @@ export function ConnectionFormDialog({
         setTesting(true);
         setTestResult(null);
         try {
-            const result = await connectionsApi.testSettings(formData);
+            let result;
+            // When editing and password is empty, use stored credentials
+            if (connection && !formData.password) {
+                result = await connectionsApi.test(connection.id);
+            } else {
+                result = await connectionsApi.testSettings(formData);
+            }
             setTestResult(result);
         } catch (error) {
             setTestResult({
@@ -470,14 +487,15 @@ export function ConnectionFormDialog({
             TransitionProps={{ onEnter: handleEnter }}
         >
             <form onSubmit={handleSubmit}>
-                <DialogTitle>{connection ? 'Edit Connection' : 'New Connection'}</DialogTitle>
+                <DialogTitle>{connection ? 'Edit Database' : 'New Database'}</DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ mt: 1 }}>
                         <TextField
-                            label="Connection Name"
+                            label="Display Name"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             placeholder="My Database"
+                            helperText="A friendly name to identify this database connection"
                             required
                             fullWidth
                         />
@@ -551,7 +569,7 @@ export function ConnectionFormDialog({
                             </FormControl>
                         </Box>
 
-                        {/* Engine Selection */}
+                        {/* Engine Selection - disabled when server is selected */}
                         <Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                 Database Engine
@@ -564,11 +582,8 @@ export function ConnectionFormDialog({
                                         setFormData({
                                             ...formData,
                                             engine: value,
-                                            host: value === 'sqlite' ? '' : 'localhost',
-                                            port: getDefaultPort(value),
-                                            username: value === 'sqlite' ? '' : formData.username,
-                                            password: value === 'sqlite' ? '' : formData.password,
                                             groupId: undefined, // Reset group when engine changes
+                                            serverId: undefined, // Reset server when engine changes
                                         });
                                     }
                                 }}
@@ -582,42 +597,68 @@ export function ConnectionFormDialog({
                             </ToggleButtonGroup>
                         </Box>
 
-                        {/* PostgreSQL fields */}
+                        {/* Server Selection - required for non-SQLite engines */}
                         {!isSqlite && (
-                            <>
-                                <Box sx={{ display: 'flex', gap: 2 }}>
-                                    <TextField
-                                        label="Host"
-                                        value={formData.host}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, host: e.target.value })
-                                        }
-                                        placeholder="localhost"
-                                        required
-                                        sx={{ flex: 2 }}
-                                    />
-                                    <TextField
-                                        label="Port"
-                                        type="number"
-                                        value={formData.port}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                port: parseInt(e.target.value),
-                                            })
-                                        }
-                                        required
-                                        sx={{ flex: 1 }}
-                                    />
-                                </Box>
+                            <FormControl fullWidth required error={availableServers.length === 0}>
+                                <InputLabel>Server</InputLabel>
+                                <Select
+                                    value={formData.serverId || ''}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            serverId: e.target.value || undefined,
+                                        })
+                                    }
+                                    label="Server"
+                                >
+                                    {availableServers.length === 0 ? (
+                                        <MenuItem disabled>
+                                            <em>
+                                                No {formData.engine} servers available - create one
+                                                first
+                                            </em>
+                                        </MenuItem>
+                                    ) : (
+                                        availableServers.map((s) => (
+                                            <MenuItem key={s.id} value={s.id}>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                    }}
+                                                >
+                                                    {s.name}
+                                                    <Typography
+                                                        variant="caption"
+                                                        color="text.secondary"
+                                                    >
+                                                        ({s.host}:{s.port})
+                                                    </Typography>
+                                                </Box>
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </Select>
+                                {availableServers.length === 0 && (
+                                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                                        Create a {formData.engine} server in Servers page first
+                                    </Typography>
+                                )}
+                            </FormControl>
+                        )}
 
+                        {/* Database name - shown for non-SQLite when server is selected */}
+                        {!isSqlite && hasServer && (
+                            <>
                                 <TextField
-                                    label="Database"
+                                    label="Database Name"
                                     value={formData.database}
                                     onChange={(e) =>
                                         setFormData({ ...formData, database: e.target.value })
                                     }
                                     placeholder="mydb"
+                                    helperText="The database to connect to on this server"
                                     required
                                     fullWidth
                                 />
@@ -629,7 +670,8 @@ export function ConnectionFormDialog({
                                         onChange={(e) =>
                                             setFormData({ ...formData, username: e.target.value })
                                         }
-                                        placeholder="postgres"
+                                        placeholder="db_user"
+                                        helperText="Database user credentials"
                                         required
                                         sx={{ flex: 1 }}
                                     />
@@ -641,6 +683,9 @@ export function ConnectionFormDialog({
                                             setFormData({ ...formData, password: e.target.value })
                                         }
                                         placeholder={connection ? '••••••••' : ''}
+                                        helperText={
+                                            connection ? 'Leave empty to keep current' : undefined
+                                        }
                                         required={!connection}
                                         sx={{ flex: 1 }}
                                     />
@@ -731,32 +776,17 @@ export function ConnectionFormDialog({
                             )}
                         </Box>
 
-                        <Box sx={{ display: 'flex', gap: 3 }}>
-                            {!isSqlite && (
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={formData.ssl}
-                                            onChange={(e) =>
-                                                setFormData({ ...formData, ssl: e.target.checked })
-                                            }
-                                        />
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={formData.readOnly}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, readOnly: e.target.checked })
                                     }
-                                    label="Use SSL"
                                 />
-                            )}
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={formData.readOnly}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, readOnly: e.target.checked })
-                                        }
-                                    />
-                                }
-                                label="Read-only mode"
-                            />
-                        </Box>
+                            }
+                            label="Read-only mode"
+                        />
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>
@@ -777,9 +807,13 @@ export function ConnectionFormDialog({
                     <Button
                         type="submit"
                         variant="contained"
-                        disabled={createMutation.isPending || updateMutation.isPending}
+                        disabled={
+                            createMutation.isPending ||
+                            updateMutation.isPending ||
+                            (!isSqlite && !hasServer)
+                        }
                     >
-                        {connection ? 'Save Changes' : 'Create Connection'}
+                        {connection ? 'Save Changes' : 'Create Database'}
                     </Button>
                 </DialogActions>
             </form>

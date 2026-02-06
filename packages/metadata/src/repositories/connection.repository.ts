@@ -30,8 +30,10 @@ interface ConnectionRow {
     read_only: number;
     created_at: string;
     updated_at: string;
+    server_id: string | null;
     project_id: string | null;
     group_id: string | null;
+    server_name?: string;
     project_name?: string;
     group_name?: string;
 }
@@ -65,8 +67,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, project_id, group_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -83,6 +85,7 @@ export class ConnectionRepository {
                 input.defaultSchema || null,
                 JSON.stringify(input.tags ?? []),
                 input.readOnly ? 1 : 0,
+                input.serverId || null,
                 input.projectId || null,
                 input.groupId || null,
                 now,
@@ -101,9 +104,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.id = ?
@@ -122,9 +127,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.name = ?
@@ -143,9 +150,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             ORDER BY p.name, dg.name, c.name
@@ -164,9 +173,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id = ?
@@ -186,9 +197,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.group_id = ?
@@ -208,9 +221,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id IS NULL
@@ -226,7 +241,20 @@ export class ConnectionRepository {
      */
     findByTag(tag: ConnectionTag): ConnectionConfig[] {
         const rows = this.db
-            .prepare('SELECT * FROM connections ORDER BY name')
+            .prepare(
+                `
+            SELECT 
+                c.*,
+                s.name as server_name,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+            ORDER BY c.name
+        `
+            )
             .all() as ConnectionRow[];
         return rows
             .filter((row) => {
@@ -297,6 +325,10 @@ export class ConnectionRepository {
         if (input.connectionType !== undefined) {
             updates.push('connection_type = ?');
             values.push(input.connectionType);
+        }
+        if (input.serverId !== undefined) {
+            updates.push('server_id = ?');
+            values.push(input.serverId);
         }
 
         if (updates.length > 0) {
@@ -405,10 +437,36 @@ export class ConnectionRepository {
             readOnly: row.read_only === 1,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            serverId: row.server_id || undefined,
             projectId: row.project_id || undefined,
             groupId: row.group_id || undefined,
+            serverName: row.server_name,
             projectName: row.project_name,
             groupName: row.group_name,
         };
+    }
+
+    /**
+     * Find connections by server ID
+     */
+    findByServerId(serverId: string): ConnectionConfig[] {
+        const rows = this.db
+            .prepare(
+                `
+                SELECT c.*,
+                    s.name as server_name,
+                    p.name as project_name,
+                    g.name as group_name
+                FROM connections c
+                LEFT JOIN servers s ON c.server_id = s.id
+                LEFT JOIN projects p ON c.project_id = p.id
+                LEFT JOIN database_groups g ON c.group_id = g.id
+                WHERE c.server_id = ?
+                ORDER BY c.name
+                `
+            )
+            .all(serverId) as ConnectionRow[];
+
+        return rows.map((row) => this.rowToConnection(row));
     }
 }
