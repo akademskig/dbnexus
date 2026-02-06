@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Servers Page**: Dedicated page to view and manage all configured servers
     - Server cards showing engine, host, port, and database count
     - Quick actions for testing connection and managing server
+- **Persistent Settings**: User preferences now stored in database instead of browser localStorage
+    - Tags persist across browsers and devices
+    - Extensible settings system for future preferences
+    - Settings API with REST endpoints
 
 ### Changed
 
