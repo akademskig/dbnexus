@@ -37,6 +37,7 @@ interface ConnectionCardProps {
     readonly onQuery: () => void;
     readonly draggable?: boolean;
     readonly defaultExpanded?: boolean;
+    readonly extra?: React.ReactNode;
 }
 
 export function ConnectionCard({
@@ -47,6 +48,7 @@ export function ConnectionCard({
     onQuery,
     draggable = true,
     defaultExpanded = false,
+    extra,
 }: ConnectionCardProps) {
     const navigate = useNavigate();
     const [expanded, setExpanded] = useState(defaultExpanded);
@@ -346,6 +348,9 @@ export function ConnectionCard({
                         }}
                     />
                 </StyledTooltip>
+
+                {/* Extra content slot */}
+                {extra}
 
                 <IconButton
                     size="small"

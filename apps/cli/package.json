@@ -1,6 +1,6 @@
 {
   "name": "dbnexus",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "type": "module",
   "description": "Local-first database management tool with modern web UI, CLI, and production safety guardrails for PostgreSQL, MySQL, and SQLite",

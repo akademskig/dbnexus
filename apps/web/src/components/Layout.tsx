@@ -30,9 +30,10 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FolderIcon from '@mui/icons-material/Folder';
+import DnsIcon from '@mui/icons-material/Dns';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { groupsApi, connectionsApi } from '../lib/api';
+import { groupsApi, connectionsApi, serversApi } from '../lib/api';
 import { DynamicLogo } from './DynamicLogo';
 // Types are inferred from React Query
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -49,9 +50,11 @@ interface SidebarStore {
     collapsed: boolean;
     syncExpanded: boolean;
     connectionsExpanded: boolean;
+    serversExpanded: boolean;
     toggle: () => void;
     toggleSync: () => void;
     toggleConnections: () => void;
+    toggleServers: () => void;
 }
 
 const useSidebarStore = create<SidebarStore>()(
@@ -60,10 +63,12 @@ const useSidebarStore = create<SidebarStore>()(
             collapsed: false,
             syncExpanded: true,
             connectionsExpanded: true,
+            serversExpanded: true,
             toggle: () => set((state) => ({ collapsed: !state.collapsed })),
             toggleSync: () => set((state) => ({ syncExpanded: !state.syncExpanded })),
             toggleConnections: () =>
                 set((state) => ({ connectionsExpanded: !state.connectionsExpanded })),
+            toggleServers: () => set((state) => ({ serversExpanded: !state.serversExpanded })),
         }),
         { name: 'dbnexus-sidebar' }
     )
@@ -71,6 +76,7 @@ const useSidebarStore = create<SidebarStore>()(
 
 const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', requiresConnections: false },
+    { to: '/servers', icon: <DnsIcon />, label: 'Servers', requiresConnections: false },
     { to: '/projects', icon: <FolderIcon />, label: 'Projects', requiresConnections: false },
     { to: '/query', icon: <TerminalIcon />, label: 'Query', requiresConnections: true },
     {
@@ -86,12 +92,21 @@ const navItems = [
 export function Layout() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { collapsed, syncExpanded, connectionsExpanded, toggle, toggleSync, toggleConnections } =
-        useSidebarStore();
+    const {
+        collapsed,
+        syncExpanded,
+        connectionsExpanded,
+        serversExpanded,
+        toggle,
+        toggleSync,
+        toggleConnections,
+        toggleServers,
+    } = useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
+    const [serversMenuAnchor, setServersMenuAnchor] = useState<null | HTMLElement>(null);
 
     // Connection health store
     const { healthStatus, checkAllConnections } = useConnectionHealthStore();
@@ -115,6 +130,14 @@ export function Layout() {
         queryFn: connectionsApi.getAll,
         staleTime: 0, // Always consider data stale to ensure fresh data
         refetchOnWindowFocus: true, // Refetch when user returns to the app
+    });
+
+    // Use React Query for servers
+    const { data: servers = [], isLoading: loadingServers } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
+        staleTime: 0,
+        refetchOnWindowFocus: true,
     });
 
     // Use React Query for groups
@@ -190,6 +213,8 @@ export function Layout() {
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
 
     const isConnectionsActive = location.pathname.startsWith('/connections/');
+
+    const isServersActive = location.pathname.startsWith('/servers/');
 
     // Redirect from pages that require connections when there are none
     useEffect(() => {
@@ -347,7 +372,7 @@ export function Layout() {
                                     <SyncIcon />
                                 </ListItemIcon>
                                 <ListItemText
-                                    primary="Instance Sync"
+                                    primary="Sync Groups"
                                     primaryTypographyProps={{ fontSize: 14 }}
                                 />
                                 {syncExpanded ? (
@@ -479,6 +504,158 @@ export function Layout() {
                         </>
                     )}
 
+                    {/* Servers Section */}
+                    {!collapsed && servers.length > 0 && (
+                        <>
+                            <Divider sx={{ my: 0.5 }} />
+                            <ListItemButton
+                                onClick={toggleServers}
+                                sx={{ px: 2 }}
+                                selected={isServersActive}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 40,
+                                        color: isServersActive ? 'primary.main' : 'text.secondary',
+                                    }}
+                                >
+                                    <DnsIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Servers"
+                                    primaryTypographyProps={{ fontSize: 14 }}
+                                />
+                                {serversExpanded ? (
+                                    <ExpandLessIcon fontSize="small" />
+                                ) : (
+                                    <ExpandMoreIcon fontSize="small" />
+                                )}
+                            </ListItemButton>
+                            <Collapse in={serversExpanded}>
+                                <List disablePadding>
+                                    {loadingServers ? (
+                                        <Box sx={{ py: 2, textAlign: 'center' }}>
+                                            <CircularProgress size={16} />
+                                        </Box>
+                                    ) : (
+                                        servers.map((server) => {
+                                            const serverPath = `/servers/${server.id}`;
+                                            const isServerActive = location.pathname === serverPath;
+                                            return (
+                                                <ListItemButton
+                                                    key={server.id}
+                                                    onClick={() => navigate(serverPath)}
+                                                    selected={isServerActive}
+                                                    sx={{
+                                                        pl: 4,
+                                                        py: 0.75,
+                                                    }}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 32 }}>
+                                                        <DnsIcon
+                                                            sx={{
+                                                                fontSize: 18,
+                                                                color: isServerActive
+                                                                    ? 'primary.main'
+                                                                    : 'text.disabled',
+                                                            }}
+                                                        />
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={server.name}
+                                                        primaryTypographyProps={{
+                                                            fontSize: 13,
+                                                            noWrap: true,
+                                                        }}
+                                                        secondary={`${server.host}:${server.port}`}
+                                                        secondaryTypographyProps={{
+                                                            fontSize: 11,
+                                                            noWrap: true,
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            );
+                                        })
+                                    )}
+                                </List>
+                            </Collapse>
+                        </>
+                    )}
+
+                    {/* Collapsed servers icon with menu */}
+                    {collapsed && servers.length > 0 && (
+                        <>
+                            <StyledTooltip title="Servers" placement="right" arrow>
+                                <ListItemButton
+                                    onClick={(e) => setServersMenuAnchor(e.currentTarget)}
+                                    selected={isServersActive}
+                                    sx={{
+                                        justifyContent: 'center',
+                                        px: 1.5,
+                                    }}
+                                >
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 0,
+                                            color: isServersActive
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                        }}
+                                    >
+                                        <DnsIcon />
+                                    </ListItemIcon>
+                                </ListItemButton>
+                            </StyledTooltip>
+                            <Menu
+                                anchorEl={serversMenuAnchor}
+                                open={Boolean(serversMenuAnchor)}
+                                onClose={() => setServersMenuAnchor(null)}
+                                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
+                                >
+                                    Servers
+                                </Typography>
+                                <Divider />
+                                {servers.map((server) => {
+                                    const serverPath = `/servers/${server.id}`;
+                                    const isServerActive = location.pathname === serverPath;
+                                    return (
+                                        <MenuItem
+                                            key={server.id}
+                                            onClick={() => {
+                                                navigate(serverPath);
+                                                setServersMenuAnchor(null);
+                                            }}
+                                            selected={isServerActive}
+                                            sx={{ minWidth: 180 }}
+                                        >
+                                            <ListItemIcon sx={{ minWidth: 32 }}>
+                                                <DnsIcon
+                                                    sx={{
+                                                        fontSize: 18,
+                                                        color: isServerActive
+                                                            ? 'primary.main'
+                                                            : 'text.disabled',
+                                                    }}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={server.name}
+                                                secondary={`${server.host}:${server.port}`}
+                                                primaryTypographyProps={{ fontSize: 13 }}
+                                                secondaryTypographyProps={{ fontSize: 11 }}
+                                            />
+                                        </MenuItem>
+                                    );
+                                })}
+                            </Menu>
+                        </>
+                    )}
+
                     {/* Connections Section */}
                     {!collapsed && connections.length > 0 && (
                         <>
@@ -499,7 +676,7 @@ export function Layout() {
                                     <StorageIcon />
                                 </ListItemIcon>
                                 <ListItemText
-                                    primary="Connections"
+                                    primary="Databases"
                                     primaryTypographyProps={{ fontSize: 14 }}
                                 />
                                 {connectionsExpanded ? (
@@ -659,7 +836,7 @@ export function Layout() {
                     {/* Collapsed connections icon with menu */}
                     {collapsed && connections.length > 0 && (
                         <>
-                            <StyledTooltip title="Connections" placement="right" arrow>
+                            <StyledTooltip title="Databases" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setConnectionsMenuAnchor(e.currentTarget)}
                                     selected={isConnectionsActive}
@@ -691,7 +868,7 @@ export function Layout() {
                                     variant="caption"
                                     sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
                                 >
-                                    Connections
+                                    Databases
                                 </Typography>
                                 <Divider />
                                 {connections.map((conn) => {

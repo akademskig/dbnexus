@@ -98,9 +98,51 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.1.12',
+        version: '0.2.0',
         date: 'January 2026',
         latest: true,
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Database Backup & Restore system with native tools (pg_dump, mysqldump) and SQLite file copy',
+            },
+            {
+                type: 'added' as const,
+                text: 'Backup & Restore Logs tab showing comprehensive operation history with duration and file size tracking',
+            },
+            {
+                type: 'added' as const,
+                text: 'SQL Editor Output Panel with split-view for viewing query results without tab switching',
+            },
+            {
+                type: 'added' as const,
+                text: 'GZIP compression support for backup files',
+            },
+            {
+                type: 'added' as const,
+                text: 'Database tools setup wizard with auto-install capability',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Backup UI simplified to only support full backups (schema + data)',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Query execution validation prevents invalid filter values from executing',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Backup file deletion gracefully handles already-deleted files',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Query page auto-refreshes data after successful database restore',
+            },
+        ],
+    },
+    {
+        version: '0.1.12',
+        date: 'January 2026',
         changes: [
             {
                 type: 'added' as const,

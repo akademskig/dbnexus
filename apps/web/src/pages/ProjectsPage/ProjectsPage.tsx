@@ -16,7 +16,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import FolderIcon from '@mui/icons-material/Folder';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { connectionsApi, projectsApi, groupsApi } from '../../lib/api';
+import { connectionsApi, projectsApi, groupsApi, serversApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -25,7 +25,8 @@ import { useToastStore } from '../../stores/toastStore';
 import { useDragAutoScroll } from '../../hooks/useDragAutoScroll';
 import { ProjectSection } from './ProjectSection';
 import { ConnectionCard } from './ConnectionCard';
-import { ConnectionFormDialog, ProjectFormDialog, GroupFormDialog } from './Dialogs';
+import { ProjectFormDialog, GroupFormDialog } from './Dialogs';
+import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
 import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
 import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
@@ -71,6 +72,11 @@ export function ProjectsPage() {
     const { data: groups = [] } = useQuery({
         queryKey: ['groups'],
         queryFn: () => groupsApi.getAll(),
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
     });
 
     const isLoading = loadingConnections || loadingProjects;
@@ -143,7 +149,7 @@ export function ProjectsPage() {
         mutationFn: connectionsApi.delete,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection deleted');
+            toast.success('Database deleted');
         },
     });
 
@@ -159,10 +165,10 @@ export function ProjectsPage() {
         }) => connectionsApi.update(connectionId, { projectId, groupId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection moved');
+            toast.success('Database moved');
         },
         onError: () => {
-            toast.error('Failed to move connection');
+            toast.error('Failed to move database');
         },
     });
 
@@ -290,7 +296,7 @@ export function ProjectsPage() {
                         onClick={() => setFormOpen(true)}
                         data-tour="add-connection"
                     >
-                        Add Connection
+                        Add Database
                     </Button>
                 </Box>
             </Box>
@@ -299,7 +305,7 @@ export function ProjectsPage() {
             <Box sx={{ mb: 3 }}>
                 <TextField
                     fullWidth
-                    placeholder="Search connections by name, host, database, or engine..."
+                    placeholder="Search databases by name, host, database, or engine..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     InputProps={{
@@ -350,6 +356,7 @@ export function ProjectsPage() {
                 connection={editingConnection}
                 projects={projects}
                 groups={groups}
+                servers={servers}
                 onClose={handleCloseForm}
                 initialProjectId={connectionFormProjectId}
                 initialGroupId={connectionFormGroupId}

@@ -87,7 +87,7 @@ export function OnboardingTour({
                 id: 'projects',
                 title: 'Step 1: Add a Connection',
                 description:
-                    'Start by adding your first database connection. Click "Add Connection" or use the scan feature to auto-discover databases.',
+                    'Start by adding your first database. Click "Add Database" or use the scan feature to auto-discover databases.',
                 hint: '💡 Try the "Scan for Connections" button to find running databases',
                 icon: <StorageIcon />,
                 route: '/projects',
@@ -184,7 +184,7 @@ export function OnboardingTour({
                         title: 'Almost There! 🚀',
                         description:
                             'Add your first connection to unlock all features: Query Editor, Schema Diagram, Compare & Sync, and more!',
-                        hint: '💡 Click "Add Connection" on the Projects page or use "Scan for Connections" to auto-discover databases',
+                        hint: '💡 Click "Add Database" on the Projects page or use "Scan" to auto-discover databases',
                     };
                 }
                 return step;

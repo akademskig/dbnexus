@@ -35,3 +35,5 @@ export type {
     BackupLogOperation,
     BackupLogStatus,
 } from './backup-logs.repository.js';
+export { ServerRepository } from './server.repository.js';
+export type { ServerConfig, ServerCreateInput, ServerUpdateInput } from './server.repository.js';

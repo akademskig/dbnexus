@@ -97,7 +97,7 @@ export function DatabaseGroupSection({
                 const connection = allConnections.find((c) => c.id === data.connectionId);
 
                 if (!connection) {
-                    toast.error('Connection not found');
+                    toast.error('Database not found');
                     return;
                 }
 
@@ -241,7 +241,7 @@ export function DatabaseGroupSection({
                 )}
                 {/* Quick Action */}
                 {onAddConnection && (
-                    <StyledTooltip title="Add Connection">
+                    <StyledTooltip title="Add Database">
                         <IconButton
                             size="small"
                             onClick={(e) => {
@@ -373,7 +373,7 @@ export function DatabaseGroupSection({
                     ) : (
                         <Grid container spacing={2}>
                             {visibleConnections.map((conn) => (
-                                <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                <Grid size={{ xs: 12 }} key={conn.id}>
                                     <ConnectionCard
                                         connection={conn}
                                         compact

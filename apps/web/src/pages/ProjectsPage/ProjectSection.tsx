@@ -90,7 +90,7 @@ export function ProjectSection({
         }) => connectionsApi.update(connectionId, { projectId, groupId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connections'] });
-            toast.success('Connection moved');
+            toast.success('Database moved');
         },
         onError: () => {
             toast.error('Failed to move connection');
@@ -369,7 +369,7 @@ export function ProjectSection({
                                         ? ungroupedInProject
                                         : ungroupedInProject.slice(0, UNGROUPED_LIMIT)
                                     ).map((conn) => (
-                                        <Grid size={{ xs: 12, md: 6 }} key={conn.id}>
+                                        <Grid size={{ xs: 12 }} key={conn.id}>
                                             <ConnectionCard
                                                 connection={conn}
                                                 compact

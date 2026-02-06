@@ -129,10 +129,13 @@ export interface ConnectionConfig {
     readOnly: boolean;
     createdAt: Date;
     updatedAt: Date;
+    // Server reference (for PostgreSQL/MySQL - SQLite doesn't use servers)
+    serverId?: string;
     // Organization
     projectId?: string;
     groupId?: string;
     // Populated from joins
+    serverName?: string;
     projectName?: string;
     groupName?: string;
 }
@@ -150,6 +153,7 @@ export interface ConnectionCreateInput {
     defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
+    serverId?: string; // Link to a server (for PostgreSQL/MySQL)
     projectId?: string;
     groupId?: string;
 }
@@ -166,6 +170,7 @@ export interface ConnectionUpdateInput {
     defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
+    serverId?: string | null; // Link to a server (null to unlink)
     projectId?: string | null;
     groupId?: string | null;
 }
@@ -175,4 +180,47 @@ export interface ConnectionTestResult {
     message: string;
     latencyMs?: number;
     serverVersion?: string;
+}
+
+/**
+ * Server - database server credentials (PostgreSQL, MySQL)
+ * SQLite connections don't use servers (file-based)
+ */
+export interface ServerConfig {
+    id: string;
+    name: string;
+    engine: DatabaseEngine;
+    connectionType: ConnectionType;
+    host: string;
+    port: number;
+    username: string;
+    ssl: boolean;
+    tags: ConnectionTag[];
+    createdAt: Date;
+    updatedAt: Date;
+    // Populated from queries
+    databaseCount?: number;
+}
+
+export interface ServerCreateInput {
+    name: string;
+    engine: DatabaseEngine;
+    connectionType?: ConnectionType;
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    ssl?: boolean;
+    tags?: ConnectionTag[];
+}
+
+export interface ServerUpdateInput {
+    name?: string;
+    connectionType?: ConnectionType;
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    ssl?: boolean;
+    tags?: ConnectionTag[];
 }
