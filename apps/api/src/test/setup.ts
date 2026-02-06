@@ -91,8 +91,9 @@ export const TEST_SERVERS = {
         port: 3350,
         connectionType: 'local' as const,
         ssl: false,
-        username: 'demo',
-        password: 'demo123',
+        // Use root credentials for server-level operations (create/drop databases)
+        username: 'root',
+        password: 'root123',
         tags: ['test'],
     },
 };

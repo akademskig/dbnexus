@@ -372,7 +372,7 @@ export function Layout() {
                                     <SyncIcon />
                                 </ListItemIcon>
                                 <ListItemText
-                                    primary="Instance Sync"
+                                    primary="Sync Groups"
                                     primaryTypographyProps={{ fontSize: 14 }}
                                 />
                                 {syncExpanded ? (
