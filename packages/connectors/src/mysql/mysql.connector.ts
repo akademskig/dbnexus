@@ -34,7 +34,9 @@ export class MysqlConnector implements DatabaseConnector {
                 database: this.config.database,
                 user: this.config.username,
                 password: this.config.password,
-                ssl: this.config.ssl ? { rejectUnauthorized: false } : undefined,
+                ssl: this.config.ssl
+                    ? { rejectUnauthorized: this.config.sslVerify ?? false }
+                    : undefined,
                 connectTimeout: 5000,
             });
 
@@ -66,7 +68,9 @@ export class MysqlConnector implements DatabaseConnector {
             database: this.config.database,
             user: this.config.username,
             password: this.config.password,
-            ssl: this.config.ssl ? { rejectUnauthorized: false } : undefined,
+            ssl: this.config.ssl
+                ? { rejectUnauthorized: this.config.sslVerify ?? false }
+                : undefined,
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,

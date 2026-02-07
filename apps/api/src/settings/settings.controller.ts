@@ -1,15 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { MetadataService } from '../metadata/metadata.service.js';
 import type { Tag } from '@dbnexus/metadata';
-
-interface TagInput {
-    name: string;
-    color: string;
-}
+import { SetSettingDto, CreateTagDto, UpdateTagDto } from './dto/index.js';
 
 @Controller('settings')
 export class SettingsController {
-    constructor(private readonly metadataService: MetadataService) {}
+    constructor(private readonly metadataService: MetadataService) { }
 
     // ============ Generic Settings ============
 
@@ -24,7 +20,7 @@ export class SettingsController {
     }
 
     @Put(':key')
-    setSetting(@Param('key') key: string, @Body() body: { value: unknown }): { success: boolean } {
+    setSetting(@Param('key') key: string, @Body() body: SetSettingDto): { success: boolean } {
         this.metadataService.settingsRepository.set(key, body.value);
         return { success: true };
     }
@@ -43,12 +39,12 @@ export class SettingsController {
     }
 
     @Post('tags')
-    createTag(@Body() input: TagInput): Tag {
+    createTag(@Body() input: CreateTagDto): Tag {
         return this.metadataService.settingsRepository.addTag(input);
     }
 
     @Put('tags/:id')
-    updateTag(@Param('id') id: string, @Body() input: Partial<TagInput>): Tag | null {
+    updateTag(@Param('id') id: string, @Body() input: UpdateTagDto): Tag | null {
         return this.metadataService.settingsRepository.updateTag(id, input);
     }
 

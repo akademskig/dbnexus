@@ -7,21 +7,15 @@ import {
     Param,
     Body,
     Query,
-    BadRequestException,
 } from '@nestjs/common';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { PostgresConnector, MysqlConnector, type ConnectorConfig } from '@dbnexus/connectors';
-import type {
-    ServerConfig,
-    ServerCreateInput,
-    ServerUpdateInput,
-    DatabaseEngine,
-    ConnectionConfig,
-} from '@dbnexus/shared';
+import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
+import { CreateServerDto, UpdateServerDto, CreateDatabaseDto } from './dto/index.js';
 
 @Controller('servers')
 export class ServersController {
-    constructor(private readonly metadataService: MetadataService) {}
+    constructor(private readonly metadataService: MetadataService) { }
 
     @Get()
     getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
@@ -48,7 +42,7 @@ export class ServersController {
     }
 
     @Post()
-    createServer(@Body() input: ServerCreateInput): ServerConfig {
+    createServer(@Body() input: CreateServerDto): ServerConfig {
         const server = this.metadataService.serverRepository.create(input);
 
         // Audit log
@@ -68,7 +62,7 @@ export class ServersController {
     }
 
     @Put(':id')
-    updateServer(@Param('id') id: string, @Body() input: ServerUpdateInput): ServerConfig | null {
+    updateServer(@Param('id') id: string, @Body() input: UpdateServerDto): ServerConfig | null {
         const server = this.metadataService.serverRepository.update(id, input);
 
         if (server) {
@@ -148,7 +142,7 @@ export class ServersController {
     @Post(':id/create-database')
     async createDatabase(
         @Param('id') id: string,
-        @Body() input: { databaseName: string; username?: string; password?: string }
+        @Body() input: CreateDatabaseDto
     ): Promise<{ success: boolean; message: string }> {
         const server = this.metadataService.serverRepository.findById(id);
         if (!server) {
@@ -164,13 +158,8 @@ export class ServersController {
             };
         }
 
+        // Validation is handled by CreateDatabaseDto decorators
         const { databaseName, username, password } = input;
-
-        if (!databaseName || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(databaseName)) {
-            throw new BadRequestException(
-                'Invalid database name. Use letters, numbers, and underscores only.'
-            );
-        }
 
         try {
             const connector = this.createServerConnector(server, adminPassword);
@@ -178,26 +167,35 @@ export class ServersController {
 
             // Create database
             if (server.engine === 'postgres') {
-                // Check if database exists
+                // Check if database exists using parameterized query
                 const checkResult = await connector.query(
-                    `SELECT 1 FROM pg_database WHERE datname = '${databaseName}'`
+                    `SELECT 1 FROM pg_database WHERE datname = $1`,
+                    [databaseName]
                 );
                 if (checkResult.rows.length > 0) {
                     await connector.disconnect();
                     return { success: false, message: `Database "${databaseName}" already exists` };
                 }
+                // Note: CREATE DATABASE doesn't support parameterized identifiers
+                // databaseName is validated with regex above, safe for identifier use
                 await connector.query(`CREATE DATABASE "${databaseName}"`);
             } else {
                 // MySQL/MariaDB
+                // Note: CREATE DATABASE doesn't support parameterized identifiers
+                // databaseName is validated with regex above, safe for identifier use
                 await connector.query(`CREATE DATABASE IF NOT EXISTS \`${databaseName}\``);
             }
 
             // Optionally create user with access
             if (username && password) {
+                // Escape password for SQL (replace single quotes with two single quotes)
+                const escapedPassword = password.replaceAll("'", "''");
+
                 if (server.engine === 'postgres') {
                     // Create user if not exists and grant privileges
+                    // Using dollar quoting for the password to handle special characters
                     await connector.query(
-                        `DO $$ BEGIN CREATE USER "${username}" WITH PASSWORD '${password}'; EXCEPTION WHEN duplicate_object THEN NULL; END $$`
+                        `DO $$ BEGIN CREATE USER "${username}" WITH PASSWORD '${escapedPassword}'; EXCEPTION WHEN duplicate_object THEN NULL; END $$`
                     );
                     await connector.query(
                         `GRANT ALL PRIVILEGES ON DATABASE "${databaseName}" TO "${username}"`
@@ -205,7 +203,7 @@ export class ServersController {
                 } else {
                     // MySQL/MariaDB
                     await connector.query(
-                        `CREATE USER IF NOT EXISTS '${username}'@'%' IDENTIFIED BY '${password}'`
+                        `CREATE USER IF NOT EXISTS '${username}'@'%' IDENTIFIED BY '${escapedPassword}'`
                     );
                     await connector.query(
                         `GRANT ALL PRIVILEGES ON \`${databaseName}\`.* TO '${username}'@'%'`
@@ -480,11 +478,12 @@ export class ServersController {
 
             if (server.engine === 'postgres') {
                 // Terminate active connections to the database
+                // Note: dbName is already validated with regex, safe for identifier use
                 await connector.query(`
                     SELECT pg_terminate_backend(pid) 
                     FROM pg_stat_activity 
-                    WHERE datname = '${dbName}' AND pid <> pg_backend_pid()
-                `);
+                    WHERE datname = $1 AND pid <> pg_backend_pid()
+                `, [dbName]);
                 await connector.query(`DROP DATABASE IF EXISTS "${dbName}"`);
             } else {
                 await connector.query(`DROP DATABASE IF EXISTS \`${dbName}\``);

@@ -1,18 +1,16 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
 import { MetadataService } from '../metadata/metadata.service.js';
-import type {
-    Project,
-    ProjectCreateInput,
-    ProjectUpdateInput,
-    DatabaseGroup,
-    DatabaseGroupCreateInput,
-    DatabaseGroupUpdateInput,
-    ConnectionConfig,
-} from '@dbnexus/shared';
+import type { Project, DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
+import {
+    CreateProjectDto,
+    UpdateProjectDto,
+    CreateDatabaseGroupDto,
+    UpdateDatabaseGroupDto,
+} from './dto/index.js';
 
 @Controller('projects')
 export class ProjectsController {
-    constructor(private readonly metadataService: MetadataService) {}
+    constructor(private readonly metadataService: MetadataService) { }
 
     // ============ Projects ============
 
@@ -27,7 +25,7 @@ export class ProjectsController {
     }
 
     @Post()
-    createProject(@Body() input: ProjectCreateInput): Project {
+    createProject(@Body() input: CreateProjectDto): Project {
         const project = this.metadataService.projectRepository.create(input);
 
         // Audit log
@@ -45,7 +43,7 @@ export class ProjectsController {
     }
 
     @Put(':id')
-    updateProject(@Param('id') id: string, @Body() input: ProjectUpdateInput): Project | null {
+    updateProject(@Param('id') id: string, @Body() input: UpdateProjectDto): Project | null {
         const project = this.metadataService.projectRepository.update(id, input);
 
         if (project) {
@@ -102,7 +100,7 @@ export class ProjectsController {
     @Post(':projectId/groups')
     createGroup(
         @Param('projectId') projectId: string,
-        @Body() input: Omit<DatabaseGroupCreateInput, 'projectId'>
+        @Body() input: CreateDatabaseGroupDto
     ): DatabaseGroup {
         const group = this.metadataService.databaseGroupRepository.create({
             ...input,
@@ -127,7 +125,7 @@ export class ProjectsController {
     updateGroup(
         @Param('projectId') _projectId: string,
         @Param('groupId') groupId: string,
-        @Body() input: DatabaseGroupUpdateInput
+        @Body() input: UpdateDatabaseGroupDto
     ): DatabaseGroup | null {
         const group = this.metadataService.databaseGroupRepository.update(groupId, input);
 
@@ -189,7 +187,7 @@ export class ProjectsController {
 // Separate controller for all groups (without project context)
 @Controller('groups')
 export class GroupsController {
-    constructor(private readonly metadataService: MetadataService) {}
+    constructor(private readonly metadataService: MetadataService) { }
 
     @Get()
     getAllGroups(@Query('projectId') projectId?: string): DatabaseGroup[] {
