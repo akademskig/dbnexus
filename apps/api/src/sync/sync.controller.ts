@@ -9,7 +9,7 @@ export class SyncController {
     constructor(
         private readonly syncService: SyncService,
         private readonly metadataService: MetadataService
-    ) { }
+    ) {}
 
     /**
      * Get recent sync runs (for activity log)

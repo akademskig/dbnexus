@@ -76,6 +76,15 @@ export class MysqlConnector implements DatabaseConnector {
             queueLimit: 0,
             connectTimeout: 5000,
         });
+
+        // Handle pool errors to prevent Node.js from crashing
+        // This happens when the database server is stopped/restarted
+        // mysql2/promise pool wraps the underlying pool
+        const underlyingPool = this.pool.pool;
+        underlyingPool.on('error', (err: Error) => {
+            console.error('MySQL pool error:', err.message);
+            // The pool will automatically handle reconnection
+        });
     }
 
     async disconnect(): Promise<void> {

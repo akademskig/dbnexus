@@ -177,6 +177,30 @@ export const serversApi = {
         fetchApi<{ success: boolean; message: string }>(`/servers/${id}/databases/${dbName}`, {
             method: 'DELETE',
         }),
+
+    start: (id: string, confirmed?: boolean) =>
+        fetchApi<{
+            success: boolean;
+            message: string;
+            output?: string;
+            requiresConfirmation?: boolean;
+            command?: string;
+            serverName?: string;
+        }>(`/servers/${id}/start${confirmed ? '?confirmed=true' : ''}`, {
+            method: 'POST',
+        }),
+
+    stop: (id: string, confirmed?: boolean) =>
+        fetchApi<{
+            success: boolean;
+            message: string;
+            output?: string;
+            requiresConfirmation?: boolean;
+            command?: string;
+            serverName?: string;
+        }>(`/servers/${id}/stop${confirmed ? '?confirmed=true' : ''}`, {
+            method: 'POST',
+        }),
 };
 
 // ============ Queries ============

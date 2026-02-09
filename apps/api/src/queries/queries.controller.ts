@@ -1,6 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { QueriesService } from './queries.service.js';
-import type { QueryResult, QueryValidationResult, SavedQuery, QueryHistoryEntry } from '@dbnexus/shared';
+import type {
+    QueryResult,
+    QueryValidationResult,
+    SavedQuery,
+    QueryHistoryEntry,
+} from '@dbnexus/shared';
 import {
     ExecuteQueryDto,
     MaintenanceDto,
@@ -12,7 +17,7 @@ import {
 
 @Controller('queries')
 export class QueriesController {
-    constructor(private readonly queriesService: QueriesService) { }
+    constructor(private readonly queriesService: QueriesService) {}
 
     @Post('execute')
     async execute(@Body() input: ExecuteQueryDto): Promise<QueryResult> {

@@ -25,6 +25,9 @@ import StorageIcon from '@mui/icons-material/Storage';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import CircularProgress from '@mui/material/CircularProgress';
 import { serversApi, projectsApi, groupsApi, connectionsApi } from '../../lib/api';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
@@ -62,6 +65,10 @@ interface ServerCardProps {
     onEditDatabase: (db: ConnectionConfig) => void;
     onDeleteDatabase: (id: string) => void;
     onQueryDatabase: (db: ConnectionConfig) => void;
+    onStart: () => void;
+    onStop: () => void;
+    isStarting: boolean;
+    isStopping: boolean;
     tagColors: Record<string, string>;
 }
 
@@ -77,6 +84,10 @@ function ServerCard({
     onEditDatabase,
     onDeleteDatabase,
     onQueryDatabase,
+    onStart,
+    onStop,
+    isStarting,
+    isStopping,
     tagColors,
 }: ServerCardProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -198,6 +209,55 @@ function ServerCard({
                         );
                     })}
                 </Box>
+                {/* Start/Stop buttons - only show for local/docker servers with commands */}
+                {server.connectionType !== 'remote' && server.startCommand && (
+                    <StyledTooltip title={`Start: ${server.startCommand}`}>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onStart();
+                            }}
+                            disabled={isStarting || isStopping}
+                            sx={{
+                                color: 'success.main',
+                                '&:hover': {
+                                    bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
+                                },
+                            }}
+                        >
+                            {isStarting ? (
+                                <CircularProgress size={18} color="inherit" />
+                            ) : (
+                                <PlayArrowIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </StyledTooltip>
+                )}
+                {server.connectionType !== 'remote' && server.stopCommand && (
+                    <StyledTooltip title={`Stop: ${server.stopCommand}`}>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onStop();
+                            }}
+                            disabled={isStarting || isStopping}
+                            sx={{
+                                color: 'error.main',
+                                '&:hover': {
+                                    bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
+                                },
+                            }}
+                        >
+                            {isStopping ? (
+                                <CircularProgress size={18} color="inherit" />
+                            ) : (
+                                <StopIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </StyledTooltip>
+                )}
                 <StyledTooltip title="Manage Server">
                     <IconButton
                         size="small"
@@ -420,6 +480,13 @@ export function ServersPage() {
     const [dbDialogOpen, setDbDialogOpen] = useState(false);
     const [dbDialogServerId, setDbDialogServerId] = useState<string | undefined>(undefined);
     const [editingDatabase, setEditingDatabase] = useState<ConnectionConfig | null>(null);
+    const [commandConfirm, setCommandConfirm] = useState<{
+        open: boolean;
+        type: 'start' | 'stop';
+        serverId: string;
+        serverName: string;
+        command: string;
+    } | null>(null);
 
     // Build tag name to color map
     const tagColors = availableTags.reduce(
@@ -478,6 +545,63 @@ export function ServersPage() {
             toast.error(error instanceof Error ? error.message : 'Failed to delete server');
         },
     });
+
+    const startMutation = useMutation({
+        mutationFn: ({ id, confirmed }: { id: string; confirmed?: boolean }) =>
+            serversApi.start(id, confirmed),
+        onSuccess: (result, variables) => {
+            if (result.requiresConfirmation && result.command && result.serverName) {
+                setCommandConfirm({
+                    open: true,
+                    type: 'start',
+                    serverId: variables.id,
+                    serverName: result.serverName,
+                    command: result.command,
+                });
+            } else if (result.success) {
+                toast.success(result.message);
+            } else {
+                toast.error(result.message || 'Failed to start server');
+            }
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : 'Failed to start server');
+        },
+    });
+
+    const stopMutation = useMutation({
+        mutationFn: ({ id, confirmed }: { id: string; confirmed?: boolean }) =>
+            serversApi.stop(id, confirmed),
+        onSuccess: (result, variables) => {
+            if (result.requiresConfirmation && result.command && result.serverName) {
+                setCommandConfirm({
+                    open: true,
+                    type: 'stop',
+                    serverId: variables.id,
+                    serverName: result.serverName,
+                    command: result.command,
+                });
+            } else if (result.success) {
+                toast.success(result.message);
+            } else {
+                toast.error(result.message || 'Failed to stop server');
+            }
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : 'Failed to stop server');
+        },
+    });
+
+    const handleConfirmCommand = () => {
+        if (!commandConfirm) return;
+        const { type, serverId } = commandConfirm;
+        setCommandConfirm(null);
+        if (type === 'start') {
+            startMutation.mutate({ id: serverId, confirmed: true });
+        } else {
+            stopMutation.mutate({ id: serverId, confirmed: true });
+        }
+    };
 
     const handleEdit = (server: ServerConfig) => {
         setEditingServer(server);
@@ -618,6 +742,10 @@ export function ServersPage() {
                             onEditDatabase={handleEditDatabase}
                             onDeleteDatabase={handleDeleteDatabase}
                             onQueryDatabase={handleQueryDatabase}
+                            onStart={() => startMutation.mutate({ id: server.id })}
+                            onStop={() => stopMutation.mutate({ id: server.id })}
+                            isStarting={startMutation.isPending && startMutation.variables?.id === server.id}
+                            isStopping={stopMutation.isPending && stopMutation.variables?.id === server.id}
                             tagColors={tagColors}
                         />
                     ))}
@@ -633,6 +761,40 @@ export function ServersPage() {
                 servers={servers}
                 preselectedServerId={dbDialogServerId}
                 onClose={handleCloseDbDialog}
+            />
+
+            {/* Command Confirmation Dialog */}
+            <ConfirmDialog
+                open={commandConfirm?.open ?? false}
+                onCancel={() => setCommandConfirm(null)}
+                onConfirm={handleConfirmCommand}
+                title={commandConfirm?.type === 'start' ? 'Start Server' : 'Stop Server'}
+                message={
+                    <Box>
+                        <Typography variant="body2" sx={{ mb: 2 }}>
+                            {commandConfirm?.type === 'start'
+                                ? `Start server "${commandConfirm?.serverName}"?`
+                                : `Stop server "${commandConfirm?.serverName}"?`}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            The following command will be executed:
+                        </Typography>
+                        <Box
+                            sx={{
+                                p: 1.5,
+                                bgcolor: 'action.hover',
+                                borderRadius: 1,
+                                fontFamily: 'monospace',
+                                fontSize: '0.85rem',
+                                wordBreak: 'break-all',
+                            }}
+                        >
+                            {commandConfirm?.command}
+                        </Box>
+                    </Box>
+                }
+                confirmLabel={commandConfirm?.type === 'start' ? 'Start' : 'Stop'}
+                confirmColor={commandConfirm?.type === 'start' ? 'primary' : 'warning'}
             />
         </Box>
     );

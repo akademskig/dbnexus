@@ -8,13 +8,9 @@ import {
     IsArray,
     Min,
     Max,
-    Matches,
-    ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import type { DatabaseEngine, ConnectionType, ConnectionTag } from '@dbnexus/shared';
-import { ConnectionTagDto } from './connection-tag.dto.js';
-import { IDENTIFIER_PATTERN, IDENTIFIER_MESSAGE, DATABASE_ENGINES, CONNECTION_TYPES } from './constants.js';
+import { DATABASE_ENGINES, CONNECTION_TYPES } from './constants.js';
 
 export class CreateServerDto {
     @IsString()
@@ -41,7 +37,6 @@ export class CreateServerDto {
 
     @IsString()
     @IsNotEmpty({ message: 'Username is required' })
-    @Matches(IDENTIFIER_PATTERN, { message: IDENTIFIER_MESSAGE })
     username!: string;
 
     @IsString()
@@ -54,7 +49,14 @@ export class CreateServerDto {
 
     @IsOptional()
     @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ConnectionTagDto)
+    @IsString({ each: true })
     tags?: ConnectionTag[];
+
+    @IsOptional()
+    @IsString()
+    startCommand?: string;
+
+    @IsOptional()
+    @IsString()
+    stopCommand?: string;
 }

@@ -10,7 +10,7 @@ import {
 
 @Controller('projects')
 export class ProjectsController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     // ============ Projects ============
 
@@ -187,7 +187,7 @@ export class ProjectsController {
 // Separate controller for all groups (without project context)
 @Controller('groups')
 export class GroupsController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
     getAllGroups(@Query('projectId') projectId?: string): DatabaseGroup[] {

@@ -5,7 +5,7 @@ import { SetSettingDto, CreateTagDto, UpdateTagDto } from './dto/index.js';
 
 @Controller('settings')
 export class SettingsController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     // ============ Generic Settings ============
 

@@ -1,17 +1,12 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Delete,
-    Param,
-    Body,
-    Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { PostgresConnector, MysqlConnector, type ConnectorConfig } from '@dbnexus/connectors';
 import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
 import { CreateServerDto, UpdateServerDto, CreateDatabaseDto } from './dto/index.js';
+
+const execAsync = promisify(exec);
 
 @Controller('servers')
 export class ServersController {
@@ -479,11 +474,14 @@ export class ServersController {
             if (server.engine === 'postgres') {
                 // Terminate active connections to the database
                 // Note: dbName is already validated with regex, safe for identifier use
-                await connector.query(`
+                await connector.query(
+                    `
                     SELECT pg_terminate_backend(pid) 
                     FROM pg_stat_activity 
                     WHERE datname = $1 AND pid <> pg_backend_pid()
-                `, [dbName]);
+                `,
+                    [dbName]
+                );
                 await connector.query(`DROP DATABASE IF EXISTS "${dbName}"`);
             } else {
                 await connector.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
@@ -515,6 +513,158 @@ export class ServersController {
             return {
                 success: false,
                 message: error instanceof Error ? error.message : 'Failed to drop database',
+            };
+        }
+    }
+
+    @Post(':id/start')
+    async startServer(
+        @Param('id') id: string,
+        @Query('confirmed') confirmed?: string
+    ): Promise<{
+        success: boolean;
+        message: string;
+        output?: string;
+        requiresConfirmation?: boolean;
+        command?: string;
+        serverName?: string;
+    }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        if (!server.startCommand) {
+            return { success: false, message: 'No start command configured for this server' };
+        }
+
+        // Only allow local/docker servers to be started
+        if (server.connectionType === 'remote') {
+            return { success: false, message: 'Cannot start remote servers' };
+        }
+
+        // Require confirmation before executing
+        if (confirmed !== 'true') {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                command: server.startCommand,
+                serverName: server.name,
+                message: 'Confirmation required to execute start command',
+            };
+        }
+
+        try {
+            const result = await execAsync(server.startCommand, {
+                timeout: 30000, // 30 second timeout
+            });
+            const output = result.stdout || result.stderr || '';
+
+            // Audit log (non-blocking)
+            try {
+                this.metadataService.auditLogRepository.create({
+                    action: 'server_started',
+                    entityType: 'server',
+                    entityId: id,
+                    details: {
+                        name: server.name,
+                        command: server.startCommand,
+                        output: output.slice(0, 1000), // Limit output size
+                    },
+                });
+            } catch {
+                // Ignore audit log errors
+            }
+
+            return {
+                success: true,
+                message: `Server "${server.name}" start command executed`,
+                output,
+            };
+        } catch (error: unknown) {
+            const execError = error as { message?: string; stderr?: string; stdout?: string };
+            const errorMessage = execError.message || 'Failed to start server';
+            const output = execError.stderr || execError.stdout || '';
+            return {
+                success: false,
+                message: errorMessage,
+                output,
+            };
+        }
+    }
+
+    @Post(':id/stop')
+    async stopServer(
+        @Param('id') id: string,
+        @Query('confirmed') confirmed?: string
+    ): Promise<{
+        success: boolean;
+        message: string;
+        output?: string;
+        requiresConfirmation?: boolean;
+        command?: string;
+        serverName?: string;
+    }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        if (!server.stopCommand) {
+            return { success: false, message: 'No stop command configured for this server' };
+        }
+
+        // Only allow local/docker servers to be stopped
+        if (server.connectionType === 'remote') {
+            return { success: false, message: 'Cannot stop remote servers' };
+        }
+
+        // Require confirmation before executing
+        if (confirmed !== 'true') {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                command: server.stopCommand,
+                serverName: server.name,
+                message: 'Confirmation required to execute stop command',
+            };
+        }
+
+        try {
+            const result = await execAsync(server.stopCommand, {
+                timeout: 30000, // 30 second timeout
+            });
+            const output = result.stdout || result.stderr || '';
+
+            // Audit log (non-blocking)
+            try {
+                this.metadataService.auditLogRepository.create({
+                    action: 'server_stopped',
+                    entityType: 'server',
+                    entityId: id,
+                    details: {
+                        name: server.name,
+                        command: server.stopCommand,
+                        output: output.slice(0, 1000), // Limit output size
+                    },
+                });
+            } catch {
+                // Ignore audit log errors
+            }
+
+            return {
+                success: true,
+                message: `Server "${server.name}" stop command executed`,
+                output,
+            };
+        } catch (error: unknown) {
+            const execError = error as { message?: string; stderr?: string; stdout?: string };
+            const errorMessage = execError.message || 'Failed to stop server';
+            const output = execError.stderr || execError.stdout || '';
+            return {
+                success: false,
+                message: errorMessage,
+                output,
             };
         }
     }

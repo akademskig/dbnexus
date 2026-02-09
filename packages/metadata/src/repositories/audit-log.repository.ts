@@ -11,6 +11,8 @@ export type AuditAction =
     | 'server_created'
     | 'server_updated'
     | 'server_deleted'
+    | 'server_started'
+    | 'server_stopped'
     | 'database_created'
     | 'database_deleted'
     | 'project_created'
@@ -80,7 +82,7 @@ export interface AuditLogCreateInput {
 }
 
 export class AuditLogRepository {
-    constructor(private readonly db: MetadataDatabase) {}
+    constructor(private readonly db: MetadataDatabase) { }
 
     /**
      * Create a new audit log entry

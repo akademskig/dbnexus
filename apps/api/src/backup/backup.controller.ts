@@ -26,7 +26,7 @@ export class BackupController {
         private readonly backupService: BackupService,
         private readonly restoreService: RestoreService,
         private readonly metadataService: MetadataService
-    ) { }
+    ) {}
 
     @Post()
     async createBackup(@Body() body: CreateBackupDto) {

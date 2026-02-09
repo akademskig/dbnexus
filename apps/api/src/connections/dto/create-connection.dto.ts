@@ -8,11 +8,8 @@ import {
     IsArray,
     Min,
     Max,
-    ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import type { DatabaseEngine, ConnectionType, ConnectionTag } from '@dbnexus/shared';
-import { ConnectionTagDto } from '../../servers/dto/connection-tag.dto.js';
 import { DATABASE_ENGINES, CONNECTION_TYPES } from '../../servers/dto/constants.js';
 
 export class CreateConnectionDto {
@@ -80,7 +77,6 @@ export class CreateConnectionDto {
 
     @IsOptional()
     @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ConnectionTagDto)
+    @IsString({ each: true })
     tags?: ConnectionTag[];
 }

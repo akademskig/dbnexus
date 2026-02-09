@@ -5,7 +5,7 @@ import { CreateConnectionDto, UpdateConnectionDto } from './dto/index.js';
 
 @Controller('connections')
 export class ConnectionsController {
-    constructor(private readonly connectionsService: ConnectionsService) { }
+    constructor(private readonly connectionsService: ConnectionsService) {}
 
     @Get()
     findAll(): ConnectionConfig[] {

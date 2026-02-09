@@ -365,8 +365,8 @@ function TagRow({
     );
 }
 
-// Tags Tab Content
-function TagsTab() {
+// Tags Section (for User Preferences tab)
+function TagsSection() {
     const { tags, addTag, updateTag, deleteTag } = useTagsStore();
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState('');
@@ -397,9 +397,12 @@ function TagsTab() {
                     mb: 3,
                 }}
             >
-                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                    Connection Tags
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <LabelIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                        Tags
+                    </Typography>
+                </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     {!adding && (
                         <Button
@@ -531,6 +534,16 @@ function TagsTab() {
                 </Box>
             </Box>
         </GlassCard>
+    );
+}
+
+// User Preferences Tab Content (combines Appearance and Tags)
+function UserPreferencesTab() {
+    return (
+        <>
+            <AppearanceTab />
+            <TagsSection />
+        </>
     );
 }
 
@@ -1217,18 +1230,18 @@ export function SettingsPage() {
     // Sync tab with URL on mount
     useEffect(() => {
         const tabParam = searchParams.get('tab');
-        if (tabParam === 'appearance') setTab(0);
-        else if (tabParam === 'tags') setTab(1);
-        else if (tabParam === 'shortcuts') setTab(2);
-        else if (tabParam === 'tools') setTab(3);
-        else if (tabParam === 'help') setTab(4);
-        else if (tabParam === 'about') setTab(5);
+        if (tabParam === 'preferences' || tabParam === 'appearance' || tabParam === 'tags')
+            setTab(0);
+        else if (tabParam === 'shortcuts') setTab(1);
+        else if (tabParam === 'tools') setTab(2);
+        else if (tabParam === 'help') setTab(3);
+        else if (tabParam === 'about') setTab(4);
     }, [searchParams]);
 
     // Update URL when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setTab(newValue);
-        const tabNames = ['appearance', 'tags', 'shortcuts', 'tools', 'help', 'about'];
+        const tabNames = ['preferences', 'shortcuts', 'tools', 'help', 'about'];
         const tabName = tabNames[newValue];
         if (tabName) {
             setSearchParams({ tab: tabName });
@@ -1252,7 +1265,7 @@ export function SettingsPage() {
                         Settings
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Customize the appearance and manage tags
+                        Customize your preferences and application settings
                     </Typography>
                 </Box>
 
@@ -1283,12 +1296,7 @@ export function SettingsPage() {
                             <Tab
                                 icon={<PaletteIcon fontSize="small" />}
                                 iconPosition="start"
-                                label="Appearance"
-                            />
-                            <Tab
-                                icon={<LabelIcon fontSize="small" />}
-                                iconPosition="start"
-                                label="Tags"
+                                label="Preferences"
                             />
                             <Tab
                                 icon={<KeyboardIcon fontSize="small" />}
@@ -1315,12 +1323,11 @@ export function SettingsPage() {
                 </GlassCard>
 
                 {/* Tab Content */}
-                {tab === 0 && <AppearanceTab />}
-                {tab === 1 && <TagsTab />}
-                {tab === 2 && <KeyboardShortcutsTab />}
-                {tab === 3 && <SystemToolsTab />}
-                {tab === 4 && <HelpTab />}
-                {tab === 5 && <AboutTab />}
+                {tab === 0 && <UserPreferencesTab />}
+                {tab === 1 && <KeyboardShortcutsTab />}
+                {tab === 2 && <SystemToolsTab />}
+                {tab === 3 && <HelpTab />}
+                {tab === 4 && <AboutTab />}
             </Box>
         </Box>
     );

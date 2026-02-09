@@ -13,7 +13,7 @@ export class SchemaController {
         private readonly schemaDiffService: SchemaDiffService,
         private readonly connectionsService: ConnectionsService,
         private readonly metadataService: MetadataService
-    ) { }
+    ) {}
 
     @Get(':connectionId/schemas')
     async getSchemas(@Param('connectionId') connectionId: string): Promise<string[]> {

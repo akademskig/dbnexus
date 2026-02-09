@@ -43,6 +43,8 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
         password: '',
         ssl: false,
         tags: [],
+        startCommand: '',
+        stopCommand: '',
     });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
@@ -60,6 +62,8 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                 password: '',
                 ssl: server.ssl,
                 tags: server.tags,
+                startCommand: server.startCommand ?? '',
+                stopCommand: server.stopCommand ?? '',
             });
         } else {
             setFormData({
@@ -71,6 +75,8 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                 password: '',
                 ssl: false,
                 tags: [],
+                startCommand: '',
+                stopCommand: '',
             });
         }
         setTestResult(null);
@@ -119,7 +125,8 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
         e.preventDefault();
         if (server) {
             // Only include password if user entered a new one
-            const { password, ...rest } = formData;
+            // Exclude engine since it can't be changed after creation
+            const { password, engine: _engine, ...rest } = formData;
             const updateData = password ? { ...rest, password } : rest;
             updateMutation.mutate({ id: server.id, data: updateData as ServerCreateInput });
         } else {
@@ -331,6 +338,42 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                             }
                             label="Use SSL"
                         />
+
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Startup Commands (Optional)
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ mb: 1.5, display: 'block' }}
+                            >
+                                Shell commands to start/stop this server (e.g., docker start
+                                my-postgres)
+                            </Typography>
+                            <Stack spacing={2}>
+                                <TextField
+                                    label="Start Command"
+                                    value={formData.startCommand}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, startCommand: e.target.value })
+                                    }
+                                    placeholder="docker start my-postgres"
+                                    size="small"
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Stop Command"
+                                    value={formData.stopCommand}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, stopCommand: e.target.value })
+                                    }
+                                    placeholder="docker stop my-postgres"
+                                    size="small"
+                                    fullWidth
+                                />
+                            </Stack>
+                        </Box>
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>
