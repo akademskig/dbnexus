@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsArray, IsOptional, IsIn, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, IsOptional, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class SyncRowsDto {
     @IsString()
@@ -10,7 +11,7 @@ export class SyncRowsDto {
     sourceSchema!: string;
 
     @IsArray()
-    @IsObject({ each: true })
+    @Transform(({ value }) => value, { toClassOnly: true }) // Preserve as plain objects
     rowIds!: Record<string, unknown>[];
 
     @IsArray()
