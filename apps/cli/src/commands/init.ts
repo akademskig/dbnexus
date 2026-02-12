@@ -3,9 +3,22 @@ import * as path from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
 import yaml from 'js-yaml';
+import dotenv from 'dotenv';
 import { MetadataDatabase, ServerRepository, ConnectionRepository } from '@dbnexus/metadata';
 import type { ServerConfig as ServerConfigEntity, ConnectionConfig } from '@dbnexus/shared';
 import { VERSION } from '../version.js';
+
+/**
+ * Load environment variables from .env file if it exists
+ */
+function loadEnvFile(cwd: string): boolean {
+    const envPath = path.join(cwd, '.env');
+    if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+        return true;
+    }
+    return false;
+}
 
 // Config file schema
 interface ServerConfig {
@@ -97,7 +110,11 @@ function generateTemplateConfig(): string {
 
     return `# DB Nexus Configuration
 # This file defines your database servers and connections.
+#
 # Environment variables can be used for sensitive values: \${ENV_VAR_NAME}
+# Create a .env file in this directory to set passwords:
+#   POSTGRES_PASSWORD=your_password
+#   MYSQL_PASSWORD=your_password
 #
 # Run 'dbnexus init' to import this configuration.
 
@@ -216,7 +233,10 @@ async function importConfig(
                 engine,
                 host: host || '',
                 port: port || 0,
-                database: engine === 'sqlite' && database.filepath ? database.filepath : database.database,
+                database:
+                    engine === 'sqlite' && database.filepath
+                        ? database.filepath
+                        : database.database,
                 username: username || '',
                 password: password || '',
                 ssl,
@@ -236,6 +256,12 @@ export async function initCommand() {
     const dbnexusDir = path.join(cwd, '.dbnexus');
     const configPath = path.join(cwd, CONFIG_FILENAME);
     const dbPath = path.join(dbnexusDir, 'metadata.db');
+
+    // Load .env file if it exists
+    const envLoaded = loadEnvFile(cwd);
+    if (envLoaded) {
+        console.log(chalk.dim('  Loaded environment variables from .env'));
+    }
 
     const isInitialized = fs.existsSync(dbnexusDir);
     const configExists = fs.existsSync(configPath);
@@ -278,7 +304,7 @@ export async function initCommand() {
                 `  ${chalk.dim('1.')} Edit ${chalk.yellow(CONFIG_FILENAME)} with your servers and databases`
             );
             console.log(
-                `  ${chalk.dim('2.')} Set environment variables for passwords (e.g., POSTGRES_PASSWORD)`
+                `  ${chalk.dim('2.')} Create a ${chalk.yellow('.env')} file with your passwords (POSTGRES_PASSWORD=...)`
             );
             console.log(
                 `  ${chalk.dim('3.')} Run ${chalk.yellow('dbnexus init')} again to import the config`
@@ -373,7 +399,10 @@ export async function initCommand() {
             `  ${chalk.dim('1.')} Edit ${chalk.yellow(CONFIG_FILENAME)} with your servers and databases`
         );
         console.log(
-            `  ${chalk.dim('2.')} Run ${chalk.yellow('dbnexus init')} again to import the config`
+            `  ${chalk.dim('2.')} Create a ${chalk.yellow('.env')} file with your passwords`
+        );
+        console.log(
+            `  ${chalk.dim('3.')} Run ${chalk.yellow('dbnexus init')} again to import the config`
         );
     }
 }
