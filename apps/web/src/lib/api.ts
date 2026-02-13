@@ -140,7 +140,12 @@ export const serversApi = {
 
     createDatabase: (
         id: string,
-        input: { databaseName: string; username?: string; password?: string }
+        input: {
+            databaseName: string;
+            username?: string;
+            password?: string;
+            grantSchemaAccess?: boolean;
+        }
     ) =>
         fetchApi<{ success: boolean; message: string }>(`/servers/${id}/create-database`, {
             method: 'POST',

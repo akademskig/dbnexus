@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 
 @Controller('servers')
 export class ServersController {
-    constructor(private readonly metadataService: MetadataService) { }
+    constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
     getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
@@ -154,7 +154,7 @@ export class ServersController {
         }
 
         // Validation is handled by CreateDatabaseDto decorators
-        const { databaseName, username, password } = input;
+        const { databaseName, username, password, grantSchemaAccess } = input;
 
         try {
             const connector = this.createServerConnector(server, adminPassword);
@@ -208,6 +208,30 @@ export class ServersController {
             }
 
             await connector.disconnect();
+
+            // Grant schema access (PostgreSQL 15+ requires explicit GRANT on public schema)
+            if (server.engine === 'postgres' && username && grantSchemaAccess !== false) {
+                // Connect to the new database to grant schema permissions
+                const dbConnector = this.createServerConnector(server, adminPassword, databaseName);
+                try {
+                    await dbConnector.connect();
+                    // Grant usage and create on public schema
+                    await dbConnector.query(
+                        `GRANT USAGE, CREATE ON SCHEMA public TO "${username}"`
+                    );
+                    // Grant default privileges for future objects
+                    await dbConnector.query(
+                        `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "${username}"`
+                    );
+                    await dbConnector.query(
+                        `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "${username}"`
+                    );
+                    await dbConnector.disconnect();
+                } catch (schemaError) {
+                    // Log but don't fail - database was created successfully
+                    console.error('Failed to grant schema access:', schemaError);
+                }
+            }
 
             // Audit log
             this.metadataService.auditLogRepository.create({
@@ -683,11 +707,11 @@ export class ServersController {
         }
     }
 
-    private createServerConnector(server: ServerConfig, password: string) {
+    private createServerConnector(server: ServerConfig, password: string, database?: string) {
         const config: ConnectorConfig = {
             host: server.host,
             port: server.port,
-            database: server.engine === 'postgres' ? 'postgres' : '', // Connect to maintenance DB
+            database: database ?? (server.engine === 'postgres' ? 'postgres' : ''), // Connect to maintenance DB by default
             username: server.username!,
             password,
             ssl: server.ssl,

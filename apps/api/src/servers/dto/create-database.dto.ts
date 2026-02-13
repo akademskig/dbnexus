@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, Matches } from 'class-validator';
 import { IDENTIFIER_PATTERN, IDENTIFIER_MESSAGE } from './constants.js';
 
 export class CreateDatabaseDto {
@@ -15,4 +15,8 @@ export class CreateDatabaseDto {
     @IsOptional()
     @IsString()
     password?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    grantSchemaAccess?: boolean;
 }

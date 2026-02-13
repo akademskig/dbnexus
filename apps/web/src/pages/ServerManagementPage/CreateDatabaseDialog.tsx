@@ -38,6 +38,7 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
     const [createUser, setCreateUser] = useState(false);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [grantSchemaAccess, setGrantSchemaAccess] = useState(true);
     const [addToApp, setAddToApp] = useState(true);
     const [dbUsername, setDbUsername] = useState('');
     const [dbPassword, setDbPassword] = useState('');
@@ -50,6 +51,7 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
         setCreateUser(false);
         setUsername('');
         setPassword('');
+        setGrantSchemaAccess(true);
         setAddToApp(true);
         setDbUsername('');
         setDbPassword('');
@@ -74,6 +76,7 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
                 databaseName,
                 username: createUser ? username : undefined,
                 password: createUser ? password : undefined,
+                grantSchemaAccess: createUser ? grantSchemaAccess : undefined,
             });
 
             if (!createResult.success) {
@@ -207,6 +210,25 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
                                         size="small"
                                         fullWidth
                                     />
+                                    {server.engine === 'postgres' && (
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={grantSchemaAccess}
+                                                    onChange={(e) =>
+                                                        setGrantSchemaAccess(e.target.checked)
+                                                    }
+                                                    size="small"
+                                                />
+                                            }
+                                            label={
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Grant CREATE on public schema (required for
+                                                    PostgreSQL 15+)
+                                                </Typography>
+                                            }
+                                        />
+                                    )}
                                 </Stack>
                             </Box>
                         )}
@@ -297,7 +319,7 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
                     )}
                 </Stack>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ pb: 2, px: 2 }}>
                 <Button onClick={onClose}>Cancel</Button>
                 <Button
                     onClick={handleCreate}
