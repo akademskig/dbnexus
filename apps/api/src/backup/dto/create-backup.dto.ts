@@ -2,6 +2,7 @@ import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsIn } from 'class-validat
 import type { BackupType } from '@dbnexus/shared';
 
 const BACKUP_TYPES = ['full', 'schema', 'data'] as const;
+const BACKUP_METHODS = ['native', 'sql'] as const;
 
 export class CreateBackupDto {
     @IsString()
@@ -15,4 +16,8 @@ export class CreateBackupDto {
     @IsOptional()
     @IsBoolean()
     compression?: boolean;
+
+    @IsOptional()
+    @IsIn([...BACKUP_METHODS], { message: 'Backup method must be native or sql' })
+    method?: 'native' | 'sql';
 }
