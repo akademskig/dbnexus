@@ -39,6 +39,8 @@ import {
     Label as LabelIcon,
     ContentCopy as ContentCopyIcon,
     Build as BuildIcon,
+    Person as PersonIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../components/GlassCard';
 import { useTagsStore, TAG_COLORS, type Tag } from '../stores/tagsStore';
@@ -51,6 +53,9 @@ import { useToastStore } from '../stores/toastStore';
 import { backupsApi } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusAlert } from '../components/StatusAlert';
+import { AccountTab } from './SettingsPage/AccountTab';
+import { UsersTab } from './SettingsPage/UsersTab';
+import { useAuthStore } from '../stores/authStore';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -111,9 +116,8 @@ const colorSchemeLabels: Record<ColorScheme, string> = {
     emerald: 'Emerald',
     rose: 'Rose',
     lightblue: 'Light Blue',
-    lime: 'Lime',
     orange: 'Orange',
-    githubGreen: 'GitHub Green',
+    githubGreen: 'Green',
 };
 
 // Appearance Tab Content
@@ -1226,6 +1230,8 @@ function HelpTab() {
 export function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [tab, setTab] = useState(0);
+    const currentUser = useAuthStore((state) => state.user);
+    const authEnabled = useAuthStore((state) => state.authEnabled);
 
     // Sync tab with URL on mount
     useEffect(() => {
@@ -1234,14 +1240,16 @@ export function SettingsPage() {
             setTab(0);
         else if (tabParam === 'shortcuts') setTab(1);
         else if (tabParam === 'tools') setTab(2);
-        else if (tabParam === 'help') setTab(3);
-        else if (tabParam === 'about') setTab(4);
+        else if (tabParam === 'account' || tabParam === 'api-keys') setTab(3);
+        else if (tabParam === 'help') setTab(4);
+        else if (tabParam === 'about') setTab(5);
+        else if (tabParam === 'admin' || tabParam === 'users') setTab(6);
     }, [searchParams]);
 
     // Update URL when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setTab(newValue);
-        const tabNames = ['preferences', 'shortcuts', 'tools', 'help', 'about'];
+        const tabNames = ['preferences', 'shortcuts', 'tools', 'account', 'help', 'about', 'admin'];
         const tabName = tabNames[newValue];
         if (tabName) {
             setSearchParams({ tab: tabName });
@@ -1250,7 +1258,7 @@ export function SettingsPage() {
 
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
-            <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+            <Box sx={{ maxWidth: 850, mx: 'auto' }}>
                 {/* Header */}
                 <Box sx={{ mb: 4 }}>
                     <Typography
@@ -1296,7 +1304,7 @@ export function SettingsPage() {
                             <Tab
                                 icon={<PaletteIcon fontSize="small" />}
                                 iconPosition="start"
-                                label="Preferences"
+                                label="UI"
                             />
                             <Tab
                                 icon={<KeyboardIcon fontSize="small" />}
@@ -1308,6 +1316,13 @@ export function SettingsPage() {
                                 iconPosition="start"
                                 label="System Tools"
                             />
+                            {authEnabled && (
+                                <Tab
+                                    icon={<PersonIcon fontSize="small" />}
+                                    iconPosition="start"
+                                    label="Account"
+                                />
+                            )}
                             <Tab
                                 icon={<SchoolIcon fontSize="small" />}
                                 iconPosition="start"
@@ -1318,6 +1333,13 @@ export function SettingsPage() {
                                 iconPosition="start"
                                 label="About"
                             />
+                            {authEnabled && currentUser?.role === 'admin' && (
+                                <Tab
+                                    icon={<PeopleIcon fontSize="small" />}
+                                    iconPosition="start"
+                                    label="Admin"
+                                />
+                            )}
                         </Tabs>
                     </Box>
                 </GlassCard>
@@ -1326,8 +1348,10 @@ export function SettingsPage() {
                 {tab === 0 && <UserPreferencesTab />}
                 {tab === 1 && <KeyboardShortcutsTab />}
                 {tab === 2 && <SystemToolsTab />}
-                {tab === 3 && <HelpTab />}
-                {tab === 4 && <AboutTab />}
+                {tab === 3 && authEnabled && <AccountTab />}
+                {tab === 4 && <HelpTab />}
+                {tab === 5 && <AboutTab />}
+                {tab === 6 && authEnabled && currentUser?.role === 'admin' && <UsersTab />}
             </Box>
         </Box>
     );

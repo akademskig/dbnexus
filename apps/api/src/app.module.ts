@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -14,6 +15,8 @@ import { AuditModule } from './audit/audit.module.js';
 import { BackupModule } from './backup/backup.module.js';
 import { ServersModule } from './servers/servers.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { AuthModule, CombinedAuthGuard, RolesGuard } from './auth/index.js';
+import { UsersModule } from './users/users.module.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -29,6 +32,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
               ]
             : []),
         MetadataModule,
+        AuthModule,
         ConnectionsModule,
         QueriesModule,
         SchemaModule,
@@ -40,6 +44,17 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         BackupModule,
         ServersModule,
         SettingsModule,
+        UsersModule,
+    ],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: CombinedAuthGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: RolesGuard,
+        },
     ],
 })
 export class AppModule {}

@@ -1,0 +1,67 @@
+import { ReactNode, useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
+import { useAuthStore } from '../stores/authStore';
+
+interface ProtectedRouteProps {
+    children: ReactNode;
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+    const location = useLocation();
+    const { isAuthenticated, authEnabled, checkAuthStatus } = useAuthStore();
+    const [isChecking, setIsChecking] = useState(true);
+
+    useEffect(() => {
+        const check = async () => {
+            await checkAuthStatus();
+            setIsChecking(false);
+        };
+        check();
+    }, [checkAuthStatus]);
+
+    if (isChecking) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100vh',
+                    bgcolor: 'background.default',
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    // If auth is not enabled (no users), redirect to login to create first admin
+    if (authEnabled === false) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // If auth is enabled but user is not authenticated, redirect to login
+    if (authEnabled === true && !isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // If auth status is still unknown (null), show loading
+    if (authEnabled === null) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100vh',
+                    bgcolor: 'background.default',
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return <>{children}</>;
+}
