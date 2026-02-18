@@ -9,7 +9,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../app.module.js';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -105,6 +105,22 @@ export async function createTestApp(): Promise<INestApplication> {
     }).compile();
 
     const app = moduleFixture.createNestApplication();
+
+    // Configure validation pipe (same as main.ts)
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+            transformOptions: {
+                enableImplicitConversion: true,
+            },
+        })
+    );
+
+    // Set global prefix (same as main.ts)
+    app.setGlobalPrefix('api');
+
     await app.init();
     return app;
 }
