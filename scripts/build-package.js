@@ -87,9 +87,6 @@ await esbuild.build({
         '@nestjs/platform-fastify',
         '@fastify/static',
         '@fastify/view',
-        'class-transformer',
-        'class-transformer/storage',
-        'class-validator',
         'cache-manager',
         // These cause issues with bundling
         'fsevents',

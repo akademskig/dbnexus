@@ -4,6 +4,7 @@ import { SchemaDiffService } from './schema-diff.service.js';
 import { ConnectionsService } from '../connections/connections.service.js';
 import { MetadataService } from '../metadata/metadata.service.js';
 import type { TableInfo, TableSchema, SchemaDiff, MigrationLogEntry } from '@dbnexus/shared';
+import { CreateSchemaDto, ApplyMigrationDto } from './dto/index.js';
 
 @Controller('schema')
 export class SchemaController {
@@ -22,7 +23,7 @@ export class SchemaController {
     @Post(':connectionId/schemas')
     async createSchema(
         @Param('connectionId') connectionId: string,
-        @Body() body: { name: string }
+        @Body() body: CreateSchemaDto
     ): Promise<{ success: boolean; name: string }> {
         await this.schemaService.createSchema(connectionId, body.name);
         return { success: true, name: body.name };
@@ -113,7 +114,7 @@ export class SchemaController {
         @Param('targetConnectionId') targetConnectionId: string,
         @Query('sourceSchema') sourceSchema?: string,
         @Query('targetSchema') targetSchema?: string,
-        @Body() body?: { description?: string }
+        @Body() body?: ApplyMigrationDto
     ): Promise<MigrationLogEntry> {
         const srcSchema = sourceSchema || 'public';
         const tgtSchema = targetSchema || 'public';

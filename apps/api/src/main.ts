@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module.js';
@@ -20,6 +20,18 @@ async function bootstrap() {
     // Increase body size limit for large row data sync
     app.useBodyParser('json', { limit: '50mb' });
     app.useBodyParser('urlencoded', { limit: '50mb', extended: true });
+
+    // Enable global validation pipe for DTO validation
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true, // Strip properties not in DTO
+            forbidNonWhitelisted: true, // Throw error on extra properties
+            transform: true, // Transform payloads to DTO instances
+            transformOptions: {
+                enableImplicitConversion: true, // Auto-convert types
+            },
+        })
+    );
 
     const isDev = process.env['NODE_ENV'] !== 'production';
 

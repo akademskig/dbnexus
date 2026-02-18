@@ -129,6 +129,65 @@ dbnexus --data-dir ~/my-dbnexus-data`}</CodeBlock>
             </Section>
 
             <Section>
+                <SectionTitle>dbnexus init</SectionTitle>
+                <Paragraph>
+                    Initialize a DB Nexus workspace and import configuration from a YAML file.
+                </Paragraph>
+                <CodeBlock language="bash">{`# Initialize workspace (creates dbnexus.config.yaml template)
+dbnexus init
+
+# Edit the config file, then run init again to import
+dbnexus init`}</CodeBlock>
+                <Paragraph>
+                    The <code>dbnexus.config.yaml</code> file allows you to define servers and
+                    databases declaratively:
+                </Paragraph>
+                <CodeBlock language="yaml">{`# dbnexus.config.yaml
+version: "0.3.1"
+servers:
+  - name: Local PostgreSQL
+    engine: postgres
+    host: localhost
+    port: 5432
+    username: postgres
+    password: \${POSTGRES_PASSWORD}  # Uses .env file
+    connectionType: docker
+    startCommand: docker start my-postgres
+    stopCommand: docker stop my-postgres
+    tags:
+      - local
+      - development
+
+databases:
+  - name: My App Database
+    server: Local PostgreSQL  # References server by name
+    database: myapp
+    tags:
+      - development`}</CodeBlock>
+                <Paragraph>
+                    Create a <code>.env</code> file in the same directory for sensitive values:
+                </Paragraph>
+                <CodeBlock language="bash">{`# .env
+POSTGRES_PASSWORD=your_password
+MYSQL_PASSWORD=your_password`}</CodeBlock>
+            </Section>
+
+            <Section>
+                <SectionTitle>dbnexus config export</SectionTitle>
+                <Paragraph>
+                    Export current servers and databases to a YAML configuration file.
+                </Paragraph>
+                <CodeBlock language="bash">{`# Export to dbnexus.config.yaml
+dbnexus config export
+
+# Export to a custom file
+dbnexus config export --output backup-config.yaml`}</CodeBlock>
+                <Paragraph>
+                    Passwords are replaced with environment variable placeholders for security.
+                </Paragraph>
+            </Section>
+
+            <Section>
                 <SectionTitle>dbnexus connect</SectionTitle>
                 <Paragraph>Manage database connections from the command line.</Paragraph>
 

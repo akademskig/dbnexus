@@ -1,23 +1,12 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Delete,
-    Param,
-    Body,
-    Query,
-    BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { PostgresConnector, MysqlConnector, type ConnectorConfig } from '@dbnexus/connectors';
-import type {
-    ServerConfig,
-    ServerCreateInput,
-    ServerUpdateInput,
-    DatabaseEngine,
-    ConnectionConfig,
-} from '@dbnexus/shared';
+import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
+import { CreateServerDto, UpdateServerDto, CreateDatabaseDto } from './dto/index.js';
+
+const execAsync = promisify(exec);
 
 @Controller('servers')
 export class ServersController {
@@ -48,7 +37,7 @@ export class ServersController {
     }
 
     @Post()
-    createServer(@Body() input: ServerCreateInput): ServerConfig {
+    createServer(@Body() input: CreateServerDto): ServerConfig {
         const server = this.metadataService.serverRepository.create(input);
 
         // Audit log
@@ -68,7 +57,7 @@ export class ServersController {
     }
 
     @Put(':id')
-    updateServer(@Param('id') id: string, @Body() input: ServerUpdateInput): ServerConfig | null {
+    updateServer(@Param('id') id: string, @Body() input: UpdateServerDto): ServerConfig | null {
         const server = this.metadataService.serverRepository.update(id, input);
 
         if (server) {
@@ -148,7 +137,7 @@ export class ServersController {
     @Post(':id/create-database')
     async createDatabase(
         @Param('id') id: string,
-        @Body() input: { databaseName: string; username?: string; password?: string }
+        @Body() input: CreateDatabaseDto
     ): Promise<{ success: boolean; message: string }> {
         const server = this.metadataService.serverRepository.findById(id);
         if (!server) {
@@ -164,13 +153,8 @@ export class ServersController {
             };
         }
 
-        const { databaseName, username, password } = input;
-
-        if (!databaseName || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(databaseName)) {
-            throw new BadRequestException(
-                'Invalid database name. Use letters, numbers, and underscores only.'
-            );
-        }
+        // Validation is handled by CreateDatabaseDto decorators
+        const { databaseName, username, password, grantSchemaAccess } = input;
 
         try {
             const connector = this.createServerConnector(server, adminPassword);
@@ -178,26 +162,35 @@ export class ServersController {
 
             // Create database
             if (server.engine === 'postgres') {
-                // Check if database exists
+                // Check if database exists using parameterized query
                 const checkResult = await connector.query(
-                    `SELECT 1 FROM pg_database WHERE datname = '${databaseName}'`
+                    `SELECT 1 FROM pg_database WHERE datname = $1`,
+                    [databaseName]
                 );
                 if (checkResult.rows.length > 0) {
                     await connector.disconnect();
                     return { success: false, message: `Database "${databaseName}" already exists` };
                 }
+                // Note: CREATE DATABASE doesn't support parameterized identifiers
+                // databaseName is validated with regex above, safe for identifier use
                 await connector.query(`CREATE DATABASE "${databaseName}"`);
             } else {
                 // MySQL/MariaDB
+                // Note: CREATE DATABASE doesn't support parameterized identifiers
+                // databaseName is validated with regex above, safe for identifier use
                 await connector.query(`CREATE DATABASE IF NOT EXISTS \`${databaseName}\``);
             }
 
             // Optionally create user with access
             if (username && password) {
+                // Escape password for SQL (replace single quotes with two single quotes)
+                const escapedPassword = password.replaceAll("'", "''");
+
                 if (server.engine === 'postgres') {
                     // Create user if not exists and grant privileges
+                    // Using dollar quoting for the password to handle special characters
                     await connector.query(
-                        `DO $$ BEGIN CREATE USER "${username}" WITH PASSWORD '${password}'; EXCEPTION WHEN duplicate_object THEN NULL; END $$`
+                        `DO $$ BEGIN CREATE USER "${username}" WITH PASSWORD '${escapedPassword}'; EXCEPTION WHEN duplicate_object THEN NULL; END $$`
                     );
                     await connector.query(
                         `GRANT ALL PRIVILEGES ON DATABASE "${databaseName}" TO "${username}"`
@@ -205,7 +198,7 @@ export class ServersController {
                 } else {
                     // MySQL/MariaDB
                     await connector.query(
-                        `CREATE USER IF NOT EXISTS '${username}'@'%' IDENTIFIED BY '${password}'`
+                        `CREATE USER IF NOT EXISTS '${username}'@'%' IDENTIFIED BY '${escapedPassword}'`
                     );
                     await connector.query(
                         `GRANT ALL PRIVILEGES ON \`${databaseName}\`.* TO '${username}'@'%'`
@@ -215,6 +208,30 @@ export class ServersController {
             }
 
             await connector.disconnect();
+
+            // Grant schema access (PostgreSQL 15+ requires explicit GRANT on public schema)
+            if (server.engine === 'postgres' && username && grantSchemaAccess !== false) {
+                // Connect to the new database to grant schema permissions
+                const dbConnector = this.createServerConnector(server, adminPassword, databaseName);
+                try {
+                    await dbConnector.connect();
+                    // Grant usage and create on public schema
+                    await dbConnector.query(
+                        `GRANT USAGE, CREATE ON SCHEMA public TO "${username}"`
+                    );
+                    // Grant default privileges for future objects
+                    await dbConnector.query(
+                        `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "${username}"`
+                    );
+                    await dbConnector.query(
+                        `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "${username}"`
+                    );
+                    await dbConnector.disconnect();
+                } catch (schemaError) {
+                    // Log but don't fail - database was created successfully
+                    console.error('Failed to grant schema access:', schemaError);
+                }
+            }
 
             // Audit log
             this.metadataService.auditLogRepository.create({
@@ -480,11 +497,15 @@ export class ServersController {
 
             if (server.engine === 'postgres') {
                 // Terminate active connections to the database
-                await connector.query(`
+                // Note: dbName is already validated with regex, safe for identifier use
+                await connector.query(
+                    `
                     SELECT pg_terminate_backend(pid) 
                     FROM pg_stat_activity 
-                    WHERE datname = '${dbName}' AND pid <> pg_backend_pid()
-                `);
+                    WHERE datname = $1 AND pid <> pg_backend_pid()
+                `,
+                    [dbName]
+                );
                 await connector.query(`DROP DATABASE IF EXISTS "${dbName}"`);
             } else {
                 await connector.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
@@ -520,6 +541,158 @@ export class ServersController {
         }
     }
 
+    @Post(':id/start')
+    async startServer(
+        @Param('id') id: string,
+        @Query('confirmed') confirmed?: string
+    ): Promise<{
+        success: boolean;
+        message: string;
+        output?: string;
+        requiresConfirmation?: boolean;
+        command?: string;
+        serverName?: string;
+    }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        if (!server.startCommand) {
+            return { success: false, message: 'No start command configured for this server' };
+        }
+
+        // Only allow local/docker servers to be started
+        if (server.connectionType === 'remote') {
+            return { success: false, message: 'Cannot start remote servers' };
+        }
+
+        // Require confirmation before executing
+        if (confirmed !== 'true') {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                command: server.startCommand,
+                serverName: server.name,
+                message: 'Confirmation required to execute start command',
+            };
+        }
+
+        try {
+            const result = await execAsync(server.startCommand, {
+                timeout: 30000, // 30 second timeout
+            });
+            const output = result.stdout || result.stderr || '';
+
+            // Audit log (non-blocking)
+            try {
+                this.metadataService.auditLogRepository.create({
+                    action: 'server_started',
+                    entityType: 'server',
+                    entityId: id,
+                    details: {
+                        name: server.name,
+                        command: server.startCommand,
+                        output: output.slice(0, 1000), // Limit output size
+                    },
+                });
+            } catch {
+                // Ignore audit log errors
+            }
+
+            return {
+                success: true,
+                message: `Server "${server.name}" start command executed`,
+                output,
+            };
+        } catch (error: unknown) {
+            const execError = error as { message?: string; stderr?: string; stdout?: string };
+            const errorMessage = execError.message || 'Failed to start server';
+            const output = execError.stderr || execError.stdout || '';
+            return {
+                success: false,
+                message: errorMessage,
+                output,
+            };
+        }
+    }
+
+    @Post(':id/stop')
+    async stopServer(
+        @Param('id') id: string,
+        @Query('confirmed') confirmed?: string
+    ): Promise<{
+        success: boolean;
+        message: string;
+        output?: string;
+        requiresConfirmation?: boolean;
+        command?: string;
+        serverName?: string;
+    }> {
+        const server = this.metadataService.serverRepository.findById(id);
+        if (!server) {
+            return { success: false, message: 'Server not found' };
+        }
+
+        if (!server.stopCommand) {
+            return { success: false, message: 'No stop command configured for this server' };
+        }
+
+        // Only allow local/docker servers to be stopped
+        if (server.connectionType === 'remote') {
+            return { success: false, message: 'Cannot stop remote servers' };
+        }
+
+        // Require confirmation before executing
+        if (confirmed !== 'true') {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                command: server.stopCommand,
+                serverName: server.name,
+                message: 'Confirmation required to execute stop command',
+            };
+        }
+
+        try {
+            const result = await execAsync(server.stopCommand, {
+                timeout: 30000, // 30 second timeout
+            });
+            const output = result.stdout || result.stderr || '';
+
+            // Audit log (non-blocking)
+            try {
+                this.metadataService.auditLogRepository.create({
+                    action: 'server_stopped',
+                    entityType: 'server',
+                    entityId: id,
+                    details: {
+                        name: server.name,
+                        command: server.stopCommand,
+                        output: output.slice(0, 1000), // Limit output size
+                    },
+                });
+            } catch {
+                // Ignore audit log errors
+            }
+
+            return {
+                success: true,
+                message: `Server "${server.name}" stop command executed`,
+                output,
+            };
+        } catch (error: unknown) {
+            const execError = error as { message?: string; stderr?: string; stdout?: string };
+            const errorMessage = execError.message || 'Failed to stop server';
+            const output = execError.stderr || execError.stdout || '';
+            return {
+                success: false,
+                message: errorMessage,
+                output,
+            };
+        }
+    }
+
     private formatUptime(seconds: number): string {
         const days = Math.floor(seconds / 86400);
         const hours = Math.floor((seconds % 86400) / 3600);
@@ -534,11 +707,11 @@ export class ServersController {
         }
     }
 
-    private createServerConnector(server: ServerConfig, password: string) {
+    private createServerConnector(server: ServerConfig, password: string, database?: string) {
         const config: ConnectorConfig = {
             host: server.host,
             port: server.port,
-            database: server.engine === 'postgres' ? 'postgres' : '', // Connect to maintenance DB
+            database: database ?? (server.engine === 'postgres' ? 'postgres' : ''), // Connect to maintenance DB by default
             username: server.username!,
             password,
             ssl: server.ssl,

@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { initCommand } from './commands/init.js';
+import { initCommand, exportConfigCommand } from './commands/init.js';
 import { uiCommand } from './commands/ui.js';
 import { connectCommand } from './commands/connect.js';
 import { queryCommand } from './commands/query.js';
@@ -15,8 +15,20 @@ program
     .description('A local-first database management CLI with web UI')
     .version(VERSION);
 
-// Init command
-program.command('init').description('Initialize a new DB Nexus workspace').action(initCommand);
+// Init command - handles workspace init and config import
+program
+    .command('init')
+    .description('Initialize workspace and import dbnexus.config.yaml')
+    .action(initCommand);
+
+// Config commands
+const config = program.command('config').description('Manage configuration');
+
+config
+    .command('export')
+    .description('Export servers and databases to dbnexus.config.yaml')
+    .option('-o, --output <file>', 'Output file path')
+    .action(exportConfigCommand);
 
 // Start/UI command - also the default when no command is specified
 program

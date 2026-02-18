@@ -36,7 +36,9 @@ export class PostgresConnector implements DatabaseConnector {
                 database: this.config.database,
                 user: this.config.username,
                 password: this.config.password,
-                ssl: this.config.ssl ? { rejectUnauthorized: false } : false,
+                ssl: this.config.ssl
+                    ? { rejectUnauthorized: this.config.sslVerify ?? false }
+                    : false,
                 connectionTimeoutMillis: 5000,
                 max: 1,
             });
@@ -71,10 +73,17 @@ export class PostgresConnector implements DatabaseConnector {
             database: this.config.database,
             user: this.config.username,
             password: this.config.password,
-            ssl: this.config.ssl ? { rejectUnauthorized: false } : false,
+            ssl: this.config.ssl ? { rejectUnauthorized: this.config.sslVerify ?? false } : false,
             max: 10,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 5000,
+        });
+
+        // Handle pool errors to prevent Node.js from crashing
+        // This happens when the database server is stopped/restarted
+        this.pool.on('error', (err) => {
+            console.error('PostgreSQL pool error:', err.message);
+            // The pool will automatically remove the dead client
         });
     }
 

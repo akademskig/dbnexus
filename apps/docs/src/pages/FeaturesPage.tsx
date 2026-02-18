@@ -86,6 +86,24 @@ const FeatureItem = styled.li`
 
 const features = [
     {
+        icon: <span className="material-symbols-outlined">dns</span>,
+        color: '#f97316',
+        title: 'Server Management',
+        description:
+            'Manage database servers separately from individual connections. Control Docker containers and local instances directly from the UI.',
+        screenshot: 'screenshots/serverspage.png',
+        items: [
+            'Add PostgreSQL, MySQL, SQLite servers',
+            'Start/stop servers with custom commands',
+            'Create databases on servers',
+            'Auto-grant schema permissions (PG 15+)',
+            'View server version and uptime',
+            'Monitor active connections',
+            'Drop databases with confirmation',
+            'Import existing databases as connections',
+        ],
+    },
+    {
         icon: <span className="material-symbols-outlined">terminal</span>,
         color: '#f59e0b',
         title: 'Query Editor',
@@ -203,6 +221,24 @@ const features = [
             'Works with any table',
             'Instant data preview',
             'Back navigation',
+        ],
+    },
+    {
+        icon: <span className="material-symbols-outlined">backup</span>,
+        color: '#14b8a6',
+        title: 'Backup & Restore',
+        description:
+            'Create and restore database backups using native tools. Supports compression and multiple backup methods.',
+        screenshot: 'screenshots/backups.png',
+        items: [
+            'Full database backups',
+            'GZIP compression support',
+            'Native tools (pg_dump, mysqldump)',
+            'Download and upload backups',
+            'Restore with one click',
+            'Backup history and logs',
+            'Auto-detection of DB tools',
+            'SQLite file copy backup',
         ],
     },
 ];

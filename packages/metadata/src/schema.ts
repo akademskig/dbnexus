@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 17;
+export const SCHEMA_VERSION = 19;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -397,5 +397,30 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE servers ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
 
   UPDATE schema_version SET version = 17;
+  `,
+
+    // Version 18: Add settings table for user preferences (tags, theme, etc.)
+    `
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Insert default tags
+  INSERT INTO settings (key, value) VALUES (
+    'tags',
+    '[{"id":"production","name":"production","color":"239, 68, 68"},{"id":"staging","name":"staging","color":"245, 158, 11"},{"id":"development","name":"development","color":"16, 185, 129"},{"id":"read-only","name":"read-only","color":"139, 92, 246"}]'
+  );
+
+  UPDATE schema_version SET version = 18;
+  `,
+
+    // Version 19: Add start/stop commands to servers
+    `
+  ALTER TABLE servers ADD COLUMN start_command TEXT;
+  ALTER TABLE servers ADD COLUMN stop_command TEXT;
+
+  UPDATE schema_version SET version = 19;
   `,
 ];

@@ -1,30 +1,32 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { QueriesService, type ExecuteQueryInput } from './queries.service.js';
+import { QueriesService } from './queries.service.js';
 import type {
     QueryResult,
     QueryValidationResult,
     SavedQuery,
     QueryHistoryEntry,
 } from '@dbnexus/shared';
+import {
+    ExecuteQueryDto,
+    MaintenanceDto,
+    ExplainQueryDto,
+    ValidateQueryDto,
+    CreateSavedQueryDto,
+    UpdateSavedQueryDto,
+} from './dto/index.js';
 
 @Controller('queries')
 export class QueriesController {
     constructor(private readonly queriesService: QueriesService) {}
 
     @Post('execute')
-    async execute(@Body() input: ExecuteQueryInput): Promise<QueryResult> {
+    async execute(@Body() input: ExecuteQueryDto): Promise<QueryResult> {
         return this.queriesService.execute(input);
     }
 
     @Post('maintenance')
     async executeMaintenance(
-        @Body()
-        input: {
-            connectionId: string;
-            operation: string;
-            target?: string;
-            scope?: 'database' | 'schema' | 'table';
-        }
+        @Body() input: MaintenanceDto
     ): Promise<{ success: boolean; message: string; details?: string[]; duration: number }> {
         return this.queriesService.executeMaintenance(
             input.connectionId,
@@ -35,9 +37,7 @@ export class QueriesController {
     }
 
     @Post('explain')
-    async explain(
-        @Body() input: { connectionId: string; sql: string; analyze?: boolean }
-    ): Promise<{
+    async explain(@Body() input: ExplainQueryDto): Promise<{
         plan: unknown;
         planText: string;
         insights: { type: string; message: string }[];
@@ -47,7 +47,7 @@ export class QueriesController {
     }
 
     @Post('validate')
-    validate(@Body() input: { connectionId: string; sql: string }): QueryValidationResult {
+    validate(@Body() input: ValidateQueryDto): QueryValidationResult {
         return this.queriesService.validate(input.connectionId, input.sql);
     }
 
@@ -64,16 +64,14 @@ export class QueriesController {
     }
 
     @Post('saved')
-    createSavedQuery(
-        @Body() input: { name: string; sql: string; connectionId?: string; folderId?: string }
-    ): SavedQuery {
+    createSavedQuery(@Body() input: CreateSavedQueryDto): SavedQuery {
         return this.queriesService.createSavedQuery(input);
     }
 
     @Put('saved/:id')
     updateSavedQuery(
         @Param('id') id: string,
-        @Body() input: { name?: string; sql?: string; connectionId?: string; folderId?: string }
+        @Body() input: UpdateSavedQueryDto
     ): SavedQuery | null {
         return this.queriesService.updateSavedQuery(id, input);
     }

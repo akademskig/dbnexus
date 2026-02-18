@@ -256,7 +256,7 @@ export function ProjectsPage() {
     };
 
     return (
-        <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
+        <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
             {/* Header */}
             <Box
                 sx={{

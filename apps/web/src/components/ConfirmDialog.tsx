@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -10,7 +11,7 @@ import {
 interface ConfirmDialogProps {
     open: boolean;
     title: string;
-    message: string;
+    message: ReactNode;
     confirmLabel?: string;
     cancelLabel?: string;
     confirmColor?: 'error' | 'primary' | 'secondary' | 'warning';
@@ -32,7 +33,11 @@ export function ConfirmDialog({
         <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
-                <DialogContentText>{message}</DialogContentText>
+                {typeof message === 'string' ? (
+                    <DialogContentText>{message}</DialogContentText>
+                ) : (
+                    message
+                )}
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
                 <Button onClick={onCancel}>{cancelLabel}</Button>

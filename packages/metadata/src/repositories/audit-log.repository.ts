@@ -11,6 +11,8 @@ export type AuditAction =
     | 'server_created'
     | 'server_updated'
     | 'server_deleted'
+    | 'server_started'
+    | 'server_stopped'
     | 'database_created'
     | 'database_deleted'
     | 'project_created'

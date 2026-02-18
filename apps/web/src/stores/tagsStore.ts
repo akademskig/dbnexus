@@ -1,13 +1,10 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { settingsApi, type Tag } from '../lib/api';
 
-export interface Tag {
-    id: string;
-    name: string;
-    color: string; // RGB string like "239, 68, 68"
-}
+// Re-export Tag type for convenience
+export type { Tag };
 
-// Default tags
+// Default tags (used as fallback before API loads)
 const DEFAULT_TAGS: Tag[] = [
     { id: 'production', name: 'production', color: '239, 68, 68' }, // red
     { id: 'staging', name: 'staging', color: '245, 158, 11' }, // amber
@@ -17,39 +14,77 @@ const DEFAULT_TAGS: Tag[] = [
 
 interface TagsStore {
     tags: Tag[];
-    addTag: (tag: Omit<Tag, 'id'>) => void;
-    updateTag: (id: string, updates: Partial<Omit<Tag, 'id'>>) => void;
-    deleteTag: (id: string) => void;
-    resetTags: () => void;
+    isLoading: boolean;
+    error: string | null;
+    fetchTags: () => Promise<void>;
+    addTag: (tag: Omit<Tag, 'id'>) => Promise<void>;
+    updateTag: (id: string, updates: Partial<Omit<Tag, 'id'>>) => Promise<void>;
+    deleteTag: (id: string) => Promise<void>;
+    resetTags: () => Promise<void>;
 }
 
-function generateId(): string {
-    return Math.random().toString(36).substring(2, 9);
-}
+export const useTagsStore = create<TagsStore>((set) => ({
+    tags: DEFAULT_TAGS,
+    isLoading: false,
+    error: null,
 
-export const useTagsStore = create<TagsStore>()(
-    persist(
-        (set) => ({
-            tags: DEFAULT_TAGS,
-            addTag: (tag) =>
-                set((state) => ({
-                    tags: [...state.tags, { ...tag, id: generateId() }],
-                })),
-            updateTag: (id, updates) =>
-                set((state) => ({
-                    tags: state.tags.map((tag) => (tag.id === id ? { ...tag, ...updates } : tag)),
-                })),
-            deleteTag: (id) =>
-                set((state) => ({
-                    tags: state.tags.filter((tag) => tag.id !== id),
-                })),
-            resetTags: () => set({ tags: DEFAULT_TAGS }),
-        }),
-        {
-            name: 'dbnexus-tags',
+    fetchTags: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const tags = await settingsApi.getTags();
+            set({ tags, isLoading: false });
+        } catch (error) {
+            console.error('Failed to fetch tags:', error);
+            set({ error: (error as Error).message, isLoading: false });
         }
-    )
-);
+    },
+
+    addTag: async (tag) => {
+        try {
+            const newTag = await settingsApi.createTag(tag);
+            set((state) => ({ tags: [...state.tags, newTag] }));
+        } catch (error) {
+            console.error('Failed to add tag:', error);
+            throw error;
+        }
+    },
+
+    updateTag: async (id, updates) => {
+        try {
+            const updatedTag = await settingsApi.updateTag(id, updates);
+            if (updatedTag) {
+                set((state) => ({
+                    tags: state.tags.map((tag) => (tag.id === id ? updatedTag : tag)),
+                }));
+            }
+        } catch (error) {
+            console.error('Failed to update tag:', error);
+            throw error;
+        }
+    },
+
+    deleteTag: async (id) => {
+        try {
+            await settingsApi.deleteTag(id);
+            set((state) => ({
+                tags: state.tags.filter((tag) => tag.id !== id),
+            }));
+        } catch (error) {
+            console.error('Failed to delete tag:', error);
+            throw error;
+        }
+    },
+
+    resetTags: async () => {
+        try {
+            const tags = await settingsApi.resetTags();
+            set({ tags });
+        } catch (error) {
+            console.error('Failed to reset tags:', error);
+            throw error;
+        }
+    },
+}));
 
 // Preset tag colors
 export const TAG_COLORS = {

@@ -28,6 +28,8 @@ interface ServerRow {
     encrypted_password: string | null;
     ssl: number;
     tags: string;
+    start_command: string | null;
+    stop_command: string | null;
     created_at: string;
     updated_at: string;
     database_count?: number;
@@ -64,6 +66,8 @@ export class ServerRepository {
             username: row.username,
             ssl: row.ssl === 1,
             tags: JSON.parse(row.tags) as ConnectionTag[],
+            startCommand: row.start_command ?? undefined,
+            stopCommand: row.stop_command ?? undefined,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             databaseCount: row.database_count,
@@ -82,8 +86,8 @@ export class ServerRepository {
         this.db
             .prepare(
                 `
-                INSERT INTO servers (id, name, engine, connection_type, host, port, username, encrypted_password, ssl, tags, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO servers (id, name, engine, connection_type, host, port, username, encrypted_password, ssl, tags, start_command, stop_command, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `
             )
             .run(
@@ -97,6 +101,8 @@ export class ServerRepository {
                 encryptedPwd,
                 input.ssl ? 1 : 0,
                 JSON.stringify(input.tags ?? []),
+                input.startCommand ?? null,
+                input.stopCommand ?? null,
                 now,
                 now
             );
@@ -220,6 +226,14 @@ export class ServerRepository {
         if (input.tags !== undefined) {
             updates.push('tags = ?');
             values.push(JSON.stringify(input.tags));
+        }
+        if (input.startCommand !== undefined) {
+            updates.push('start_command = ?');
+            values.push(input.startCommand || null);
+        }
+        if (input.stopCommand !== undefined) {
+            updates.push('stop_command = ?');
+            values.push(input.stopCommand || null);
         }
 
         if (updates.length === 0) {

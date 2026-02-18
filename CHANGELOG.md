@@ -5,27 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-23
+
+### Added
+
+- **Server Startup/Shutdown Commands**: Control database servers directly from the UI
+    - Configure start and stop commands for each server (Docker, local, or custom scripts)
+    - Execute commands with confirmation dialog showing the command to be run
+    - Audit logging for server start/stop operations
+- **CLI Configuration File**: Declarative server and database configuration via YAML
+    - Generate `dbnexus.config.yaml` template with `dbnexus init`
+    - Import servers and databases from config file on subsequent runs
+    - Export current configuration with `dbnexus config export`
+    - Support for environment variable placeholders for passwords (`${POSTGRES_PASSWORD}`)
+    - Automatic `.env` file loading for sensitive credentials
+- **PostgreSQL 15+ Schema Permissions**: Auto-grant CREATE on public schema
+    - New checkbox in Create Database dialog for granting schema access
+    - Automatically grants USAGE, CREATE on public schema to new users
+    - Sets default privileges for tables and sequences
+    - Fixes "permission denied for schema public" error on PostgreSQL 15+
+
+### Fixed
+
+- **Row Sync Validation**: Fixed validation error when syncing rows between databases
+
 ## [0.3.0] - 2026-01-23
 
 ### Added
 
 - **Server Management**: New feature to manage database servers separately from individual connections
-  - Add and configure PostgreSQL and MySQL servers with admin credentials
-  - Server Management page with connection details, server info, and database operations
-  - View server version, uptime, and active connections
-  - Test server connectivity directly from the UI
+    - Add and configure PostgreSQL and MySQL servers with admin credentials
+    - Server Management page with connection details, server info, and database operations
+    - View server version, uptime, and active connections
+    - Test server connectivity directly from the UI
 - **Database Operations**: Create and drop databases directly on servers
-  - Create new databases with custom names on any managed server
-  - Import existing server databases as tracked connections
-  - Drop databases with confirmation dialog (supports both tracked and untracked)
-  - View all databases on a server with size, owner, and tracking status
+    - Create new databases with custom names on any managed server
+    - Import existing server databases as tracked connections
+    - Drop databases with confirmation dialog (supports both tracked and untracked)
+    - View all databases on a server with size, owner, and tracking status
 - **Server Navigation**: Quick access to servers from the sidebar
-  - Expandable servers list in navigation panel (similar to databases)
-  - Direct navigation to Server Management page for any server
-  - Collapsed view with popup menu for compact layouts
+    - Expandable servers list in navigation panel (similar to databases)
+    - Direct navigation to Server Management page for any server
+    - Collapsed view with popup menu for compact layouts
 - **Servers Page**: Dedicated page to view and manage all configured servers
-  - Server cards showing engine, host, port, and database count
-  - Quick actions for testing connection and managing server
+    - Server cards showing engine, host, port, and database count
+    - Quick actions for testing connection and managing server
+- **Persistent Settings**: User preferences now stored in database instead of browser localStorage
+    - Tags persist across browsers and devices
+    - Extensible settings system for future preferences
+    - Settings API with REST endpoints
 
 ### Changed
 
@@ -41,24 +69,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Database Backup & Restore**: Full-featured backup management system
-  - Create full database backups using native tools (pg_dump, mysqldump) or file copy (SQLite)
-  - Optional GZIP compression for smaller backup files
-  - Download and upload backup files
-  - Restore databases from backup files with automatic data refresh
-  - Multi-select bulk deletion of backups
-  - Backup metadata tracking (size, timestamp, status, compression)
-  - Database tools setup wizard with auto-install capability
-  - Engine-specific tool validation (only checks for tools needed by the current database)
-  - Integrated as a new tab in Connection Management page
+    - Create full database backups using native tools (pg_dump, mysqldump) or file copy (SQLite)
+    - Optional GZIP compression for smaller backup files
+    - Download and upload backup files
+    - Restore databases from backup files with automatic data refresh
+    - Multi-select bulk deletion of backups
+    - Backup metadata tracking (size, timestamp, status, compression)
+    - Database tools setup wizard with auto-install capability
+    - Engine-specific tool validation (only checks for tools needed by the current database)
+    - Integrated as a new tab in Connection Management page
 - **Backup & Restore Logs**: Comprehensive logging for all backup operations
-  - New "Backup & Restore" tab in Logs page showing operation history
-  - Track backup creation, restoration, deletion, and upload operations
-  - Detailed metadata including duration, file size, status, and error messages
-  - Filter logs by operation type, connection, and status
+    - New "Backup & Restore" tab in Logs page showing operation history
+    - Track backup creation, restoration, deletion, and upload operations
+    - Detailed metadata including duration, file size, status, and error messages
+    - Filter logs by operation type, connection, and status
 - **SQL Editor Output Panel**: Split-view SQL editor with integrated output display
-  - Resizable bottom panel for query results and errors
-  - Toggle button with status indicator (success/error color)
-  - View SQL output without switching tabs
+    - Resizable bottom panel for query results and errors
+    - Toggle button with status indicator (success/error color)
+    - View SQL output without switching tabs
 
 ### Changed
 
@@ -67,8 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Query Execution Validation**: Prevent execution of queries with invalid filter values
-  - Comparison operators (>, >=, <, <=) now require non-empty values
-  - Clear error indication when filters are invalid
+    - Comparison operators (>, >=, <, <=) now require non-empty values
+    - Clear error indication when filters are invalid
 - **Query Page Layout**: Improved panel dividers and spacing for better visual separation
 - **Backup File Deletion**: Gracefully handle cases where backup files are already deleted from disk
 - **Query Page Data Refresh**: Auto-refresh data after successful database restore
@@ -78,14 +106,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Advanced Filtering**: Query results and all Logs page tabs now support column-based filtering
-  - Filter button with badge showing active filter count
-  - Active filter chips displayed below toolbar
-  - Support for text, numeric, boolean, and JSON column filtering
-  - Multiple filter operators: contains, equals, starts with, ends with, greater than, greater than or equal, less than, less than or equal, is empty, is not empty
+    - Filter button with badge showing active filter count
+    - Active filter chips displayed below toolbar
+    - Support for text, numeric, boolean, and JSON column filtering
+    - Multiple filter operators: contains, equals, starts with, ends with, greater than, greater than or equal, less than, less than or equal, is empty, is not empty
 - **Enhanced Row Editing**: Improved modal dialog for editing table rows
-  - Monaco editor integration for JSON fields with syntax highlighting
-  - Full-screen JSON editor accessible via icon button
-  - Fixed header and footer with scrollable content area
+    - Monaco editor integration for JSON fields with syntax highlighting
+    - Full-screen JSON editor accessible via icon button
+    - Fixed header and footer with scrollable content area
 
 ### Changed
 
@@ -94,9 +122,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **EXPLAIN Command**: Fixed EXPLAIN failures for SQL with leading comments or DDL statements
-  - Strip leading comments before executing EXPLAIN
-  - Show clear error message when attempting to EXPLAIN DDL statements (ALTER, CREATE, DROP, etc.)
-  - Normalize line endings for consistent SQL processing
+    - Strip leading comments before executing EXPLAIN
+    - Show clear error message when attempting to EXPLAIN DDL statements (ALTER, CREATE, DROP, etc.)
+    - Normalize line endings for consistent SQL processing
 - **Table Row Counts**: Fixed inaccurate row counts in MySQL after delete operations
 
 ## [0.1.16]
@@ -104,9 +132,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **2-Column Grid Layout**: Projects page now displays connection cards in a responsive 2-column grid for better space utilization
-  - Automatically adapts to screen size (1 column on mobile, 2 on desktop)
-  - Consistent card heights with action buttons aligned to bottom
-  - Text overflow handling with ellipsis and tooltips for long connection names, hosts, and database names
+    - Automatically adapts to screen size (1 column on mobile, 2 on desktop)
+    - Consistent card heights with action buttons aligned to bottom
+    - Text overflow handling with ellipsis and tooltips for long connection names, hosts, and database names
 
 ### Changed
 
@@ -137,24 +165,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Floating SQL Editor**: Detachable editor dialog to write queries while viewing results
-  - Pop out from SQL tab to separate window
-  - Fullscreen mode support
-  - Execute, Explain, Save, and Copy actions
-  - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
+    - Pop out from SQL tab to separate window
+    - Fullscreen mode support
+    - Execute, Explain, Save, and Copy actions
+    - Keyboard shortcuts (Ctrl/Cmd+Enter to execute)
 - **Query Templates**: Pre-built SQL templates panel with 25+ categorized snippets (SELECT, JOIN, Aggregate, INSERT, UPDATE, DELETE, DDL, Window Functions)
-  - Context-aware templates auto-replace placeholders with selected table and column names
-  - Smart column detection by type (text, number, date)
-  - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
+    - Context-aware templates auto-replace placeholders with selected table and column names
+    - Smart column detection by type (text, number, date)
+    - Database-specific identifier quoting (PostgreSQL, MySQL, SQLite)
 - **Split-view SQL Editor**: Resizable side panel for SQL editor with toggle button
-  - View query results and SQL editor simultaneously
-  - Dark theme support
-  - Integrated toolbar with Run, Explain, Save, and Pop Out actions
+    - View query results and SQL editor simultaneously
+    - Dark theme support
+    - Integrated toolbar with Run, Explain, Save, and Pop Out actions
 - **Database Engine Validation**: Connections can only be moved to groups with matching database engine
-  - User-friendly error messages for incompatible moves
-  - Prevents accidental mismatching (e.g., PostgreSQL connections in MySQL groups)
+    - User-friendly error messages for incompatible moves
+    - Prevents accidental mismatching (e.g., PostgreSQL connections in MySQL groups)
 - **Connection Display Limits**: Improved UX for large connection lists
-  - Dashboard shows max 8 connections with "View all" button
-  - Projects page limits 5 connections per project/group with "Show more" buttons
+    - Dashboard shows max 8 connections with "View all" button
+    - Projects page limits 5 connections per project/group with "Show more" buttons
 - **Support Development Section**: Bitcoin donation option in Settings with QR code
 
 ## [0.1.13] - 2026-01-21
@@ -266,8 +294,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Drag and drop connections between projects and groups on Projects page
-  - Visual feedback with dashed border on drag over
-  - Drop zones on projects, groups, and ungrouped section
+    - Visual feedback with dashed border on drag over
+    - Drop zones on projects, groups, and ungrouped section
 
 ### Fixed
 
@@ -278,10 +306,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Interactive onboarding tour for new users
-  - Step-by-step walkthrough of main features
-  - Minimizable floating panel
-  - Progress tracking with localStorage persistence
-  - Spotlight indicators for target elements
+    - Step-by-step walkthrough of main features
+    - Minimizable floating panel
+    - Progress tracking with localStorage persistence
+    - Spotlight indicators for target elements
 - Auto-select first connection and default schema when adding connections
 - Auto-select first table on Query page when none is selected
 - Redirect from connection-required pages when no connections exist
@@ -320,11 +348,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Connection scanning feature to auto-discover databases
-  - Port scanning for common database ports
-  - Docker container inspection
-  - Environment file parsing (.env)
-  - Docker Compose file parsing
-  - SQLite file discovery
+    - Port scanning for common database ports
+    - Docker container inspection
+    - Environment file parsing (.env)
+    - Docker Compose file parsing
+    - SQLite file discovery
 - Connection type classification (local, Docker, remote)
 - Edit column functionality in Schema Diagram
 - Centralized SQL utilities for consistent identifier quoting

@@ -39,6 +39,7 @@ import { DynamicLogo } from './DynamicLogo';
 import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import { useConnectionStore } from '../stores/connectionStore';
+import { useTagsStore } from '../stores/tagsStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
 
@@ -113,6 +114,12 @@ export function Layout() {
 
     // Global connection selection
     const { selectedConnectionId, setConnectionAndSchema } = useConnectionStore();
+
+    // Fetch tags from backend on mount
+    const fetchTags = useTagsStore((state) => state.fetchTags);
+    useEffect(() => {
+        fetchTags();
+    }, [fetchTags]);
 
     // Register global navigation shortcuts
     useNavigationShortcuts(navigate);

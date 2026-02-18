@@ -310,14 +310,9 @@ describe('ServersController', () => {
             expect(result.message).toContain('admin credentials not configured');
         });
 
-        it('should reject invalid database names', async () => {
-            mockMetadataService.serverRepository.findById.mockReturnValue(mockServer);
-            mockMetadataService.serverRepository.getPassword.mockReturnValue('secret');
-
-            await expect(
-                controller.createDatabase('server-123', { databaseName: 'invalid-name!' })
-            ).rejects.toThrow('Invalid database name');
-        });
+        // Note: Invalid database name validation is now handled by CreateDatabaseDto
+        // via the global ValidationPipe at the HTTP layer. Direct controller calls
+        // bypass this validation. See DTO tests or integration tests for validation coverage.
     });
 
     describe('listDatabases', () => {

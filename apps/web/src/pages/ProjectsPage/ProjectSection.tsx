@@ -171,6 +171,7 @@ export function ProjectSection({
                     px: 2,
                     py: 2,
                     cursor: 'pointer',
+                    bgcolor: 'background.default',
                     borderLeft: `3px solid ${projectColor}`,
                     transition: 'background 0.15s',
                     '&:hover': { bgcolor: 'action.hover' },

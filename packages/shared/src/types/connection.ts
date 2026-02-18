@@ -196,6 +196,8 @@ export interface ServerConfig {
     username: string;
     ssl: boolean;
     tags: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
     createdAt: Date;
     updatedAt: Date;
     // Populated from queries
@@ -212,6 +214,8 @@ export interface ServerCreateInput {
     password: string;
     ssl?: boolean;
     tags?: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
 }
 
 export interface ServerUpdateInput {
@@ -223,4 +227,6 @@ export interface ServerUpdateInput {
     password?: string;
     ssl?: boolean;
     tags?: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
 }

@@ -1,11 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { ConnectionsService } from './connections.service.js';
-import type {
-    ConnectionConfig,
-    ConnectionCreateInput,
-    ConnectionUpdateInput,
-    ConnectionTestResult,
-} from '@dbnexus/shared';
+import type { ConnectionConfig, ConnectionTestResult } from '@dbnexus/shared';
+import { CreateConnectionDto, UpdateConnectionDto } from './dto/index.js';
 
 @Controller('connections')
 export class ConnectionsController {
@@ -22,14 +18,14 @@ export class ConnectionsController {
     }
 
     @Post()
-    async create(@Body() input: ConnectionCreateInput): Promise<ConnectionConfig> {
+    async create(@Body() input: CreateConnectionDto): Promise<ConnectionConfig> {
         return this.connectionsService.create(input);
     }
 
     @Put(':id')
     async update(
         @Param('id') id: string,
-        @Body() input: ConnectionUpdateInput
+        @Body() input: UpdateConnectionDto
     ): Promise<ConnectionConfig> {
         return this.connectionsService.update(id, input);
     }
@@ -46,7 +42,7 @@ export class ConnectionsController {
     }
 
     @Post('test')
-    async testSettings(@Body() settings: ConnectionCreateInput): Promise<ConnectionTestResult> {
+    async testSettings(@Body() settings: CreateConnectionDto): Promise<ConnectionTestResult> {
         return this.connectionsService.testSettings(settings);
     }
 
