@@ -174,7 +174,9 @@ MYSQL_PASSWORD=your_password`}</CodeBlock>
 
             <Section>
                 <SectionTitle>dbnexus config export</SectionTitle>
-                <Paragraph>Export current servers and databases to a YAML configuration file.</Paragraph>
+                <Paragraph>
+                    Export current servers and databases to a YAML configuration file.
+                </Paragraph>
                 <CodeBlock language="bash">{`# Export to dbnexus.config.yaml
 dbnexus config export
 

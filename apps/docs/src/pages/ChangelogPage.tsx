@@ -68,29 +68,29 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
     &::before {
         content: ${(props) => {
-        switch (props.type) {
-            case 'added':
-                return '"+"';
-            case 'changed':
-                return '"~"';
-            case 'fixed':
-                return '"✓"';
-            case 'removed':
-                return '"-"';
-        }
-    }};
+            switch (props.type) {
+                case 'added':
+                    return '"+"';
+                case 'changed':
+                    return '"~"';
+                case 'fixed':
+                    return '"✓"';
+                case 'removed':
+                    return '"-"';
+            }
+        }};
         color: ${(props) => {
-        switch (props.type) {
-            case 'added':
-                return 'var(--color-accent-green)';
-            case 'changed':
-                return 'var(--color-accent-orange)';
-            case 'fixed':
-                return 'var(--color-primary-light)';
-            case 'removed':
-                return '#ef4444';
-        }
-    }};
+            switch (props.type) {
+                case 'added':
+                    return 'var(--color-accent-green)';
+                case 'changed':
+                    return 'var(--color-accent-orange)';
+                case 'fixed':
+                    return 'var(--color-primary-light)';
+                case 'removed':
+                    return '#ef4444';
+            }
+        }};
         font-weight: 700;
         font-family: var(--font-mono);
     }
