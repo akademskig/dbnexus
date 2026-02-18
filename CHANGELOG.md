@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-23
+
+### Added
+
+- **Server Startup/Shutdown Commands**: Control database servers directly from the UI
+    - Configure start and stop commands for each server (Docker, local, or custom scripts)
+    - Execute commands with confirmation dialog showing the command to be run
+    - Audit logging for server start/stop operations
+- **CLI Configuration File**: Declarative server and database configuration via YAML
+    - Generate `dbnexus.config.yaml` template with `dbnexus init`
+    - Import servers and databases from config file on subsequent runs
+    - Export current configuration with `dbnexus config export`
+    - Support for environment variable placeholders for passwords (`${POSTGRES_PASSWORD}`)
+    - Automatic `.env` file loading for sensitive credentials
+- **PostgreSQL 15+ Schema Permissions**: Auto-grant CREATE on public schema
+    - New checkbox in Create Database dialog for granting schema access
+    - Automatically grants USAGE, CREATE on public schema to new users
+    - Sets default privileges for tables and sequences
+    - Fixes "permission denied for schema public" error on PostgreSQL 15+
+
+### Fixed
+
+- **Row Sync Validation**: Fixed validation error when syncing rows between databases
+
 ## [0.3.0] - 2026-01-23
 
 ### Added

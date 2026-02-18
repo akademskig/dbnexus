@@ -744,8 +744,12 @@ export function ServersPage() {
                             onQueryDatabase={handleQueryDatabase}
                             onStart={() => startMutation.mutate({ id: server.id })}
                             onStop={() => stopMutation.mutate({ id: server.id })}
-                            isStarting={startMutation.isPending && startMutation.variables?.id === server.id}
-                            isStopping={stopMutation.isPending && stopMutation.variables?.id === server.id}
+                            isStarting={
+                                startMutation.isPending && startMutation.variables?.id === server.id
+                            }
+                            isStopping={
+                                stopMutation.isPending && stopMutation.variables?.id === server.id
+                            }
                             tagColors={tagColors}
                         />
                     ))}
