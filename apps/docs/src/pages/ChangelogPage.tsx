@@ -68,29 +68,29 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
     &::before {
         content: ${(props) => {
-            switch (props.type) {
-                case 'added':
-                    return '"+"';
-                case 'changed':
-                    return '"~"';
-                case 'fixed':
-                    return '"✓"';
-                case 'removed':
-                    return '"-"';
-            }
-        }};
+        switch (props.type) {
+            case 'added':
+                return '"+"';
+            case 'changed':
+                return '"~"';
+            case 'fixed':
+                return '"✓"';
+            case 'removed':
+                return '"-"';
+        }
+    }};
         color: ${(props) => {
-            switch (props.type) {
-                case 'added':
-                    return 'var(--color-accent-green)';
-                case 'changed':
-                    return 'var(--color-accent-orange)';
-                case 'fixed':
-                    return 'var(--color-primary-light)';
-                case 'removed':
-                    return '#ef4444';
-            }
-        }};
+        switch (props.type) {
+            case 'added':
+                return 'var(--color-accent-green)';
+            case 'changed':
+                return 'var(--color-accent-orange)';
+            case 'fixed':
+                return 'var(--color-primary-light)';
+            case 'removed':
+                return '#ef4444';
+        }
+    }};
         font-weight: 700;
         font-family: var(--font-mono);
     }
@@ -98,9 +98,65 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
+        version: '0.3.1',
+        date: 'February 2026',
+        latest: true,
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Server Startup/Shutdown Commands - control Docker containers and local database instances directly from the UI',
+            },
+            {
+                type: 'added' as const,
+                text: 'CLI Configuration File (dbnexus.config.yaml) - declarative server and database configuration with environment variable support',
+            },
+            {
+                type: 'added' as const,
+                text: 'Config export command (dbnexus config export) - export current configuration to YAML',
+            },
+            {
+                type: 'added' as const,
+                text: 'PostgreSQL 15+ schema permissions - auto-grant CREATE on public schema when creating databases',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Row sync validation error when syncing rows between databases',
+            },
+        ],
+    },
+    {
+        version: '0.3.0',
+        date: 'January 2026',
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Server Management page - manage database servers separately from connections',
+            },
+            {
+                type: 'added' as const,
+                text: 'Create databases on servers with optional user creation',
+            },
+            {
+                type: 'added' as const,
+                text: 'Drop databases with confirmation dialog',
+            },
+            {
+                type: 'added' as const,
+                text: 'Import existing databases as connections',
+            },
+            {
+                type: 'added' as const,
+                text: 'Connection Type labels (Docker, Local, Environment, Remote)',
+            },
+            {
+                type: 'added' as const,
+                text: 'Server health monitoring with version and uptime display',
+            },
+        ],
+    },
+    {
         version: '0.2.0',
         date: 'January 2026',
-        latest: true,
         changes: [
             {
                 type: 'added' as const,

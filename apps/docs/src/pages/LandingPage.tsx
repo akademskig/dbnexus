@@ -308,6 +308,13 @@ const CTASection = styled.section`
 
 const features = [
     {
+        icon: <span className="material-symbols-outlined">dns</span>,
+        color: '#f97316',
+        title: 'Server Management',
+        description:
+            'Manage database servers with start/stop commands. Create databases, users, and control Docker containers directly from the UI.',
+    },
+    {
         icon: <span className="material-symbols-outlined">terminal</span>,
         color: '#f59e0b',
         title: 'Query Editor',
@@ -329,6 +336,13 @@ const features = [
             'Compare schemas across environments and generate migration scripts. Keep dev, staging, and production in sync.',
     },
     {
+        icon: <span className="material-symbols-outlined">backup</span>,
+        color: '#14b8a6',
+        title: 'Backup & Restore',
+        description:
+            'Create and restore database backups using native tools. Supports GZIP compression and one-click restore.',
+    },
+    {
         icon: <span className="material-symbols-outlined">travel_explore</span>,
         color: '#22d3ee',
         title: 'Auto-Discovery',
@@ -343,11 +357,11 @@ const features = [
             'Organize connections by project and instance groups. Drag and drop to reorganize. Perfect for multi-environment setups.',
     },
     {
-        icon: <span className="material-symbols-outlined">link</span>,
+        icon: <span className="material-symbols-outlined">code</span>,
         color: '#8b5cf6',
-        title: 'FK Navigation',
+        title: 'YAML Config',
         description:
-            'Click on foreign key values to instantly navigate to referenced rows. Follow relationships across your data model.',
+            'Define servers and databases declaratively with dbnexus.config.yaml. Support for .env files and environment variable placeholders.',
     },
 ];
 

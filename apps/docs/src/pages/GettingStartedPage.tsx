@@ -138,16 +138,26 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                 </Paragraph>
                 <List>
                     <li>
-                        <code>connections.db</code> - SQLite database storing your connections
-                        (credentials are encrypted)
+                        <code>metadata.db</code> - SQLite database storing your connections,
+                        servers, and settings (credentials are encrypted)
                     </li>
                     <li>
-                        <code>queries.db</code> - Query history and saved queries
+                        <code>logs/</code> - Query history and audit logs
                     </li>
                 </List>
                 <Paragraph>
-                    You can customize the theme (dark/light) and keyboard shortcuts from the
-                    Settings page in the UI.
+                    You can also use a YAML configuration file to define your servers and databases
+                    declaratively:
+                </Paragraph>
+                <CodeBlock language="bash">{`# Initialize workspace and create config template
+dbnexus init
+
+# Edit dbnexus.config.yaml, then import
+dbnexus init`}</CodeBlock>
+                <Paragraph>
+                    Create a <code>.env</code> file for sensitive values like passwords. See the{' '}
+                    <InlineLink to="/docs/cli">CLI Reference</InlineLink> for the full config file
+                    format.
                 </Paragraph>
             </Section>
 
@@ -159,6 +169,8 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                     <li>Visualize your schema with the interactive diagram</li>
                     <li>Compare schemas between environments</li>
                     <li>Organize connections into projects and groups</li>
+                    <li>Manage servers and start/stop Docker containers</li>
+                    <li>Create and restore database backups</li>
                 </List>
             </Section>
         </DocsLayout>
