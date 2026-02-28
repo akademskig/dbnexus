@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ForbiddenException } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Body,
+    Param,
+    ForbiddenException,
+} from '@nestjs/common';
 import { ConnectionsService } from './connections.service.js';
 import type { ConnectionConfig, ConnectionTestResult } from '@dbnexus/shared';
 import type { User, UserContext } from '@dbnexus/metadata';

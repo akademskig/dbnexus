@@ -207,9 +207,9 @@ export class ServerRepository {
     canAccess(serverId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
-        const row = this.db
-            .prepare('SELECT created_by FROM servers WHERE id = ?')
-            .get(serverId) as { created_by: string | null } | undefined;
+        const row = this.db.prepare('SELECT created_by FROM servers WHERE id = ?').get(serverId) as
+            | { created_by: string | null }
+            | undefined;
 
         if (!row) return false;
         return row.created_by === null || row.created_by === userContext.userId;

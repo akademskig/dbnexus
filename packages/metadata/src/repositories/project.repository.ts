@@ -72,7 +72,10 @@ export class ProjectRepository {
 
         query += ` ORDER BY name`;
 
-        const rows = this.db.getDb().prepare(query).all(...params) as ProjectRow[];
+        const rows = this.db
+            .getDb()
+            .prepare(query)
+            .all(...params) as ProjectRow[];
         return rows.map((row) => this.rowToProject(row));
     }
 

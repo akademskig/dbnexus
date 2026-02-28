@@ -977,9 +977,37 @@ export function Layout() {
                 {/* Footer - Fixed at bottom */}
                 <Divider />
 
+                <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
+                    <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
+                        <ListItemButton
+                            component={NavLink}
+                            to="/settings"
+                            selected={location.pathname === '/settings'}
+                            sx={{
+                                justifyContent: collapsed ? 'center' : 'flex-start',
+                                px: collapsed ? 1.5 : 2,
+                            }}
+                        >
+                            <ListItemIcon
+                                sx={{
+                                    minWidth: collapsed ? 0 : 40,
+                                    color:
+                                        location.pathname === '/settings'
+                                            ? 'primary.main'
+                                            : 'text.secondary',
+                                }}
+                            >
+                                <SettingsIcon />
+                            </ListItemIcon>
+                            {!collapsed && <ListItemText primary="Settings" />}
+                        </ListItemButton>
+                    </StyledTooltip>
+                </List>
+
                 {/* User info section */}
                 {authEnabled && user && (
                     <>
+                        <Divider />
                         <Box
                             onClick={(e) => setUserMenuAnchor(e.currentTarget)}
                             sx={{
@@ -1059,7 +1087,7 @@ export function Layout() {
                             <Divider />
                             <MenuItem
                                 onClick={() => {
-                                    navigate('/settings?tab=account');
+                                    navigate('/account');
                                     setUserMenuAnchor(null);
                                 }}
                             >
@@ -1067,17 +1095,6 @@ export function Layout() {
                                     <PersonIcon fontSize="small" />
                                 </ListItemIcon>
                                 <ListItemText primary="Account" />
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    navigate('/settings');
-                                    setUserMenuAnchor(null);
-                                }}
-                            >
-                                <ListItemIcon>
-                                    <SettingsIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText primary="Settings" />
                             </MenuItem>
                             <Divider />
                             <MenuItem
@@ -1093,38 +1110,7 @@ export function Layout() {
                                 <ListItemText primary="Sign Out" />
                             </MenuItem>
                         </Menu>
-                        <Divider />
                     </>
-                )}
-
-                {/* Show Settings nav item only when user menu is not visible */}
-                {(!authEnabled || !user) && (
-                    <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
-                        <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
-                            <ListItemButton
-                                component={NavLink}
-                                to="/settings"
-                                selected={location.pathname === '/settings'}
-                                sx={{
-                                    justifyContent: collapsed ? 'center' : 'flex-start',
-                                    px: collapsed ? 1.5 : 2,
-                                }}
-                            >
-                                <ListItemIcon
-                                    sx={{
-                                        minWidth: collapsed ? 0 : 40,
-                                        color:
-                                            location.pathname === '/settings'
-                                                ? 'primary.main'
-                                                : 'text.secondary',
-                                    }}
-                                >
-                                    <SettingsIcon />
-                                </ListItemIcon>
-                                {!collapsed && <ListItemText primary="Settings" />}
-                            </ListItemButton>
-                        </StyledTooltip>
-                    </List>
                 )}
 
                 {/* Collapse toggle */}

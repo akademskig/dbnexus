@@ -137,9 +137,9 @@ export class BackupRepository {
     canAccess(backupId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
-        const row = this.db
-            .prepare('SELECT created_by FROM backups WHERE id = ?')
-            .get(backupId) as { created_by: string | null } | undefined;
+        const row = this.db.prepare('SELECT created_by FROM backups WHERE id = ?').get(backupId) as
+            | { created_by: string | null }
+            | undefined;
 
         if (!row) return false;
         return row.created_by === null || row.created_by === userContext.userId;
