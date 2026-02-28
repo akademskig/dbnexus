@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useSearchParams, Navigate } from 'react-router-dom';
+import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ReactFlow,
@@ -41,7 +41,6 @@ import {
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { StatusAlert } from '../../components/StatusAlert';
 import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -50,6 +49,7 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import type { TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
@@ -59,7 +59,6 @@ import { useConnectionStore } from '../../stores/connectionStore';
 import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
-import { ConnectionSelector } from '../../components/ConnectionSelector';
 import {
     AddColumnDialog,
     EditColumnDialog,
@@ -119,6 +118,7 @@ export function DiagramEditorPage() {
     const theme = useTheme();
     const queryClient = useQueryClient();
     const toast = useToastStore();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Use shared connection store
@@ -129,7 +129,9 @@ export function DiagramEditorPage() {
     } = useConnectionStore();
 
     // Get URL params - these are the source of truth on page load
-    const urlConnectionId = searchParams.get('connection') || '';
+    // Support both 'connection' and 'connectionId' for backwards compatibility
+    const urlConnectionId =
+        searchParams.get('connectionId') || searchParams.get('connection') || '';
     const urlSchema = searchParams.get('schema') || '';
 
     // Fetch connections
@@ -255,29 +257,6 @@ export function DiagramEditorPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loadingConnections, connections.length]);
-
-    // Update URL when selection changes
-    const handleConnectionChange = useCallback(
-        (connectionId: string) => {
-            setSearchParams(
-                (prev) => {
-                    const newParams = new URLSearchParams(prev);
-                    if (connectionId) {
-                        newParams.set('connection', connectionId);
-                        // Reset schema when connection changes
-                        newParams.delete('schema');
-                    } else {
-                        newParams.delete('connection');
-                        newParams.delete('schema');
-                    }
-                    return newParams;
-                },
-                { replace: true }
-            );
-            setConnectionAndSchema(connectionId, '');
-        },
-        [setConnectionAndSchema, setSearchParams]
-    );
 
     const handleSchemaChange = useCallback(
         (schema: string) => {
@@ -1156,14 +1135,19 @@ export function DiagramEditorPage() {
             {/* Top Bar */}
             <GlassCard sx={{ mb: 2, p: 1.5 }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Connection Selector */}
-                    <ConnectionSelector
-                        value={selectedConnectionId}
-                        onChange={handleConnectionChange}
-                        disabled={loadingConnections}
-                        disableOffline={true}
-                        data-tour="connection-selector"
-                    />
+                    {/* Back to Query */}
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => navigate(`/query/${selectedConnectionId}`)}
+                        disabled={!selectedConnectionId}
+                        sx={{ fontSize: 12, textTransform: 'none' }}
+                    >
+                        Query
+                    </Button>
+
+                    <Divider orientation="vertical" flexItem />
 
                     {/* Schema Selector */}
                     <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -1197,16 +1181,6 @@ export function DiagramEditorPage() {
                         disabled={!selectedConnectionId || !selectedSchema || connection?.readOnly}
                     >
                         New Table
-                    </Button>
-
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<RefreshIcon />}
-                        onClick={() => refetchTables()}
-                        disabled={loadingTables || !selectedConnectionId || !selectedSchema}
-                    >
-                        Refresh
                     </Button>
 
                     <Box sx={{ flex: 1 }} />

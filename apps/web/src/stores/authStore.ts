@@ -25,6 +25,9 @@ interface AuthState {
 
 const TOKEN_REFRESH_BUFFER = 60 * 1000; // Refresh 1 minute before expiry
 
+// Refresh lock to prevent concurrent refresh attempts
+let refreshPromise: Promise<boolean> | null = null;
+
 export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
@@ -164,26 +167,38 @@ export const useAuthStore = create<AuthState>()(
                 const { refreshToken } = get();
                 if (!refreshToken) return false;
 
-                try {
-                    const tokens = await authApi.refresh(refreshToken);
-                    const tokenExpiresAt = Date.now() + tokens.expiresIn * 1000;
-
-                    set({
-                        accessToken: tokens.accessToken,
-                        refreshToken: tokens.refreshToken,
-                        tokenExpiresAt,
-                    });
-                    return true;
-                } catch {
-                    set({
-                        user: null,
-                        accessToken: null,
-                        refreshToken: null,
-                        tokenExpiresAt: null,
-                        isAuthenticated: false,
-                    });
-                    return false;
+                // If a refresh is already in progress, wait for it
+                if (refreshPromise) {
+                    return refreshPromise;
                 }
+
+                // Start the refresh and store the promise
+                refreshPromise = (async () => {
+                    try {
+                        const tokens = await authApi.refresh(refreshToken);
+                        const tokenExpiresAt = Date.now() + tokens.expiresIn * 1000;
+
+                        set({
+                            accessToken: tokens.accessToken,
+                            refreshToken: tokens.refreshToken,
+                            tokenExpiresAt,
+                        });
+                        return true;
+                    } catch {
+                        set({
+                            user: null,
+                            accessToken: null,
+                            refreshToken: null,
+                            tokenExpiresAt: null,
+                            isAuthenticated: false,
+                        });
+                        return false;
+                    } finally {
+                        refreshPromise = null;
+                    }
+                })();
+
+                return refreshPromise;
             },
 
             clearError: () => set({ error: null }),

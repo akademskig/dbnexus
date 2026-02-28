@@ -60,6 +60,8 @@ export function QueryPage() {
     useEffect(() => {
         if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
             setSelectedConnectionId(routeConnectionId);
+            // Reset schema when connection changes - default schema will be set by the schema loading effect
+            setSelectedSchema('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [routeConnectionId]); // Only react to URL changes, not state changes
@@ -241,7 +243,7 @@ export function QueryPage() {
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
 
     // Schemas query
-    const { data: schemas = [], refetch: refetchSchemas } = useQuery({
+    const { data: schemas = [] } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
@@ -866,13 +868,6 @@ export function QueryPage() {
         }
     }, [selectedTable, selectedConnectionId, refetchTables]);
 
-    // Group tables by schema
-    const handleRefresh = () => {
-        refetchSchemas();
-        refetchTables();
-        refetchRowCount();
-    };
-
     // Row operations hook
     const {
         addRowOpen,
@@ -981,24 +976,21 @@ export function QueryPage() {
             {/* Top Toolbar */}
             <QueryPageToolbar
                 selectedConnectionId={selectedConnectionId}
-                selectedConnection={selectedConnection}
+                schemas={schemas}
+                selectedSchema={selectedSchema}
+                onSchemaChange={handleSchemaChange}
                 templatesOpen={templatesOpen}
                 savedQueriesOpen={savedQueriesOpen}
                 historyOpen={historyOpen}
-                onConnectionChange={handleConnectionChange}
                 onTemplatesToggle={() => setTemplatesOpen(true)}
                 onSavedQueriesToggle={() => setSavedQueriesOpen(true)}
                 onHistoryToggle={() => setHistoryOpen(true)}
-                onRefresh={handleRefresh}
             />
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 <QueryPageSidebar
                     selectedConnectionId={selectedConnectionId}
-                    schemas={schemas}
-                    selectedSchema={selectedSchema}
-                    onSchemaChange={handleSchemaChange}
                     tableSearch={tableSearch}
                     onTableSearchChange={setTableSearch}
                     filteredTables={filteredTables}
@@ -1027,8 +1019,6 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
-                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
-                                    refreshing={executeMutation.isPending}
                                 />
                             )}
                             {splitViewOpen ? (

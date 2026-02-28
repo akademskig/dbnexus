@@ -1,9 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { DashboardPage } from './pages/DashboardPage';
-import { ProjectsPage } from './pages/ProjectsPage';
 import { ConnectionManagementPage } from './pages/ConnectionManagementPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { QueryPage } from './pages/QueryPage';
 import { SchemaPage } from './pages/SchemaPage';
 import { GroupSyncPage } from './pages/GroupSyncPage';
@@ -34,21 +33,28 @@ function App() {
                 }
             >
                 <Route index element={<Navigate to="/dashboard" replace />} />
+                {/* Dashboard */}
                 <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="servers" element={<ServersPage />} />
-                <Route path="servers/:serverId" element={<ServerManagementPage />} />
-                <Route path="projects" element={<ProjectsPage />} />
-                <Route path="connections/:connectionId" element={<ConnectionManagementPage />} />
+                {/* Main workspace */}
                 <Route path="query" element={<QueryPage />} />
                 <Route path="query/:connectionId" element={<QueryPage />} />
-                <Route path="schema/:connectionId" element={<SchemaPage />} />
+                {/* Server & Connection management */}
+                <Route path="servers" element={<ServersPage />} />
+                <Route path="servers/:serverId" element={<ServerManagementPage />} />
+                <Route path="connections/:connectionId" element={<ConnectionManagementPage />} />
+                {/* Sync, Compare, Logs */}
                 <Route path="groups/:groupId/sync" element={<GroupSyncPage />} />
                 <Route path="compare" element={<ComparePage />} />
                 <Route path="logs" element={<LogsPage />} />
+                {/* Schema views */}
+                <Route path="schema/:connectionId" element={<SchemaPage />} />
                 <Route path="schema-diagram" element={<DiagramEditorPage />} />
-                <Route path="diagram-editor" element={<Navigate to="/schema-diagram" replace />} />
+                {/* Settings & Account */}
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="account" element={<AccountPage />} />
+                {/* Legacy redirects */}
+                <Route path="projects" element={<Navigate to="/servers" replace />} />
+                <Route path="diagram-editor" element={<Navigate to="/schema-diagram" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
         </Routes>

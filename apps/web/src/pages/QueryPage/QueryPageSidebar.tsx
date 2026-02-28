@@ -1,9 +1,5 @@
 import {
     Box,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     TextField,
     InputAdornment,
     Typography,
@@ -11,7 +7,6 @@ import {
     LinearProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import GridViewIcon from '@mui/icons-material/GridView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { TableListItem } from './TableListItem';
@@ -20,9 +15,6 @@ import type { TableInfo } from '@dbnexus/shared';
 
 interface QueryPageSidebarProps {
     selectedConnectionId: string | null;
-    schemas: string[];
-    selectedSchema: string;
-    onSchemaChange: (schema: string) => void;
     tableSearch: string;
     onTableSearchChange: (search: string) => void;
     filteredTables: TableInfo[];
@@ -37,9 +29,6 @@ interface QueryPageSidebarProps {
 
 export function QueryPageSidebar({
     selectedConnectionId,
-    schemas,
-    selectedSchema,
-    onSchemaChange,
     tableSearch,
     onTableSearchChange,
     filteredTables,
@@ -65,31 +54,6 @@ export function QueryPageSidebar({
                 bgcolor: 'background.default',
             }}
         >
-            {/* Schema Selector */}
-            {selectedConnectionId && schemas.length > 0 && (
-                <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                    <FormControl size="small" fullWidth>
-                        <InputLabel>Schema</InputLabel>
-                        <Select
-                            value={selectedSchema}
-                            onChange={(e) => onSchemaChange(e.target.value)}
-                            label="Schema"
-                            startAdornment={
-                                <InputAdornment position="start">
-                                    <GridViewIcon fontSize="small" sx={{ color: 'primary.main' }} />
-                                </InputAdornment>
-                            }
-                        >
-                            {schemas.map((schema) => (
-                                <MenuItem key={schema} value={schema}>
-                                    {schema}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
-            )}
-
             {/* Search Tables */}
             <Box sx={{ p: 1.5 }}>
                 <TextField
