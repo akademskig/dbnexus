@@ -122,7 +122,8 @@ const colorSchemeLabels: Record<ColorScheme, string> = {
 
 // Appearance Tab Content
 function AppearanceTab() {
-    const { mode, toggleMode } = useThemeModeStore();
+    const { getMode, toggleMode } = useThemeModeStore();
+    const mode = getMode();
     const { colorScheme, setColorScheme } = useColorSchemeStore();
 
     return (

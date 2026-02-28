@@ -4,6 +4,12 @@ export type BackupMethod = 'native' | 'sql';
 export type BackupStatus = 'in_progress' | 'completed' | 'failed';
 export type BackupCompression = 'none' | 'gzip';
 export type BackupBackupType = 'full' | 'schema' | 'data';
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
+}
+
 export interface Backup {
     id: string;
     connectionId: string;
@@ -17,6 +23,7 @@ export interface Backup {
     compression: BackupCompression;
     status: BackupStatus;
     error?: string;
+    createdBy?: string;
     createdAt: string;
 }
 
@@ -38,12 +45,12 @@ export interface CreateBackupInput {
 export class BackupRepository {
     constructor(private db: Database) {}
 
-    create(input: CreateBackupInput): Backup {
+    create(input: CreateBackupInput, userId?: string): Backup {
         const stmt = this.db.prepare(`
       INSERT INTO backups (
         id, connection_id, filename, file_path, file_size,
-        database_name, database_engine, backup_type, method, compression, status, error
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        database_name, database_engine, backup_type, method, compression, status, error, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
         stmt.run(
@@ -58,7 +65,8 @@ export class BackupRepository {
             input.method,
             input.compression,
             input.status || 'completed',
-            input.error || null
+            input.error || null,
+            userId || null
         );
 
         return this.getById(input.id)!;
@@ -70,7 +78,7 @@ export class BackupRepository {
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        method, compression, status, error, created_at as createdAt
+        method, compression, status, error, created_by as createdBy, created_at as createdAt
       FROM backups
       WHERE id = ?
     `);
@@ -78,33 +86,63 @@ export class BackupRepository {
         return stmt.get(id) as Backup | null;
     }
 
-    getByConnectionId(connectionId: string): Backup[] {
-        const stmt = this.db.prepare(`
+    getByConnectionId(connectionId: string, userContext?: UserContext): Backup[] {
+        let query = `
       SELECT 
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        method, compression, status, error, created_at as createdAt
+        method, compression, status, error, created_by as createdBy, created_at as createdAt
       FROM backups
       WHERE connection_id = ?
-      ORDER BY created_at DESC
-    `);
+    `;
 
-        return stmt.all(connectionId) as Backup[];
+        const params: unknown[] = [connectionId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (created_by = ? OR created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return this.db.prepare(query).all(...params) as Backup[];
     }
 
-    getAll(): Backup[] {
-        const stmt = this.db.prepare(`
+    getAll(userContext?: UserContext): Backup[] {
+        let query = `
       SELECT 
         id, connection_id as connectionId, filename, file_path as filePath,
         file_size as fileSize, database_name as databaseName,
         database_engine as databaseEngine, backup_type as backupType,
-        method, compression, status, error, created_at as createdAt
+        method, compression, status, error, created_by as createdBy, created_at as createdAt
       FROM backups
-      ORDER BY created_at DESC
-    `);
+    `;
 
-        return stmt.all() as Backup[];
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE created_by = ? OR created_by IS NULL`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        return this.db.prepare(query).all(...params) as Backup[];
+    }
+
+    /**
+     * Check if user can access a backup
+     */
+    canAccess(backupId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by FROM backups WHERE id = ?')
+            .get(backupId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     updateStatus(id: string, status: 'in_progress' | 'completed' | 'failed', error?: string): void {

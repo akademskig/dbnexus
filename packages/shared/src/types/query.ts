@@ -23,6 +23,7 @@ export interface SavedQuery {
     folderId?: string;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
 }
 
 export interface QueryFolder {

@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 20;
+export const SCHEMA_VERSION = 21;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -479,5 +479,34 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 
   UPDATE schema_version SET version = 20;
+  `,
+
+    // Version 21: Add created_by column to resources for multi-user ownership
+    `
+  -- Add created_by to connections
+  ALTER TABLE connections ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_connections_created_by ON connections(created_by);
+
+  -- Add created_by to servers
+  ALTER TABLE servers ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_servers_created_by ON servers(created_by);
+
+  -- Add created_by to projects
+  ALTER TABLE projects ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects(created_by);
+
+  -- Add created_by to database_groups
+  ALTER TABLE database_groups ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_database_groups_created_by ON database_groups(created_by);
+
+  -- Add created_by to saved_queries
+  ALTER TABLE saved_queries ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_saved_queries_created_by ON saved_queries(created_by);
+
+  -- Add created_by to backups
+  ALTER TABLE backups ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_backups_created_by ON backups(created_by);
+
+  UPDATE schema_version SET version = 21;
   `,
 ];

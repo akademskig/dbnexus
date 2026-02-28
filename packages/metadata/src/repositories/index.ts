@@ -1,4 +1,5 @@
 export { ConnectionRepository } from './connection.repository.js';
+export type { UserContext } from './connection.repository.js';
 export { QueryLogsRepository } from './query.repository.js';
 export { MigrationLogsRepository } from './migration-logs.repository.js';
 export { ProjectRepository } from './project.repository.js';

@@ -15,6 +15,8 @@ import {
     CircularProgress,
     Menu,
     MenuItem,
+    Avatar,
+    Chip,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -31,6 +33,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FolderIcon from '@mui/icons-material/Folder';
 import DnsIcon from '@mui/icons-material/Dns';
+import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { groupsApi, connectionsApi, serversApi } from '../lib/api';
@@ -40,6 +44,7 @@ import { useNavigationShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useTagsStore } from '../stores/tagsStore';
+import { useAuthStore } from '../stores/authStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
 
@@ -108,6 +113,10 @@ export function Layout() {
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [connectionsMenuAnchor, setConnectionsMenuAnchor] = useState<null | HTMLElement>(null);
     const [serversMenuAnchor, setServersMenuAnchor] = useState<null | HTMLElement>(null);
+    const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+
+    // Auth store
+    const { user, authEnabled, logout } = useAuthStore();
 
     // Connection health store
     const { healthStatus, checkAllConnections } = useConnectionHealthStore();
@@ -968,32 +977,155 @@ export function Layout() {
                 {/* Footer - Fixed at bottom */}
                 <Divider />
 
-                <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
-                    <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
-                        <ListItemButton
-                            component={NavLink}
-                            to="/settings"
-                            selected={location.pathname === '/settings'}
+                {/* User info section */}
+                {authEnabled && user && (
+                    <>
+                        <Box
+                            onClick={(e) => setUserMenuAnchor(e.currentTarget)}
                             sx={{
+                                px: collapsed ? 1 : 2,
+                                py: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    bgcolor: 'action.hover',
+                                },
                                 justifyContent: collapsed ? 'center' : 'flex-start',
-                                px: collapsed ? 1.5 : 2,
                             }}
                         >
-                            <ListItemIcon
-                                sx={{
-                                    minWidth: collapsed ? 0 : 40,
-                                    color:
-                                        location.pathname === '/settings'
-                                            ? 'primary.main'
-                                            : 'text.secondary',
+                            <StyledTooltip
+                                title={collapsed ? `${user.name || user.email} (${user.role})` : ''}
+                                placement="right"
+                                arrow
+                            >
+                                <Avatar
+                                    sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: 'primary.main',
+                                        fontSize: 14,
+                                    }}
+                                >
+                                    {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                                </Avatar>
+                            </StyledTooltip>
+                            {!collapsed && (
+                                <Box sx={{ overflow: 'hidden', flex: 1 }}>
+                                    <Typography
+                                        variant="body2"
+                                        fontWeight={500}
+                                        noWrap
+                                        sx={{ lineHeight: 1.3 }}
+                                    >
+                                        {user.name || user.email}
+                                    </Typography>
+                                    <Chip
+                                        label={user.role}
+                                        size="small"
+                                        sx={{
+                                            height: 18,
+                                            fontSize: 10,
+                                            mt: 0.25,
+                                            bgcolor:
+                                                user.role === 'admin'
+                                                    ? 'error.main'
+                                                    : user.role === 'editor'
+                                                      ? 'warning.main'
+                                                      : 'info.main',
+                                            color: 'white',
+                                            '& .MuiChip-label': { px: 1 },
+                                        }}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
+                        <Menu
+                            anchorEl={userMenuAnchor}
+                            open={Boolean(userMenuAnchor)}
+                            onClose={() => setUserMenuAnchor(null)}
+                            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                        >
+                            <Box sx={{ px: 2, py: 1, minWidth: 180 }}>
+                                <Typography variant="subtitle2" fontWeight={600}>
+                                    {user.name || 'User'}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    {user.email}
+                                </Typography>
+                            </Box>
+                            <Divider />
+                            <MenuItem
+                                onClick={() => {
+                                    navigate('/settings?tab=account');
+                                    setUserMenuAnchor(null);
                                 }}
                             >
-                                <SettingsIcon />
-                            </ListItemIcon>
-                            {!collapsed && <ListItemText primary="Settings" />}
-                        </ListItemButton>
-                    </StyledTooltip>
-                </List>
+                                <ListItemIcon>
+                                    <PersonIcon fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary="Account" />
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() => {
+                                    navigate('/settings');
+                                    setUserMenuAnchor(null);
+                                }}
+                            >
+                                <ListItemIcon>
+                                    <SettingsIcon fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary="Settings" />
+                            </MenuItem>
+                            <Divider />
+                            <MenuItem
+                                onClick={() => {
+                                    logout();
+                                    setUserMenuAnchor(null);
+                                }}
+                                sx={{ color: 'error.main' }}
+                            >
+                                <ListItemIcon>
+                                    <LogoutIcon fontSize="small" sx={{ color: 'error.main' }} />
+                                </ListItemIcon>
+                                <ListItemText primary="Sign Out" />
+                            </MenuItem>
+                        </Menu>
+                        <Divider />
+                    </>
+                )}
+
+                {/* Show Settings nav item only when user menu is not visible */}
+                {(!authEnabled || !user) && (
+                    <List sx={{ px: collapsed ? 1 : 1.5, py: 1 }}>
+                        <StyledTooltip title={collapsed ? 'Settings' : ''} placement="right" arrow>
+                            <ListItemButton
+                                component={NavLink}
+                                to="/settings"
+                                selected={location.pathname === '/settings'}
+                                sx={{
+                                    justifyContent: collapsed ? 'center' : 'flex-start',
+                                    px: collapsed ? 1.5 : 2,
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: collapsed ? 0 : 40,
+                                        color:
+                                            location.pathname === '/settings'
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                    }}
+                                >
+                                    <SettingsIcon />
+                                </ListItemIcon>
+                                {!collapsed && <ListItemText primary="Settings" />}
+                            </ListItemButton>
+                        </StyledTooltip>
+                    </List>
+                )}
 
                 {/* Collapse toggle */}
                 <Box

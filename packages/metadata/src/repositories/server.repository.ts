@@ -30,9 +30,15 @@ interface ServerRow {
     tags: string;
     start_command: string | null;
     stop_command: string | null;
+    created_by: string | null;
     created_at: string;
     updated_at: string;
     database_count?: number;
+}
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
 }
 
 export class ServerRepository {
@@ -70,6 +76,7 @@ export class ServerRepository {
             stopCommand: row.stop_command ?? undefined,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            createdBy: row.created_by ?? undefined,
             databaseCount: row.database_count,
         };
     }
@@ -77,7 +84,7 @@ export class ServerRepository {
     /**
      * Create a new server
      */
-    create(input: ServerCreateInput): ServerConfig {
+    create(input: ServerCreateInput, userId?: string): ServerConfig {
         const id = MetadataDatabase.generateId();
         const now = new Date().toISOString();
         const encryptedPwd = input.password ? encryptPassword(input.password) : null;
@@ -86,8 +93,8 @@ export class ServerRepository {
         this.db
             .prepare(
                 `
-                INSERT INTO servers (id, name, engine, connection_type, host, port, username, encrypted_password, ssl, tags, start_command, stop_command, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO servers (id, name, engine, connection_type, host, port, username, encrypted_password, ssl, tags, start_command, stop_command, created_by, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `
             )
             .run(
@@ -103,6 +110,7 @@ export class ServerRepository {
                 JSON.stringify(input.tags ?? []),
                 input.startCommand ?? null,
                 input.stopCommand ?? null,
+                userId || null,
                 now,
                 now
             );
@@ -147,40 +155,64 @@ export class ServerRepository {
     }
 
     /**
-     * Find all servers
+     * Find all servers (filtered by user unless admin)
      */
-    findAll(): ServerConfig[] {
-        const rows = this.db
-            .prepare(
-                `
-                SELECT s.*,
-                    (SELECT COUNT(*) FROM connections c WHERE c.server_id = s.id) as database_count
-                FROM servers s
-                ORDER BY s.name
-                `
-            )
-            .all() as ServerRow[];
+    findAll(userContext?: UserContext): ServerConfig[] {
+        let query = `
+            SELECT s.*,
+                (SELECT COUNT(*) FROM connections c WHERE c.server_id = s.id) as database_count
+            FROM servers s
+        `;
 
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE s.created_by = ? OR s.created_by IS NULL`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY s.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ServerRow[];
         return rows.map((row) => this.rowToServer(row));
     }
 
     /**
-     * Find servers by engine
+     * Find servers by engine (filtered by user unless admin)
      */
-    findByEngine(engine: DatabaseEngine): ServerConfig[] {
-        const rows = this.db
-            .prepare(
-                `
-                SELECT s.*,
-                    (SELECT COUNT(*) FROM connections c WHERE c.server_id = s.id) as database_count
-                FROM servers s
-                WHERE s.engine = ?
-                ORDER BY s.name
-                `
-            )
-            .all(engine) as ServerRow[];
+    findByEngine(engine: DatabaseEngine, userContext?: UserContext): ServerConfig[] {
+        let query = `
+            SELECT s.*,
+                (SELECT COUNT(*) FROM connections c WHERE c.server_id = s.id) as database_count
+            FROM servers s
+            WHERE s.engine = ?
+        `;
 
+        const params: unknown[] = [engine];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (s.created_by = ? OR s.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY s.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ServerRow[];
         return rows.map((row) => this.rowToServer(row));
+    }
+
+    /**
+     * Check if user can access a server
+     */
+    canAccess(serverId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by FROM servers WHERE id = ?')
+            .get(serverId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     /**

@@ -12,8 +12,14 @@ interface SavedQueryRow {
     sql: string;
     connection_id: string | null;
     folder_id: string | null;
+    created_by: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
 }
 
 interface QueryFolderRow {
@@ -43,20 +49,23 @@ export class QueryLogsRepository {
 
     // ============ Saved Queries ============
 
-    createSavedQuery(input: {
-        name: string;
-        sql: string;
-        connectionId?: string;
-        folderId?: string;
-    }): SavedQuery {
+    createSavedQuery(
+        input: {
+            name: string;
+            sql: string;
+            connectionId?: string;
+            folderId?: string;
+        },
+        userId?: string
+    ): SavedQuery {
         const id = MetadataDatabase.generateId();
         const now = new Date().toISOString();
 
         this.db
             .prepare(
                 `
-      INSERT INTO saved_queries (id, name, sql, connection_id, folder_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO saved_queries (id, name, sql, connection_id, folder_id, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -65,6 +74,7 @@ export class QueryLogsRepository {
                 input.sql,
                 input.connectionId ?? null,
                 input.folderId ?? null,
+                userId ?? null,
                 now,
                 now
             );
@@ -79,22 +89,55 @@ export class QueryLogsRepository {
         return row ? this.rowToSavedQuery(row) : null;
     }
 
-    findAllSavedQueries(): SavedQuery[] {
-        const rows = this.db
-            .prepare('SELECT * FROM saved_queries ORDER BY name')
-            .all() as SavedQueryRow[];
+    findAllSavedQueries(userContext?: UserContext): SavedQuery[] {
+        let query = 'SELECT * FROM saved_queries';
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ' WHERE created_by = ? OR created_by IS NULL';
+            params.push(userContext.userId);
+        }
+
+        query += ' ORDER BY name';
+
+        const rows = this.db.prepare(query).all(...params) as SavedQueryRow[];
         return rows.map((row) => this.rowToSavedQuery(row));
     }
 
-    findSavedQueriesByFolder(folderId: string | null): SavedQuery[] {
-        const rows = this.db
-            .prepare(
-                folderId
-                    ? 'SELECT * FROM saved_queries WHERE folder_id = ? ORDER BY name'
-                    : 'SELECT * FROM saved_queries WHERE folder_id IS NULL ORDER BY name'
-            )
-            .all(folderId ?? undefined) as SavedQueryRow[];
+    findSavedQueriesByFolder(folderId: string | null, userContext?: UserContext): SavedQuery[] {
+        let query = 'SELECT * FROM saved_queries WHERE ';
+        const params: unknown[] = [];
+
+        if (folderId) {
+            query += 'folder_id = ?';
+            params.push(folderId);
+        } else {
+            query += 'folder_id IS NULL';
+        }
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ' AND (created_by = ? OR created_by IS NULL)';
+            params.push(userContext.userId);
+        }
+
+        query += ' ORDER BY name';
+
+        const rows = this.db.prepare(query).all(...params) as SavedQueryRow[];
         return rows.map((row) => this.rowToSavedQuery(row));
+    }
+
+    /**
+     * Check if user can access a saved query
+     */
+    canAccessSavedQuery(queryId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by FROM saved_queries WHERE id = ?')
+            .get(queryId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     updateSavedQuery(
@@ -248,6 +291,7 @@ export class QueryLogsRepository {
             folderId: row.folder_id ?? undefined,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            createdBy: row.created_by ?? undefined,
         };
     }
 

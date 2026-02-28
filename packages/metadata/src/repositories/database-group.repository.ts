@@ -19,11 +19,17 @@ interface DatabaseGroupRow {
     sync_schema: number;
     sync_data: number;
     sync_target_schema: string | null;
+    created_by: string | null;
     created_at: string;
     updated_at: string;
     project_name?: string;
     source_connection_name?: string;
     connection_count?: number;
+}
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
 }
 
 export class DatabaseGroupRepository {
@@ -32,15 +38,15 @@ export class DatabaseGroupRepository {
     /**
      * Create a new instance group
      */
-    create(input: InstanceGroupCreateInput): InstanceGroup {
+    create(input: InstanceGroupCreateInput, userId?: string): InstanceGroup {
         const id = crypto.randomUUID();
 
         this.db
             .getDb()
             .prepare(
                 `
-            INSERT INTO database_groups (id, project_id, name, description, database_engine, source_connection_id, sync_schema, sync_data, sync_target_schema)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO database_groups (id, project_id, name, description, database_engine, source_connection_id, sync_schema, sync_data, sync_target_schema, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
             .run(
@@ -52,7 +58,8 @@ export class DatabaseGroupRepository {
                 input.sourceConnectionId || null,
                 input.syncSchema ? 1 : 0,
                 input.syncData ? 1 : 0,
-                input.syncTargetSchema || null
+                input.syncTargetSchema || null,
+                userId || null
             );
 
         return this.findById(id)!;
@@ -83,9 +90,9 @@ export class DatabaseGroupRepository {
     }
 
     /**
-     * Get all instance groups
+     * Get all instance groups (filtered by user unless admin)
      */
-    findAll(projectId?: string): InstanceGroup[] {
+    findAll(projectId?: string, userContext?: UserContext): InstanceGroup[] {
         let query = `
             SELECT 
                 dg.*,
@@ -96,11 +103,21 @@ export class DatabaseGroupRepository {
             LEFT JOIN projects p ON dg.project_id = p.id
             LEFT JOIN connections sc ON dg.source_connection_id = sc.id
         `;
+        const conditions: string[] = [];
         const params: unknown[] = [];
 
         if (projectId) {
-            query += ' WHERE dg.project_id = ?';
+            conditions.push('dg.project_id = ?');
             params.push(projectId);
+        }
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            conditions.push('(dg.created_by = ? OR dg.created_by IS NULL)');
+            params.push(userContext.userId);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
 
         query += ' ORDER BY p.name, dg.name';
@@ -114,13 +131,10 @@ export class DatabaseGroupRepository {
     }
 
     /**
-     * Find groups with sync enabled
+     * Find groups with sync enabled (filtered by user unless admin)
      */
-    findWithSyncEnabled(): InstanceGroup[] {
-        const rows = this.db
-            .getDb()
-            .prepare(
-                `
+    findWithSyncEnabled(userContext?: UserContext): InstanceGroup[] {
+        let query = `
             SELECT 
                 dg.*,
                 p.name as project_name,
@@ -130,12 +144,38 @@ export class DatabaseGroupRepository {
             LEFT JOIN projects p ON dg.project_id = p.id
             LEFT JOIN connections sc ON dg.source_connection_id = sc.id
             WHERE (dg.sync_schema = 1 OR dg.sync_data = 1) AND dg.source_connection_id IS NOT NULL
-            ORDER BY p.name, dg.name
-        `
-            )
-            .all() as DatabaseGroupRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (dg.created_by = ? OR dg.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY p.name, dg.name`;
+
+        const rows = this.db
+            .getDb()
+            .prepare(query)
+            .all(...params) as DatabaseGroupRow[];
 
         return rows.map((row) => this.rowToGroup(row));
+    }
+
+    /**
+     * Check if user can access a database group
+     */
+    canAccess(groupId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .getDb()
+            .prepare('SELECT created_by FROM database_groups WHERE id = ?')
+            .get(groupId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     /**
@@ -217,6 +257,7 @@ export class DatabaseGroupRepository {
             syncTargetSchema: row.sync_target_schema || undefined,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            createdBy: row.created_by || undefined,
             projectName: row.project_name,
             sourceConnectionName: row.source_connection_name,
             connectionCount: row.connection_count,
