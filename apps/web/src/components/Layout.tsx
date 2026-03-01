@@ -309,7 +309,8 @@ export function Layout() {
                                 minHeight: 32,
                                 borderRadius: 1,
                                 mx: 0.5,
-                                px: 1.5,
+                                px: 1,
+                                mb: 0,
                             }}
                         >
                             <ListItemIcon sx={{ minWidth: 24 }}>
@@ -372,6 +373,7 @@ export function Layout() {
                                     minHeight: 32,
                                     borderRadius: 1,
                                     mx: 1,
+                                    mb: 0,
                                 }}
                             >
                                 <ListItemIcon sx={{ minWidth: 24 }}>
@@ -619,6 +621,7 @@ export function Layout() {
                                             minHeight: 32,
                                             borderRadius: 1,
                                             mx: 1,
+                                            mb: 0,
                                         }}
                                     >
                                         <ListItemIcon sx={{ minWidth: 24 }}>
@@ -711,11 +714,12 @@ export function Layout() {
                                     <ListItemButton
                                         onClick={toggleSync}
                                         sx={{
-                                            px: 1.5,
+                                            px: 1,
                                             py: 0.5,
                                             minHeight: 32,
                                             borderRadius: 1,
-                                            mx: 0.5,
+                                            mx: 1,
+                                            mb: 0,
                                         }}
                                     >
                                         <ListItemIcon sx={{ minWidth: 24 }}>
