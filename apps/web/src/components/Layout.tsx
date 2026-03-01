@@ -229,6 +229,27 @@ export function Layout() {
     const isSyncActive =
         location.pathname.startsWith('/groups/') && location.pathname.includes('/sync');
 
+    // Check if any child in Servers section is active
+    const isServersChildActive = useMemo(() => {
+        return servers.some((server) => {
+            const serverConnections = connectionsByServer.byServer[server.id] || [];
+            return serverConnections.some(
+                (conn) =>
+                    location.pathname === `/query/${conn.id}` ||
+                    location.pathname === `/connections/${conn.id}`
+            );
+        });
+    }, [servers, connectionsByServer.byServer, location.pathname]);
+
+    // Check if any child in Databases (standalone) section is active
+    const isDatabasesChildActive = useMemo(() => {
+        return connectionsByServer.standalone.some(
+            (conn) =>
+                location.pathname === `/query/${conn.id}` ||
+                location.pathname === `/connections/${conn.id}`
+        );
+    }, [connectionsByServer.standalone, location.pathname]);
+
     const selectedConnection = useMemo(
         () => connections.find((c) => c.id === selectedConnectionId),
         [connections, selectedConnectionId]
@@ -380,7 +401,9 @@ export function Layout() {
                                     <DnsIcon
                                         sx={{
                                             fontSize: 16,
-                                            color: 'text.secondary',
+                                            color: isServersChildActive
+                                                ? 'primary.main'
+                                                : 'text.secondary',
                                         }}
                                     />
                                 </ListItemIcon>
@@ -420,6 +443,11 @@ export function Layout() {
                                             const isExpanded = expandedServers[server.id] ?? true;
                                             const isServerActive =
                                                 location.pathname === `/servers/${server.id}`;
+                                            const hasActiveChild = serverConnections.some(
+                                                (conn) =>
+                                                    location.pathname === `/query/${conn.id}` ||
+                                                    location.pathname === `/connections/${conn.id}`
+                                            );
 
                                             return (
                                                 <Box key={server.id}>
@@ -440,9 +468,10 @@ export function Layout() {
                                                             <DnsIcon
                                                                 sx={{
                                                                     fontSize: 16,
-                                                                    color: isServerActive
-                                                                        ? 'primary.main'
-                                                                        : 'text.secondary',
+                                                                    color:
+                                                                        isServerActive || hasActiveChild
+                                                                            ? 'primary.main'
+                                                                            : 'text.secondary',
                                                                 }}
                                                             />
                                                         </ListItemIcon>
@@ -626,7 +655,9 @@ export function Layout() {
                                             <StorageIcon
                                                 sx={{
                                                     fontSize: 16,
-                                                    color: 'text.secondary',
+                                                    color: isDatabasesChildActive
+                                                        ? 'primary.main'
+                                                        : 'text.secondary',
                                                 }}
                                             />
                                         </ListItemIcon>
