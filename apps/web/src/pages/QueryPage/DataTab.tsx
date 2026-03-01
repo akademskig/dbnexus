@@ -37,6 +37,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -72,6 +73,7 @@ interface DataTabProps {
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
+    readonly hasTableSelected?: boolean;
     readonly onUpdateRow?: (
         oldRow: Record<string, unknown>,
         newRow: Record<string, unknown>
@@ -106,6 +108,7 @@ export function DataTab({
     onSearch,
     searchQuery,
     tableSchema,
+    hasTableSelected = false,
     onUpdateRow,
     onDeleteRow: _onDeleteRow,
     onDeleteRows: _onDeleteRows,
@@ -978,12 +981,20 @@ export function DataTab({
                     sx={{
                         flex: 1,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'text.secondary',
+                        p: 4,
+                        textAlign: 'center',
                     }}
                 >
-                    <Typography variant="body2">Loading data...</Typography>
+                    <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                    <Typography variant="body2">
+                        {hasTableSelected
+                            ? 'No data to display'
+                            : 'Select a table to view its data or run a query'}
+                    </Typography>
                 </Box>
             )}
 
