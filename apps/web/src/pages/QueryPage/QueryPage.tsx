@@ -61,8 +61,12 @@ export function QueryPage() {
     useEffect(() => {
         if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
             setSelectedConnectionId(routeConnectionId);
-            // Reset schema when connection changes - default schema will be set by the schema loading effect
+            // Reset all state when connection changes
             setSelectedSchema('');
+            setSelectedTable(null);
+            setResult(null);
+            setError(null);
+            setSql('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [routeConnectionId]); // Only react to URL changes, not state changes
@@ -267,6 +271,7 @@ export function QueryPage() {
     const {
         data: tables = [],
         isLoading: tablesLoading,
+        isFetching: tablesFetching,
         refetch: refetchTables,
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
@@ -344,13 +349,13 @@ export function QueryPage() {
                 if (engine === 'mysql' || engine === 'mariadb') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -376,7 +381,7 @@ export function QueryPage() {
 
     // Execute mutation
 
-    // Restore table selection from URL
+    // Restore table selection from URL or auto-select first table
     useEffect(() => {
         // Skip restoration if we just did a FK query
         if (skipTableRestoreRef.current) {
@@ -407,7 +412,7 @@ export function QueryPage() {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tables, urlTable, urlSchema, selectedTable]);
+    }, [tables, tablesLoading, tablesFetching, urlTable, urlSchema, selectedTable]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -669,6 +674,8 @@ export function QueryPage() {
     const handleTableSelect = useCallback(
         async (table: TableInfo) => {
             setSelectedTable(table);
+            setResult(null);
+            setError(null);
             setTotalRowCount(null);
             setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
             setSearchQuery('');
@@ -1055,6 +1062,7 @@ export function QueryPage() {
                                         }}
                                     >
                                         <QueryPageTabs
+                                            key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                             activeTab={activeTab}
                                             onTabChange={handleTabChange}
                                             result={result}
@@ -1142,6 +1150,7 @@ export function QueryPage() {
                                 </Group>
                             ) : (
                                 <QueryPageTabs
+                                    key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                     activeTab={activeTab}
                                     onTabChange={handleTabChange}
                                     result={result}
