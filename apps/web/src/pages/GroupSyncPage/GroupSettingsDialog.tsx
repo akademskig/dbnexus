@@ -81,6 +81,8 @@ export function GroupSettingsDialog({
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['group', group.id] });
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus', group.id] });
             onClose();
         },

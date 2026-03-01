@@ -9,6 +9,7 @@ import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
+import { useRecentDatabasesStore } from '../../stores/recentDatabasesStore';
 import { QueryPageSidebar } from './QueryPageSidebar';
 import { QueryPageHeader } from './QueryPageHeader';
 import { QueryPageTabs } from './QueryPageTabs';
@@ -241,6 +242,19 @@ export function QueryPage() {
     });
 
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
+
+    // Track recent database access
+    const { addRecentDatabase } = useRecentDatabasesStore();
+    useEffect(() => {
+        if (selectedConnection) {
+            addRecentDatabase({
+                connectionId: selectedConnection.id,
+                name: selectedConnection.name || selectedConnection.database,
+                engine: selectedConnection.engine,
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedConnection?.id, addRecentDatabase]);
 
     // Schemas query
     const { data: schemas = [] } = useQuery({

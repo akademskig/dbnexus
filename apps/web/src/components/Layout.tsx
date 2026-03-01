@@ -139,7 +139,10 @@ export function Layout() {
             },
             {} as Record<string, number>
         );
-        return allGroups.filter((group) => (connectionCountByGroup[group.id] || 0) > 1);
+        return allGroups.filter(
+            (group) =>
+                (connectionCountByGroup[group.id] || 0) > 1 && (group.syncSchema || group.syncData)
+        );
     }, [connections, allGroups]);
 
     const connectionsByServer = useMemo(() => {

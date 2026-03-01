@@ -46,7 +46,7 @@ export class UpdateDatabaseGroupDto {
 
     @IsOptional()
     @IsString()
-    sourceConnectionId?: string;
+    sourceConnectionId?: string | null;
 
     @IsOptional()
     @IsArray()
@@ -56,4 +56,16 @@ export class UpdateDatabaseGroupDto {
     @IsOptional()
     @IsBoolean()
     syncEnabled?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    syncSchema?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    syncData?: boolean;
+
+    @IsOptional()
+    @IsString()
+    syncTargetSchema?: string | null;
 }
