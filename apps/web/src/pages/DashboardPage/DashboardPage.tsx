@@ -1,8 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, Grid } from '@mui/material';
+import {
+    Box,
+    Typography,
+    Button,
+    Grid,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+} from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search as SearchIcon } from '@mui/icons-material';
-import { connectionsApi, serversApi, syncApi, projectsApi } from '../../lib/api';
+import {
+    Search as SearchIcon,
+    Add as AddIcon,
+    Dns as DnsIcon,
+    Storage as StorageIcon,
+    Sync as SyncIcon,
+} from '@mui/icons-material';
+import { connectionsApi, serversApi, syncApi, projectsApi, groupsApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import type { InstanceGroupSyncStatus } from '@dbnexus/shared';
@@ -13,12 +28,19 @@ import { ProjectsSection } from './ProjectsSection';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
 import { StyledTooltip } from '../../components/StyledTooltip';
+import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
+import { ConnectionFormDialog, GroupFormDialog } from '../ConnectionsPage/Dialogs';
 
 export function DashboardPage() {
     const queryClient = useQueryClient();
     const [syncStatuses, setSyncStatuses] = useState<Record<string, InstanceGroupSyncStatus>>({});
     const [syncChecking, setSyncChecking] = useState<Record<string, boolean>>({});
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
+    const [addMenuAnchor, setAddMenuAnchor] = useState<null | HTMLElement>(null);
+    const [serverDialogOpen, setServerDialogOpen] = useState(false);
+    const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
+    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+    const [groupDialogProjectId, setGroupDialogProjectId] = useState<string | null>(null);
 
     const { checkAllConnections } = useConnectionHealthStore();
 
@@ -40,6 +62,11 @@ export function DashboardPage() {
     const { data: syncGroups = [] } = useQuery({
         queryKey: ['syncGroups'],
         queryFn: () => syncApi.getSyncEnabledGroups().catch(() => []),
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
     });
 
     const loading = loadingServers || loadingConnections || loadingProjects;
@@ -115,15 +142,67 @@ export function DashboardPage() {
                         Manage your servers and databases
                     </Typography>
                 </Box>
-                <StyledTooltip title="Scan for database connections">
+                <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
-                        variant="outlined"
-                        startIcon={<SearchIcon />}
-                        onClick={() => setScanDialogOpen(true)}
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={(e) => setAddMenuAnchor(e.currentTarget)}
                     >
-                        Scan
+                        Add
                     </Button>
-                </StyledTooltip>
+                    <Menu
+                        anchorEl={addMenuAnchor}
+                        open={Boolean(addMenuAnchor)}
+                        onClose={() => setAddMenuAnchor(null)}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    >
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setServerDialogOpen(true);
+                            }}
+                        >
+                            <ListItemIcon>
+                                <DnsIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Server</ListItemText>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setConnectionDialogOpen(true);
+                            }}
+                        >
+                            <ListItemIcon>
+                                <StorageIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Database</ListItemText>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setGroupDialogProjectId(projects[0]?.id ?? null);
+                                setGroupDialogOpen(true);
+                            }}
+                            disabled={projects.length === 0}
+                        >
+                            <ListItemIcon>
+                                <SyncIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Sync Group</ListItemText>
+                        </MenuItem>
+                    </Menu>
+                    <StyledTooltip title="Scan for database connections">
+                        <Button
+                            variant="outlined"
+                            startIcon={<SearchIcon />}
+                            onClick={() => setScanDialogOpen(true)}
+                        >
+                            Scan
+                        </Button>
+                    </StyledTooltip>
+                </Box>
             </Box>
 
             {/* Two Column Layout */}
@@ -176,6 +255,34 @@ export function DashboardPage() {
                     queryClient.invalidateQueries({ queryKey: ['servers'] });
                     queryClient.invalidateQueries({ queryKey: ['connections'] });
                     queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
+                }}
+            />
+
+            {/* Server Form Dialog */}
+            <ServerFormDialog
+                open={serverDialogOpen}
+                server={null}
+                onClose={() => setServerDialogOpen(false)}
+            />
+
+            {/* Connection Form Dialog */}
+            <ConnectionFormDialog
+                open={connectionDialogOpen}
+                connection={null}
+                projects={projects}
+                groups={groups}
+                servers={servers}
+                onClose={() => setConnectionDialogOpen(false)}
+            />
+
+            {/* Group Form Dialog */}
+            <GroupFormDialog
+                open={groupDialogOpen}
+                group={null}
+                projectId={groupDialogProjectId}
+                onClose={() => {
+                    setGroupDialogOpen(false);
+                    setGroupDialogProjectId(null);
                 }}
             />
         </Box>

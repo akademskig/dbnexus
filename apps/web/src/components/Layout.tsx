@@ -34,7 +34,6 @@ import HistoryIcon from '@mui/icons-material/History';
 import DnsIcon from '@mui/icons-material/Dns';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-import AddIcon from '@mui/icons-material/Add';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -56,9 +55,13 @@ const LOGO_SECTION_HEIGHT = 56;
 
 interface SidebarStore {
     collapsed: boolean;
+    serversExpanded: boolean;
+    databasesExpanded: boolean;
     syncExpanded: boolean;
     expandedServers: Record<string, boolean>;
     toggle: () => void;
+    toggleServers: () => void;
+    toggleDatabases: () => void;
     toggleSync: () => void;
     toggleServer: (serverId: string) => void;
 }
@@ -67,9 +70,14 @@ const useSidebarStore = create<SidebarStore>()(
     persist(
         (set) => ({
             collapsed: false,
+            serversExpanded: true,
+            databasesExpanded: true,
             syncExpanded: true,
             expandedServers: {},
             toggle: () => set((state) => ({ collapsed: !state.collapsed })),
+            toggleServers: () => set((state) => ({ serversExpanded: !state.serversExpanded })),
+            toggleDatabases: () =>
+                set((state) => ({ databasesExpanded: !state.databasesExpanded })),
             toggleSync: () => set((state) => ({ syncExpanded: !state.syncExpanded })),
             toggleServer: (serverId: string) =>
                 set((state) => ({
@@ -79,15 +87,25 @@ const useSidebarStore = create<SidebarStore>()(
                     },
                 })),
         }),
-        { name: 'dbnexus-sidebar-v3' }
+        { name: 'dbnexus-sidebar-v5' }
     )
 );
 
 export function Layout() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { collapsed, syncExpanded, expandedServers, toggle, toggleSync, toggleServer } =
-        useSidebarStore();
+    const {
+        collapsed,
+        serversExpanded,
+        databasesExpanded,
+        syncExpanded,
+        expandedServers,
+        toggle,
+        toggleServers,
+        toggleDatabases,
+        toggleSync,
+        toggleServer,
+    } = useSidebarStore();
     const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
@@ -346,260 +364,290 @@ export function Layout() {
                     {!collapsed ? (
                         <>
                             <Divider sx={{ my: 1 }} />
-                            <Box
+                            <ListItemButton
+                                onClick={toggleServers}
                                 sx={{
-                                    px: 1.5,
-                                    pb: 0.5,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
+                                    px: 1,
+                                    py: 0.5,
+                                    minHeight: 32,
+                                    borderRadius: 1,
+                                    mx: 1,
                                 }}
                             >
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: 'text.disabled',
-                                        fontWeight: 600,
-                                        fontSize: 10,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px',
-                                    }}
-                                >
-                                    Servers
-                                </Typography>
-                                <StyledTooltip title="Add Server" placement="right">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => setServerFormOpen(true)}
+                                <ListItemIcon sx={{ minWidth: 24 }}>
+                                    <DnsIcon
                                         sx={{
-                                            color: 'text.disabled',
-                                            p: 0.25,
-                                            '&:hover': { color: 'text.secondary' },
+                                            fontSize: 16,
+                                            color: 'text.secondary',
                                         }}
-                                    >
-                                        <AddIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </StyledTooltip>
-                            </Box>
+                                    />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Servers"
+                                    primaryTypographyProps={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                    }}
+                                />
+                                {serversExpanded ? (
+                                    <ExpandLessIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                                ) : (
+                                    <ExpandMoreIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                                )}
+                            </ListItemButton>
 
-                            {loadingServers ? (
-                                <Box sx={{ py: 2, textAlign: 'center' }}>
-                                    <CircularProgress size={18} />
-                                </Box>
-                            ) : servers.length === 0 &&
-                              connectionsByServer.standalone.length === 0 ? (
-                                <Box sx={{ px: 1.5, py: 1 }}>
-                                    <Typography
-                                        variant="caption"
-                                        sx={{ color: 'text.disabled', fontSize: 11 }}
-                                    >
-                                        No servers yet
-                                    </Typography>
-                                </Box>
-                            ) : (
-                                <List disablePadding sx={{ px: 0.5 }}>
-                                    {servers.map((server) => {
-                                        const serverConnections =
-                                            connectionsByServer.byServer[server.id] || [];
-                                        const isExpanded = expandedServers[server.id] ?? true;
-                                        const isServerActive =
-                                            location.pathname === `/servers/${server.id}`;
+                            <Collapse in={serversExpanded}>
+                                {loadingServers ? (
+                                    <Box sx={{ py: 2, textAlign: 'center' }}>
+                                        <CircularProgress size={18} />
+                                    </Box>
+                                ) : servers.length === 0 ? (
+                                    <Box sx={{ px: 2, py: 1, textAlign: 'center' }}>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{ color: 'text.disabled', fontSize: 11 }}
+                                        >
+                                            No servers yet.
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <List disablePadding sx={{ px: 0.5 }}>
+                                        {servers.map((server) => {
+                                            const serverConnections =
+                                                connectionsByServer.byServer[server.id] || [];
+                                            const isExpanded = expandedServers[server.id] ?? true;
+                                            const isServerActive =
+                                                location.pathname === `/servers/${server.id}`;
 
-                                        return (
-                                            <Box key={server.id}>
-                                                <ListItemButton
-                                                    onClick={() => toggleServer(server.id)}
-                                                    sx={{
-                                                        px: 1,
-                                                        py: 0.5,
-                                                        minHeight: 32,
-                                                        borderRadius: 1,
-                                                        mx: 0.5,
-                                                        '&:hover .server-settings': {
-                                                            opacity: 1,
-                                                        },
-                                                    }}
-                                                >
-                                                    <ListItemIcon sx={{ minWidth: 24 }}>
-                                                        <DnsIcon
-                                                            sx={{
-                                                                fontSize: 16,
-                                                                color: isServerActive
-                                                                    ? 'primary.main'
-                                                                    : 'text.secondary',
-                                                            }}
-                                                        />
-                                                    </ListItemIcon>
-                                                    <StyledTooltip
-                                                        title={server.name}
-                                                        placement="right"
-                                                        disableHoverListener={
-                                                            server.name.length < 18
-                                                        }
-                                                    >
-                                                        <ListItemText
-                                                            primary={server.name}
-                                                            primaryTypographyProps={{
-                                                                fontSize: 13,
-                                                                fontWeight: 500,
-                                                                noWrap: true,
-                                                            }}
-                                                        />
-                                                    </StyledTooltip>
-                                                    <IconButton
-                                                        className="server-settings"
-                                                        size="small"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            navigate(`/servers/${server.id}`);
-                                                        }}
+                                            return (
+                                                <Box key={server.id}>
+                                                    <ListItemButton
+                                                        onClick={() => toggleServer(server.id)}
                                                         sx={{
-                                                            opacity: 0,
-                                                            color: 'text.disabled',
-                                                            p: 0.25,
-                                                            '&:hover': { color: 'primary.main' },
+                                                            px: 1,
+                                                            py: 0.5,
+                                                            minHeight: 32,
+                                                            borderRadius: 1,
+                                                            mx: 0.5,
+                                                            '&:hover .server-settings': {
+                                                                opacity: 1,
+                                                            },
                                                         }}
                                                     >
-                                                        <SettingsIcon sx={{ fontSize: 14 }} />
-                                                    </IconButton>
-                                                    {isExpanded ? (
-                                                        <ExpandLessIcon
-                                                            sx={{
-                                                                fontSize: 16,
-                                                                color: 'text.disabled',
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <ExpandMoreIcon
-                                                            sx={{
-                                                                fontSize: 16,
-                                                                color: 'text.disabled',
-                                                            }}
-                                                        />
-                                                    )}
-                                                </ListItemButton>
-                                                <Collapse in={isExpanded}>
-                                                    <List disablePadding>
-                                                        {serverConnections.length === 0 ? (
-                                                            <Typography
-                                                                variant="caption"
+                                                        <ListItemIcon sx={{ minWidth: 24 }}>
+                                                            <DnsIcon
                                                                 sx={{
-                                                                    pl: 4.5,
-                                                                    py: 0.5,
-                                                                    display: 'block',
-                                                                    color: 'text.disabled',
-                                                                    fontSize: 10,
-                                                                    fontStyle: 'italic',
+                                                                    fontSize: 16,
+                                                                    color: isServerActive
+                                                                        ? 'primary.main'
+                                                                        : 'text.secondary',
                                                                 }}
-                                                            >
-                                                                No databases
-                                                            </Typography>
+                                                            />
+                                                        </ListItemIcon>
+                                                        <StyledTooltip
+                                                            title={server.name}
+                                                            placement="right"
+                                                            disableHoverListener={
+                                                                server.name.length < 18
+                                                            }
+                                                        >
+                                                            <ListItemText
+                                                                primary={server.name}
+                                                                primaryTypographyProps={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: 500,
+                                                                    noWrap: true,
+                                                                }}
+                                                            />
+                                                        </StyledTooltip>
+                                                        <IconButton
+                                                            className="server-settings"
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/servers/${server.id}`);
+                                                            }}
+                                                            sx={{
+                                                                opacity: 0,
+                                                                color: 'text.disabled',
+                                                                p: 0.25,
+                                                                '&:hover': {
+                                                                    color: 'primary.main',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <SettingsIcon sx={{ fontSize: 14 }} />
+                                                        </IconButton>
+                                                        {isExpanded ? (
+                                                            <ExpandLessIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: 'text.disabled',
+                                                                }}
+                                                            />
                                                         ) : (
-                                                            serverConnections
-                                                                .filter((conn) =>
-                                                                    isConnectionOnline(conn.id)
-                                                                )
-                                                                .map((conn) => {
-                                                                    const isActive =
-                                                                        location.pathname ===
-                                                                            `/query/${conn.id}` ||
-                                                                        location.pathname ===
-                                                                            `/connections/${conn.id}`;
-                                                                    const displayName =
-                                                                        conn.name || conn.database;
-                                                                    return (
-                                                                        <StyledTooltip
-                                                                            key={conn.id}
-                                                                            title={displayName}
-                                                                            placement="right"
-                                                                            disableHoverListener={
-                                                                                displayName.length <
-                                                                                20
-                                                                            }
-                                                                        >
-                                                                            <ListItemButton
-                                                                                onClick={() =>
-                                                                                    handleDatabaseClick(
-                                                                                        conn.id
-                                                                                    )
+                                                            <ExpandMoreIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: 'text.disabled',
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </ListItemButton>
+                                                    <Collapse in={isExpanded}>
+                                                        <List disablePadding>
+                                                            {serverConnections.length === 0 ? (
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        pl: 4.5,
+                                                                        py: 2,
+                                                                        display: 'block',
+                                                                        color: 'text.disabled',
+                                                                        fontSize: 10,
+                                                                        fontStyle: 'italic',
+                                                                    }}
+                                                                >
+                                                                    No databases
+                                                                </Typography>
+                                                            ) : (
+                                                                serverConnections
+                                                                    .filter((conn) =>
+                                                                        isConnectionOnline(conn.id)
+                                                                    )
+                                                                    .map((conn) => {
+                                                                        const isActive =
+                                                                            location.pathname ===
+                                                                                `/query/${conn.id}` ||
+                                                                            location.pathname ===
+                                                                                `/connections/${conn.id}`;
+                                                                        const displayName =
+                                                                            conn.name ||
+                                                                            conn.database;
+                                                                        return (
+                                                                            <StyledTooltip
+                                                                                key={conn.id}
+                                                                                title={displayName}
+                                                                                placement="right"
+                                                                                disableHoverListener={
+                                                                                    displayName.length <
+                                                                                    20
                                                                                 }
-                                                                                selected={isActive}
-                                                                                sx={{
-                                                                                    pl: 4,
-                                                                                    py: 0.25,
-                                                                                    minHeight: 28,
-                                                                                    borderRadius: 1,
-                                                                                    mx: 0.5,
-                                                                                    '&.Mui-selected':
-                                                                                        {
-                                                                                            bgcolor:
-                                                                                                (
-                                                                                                    theme
-                                                                                                ) =>
-                                                                                                    alpha(
-                                                                                                        theme
-                                                                                                            .palette
-                                                                                                            .primary
-                                                                                                            .main,
-                                                                                                        0.12
-                                                                                                    ),
-                                                                                        },
-                                                                                }}
                                                                             >
-                                                                                <ListItemIcon
+                                                                                <ListItemButton
+                                                                                    onClick={() =>
+                                                                                        handleDatabaseClick(
+                                                                                            conn.id
+                                                                                        )
+                                                                                    }
+                                                                                    selected={
+                                                                                        isActive
+                                                                                    }
                                                                                     sx={{
-                                                                                        minWidth: 20,
+                                                                                        pl: 4,
+                                                                                        py: 0.25,
+                                                                                        minHeight: 28,
+                                                                                        borderRadius: 1,
+                                                                                        mx: 1,
+                                                                                        '&.Mui-selected':
+                                                                                            {
+                                                                                                bgcolor:
+                                                                                                    (
+                                                                                                        theme
+                                                                                                    ) =>
+                                                                                                        alpha(
+                                                                                                            theme
+                                                                                                                .palette
+                                                                                                                .primary
+                                                                                                                .main,
+                                                                                                            0.12
+                                                                                                        ),
+                                                                                            },
                                                                                     }}
                                                                                 >
-                                                                                    <StorageIcon
+                                                                                    <ListItemIcon
                                                                                         sx={{
-                                                                                            fontSize: 14,
+                                                                                            minWidth: 20,
+                                                                                        }}
+                                                                                    >
+                                                                                        <StorageIcon
+                                                                                            sx={{
+                                                                                                fontSize: 14,
+                                                                                                color: isActive
+                                                                                                    ? 'primary.main'
+                                                                                                    : 'text.disabled',
+                                                                                            }}
+                                                                                        />
+                                                                                    </ListItemIcon>
+                                                                                    <ListItemText
+                                                                                        primary={
+                                                                                            displayName
+                                                                                        }
+                                                                                        primaryTypographyProps={{
+                                                                                            fontSize: 12,
+                                                                                            noWrap: true,
                                                                                             color: isActive
                                                                                                 ? 'primary.main'
-                                                                                                : 'text.disabled',
+                                                                                                : 'text.secondary',
                                                                                         }}
                                                                                     />
-                                                                                </ListItemIcon>
-                                                                                <ListItemText
-                                                                                    primary={
-                                                                                        displayName
-                                                                                    }
-                                                                                    primaryTypographyProps={{
-                                                                                        fontSize: 12,
-                                                                                        noWrap: true,
-                                                                                        color: isActive
-                                                                                            ? 'primary.main'
-                                                                                            : 'text.secondary',
-                                                                                    }}
-                                                                                />
-                                                                            </ListItemButton>
-                                                                        </StyledTooltip>
-                                                                    );
-                                                                })
-                                                        )}
-                                                    </List>
-                                                </Collapse>
-                                            </Box>
-                                        );
-                                    })}
+                                                                                </ListItemButton>
+                                                                            </StyledTooltip>
+                                                                        );
+                                                                    })
+                                                            )}
+                                                        </List>
+                                                    </Collapse>
+                                                </Box>
+                                            );
+                                        })}
+                                    </List>
+                                )}
+                            </Collapse>
 
-                                    {/* Standalone connections (online only) */}
-                                    {connectionsByServer.standalone.filter((conn) =>
-                                        isConnectionOnline(conn.id)
-                                    ).length > 0 && (
-                                        <>
-                                            <Divider sx={{ my: 1, mx: 1 }} />
-                                            <Typography
-                                                variant="caption"
+                            {/* Databases Section (standalone connections) */}
+                            {connectionsByServer.standalone.filter((conn) =>
+                                isConnectionOnline(conn.id)
+                            ).length > 0 && (
+                                <>
+                                    <Divider sx={{ my: 1 }} />
+                                    <ListItemButton
+                                        onClick={toggleDatabases}
+                                        sx={{
+                                            px: 1,
+                                            py: 0.5,
+                                            minHeight: 32,
+                                            borderRadius: 1,
+                                            mx: 1,
+                                        }}
+                                    >
+                                        <ListItemIcon sx={{ minWidth: 24 }}>
+                                            <StorageIcon
                                                 sx={{
-                                                    px: 1.5,
-                                                    color: 'text.disabled',
-                                                    fontSize: 10,
-                                                    textTransform: 'uppercase',
+                                                    fontSize: 16,
+                                                    color: 'text.secondary',
                                                 }}
-                                            >
-                                                Standalone
-                                            </Typography>
+                                            />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="Databases"
+                                            primaryTypographyProps={{
+                                                fontSize: 13,
+                                                fontWeight: 500,
+                                            }}
+                                        />
+                                        {databasesExpanded ? (
+                                            <ExpandLessIcon
+                                                sx={{ fontSize: 16, color: 'text.disabled' }}
+                                            />
+                                        ) : (
+                                            <ExpandMoreIcon
+                                                sx={{ fontSize: 16, color: 'text.disabled' }}
+                                            />
+                                        )}
+                                    </ListItemButton>
+                                    <Collapse in={databasesExpanded}>
+                                        <List disablePadding>
                                             {connectionsByServer.standalone
                                                 .filter((conn) => isConnectionOnline(conn.id))
                                                 .map((conn) => {
@@ -623,7 +671,7 @@ export function Layout() {
                                                                 }
                                                                 selected={isActive}
                                                                 sx={{
-                                                                    pl: 1.5,
+                                                                    pl: 4,
                                                                     py: 0.25,
                                                                     minHeight: 28,
                                                                     borderRadius: 1,
@@ -651,9 +699,9 @@ export function Layout() {
                                                         </StyledTooltip>
                                                     );
                                                 })}
-                                        </>
-                                    )}
-                                </List>
+                                        </List>
+                                    </Collapse>
+                                </>
                             )}
 
                             {/* Sync Groups Section */}
