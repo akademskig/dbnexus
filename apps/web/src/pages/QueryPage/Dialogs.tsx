@@ -230,7 +230,7 @@ export function CreateTableDialog({ open, onClose, onSubmit, engine }: CreateTab
     const types =
         engine === 'sqlite'
             ? COMMON_TYPES.sqlite
-            : engine === 'mysql' || engine === 'mariadb'
+            : engine === 'mysql'
               ? COMMON_TYPES.mysql
               : COMMON_TYPES.postgres;
 
@@ -536,7 +536,7 @@ export function SyncRowDialog({
     useEffect(() => {
         if (targetSchemas.length > 0 && !targetSchema) {
             const targetConn = connections.find((c) => c.id === targetConnectionId);
-            if (targetConn?.engine === 'mysql' || targetConn?.engine === 'mariadb') {
+            if (targetConn?.engine === 'mysql') {
                 if (targetConn.database && targetSchemas.includes(targetConn.database)) {
                     setTargetSchema(targetConn.database);
                     return;

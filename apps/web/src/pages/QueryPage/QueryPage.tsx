@@ -346,7 +346,7 @@ export function QueryPage() {
                 const engine = selectedConnection?.engine;
                 let defaultSchema: string | undefined;
 
-                if (engine === 'mysql' || engine === 'mariadb') {
+                if (engine === 'mysql') {
                     defaultSchema =
                         selectedConnection?.database &&
                         schemas.includes(selectedConnection.database)
@@ -642,9 +642,7 @@ export function QueryPage() {
                 if (searchableColumns.length > 0) {
                     const searchConditions = searchableColumns.map((col) => {
                         const quotedCol = quoteIdentifier(col.name, engine);
-                        if (engine === 'sqlite') {
-                            return `${quotedCol} LIKE '%${searchTerm}%'`;
-                        } else if (engine === 'mysql' || engine === 'mariadb') {
+                        if (engine === 'sqlite' || engine === 'mysql') {
                             return `${quotedCol} LIKE '%${searchTerm}%'`;
                         } else {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;

@@ -203,11 +203,6 @@ export class ConnectionsService {
             return connector.testConnection();
         }
 
-        if (settings.engine === 'mariadb') {
-            const connector = new MysqlConnector(config, true);
-            return connector.testConnection();
-        }
-
         const connector = new PostgresConnector(config);
         return connector.testConnection();
     }
@@ -291,10 +286,6 @@ export class ConnectionsService {
 
         if (connection.engine === 'mysql') {
             return new MysqlConnector(config, false);
-        }
-
-        if (connection.engine === 'mariadb') {
-            return new MysqlConnector(config, true);
         }
 
         return new PostgresConnector(config);

@@ -12,7 +12,7 @@ export class CreateDatabaseGroupDto {
     description?: string;
 
     @IsString()
-    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, mariadb, or sqlite' })
+    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, or sqlite' })
     databaseEngine!: DatabaseEngine;
 
     @IsOptional()
@@ -41,7 +41,7 @@ export class UpdateDatabaseGroupDto {
 
     @IsOptional()
     @IsString()
-    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, mariadb, or sqlite' })
+    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, or sqlite' })
     databaseEngine?: DatabaseEngine;
 
     @IsOptional()

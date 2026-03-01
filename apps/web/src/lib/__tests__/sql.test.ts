@@ -3,9 +3,8 @@ import { buildDropTableSql, buildTableName, quoteIdentifier } from '../sql';
 
 describe('sql utilities', () => {
     describe('quoteIdentifier', () => {
-        it('quotes identifiers for mysql and mariadb with backticks', () => {
+        it('quotes identifiers for mysql with backticks', () => {
             expect(quoteIdentifier('users', 'mysql')).toBe('`users`');
-            expect(quoteIdentifier('users', 'mariadb')).toBe('`users`');
         });
 
         it('quotes identifiers for postgres and sqlite with double quotes', () => {

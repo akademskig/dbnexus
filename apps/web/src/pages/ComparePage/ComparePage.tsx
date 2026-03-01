@@ -359,9 +359,7 @@ export function ComparePage() {
                                                         ? 'PostgreSQL'
                                                         : group.databaseEngine === 'mysql'
                                                           ? 'MySQL'
-                                                          : group.databaseEngine === 'mariadb'
-                                                            ? 'MariaDB'
-                                                            : 'SQLite'
+                                                          : 'SQLite'
                                                 }
                                                 size="small"
                                                 sx={{

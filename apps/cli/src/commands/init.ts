@@ -23,7 +23,7 @@ function loadEnvFile(cwd: string): boolean {
 // Config file schema
 interface ServerConfig {
     name: string;
-    engine: 'postgres' | 'mysql' | 'mariadb';
+    engine: 'postgres' | 'mysql';
     host: string;
     port: number;
     username: string;
@@ -38,7 +38,7 @@ interface ServerConfig {
 interface DatabaseConfig {
     name: string;
     server?: string; // Reference to server by name
-    engine?: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    engine?: 'postgres' | 'mysql' | 'sqlite';
     host?: string;
     port?: number;
     database: string;
@@ -413,7 +413,7 @@ export async function initCommand() {
 function serverToConfig(server: ServerConfigEntity): ServerConfig {
     return {
         name: server.name,
-        engine: server.engine as 'postgres' | 'mysql' | 'mariadb',
+        engine: server.engine as 'postgres' | 'mysql',
         host: server.host,
         port: server.port,
         username: server.username,
@@ -446,7 +446,7 @@ function databaseToConfig(
     // Standalone database
     return {
         name: conn.name,
-        engine: conn.engine as 'postgres' | 'mysql' | 'mariadb' | 'sqlite',
+        engine: conn.engine as 'postgres' | 'mysql' | 'sqlite',
         host: conn.host,
         port: conn.port,
         database: conn.database,

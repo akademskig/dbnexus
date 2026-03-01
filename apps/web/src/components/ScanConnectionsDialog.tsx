@@ -47,7 +47,6 @@ interface ScanConnectionsDialogProps {
 const ENGINE_LABELS: Record<string, string> = {
     postgres: 'PostgreSQL',
     mysql: 'MySQL',
-    mariadb: 'MariaDB',
     sqlite: 'SQLite',
 };
 

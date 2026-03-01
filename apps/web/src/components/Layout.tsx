@@ -192,7 +192,7 @@ export function Layout() {
     }, [connections.length]);
 
     const getDefaultSchemaForConnection = useCallback((conn: (typeof connections)[0]) => {
-        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+        if (conn.engine === 'mysql') {
             return conn.database || '';
         }
         if (conn.engine === 'sqlite') {

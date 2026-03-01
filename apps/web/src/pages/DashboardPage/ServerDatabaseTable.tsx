@@ -18,14 +18,12 @@ import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
 const ENGINE_COLORS: Record<DatabaseEngine, string> = {
     postgres: '#336791',
     mysql: '#4479A1',
-    mariadb: '#003545',
     sqlite: '#003B57',
 };
 
 const ENGINE_LABELS: Record<DatabaseEngine, string> = {
     postgres: 'PostgreSQL',
     mysql: 'MySQL',
-    mariadb: 'MariaDB',
     sqlite: 'SQLite',
 };
 

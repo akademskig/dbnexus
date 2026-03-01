@@ -53,14 +53,12 @@ import { CreateDatabaseDialog } from './CreateDatabaseDialog';
 const ENGINE_COLORS: Record<string, string> = {
     postgres: '#336791',
     mysql: '#4479A1',
-    mariadb: '#003545',
     sqlite: '#003B57',
 };
 
 const ENGINE_LABELS: Record<string, string> = {
     postgres: 'PostgreSQL',
     mysql: 'MySQL',
-    mariadb: 'MariaDB',
     sqlite: 'SQLite',
 };
 

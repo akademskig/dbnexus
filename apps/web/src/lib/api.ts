@@ -648,7 +648,7 @@ export interface SyncRun {
 
 export interface DiscoveredConnection {
     name: string;
-    engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    engine: 'postgres' | 'mysql' | 'sqlite';
     host?: string;
     port?: number;
     database?: string;

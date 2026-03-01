@@ -720,9 +720,6 @@ export class ServersController {
         if (server.engine === 'mysql') {
             return new MysqlConnector(config, false);
         }
-        if (server.engine === 'mariadb') {
-            return new MysqlConnector(config, true);
-        }
         return new PostgresConnector(config);
     }
 }

@@ -111,10 +111,9 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
     {
         id: 'optimize',
         name: 'OPTIMIZE TABLE',
-        description:
-            'Reorganize table storage and rebuild indexes. MySQL/MariaDB equivalent of VACUUM.',
+        description: 'Reorganize table storage and rebuild indexes. MySQL equivalent of VACUUM.',
         icon: <CleaningServicesIcon />,
-        engines: ['mysql', 'mariadb'],
+        engines: ['mysql'],
         getCommand: () => 'OPTIMIZE TABLE',
         scope: 'table',
         color: '#8b5cf6',
@@ -124,7 +123,7 @@ const MAINTENANCE_OPERATIONS: MaintenanceOperation[] = [
         name: 'ANALYZE TABLE',
         description: 'Update table statistics for the query optimizer.',
         icon: <SpeedIcon />,
-        engines: ['mysql', 'mariadb'],
+        engines: ['mysql'],
         getCommand: () => 'ANALYZE TABLE',
         scope: 'table',
         color: '#06b6d4',

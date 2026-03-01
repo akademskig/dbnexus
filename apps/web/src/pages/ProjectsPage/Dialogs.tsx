@@ -159,9 +159,9 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     const toast = useToastStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [databaseEngine, setDatabaseEngine] = useState<
-        'postgres' | 'mysql' | 'mariadb' | 'sqlite'
-    >('postgres');
+    const [databaseEngine, setDatabaseEngine] = useState<'postgres' | 'mysql' | 'sqlite'>(
+        'postgres'
+    );
 
     const handleEnter = () => {
         if (group) {
@@ -258,7 +258,6 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                 >
                                     <ToggleButton value="postgres">PostgreSQL</ToggleButton>
                                     <ToggleButton value="mysql">MySQL</ToggleButton>
-                                    <ToggleButton value="mariadb">MariaDB</ToggleButton>
                                     <ToggleButton value="sqlite">SQLite</ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
@@ -273,9 +272,7 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                         ? 'PostgreSQL'
                                         : group.databaseEngine === 'mysql'
                                           ? 'MySQL'
-                                          : group.databaseEngine === 'mariadb'
-                                            ? 'MariaDB'
-                                            : 'SQLite'
+                                          : 'SQLite'
                                 }
                                 disabled
                                 fullWidth
