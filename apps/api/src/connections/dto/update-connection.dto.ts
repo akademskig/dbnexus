@@ -9,14 +9,19 @@ import {
     Min,
     Max,
 } from 'class-validator';
-import type { ConnectionType, ConnectionTag } from '@dbnexus/shared';
-import { CONNECTION_TYPES } from '../../servers/dto/constants.js';
+import type { ConnectionType, ConnectionTag, DatabaseEngine } from '@dbnexus/shared';
+import { CONNECTION_TYPES, DATABASE_ENGINES } from '../../servers/dto/constants.js';
 
 export class UpdateConnectionDto {
     @IsOptional()
     @IsString()
     @IsNotEmpty({ message: 'Connection name cannot be empty' })
     name?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, mariadb, or sqlite' })
+    engine?: DatabaseEngine;
 
     @IsOptional()
     @IsString()

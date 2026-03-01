@@ -413,7 +413,7 @@ export function Layout() {
                                         </Typography>
                                     </Box>
                                 ) : (
-                                    <List disablePadding sx={{ px: 0.5 }}>
+                                    <List disablePadding sx={{ pl: 1 }}>
                                         {servers.map((server) => {
                                             const serverConnections =
                                                 connectionsByServer.byServer[server.id] || [];
@@ -430,7 +430,7 @@ export function Layout() {
                                                             py: 0.5,
                                                             minHeight: 32,
                                                             borderRadius: 1,
-                                                            mx: 0.5,
+                                                            mx: 1,
                                                             '&:hover .server-settings': {
                                                                 opacity: 1,
                                                             },
@@ -497,12 +497,11 @@ export function Layout() {
                                                         )}
                                                     </ListItemButton>
                                                     <Collapse in={isExpanded}>
-                                                        <List disablePadding>
+                                                        <List disablePadding sx={{ pl: 1 }}>
                                                             {serverConnections.length === 0 ? (
                                                                 <Typography
                                                                     variant="caption"
                                                                     sx={{
-                                                                        pl: 4.5,
                                                                         py: 2,
                                                                         display: 'block',
                                                                         color: 'text.disabled',
@@ -546,7 +545,6 @@ export function Layout() {
                                                                                         isActive
                                                                                     }
                                                                                     sx={{
-                                                                                        pl: 4,
                                                                                         py: 0.25,
                                                                                         minHeight: 28,
                                                                                         borderRadius: 1,
@@ -650,7 +648,7 @@ export function Layout() {
                                         )}
                                     </ListItemButton>
                                     <Collapse in={databasesExpanded}>
-                                        <List disablePadding>
+                                        <List disablePadding sx={{ pl: 1 }}>
                                             {connectionsByServer.standalone
                                                 .filter((conn) => isConnectionOnline(conn.id))
                                                 .map((conn) => {
@@ -674,11 +672,9 @@ export function Layout() {
                                                                 }
                                                                 selected={isActive}
                                                                 sx={{
-                                                                    pl: 4,
                                                                     py: 0.25,
                                                                     minHeight: 28,
                                                                     borderRadius: 1,
-                                                                    mx: 0.5,
                                                                 }}
                                                             >
                                                                 <ListItemIcon sx={{ minWidth: 20 }}>
@@ -1059,9 +1055,10 @@ export function Layout() {
                                     py: 0.5,
                                     minHeight: 32,
                                     borderRadius: 1,
-                                    mx: 0.5,
+                                    mx: 1,
                                     justifyContent: collapsed ? 'center' : 'flex-start',
-                                    px: collapsed ? 0 : 1.5,
+                                    px: collapsed ? 0 : 1,
+                                    mb: 0,
                                 }}
                             >
                                 <ListItemIcon
@@ -1090,6 +1087,7 @@ export function Layout() {
                         sx={{
                             py: 0.5,
                             px: 0.5,
+                            mb: 0.5,
                             display: 'flex',
                             justifyContent: collapsed ? 'center' : 'flex-end',
                         }}

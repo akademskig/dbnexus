@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Box, Typography, Skeleton, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Skeleton, Button, CircularProgress, IconButton } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -7,8 +7,11 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import EditIcon from '@mui/icons-material/Edit';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToastStore } from '../../stores/toastStore';
+import { StyledTooltip } from '../../components/StyledTooltip';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { connectionsApi, schemaApi, projectsApi, groupsApi, serversApi } from '../../lib/api';
@@ -281,6 +284,15 @@ export function OverviewTab({ connection, schemas, serverVersion, isLoading }: O
 }
 
 function DetailItem({ label, value }: { label: string; value: string | undefined }) {
+    const toast = useToastStore();
+
+    const handleCopy = () => {
+        if (value) {
+            navigator.clipboard.writeText(value);
+            toast.success(`${label} copied to clipboard`);
+        }
+    };
+
     return (
         <Box>
             <Typography
@@ -290,9 +302,18 @@ function DetailItem({ label, value }: { label: string; value: string | undefined
             >
                 {label}
             </Typography>
-            <Typography variant="body1" fontFamily="monospace" sx={{ mt: 0.5 }}>
-                {value || '-'}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                <Typography variant="body1" fontFamily="monospace">
+                    {value || '-'}
+                </Typography>
+                {value && (
+                    <StyledTooltip title="Copy">
+                        <IconButton size="small" onClick={handleCopy} sx={{ p: 0.5 }}>
+                            <ContentCopyIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                        </IconButton>
+                    </StyledTooltip>
+                )}
+            </Box>
         </Box>
     );
 }
