@@ -68,73 +68,75 @@ function ConnectionRow({
     };
 
     return (
-        <Box
-            draggable
-            onDragStart={handleDragStart}
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                py: 0.75,
-                px: 2,
-                pl: indent || 5,
-                cursor: 'grab',
-                transition: 'background 0.15s, opacity 0.15s',
-                '&:hover': {
-                    bgcolor: 'action.hover',
-                },
-                '&:active': {
-                    cursor: 'grabbing',
-                    opacity: 0.6,
-                },
-            }}
-        >
+        <StyledTooltip title="Connection is offline" placement="top" disableHoverListener={online}>
             <Box
+                draggable
+                onDragStart={handleDragStart}
                 sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    bgcolor: online ? 'success.main' : 'error.main',
-                    flexShrink: 0,
-                }}
-            />
-            <StorageIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-            <Typography
-                variant="caption"
-                sx={{
-                    flex: 1,
-                    fontWeight: 500,
-                    color: online ? 'text.primary' : 'text.disabled',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    py: 0.75,
+                    px: 2,
+                    pl: indent || 5,
+                    cursor: 'grab',
+                    transition: 'background 0.15s, opacity 0.15s',
+                    '&:hover': {
+                        bgcolor: 'action.hover',
+                    },
+                    '&:active': {
+                        cursor: 'grabbing',
+                        opacity: 0.6,
+                    },
                 }}
             >
-                {connection.name}
-            </Typography>
-            <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ flexShrink: 0, fontSize: 10 }}
-            >
-                {connection.engine.toUpperCase()}
-            </Typography>
-            <StyledTooltip title="Query">
-                <span>
-                    <IconButton
-                        size="small"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onNavigate(`/query/${connection.id}`);
-                        }}
-                        disabled={!online}
-                        sx={{ p: 0.25 }}
-                    >
-                        <PlayArrowIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                </span>
-            </StyledTooltip>
-        </Box>
+                <Box
+                    sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        bgcolor: online ? 'success.main' : 'error.main',
+                        flexShrink: 0,
+                    }}
+                />
+                <StorageIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography
+                    variant="caption"
+                    sx={{
+                        flex: 1,
+                        fontWeight: 500,
+                        color: online ? 'text.primary' : 'text.disabled',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    {connection.name}
+                </Typography>
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ flexShrink: 0, fontSize: 10 }}
+                >
+                    {connection.engine.toUpperCase()}
+                </Typography>
+                <StyledTooltip title="Query">
+                    <span>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onNavigate(`/query/${connection.id}`);
+                            }}
+                            disabled={!online}
+                            sx={{ p: 0.25 }}
+                        >
+                            <PlayArrowIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+            </Box>
+        </StyledTooltip>
     );
 }
 

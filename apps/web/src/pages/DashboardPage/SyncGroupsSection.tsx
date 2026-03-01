@@ -151,7 +151,7 @@ function TargetConnectionRow({
                 gap: 1.5,
                 py: 0.75,
                 px: 2,
-                pl: 6,
+                pl: 4,
                 '&:hover': { bgcolor: 'action.hover' },
             }}
         >

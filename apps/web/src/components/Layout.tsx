@@ -47,6 +47,7 @@ import { useTagsStore } from '../stores/tagsStore';
 import { useAuthStore } from '../stores/authStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
+import { ServerFormDialog } from '../pages/ServersPage/ServerFormDialog';
 
 const DRAWER_WIDTH = 220;
 const DRAWER_WIDTH_COLLAPSED = 56;
@@ -92,6 +93,7 @@ export function Layout() {
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [serversMenuAnchor, setServersMenuAnchor] = useState<null | HTMLElement>(null);
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+    const [serverFormOpen, setServerFormOpen] = useState(false);
 
     const { user, authEnabled, logout } = useAuthStore();
     const { checkAllConnections, isOnline: isConnectionOnline } = useConnectionHealthStore();
@@ -365,10 +367,10 @@ export function Layout() {
                                 >
                                     Servers
                                 </Typography>
-                                <StyledTooltip title="Manage Servers" placement="right">
+                                <StyledTooltip title="Add Server" placement="right">
                                     <IconButton
                                         size="small"
-                                        onClick={() => navigate('/servers')}
+                                        onClick={() => setServerFormOpen(true)}
                                         sx={{
                                             color: 'text.disabled',
                                             p: 0.25,
@@ -384,7 +386,8 @@ export function Layout() {
                                 <Box sx={{ py: 2, textAlign: 'center' }}>
                                     <CircularProgress size={18} />
                                 </Box>
-                            ) : servers.length === 0 ? (
+                            ) : servers.length === 0 &&
+                              connectionsByServer.standalone.length === 0 ? (
                                 <Box sx={{ px: 1.5, py: 1 }}>
                                     <Typography
                                         variant="caption"
@@ -492,93 +495,87 @@ export function Layout() {
                                                                 No databases
                                                             </Typography>
                                                         ) : (
-                                                            serverConnections.map((conn) => {
-                                                                const isActive =
-                                                                    location.pathname ===
-                                                                        `/query/${conn.id}` ||
-                                                                    location.pathname ===
-                                                                        `/connections/${conn.id}`;
-                                                                const displayName =
-                                                                    conn.name || conn.database;
-                                                                const isOnline = isConnectionOnline(
-                                                                    conn.id
-                                                                );
-                                                                return (
-                                                                    <StyledTooltip
-                                                                        key={conn.id}
-                                                                        title={
-                                                                            isOnline
-                                                                                ? displayName
-                                                                                : `${displayName} (Offline)`
-                                                                        }
-                                                                        placement="right"
-                                                                        disableHoverListener={
-                                                                            displayName.length <
-                                                                                20 && isOnline
-                                                                        }
-                                                                    >
-                                                                        <ListItemButton
-                                                                            onClick={() =>
-                                                                                handleDatabaseClick(
-                                                                                    conn.id
-                                                                                )
+                                                            serverConnections
+                                                                .filter((conn) =>
+                                                                    isConnectionOnline(conn.id)
+                                                                )
+                                                                .map((conn) => {
+                                                                    const isActive =
+                                                                        location.pathname ===
+                                                                            `/query/${conn.id}` ||
+                                                                        location.pathname ===
+                                                                            `/connections/${conn.id}`;
+                                                                    const displayName =
+                                                                        conn.name || conn.database;
+                                                                    return (
+                                                                        <StyledTooltip
+                                                                            key={conn.id}
+                                                                            title={displayName}
+                                                                            placement="right"
+                                                                            disableHoverListener={
+                                                                                displayName.length <
+                                                                                20
                                                                             }
-                                                                            selected={isActive}
-                                                                            disabled={!isOnline}
-                                                                            sx={{
-                                                                                pl: 4,
-                                                                                py: 0.25,
-                                                                                minHeight: 28,
-                                                                                borderRadius: 1,
-                                                                                mx: 0.5,
-                                                                                '&.Mui-selected': {
-                                                                                    bgcolor: (
-                                                                                        theme
-                                                                                    ) =>
-                                                                                        alpha(
-                                                                                            theme
-                                                                                                .palette
-                                                                                                .primary
-                                                                                                .main,
-                                                                                            0.12
-                                                                                        ),
-                                                                                },
-                                                                            }}
                                                                         >
-                                                                            <ListItemIcon
+                                                                            <ListItemButton
+                                                                                onClick={() =>
+                                                                                    handleDatabaseClick(
+                                                                                        conn.id
+                                                                                    )
+                                                                                }
+                                                                                selected={isActive}
                                                                                 sx={{
-                                                                                    minWidth: 20,
+                                                                                    pl: 4,
+                                                                                    py: 0.25,
+                                                                                    minHeight: 28,
+                                                                                    borderRadius: 1,
+                                                                                    mx: 0.5,
+                                                                                    '&.Mui-selected':
+                                                                                        {
+                                                                                            bgcolor:
+                                                                                                (
+                                                                                                    theme
+                                                                                                ) =>
+                                                                                                    alpha(
+                                                                                                        theme
+                                                                                                            .palette
+                                                                                                            .primary
+                                                                                                            .main,
+                                                                                                        0.12
+                                                                                                    ),
+                                                                                        },
                                                                                 }}
                                                                             >
-                                                                                <StorageIcon
+                                                                                <ListItemIcon
                                                                                     sx={{
-                                                                                        fontSize: 14,
-                                                                                        color: !isOnline
-                                                                                            ? 'error.main'
-                                                                                            : isActive
-                                                                                              ? 'primary.main'
-                                                                                              : 'text.disabled',
+                                                                                        minWidth: 20,
+                                                                                    }}
+                                                                                >
+                                                                                    <StorageIcon
+                                                                                        sx={{
+                                                                                            fontSize: 14,
+                                                                                            color: isActive
+                                                                                                ? 'primary.main'
+                                                                                                : 'text.disabled',
+                                                                                        }}
+                                                                                    />
+                                                                                </ListItemIcon>
+                                                                                <ListItemText
+                                                                                    primary={
+                                                                                        displayName
+                                                                                    }
+                                                                                    primaryTypographyProps={{
+                                                                                        fontSize: 12,
+                                                                                        noWrap: true,
+                                                                                        color: isActive
+                                                                                            ? 'primary.main'
+                                                                                            : 'text.secondary',
                                                                                     }}
                                                                                 />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText
-                                                                                primary={
-                                                                                    displayName
-                                                                                }
-                                                                                primaryTypographyProps={{
-                                                                                    fontSize: 12,
-                                                                                    noWrap: true,
-                                                                                    color: !isOnline
-                                                                                        ? 'text.disabled'
-                                                                                        : isActive
-                                                                                          ? 'primary.main'
-                                                                                          : 'text.secondary',
-                                                                                }}
-                                                                            />
-                                                                        </ListItemButton>
-                                                                    </StyledTooltip>
-                                                                );
-                                                            })
+                                                                            </ListItemButton>
+                                                                        </StyledTooltip>
+                                                                    );
+                                                                })
                                                         )}
                                                     </List>
                                                 </Collapse>
@@ -586,8 +583,10 @@ export function Layout() {
                                         );
                                     })}
 
-                                    {/* Standalone connections */}
-                                    {connectionsByServer.standalone.length > 0 && (
+                                    {/* Standalone connections (online only) */}
+                                    {connectionsByServer.standalone.filter((conn) =>
+                                        isConnectionOnline(conn.id)
+                                    ).length > 0 && (
                                         <>
                                             <Divider sx={{ my: 1, mx: 1 }} />
                                             <Typography
@@ -601,65 +600,57 @@ export function Layout() {
                                             >
                                                 Standalone
                                             </Typography>
-                                            {connectionsByServer.standalone.map((conn) => {
-                                                const isActive =
-                                                    location.pathname === `/query/${conn.id}` ||
-                                                    location.pathname === `/connections/${conn.id}`;
-                                                const displayName = conn.name || conn.database;
-                                                const isOnline = isConnectionOnline(conn.id);
-                                                return (
-                                                    <StyledTooltip
-                                                        key={conn.id}
-                                                        title={
-                                                            isOnline
-                                                                ? displayName
-                                                                : `${displayName} (Offline)`
-                                                        }
-                                                        placement="right"
-                                                        disableHoverListener={
-                                                            displayName.length < 20 && isOnline
-                                                        }
-                                                    >
-                                                        <ListItemButton
-                                                            onClick={() =>
-                                                                handleDatabaseClick(conn.id)
+                                            {connectionsByServer.standalone
+                                                .filter((conn) => isConnectionOnline(conn.id))
+                                                .map((conn) => {
+                                                    const isActive =
+                                                        location.pathname === `/query/${conn.id}` ||
+                                                        location.pathname ===
+                                                            `/connections/${conn.id}`;
+                                                    const displayName = conn.name || conn.database;
+                                                    return (
+                                                        <StyledTooltip
+                                                            key={conn.id}
+                                                            title={displayName}
+                                                            placement="right"
+                                                            disableHoverListener={
+                                                                displayName.length < 20
                                                             }
-                                                            selected={isActive}
-                                                            disabled={!isOnline}
-                                                            sx={{
-                                                                pl: 1.5,
-                                                                py: 0.25,
-                                                                minHeight: 28,
-                                                                borderRadius: 1,
-                                                                mx: 0.5,
-                                                            }}
                                                         >
-                                                            <ListItemIcon sx={{ minWidth: 20 }}>
-                                                                <StorageIcon
-                                                                    sx={{
-                                                                        fontSize: 14,
-                                                                        color: !isOnline
-                                                                            ? 'error.main'
-                                                                            : isActive
-                                                                              ? 'primary.main'
-                                                                              : 'text.disabled',
+                                                            <ListItemButton
+                                                                onClick={() =>
+                                                                    handleDatabaseClick(conn.id)
+                                                                }
+                                                                selected={isActive}
+                                                                sx={{
+                                                                    pl: 1.5,
+                                                                    py: 0.25,
+                                                                    minHeight: 28,
+                                                                    borderRadius: 1,
+                                                                    mx: 0.5,
+                                                                }}
+                                                            >
+                                                                <ListItemIcon sx={{ minWidth: 20 }}>
+                                                                    <StorageIcon
+                                                                        sx={{
+                                                                            fontSize: 14,
+                                                                            color: isActive
+                                                                                ? 'primary.main'
+                                                                                : 'text.disabled',
+                                                                        }}
+                                                                    />
+                                                                </ListItemIcon>
+                                                                <ListItemText
+                                                                    primary={displayName}
+                                                                    primaryTypographyProps={{
+                                                                        fontSize: 12,
+                                                                        noWrap: true,
                                                                     }}
                                                                 />
-                                                            </ListItemIcon>
-                                                            <ListItemText
-                                                                primary={displayName}
-                                                                primaryTypographyProps={{
-                                                                    fontSize: 12,
-                                                                    noWrap: true,
-                                                                    color: !isOnline
-                                                                        ? 'text.disabled'
-                                                                        : undefined,
-                                                                }}
-                                                            />
-                                                        </ListItemButton>
-                                                    </StyledTooltip>
-                                                );
-                                            })}
+                                                            </ListItemButton>
+                                                        </StyledTooltip>
+                                                    );
+                                                })}
                                         </>
                                     )}
                                 </List>
@@ -1215,6 +1206,12 @@ export function Layout() {
             </Box>
 
             <OnboardingTour hasConnections={connections.length > 0} />
+
+            <ServerFormDialog
+                open={serverFormOpen}
+                server={null}
+                onClose={() => setServerFormOpen(false)}
+            />
         </Box>
     );
 }

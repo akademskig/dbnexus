@@ -59,56 +59,64 @@ function DatabaseRow({ connection }: { connection: ConnectionConfig }) {
     const navigate = useNavigate();
     const { isOnline } = useConnectionHealthStore();
     const online = isOnline(connection.id);
+    const displayName = connection.name || connection.database;
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                py: 1,
-                px: 2,
-                pl: 5,
-                borderTop: '1px solid',
-                borderColor: 'divider',
-                bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-                '&:hover': {
-                    bgcolor: 'action.hover',
-                },
-            }}
+        <StyledTooltip
+            title="Connection is offline"
+            placement="top"
+            arrow
+            disableHoverListener={online}
         >
-            <StorageIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-            <StatusDot online={online} />
-            <Typography
-                variant="body2"
+            <Box
                 sx={{
-                    flex: 1,
-                    fontWeight: 500,
-                    color: online ? 'text.primary' : 'text.disabled',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    py: 1,
+                    px: 2,
+                    pl: 5,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                    '&:hover': {
+                        bgcolor: 'action.hover',
+                    },
                 }}
             >
-                {connection.name || connection.database}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <StyledTooltip title="Query">
-                    <IconButton
-                        size="small"
-                        onClick={() => navigate(`/query/${connection.id}`)}
-                        disabled={!online}
-                    >
-                        <TerminalIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                </StyledTooltip>
-                <StyledTooltip title="Manage Database">
-                    <IconButton
-                        size="small"
-                        onClick={() => navigate(`/connections/${connection.id}?tab=overview`)}
-                    >
-                        <SettingsIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                </StyledTooltip>
+                <StorageIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                <StatusDot online={online} />
+                <Typography
+                    variant="body2"
+                    sx={{
+                        flex: 1,
+                        fontWeight: 500,
+                        color: online ? 'text.primary' : 'text.disabled',
+                    }}
+                >
+                    {displayName}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <StyledTooltip title="Query">
+                        <IconButton
+                            size="small"
+                            onClick={() => navigate(`/query/${connection.id}`)}
+                            disabled={!online}
+                        >
+                            <TerminalIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </StyledTooltip>
+                    <StyledTooltip title="Manage Database">
+                        <IconButton
+                            size="small"
+                            onClick={() => navigate(`/connections/${connection.id}?tab=overview`)}
+                        >
+                            <SettingsIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </StyledTooltip>
+                </Box>
             </Box>
-        </Box>
+        </StyledTooltip>
     );
 }
 
