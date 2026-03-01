@@ -13,7 +13,6 @@ import { AccountPage } from './pages/AccountPage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { DiagramEditorPage } from './pages/DiagramEditorPage';
-import { ServersPage } from './pages/ServersPage';
 import { ServerManagementPage } from './pages/ServerManagementPage';
 
 function App() {
@@ -39,7 +38,6 @@ function App() {
                 <Route path="query" element={<QueryPage />} />
                 <Route path="query/:connectionId" element={<QueryPage />} />
                 {/* Server & Connection management */}
-                <Route path="servers" element={<ServersPage />} />
                 <Route path="servers/:serverId" element={<ServerManagementPage />} />
                 <Route path="connections/:connectionId" element={<ConnectionManagementPage />} />
                 {/* Sync, Compare, Logs */}
@@ -53,7 +51,6 @@ function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="account" element={<AccountPage />} />
                 {/* Legacy redirects */}
-                <Route path="projects" element={<Navigate to="/servers" replace />} />
                 <Route path="diagram-editor" element={<Navigate to="/schema-diagram" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
