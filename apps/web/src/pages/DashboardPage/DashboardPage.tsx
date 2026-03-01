@@ -142,7 +142,7 @@ export function DashboardPage() {
                         Manage your servers and databases
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1 }} data-tour="add-connection">
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -220,7 +220,7 @@ export function DashboardPage() {
                                 connections={connections}
                                 loading={loading}
                             />
-                            <Box sx={{ mt: 3 }}>
+                            <Box sx={{ mt: 3 }} data-tour="create-project">
                                 <ProjectsSection
                                     projects={projects}
                                     connections={connections}
