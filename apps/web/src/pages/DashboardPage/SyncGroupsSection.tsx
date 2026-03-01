@@ -8,11 +8,11 @@ import {
     Collapse,
     CircularProgress,
     Button,
+    alpha,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import LayersIcon from '@mui/icons-material/Layers';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import StorageIcon from '@mui/icons-material/Storage';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -256,6 +256,19 @@ function SyncGroupRow({
 
     const status = getOverallStatus();
 
+    const getBorderColor = () => {
+        switch (status) {
+            case 'in_sync':
+                return '#22c55e';
+            case 'out_of_sync':
+                return '#f59e0b';
+            case 'error':
+                return '#ef4444';
+            default:
+                return 'transparent';
+        }
+    };
+
     return (
         <Box
             sx={{
@@ -270,18 +283,26 @@ function SyncGroupRow({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.5,
-                    py: 1.5,
+                    py: 1.25,
                     px: 2,
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
+                    transition: 'all 0.15s',
+                    borderLeft: '3px solid',
+                    borderLeftColor: getBorderColor(),
+                    bgcolor: (theme) =>
+                        expanded ? alpha(theme.palette.primary.main, 0.04) : 'transparent',
+                    '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                    },
                 }}
             >
-                <LayersIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                <LayersIcon sx={{ fontSize: 16, color: 'primary.main' }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                         variant="body2"
                         sx={{
-                            fontWeight: 600,
+                            fontWeight: 500,
+                            fontSize: 13,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -289,16 +310,30 @@ function SyncGroupRow({
                     >
                         {group.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
                         {group.projectName}
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                     {group.syncSchema && (
-                        <Chip label="Schema" size="small" sx={{ height: 18, fontSize: 9 }} />
+                        <StyledTooltip title="Schema sync enabled">
+                            <Chip
+                                label="Schema"
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 18, fontSize: 9, borderColor: 'divider' }}
+                            />
+                        </StyledTooltip>
                     )}
                     {group.syncData && (
-                        <Chip label="Data" size="small" sx={{ height: 18, fontSize: 9 }} />
+                        <StyledTooltip title="Data sync enabled">
+                            <Chip
+                                label="Data"
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 18, fontSize: 9, borderColor: 'divider' }}
+                            />
+                        </StyledTooltip>
                     )}
                 </Box>
                 <StatusChip status={status} checking={checking} />
@@ -308,23 +343,34 @@ function SyncGroupRow({
                         e.stopPropagation();
                         setExpanded(!expanded);
                     }}
+                    sx={{
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
                 >
-                    {expanded ? (
-                        <ExpandLessIcon sx={{ fontSize: 18 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 18 }} />
-                    )}
+                    <ExpandMoreIcon sx={{ fontSize: 18 }} />
                 </IconButton>
             </Box>
 
             <Collapse in={expanded}>
-                <Box sx={{ bgcolor: 'background.default', py: 1 }}>
+                <Box
+                    sx={{
+                        bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                        py: 1.5,
+                        borderLeft: '3px solid transparent',
+                    }}
+                >
                     {/* Source Connection */}
                     <Box sx={{ px: 2, py: 0.5 }}>
                         <Typography
                             variant="caption"
                             color="text.secondary"
-                            sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                            sx={{
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                                fontSize: 10,
+                            }}
                         >
                             Source
                         </Typography>
@@ -493,21 +539,25 @@ export function SyncGroupsSection({
                     Sync Groups
                 </Typography>
                 <Box sx={{ flex: 1 }} />
-                <Typography variant="caption" color="text.secondary">
-                    {syncGroups.length} group{syncGroups.length !== 1 ? 's' : ''}
-                </Typography>
+                <Chip
+                    label={`${syncGroups.length} group${syncGroups.length !== 1 ? 's' : ''}`}
+                    size="small"
+                    sx={{ height: 20, fontSize: 11 }}
+                />
             </Box>
 
             {syncGroups.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 3, px: 2 }}>
-                    <SyncIcon sx={{ fontSize: 32, color: 'text.disabled', mb: 1, opacity: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary">
+                <Box sx={{ textAlign: 'center', py: 4, px: 2 }}>
+                    <SyncIcon
+                        sx={{ fontSize: 36, color: 'text.disabled', mb: 1.5, opacity: 0.4 }}
+                    />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                         No sync groups configured
                     </Typography>
                     <Typography
                         variant="caption"
                         color="text.disabled"
-                        sx={{ display: 'block', mb: 1 }}
+                        sx={{ display: 'block', mt: 0.5 }}
                     >
                         Create a sync group to keep databases in sync
                     </Typography>

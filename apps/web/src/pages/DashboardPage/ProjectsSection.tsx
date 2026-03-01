@@ -17,7 +17,6 @@ import {
 import FolderIcon from '@mui/icons-material/Folder';
 import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -143,7 +142,6 @@ function ConnectionRow({
 function GroupSection({
     group,
     connections,
-    projectColor,
     onNavigate,
     onEdit,
     onDelete,
@@ -152,7 +150,6 @@ function GroupSection({
 }: {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
-    projectColor: string;
     onNavigate: (path: string) => void;
     onEdit: () => void;
     onDelete: () => void;
@@ -194,15 +191,16 @@ function GroupSection({
         }
     };
 
+    const isSyncEnabled = hasSyncEnabled;
+
     return (
         <Box
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             sx={{
-                ml: 2,
+                ml: 1,
                 mr: 1,
-                mb: 1,
                 borderRadius: 1,
                 border: '1px solid',
                 borderColor: isDragOver ? 'primary.main' : 'divider',
@@ -211,6 +209,7 @@ function GroupSection({
                     ? (theme) => alpha(theme.palette.primary.main, 0.05)
                     : 'transparent',
                 transition: 'all 0.15s',
+                overflow: 'hidden',
             }}
         >
             <Box
@@ -219,19 +218,27 @@ function GroupSection({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
-                    py: 0.75,
+                    py: 1,
                     px: 1.5,
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                    borderRadius: expanded ? '4px 4px 0 0' : 1,
+                    transition: 'all 0.15s',
+                    bgcolor: expanded
+                        ? (theme) => alpha(theme.palette.primary.main, 0.04)
+                        : 'transparent',
+                    '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                    },
                 }}
             >
-                <LayersIcon sx={{ fontSize: 14, color: projectColor }} />
+                <LayersIcon
+                    sx={{ fontSize: 14, color: isSyncEnabled ? 'success.main' : 'text.primary' }}
+                />
                 <Typography
                     variant="caption"
                     sx={{
                         flex: 1,
-                        fontWeight: 600,
+                        fontWeight: 500,
+                        fontSize: 12,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -241,27 +248,32 @@ function GroupSection({
                 </Typography>
                 {hasSyncEnabled && (
                     <StyledTooltip title="Sync enabled">
-                        <SyncIcon sx={{ fontSize: 12, color: 'success.main' }} />
+                        <SyncIcon sx={{ fontSize: 16, color: 'success.main' }} />
                     </StyledTooltip>
                 )}
-                <Chip
-                    label={groupConnections.length}
-                    size="small"
-                    sx={{ height: 16, fontSize: 10, minWidth: 20 }}
-                />
+                <StyledTooltip
+                    title={`${groupConnections.length} connection${groupConnections.length !== 1 ? 's' : ''}`}
+                >
+                    <Chip
+                        label={groupConnections.length}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 16, fontSize: 10, minWidth: 20, borderColor: 'divider' }}
+                    />
+                </StyledTooltip>
                 <IconButton
                     size="small"
                     onClick={(e) => {
                         e.stopPropagation();
                         setExpanded(!expanded);
                     }}
-                    sx={{ p: 0.25 }}
+                    sx={{
+                        p: 0.25,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
                 >
-                    {expanded ? (
-                        <ExpandLessIcon sx={{ fontSize: 14 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 14 }} />
-                    )}
+                    <ExpandMoreIcon sx={{ fontSize: 14 }} />
                 </IconButton>
                 <IconButton
                     size="small"
@@ -440,32 +452,37 @@ function ProjectRow({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.5,
-                    py: 1.5,
+                    py: 1.25,
                     px: 2,
                     cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    bgcolor: expanded
+                        ? (theme) => alpha(theme.palette.primary.main, 0.04)
+                        : 'transparent',
                     '&:hover': {
-                        bgcolor: 'action.hover',
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
                     },
                 }}
             >
                 <Box
                     sx={{
-                        width: 28,
-                        height: 28,
+                        width: 26,
+                        height: 26,
                         borderRadius: 1,
-                        bgcolor: alpha(projectColor, 0.15),
+                        bgcolor: alpha(projectColor, 0.12),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                     }}
                 >
-                    <FolderIcon sx={{ fontSize: 16, color: projectColor }} />
+                    <FolderIcon sx={{ fontSize: 14, color: projectColor }} />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                         variant="body2"
                         sx={{
-                            fontWeight: 600,
+                            fontWeight: 500,
+                            fontSize: 13,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -476,19 +493,39 @@ function ProjectRow({
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {projectGroups.length > 0 && (
-                        <Chip
-                            icon={<LayersIcon sx={{ fontSize: 12 }} />}
-                            label={projectGroups.length}
-                            size="small"
-                            sx={{ height: 18, fontSize: 10, '& .MuiChip-icon': { ml: 0.5 } }}
-                        />
+                        <StyledTooltip
+                            title={`${projectGroups.length} group${projectGroups.length !== 1 ? 's' : ''}`}
+                        >
+                            <Chip
+                                icon={<LayersIcon sx={{ fontSize: 12 }} />}
+                                label={projectGroups.length}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                    height: 18,
+                                    fontSize: 10,
+                                    '& .MuiChip-icon': { ml: 0.5 },
+                                    borderColor: 'divider',
+                                }}
+                            />
+                        </StyledTooltip>
                     )}
-                    <Chip
-                        icon={<StorageIcon sx={{ fontSize: 12 }} />}
-                        label={projectConnections.length}
-                        size="small"
-                        sx={{ height: 18, fontSize: 10, '& .MuiChip-icon': { ml: 0.5 } }}
-                    />
+                    <StyledTooltip
+                        title={`${projectConnections.length} database${projectConnections.length !== 1 ? 's' : ''}`}
+                    >
+                        <Chip
+                            icon={<StorageIcon sx={{ fontSize: 12 }} />}
+                            label={projectConnections.length}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                height: 18,
+                                fontSize: 10,
+                                '& .MuiChip-icon': { ml: 0.5 },
+                                borderColor: 'divider',
+                            }}
+                        />
+                    </StyledTooltip>
                 </Box>
                 <IconButton
                     size="small"
@@ -496,12 +533,12 @@ function ProjectRow({
                         e.stopPropagation();
                         setExpanded(!expanded);
                     }}
+                    sx={{
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
                 >
-                    {expanded ? (
-                        <ExpandLessIcon sx={{ fontSize: 18 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 18 }} />
-                    )}
+                    <ExpandMoreIcon sx={{ fontSize: 18 }} />
                 </IconButton>
                 <IconButton
                     size="small"
@@ -534,17 +571,6 @@ function ProjectRow({
                 <MenuItem
                     onClick={() => {
                         setMenuAnchor(null);
-                        onNavigate(`/projects?project=${project.id}`);
-                    }}
-                >
-                    <ListItemIcon>
-                        <SettingsIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Manage Project</ListItemText>
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        setMenuAnchor(null);
                         onEdit();
                     }}
                 >
@@ -568,14 +594,19 @@ function ProjectRow({
             </Menu>
 
             <Collapse in={expanded}>
-                <Box sx={{ bgcolor: 'background.default', py: 1 }}>
+                <Box
+                    sx={{
+                        bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                        py: 1.5,
+                        borderLeft: '3px solid transparent',
+                    }}
+                >
                     {/* Groups */}
                     {projectGroups.map((group) => (
                         <GroupSection
                             key={group.id}
                             group={group}
                             connections={connections}
-                            projectColor={projectColor}
                             onNavigate={onNavigate}
                             onEdit={() => onEditGroup(group)}
                             onDelete={() => onDeleteGroup(group.id)}
@@ -790,7 +821,7 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                 >
                     <FolderIcon sx={{ fontSize: 18, color: 'primary.main' }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Projects
+                        Projects & Groups
                     </Typography>
                     <Box sx={{ flex: 1 }} />
                     <Typography variant="caption" color="text.secondary">

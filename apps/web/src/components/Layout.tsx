@@ -301,7 +301,7 @@ export function Layout() {
                         flexShrink: 0,
                         '&:hover': { bgcolor: 'action.hover' },
                     }}
-                    onClick={() => navigate('/query')}
+                    onClick={() => navigate('/dashboard')}
                 >
                     <DynamicLogo size={collapsed ? 32 : 38} />
                     {!collapsed && (
@@ -469,7 +469,8 @@ export function Layout() {
                                                                 sx={{
                                                                     fontSize: 16,
                                                                     color:
-                                                                        isServerActive || hasActiveChild
+                                                                        isServerActive ||
+                                                                        hasActiveChild
                                                                             ? 'primary.main'
                                                                             : 'text.secondary',
                                                                 }}
