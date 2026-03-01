@@ -6,6 +6,7 @@ import {
     Select,
     MenuItem,
     InputAdornment,
+    Divider,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -79,6 +80,16 @@ export function QueryPageToolbar({
                 </FormControl>
             )}
 
+            <StyledTooltip title="View Schema Diagram">
+                <IconButton
+                    size="small"
+                    onClick={() => navigate(`/schema-diagram?connectionId=${selectedConnectionId}`)}
+                    disabled={!selectedConnectionId}
+                >
+                    <AccountTreeIcon fontSize="small" />
+                </IconButton>
+            </StyledTooltip>
+            <Divider orientation="vertical" flexItem />
             <StyledTooltip title="Manage Database">
                 <IconButton
                     size="small"
@@ -86,16 +97,6 @@ export function QueryPageToolbar({
                     disabled={!selectedConnectionId}
                 >
                     <SettingsIcon fontSize="small" />
-                </IconButton>
-            </StyledTooltip>
-
-            <StyledTooltip title="Schema Diagram">
-                <IconButton
-                    size="small"
-                    onClick={() => navigate(`/schema-diagram?connectionId=${selectedConnectionId}`)}
-                    disabled={!selectedConnectionId}
-                >
-                    <AccountTreeIcon fontSize="small" />
                 </IconButton>
             </StyledTooltip>
 

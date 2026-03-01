@@ -50,7 +50,7 @@ import { OnboardingTour } from './OnboardingTour';
 
 const DRAWER_WIDTH = 220;
 const DRAWER_WIDTH_COLLAPSED = 56;
-const HEADER_HEIGHT = 44;
+const HEADER_HEIGHT = 55;
 const LOGO_SECTION_HEIGHT = 56;
 
 interface SidebarStore {
@@ -1083,7 +1083,7 @@ export function Layout() {
                                     variant="body2"
                                     color="text.secondary"
                                     fontFamily="monospace"
-                                    fontSize={12}
+                                    fontSize={13}
                                 >
                                     {selectedConnection.engine === 'sqlite'
                                         ? selectedConnection.database.split('/').pop()
@@ -1094,7 +1094,7 @@ export function Layout() {
                                     size="small"
                                     sx={{
                                         fontSize: 10,
-                                        height: 20,
+                                        height: 22,
                                         bgcolor: 'primary.dark',
                                         color: 'primary.contrastText',
                                     }}
