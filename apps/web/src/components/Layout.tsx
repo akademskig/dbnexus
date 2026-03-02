@@ -255,6 +255,16 @@ export function Layout() {
         [connections, selectedConnectionId]
     );
 
+    const isConnectionRelatedPage = useMemo(() => {
+        const path = location.pathname;
+        return (
+            path.startsWith('/query/') ||
+            path.startsWith('/connections/') ||
+            path.startsWith('/schema/') ||
+            path === '/schema-diagram'
+        );
+    }, [location.pathname]);
+
     const handleDatabaseClick = (connectionId: string) => {
         const conn = connections.find((c) => c.id === connectionId);
         if (conn) {
@@ -1152,8 +1162,8 @@ export function Layout() {
                     }}
                 >
                     <Toolbar variant="dense" sx={{ minHeight: HEADER_HEIGHT, px: 2, gap: 1 }}>
-                        {/* Connection String */}
-                        {selectedConnection && (
+                        {/* Connection String - only show on connection-related pages */}
+                        {selectedConnection && isConnectionRelatedPage && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography
                                     variant="body2"
