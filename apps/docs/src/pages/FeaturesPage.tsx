@@ -141,17 +141,17 @@ const features = [
         icon: <span className="material-symbols-outlined">compare_arrows</span>,
         color: '#22c55e',
         title: 'Compare & Sync',
-        description: 'Compare database schemas across environments and keep them in sync.',
+        description: 'Compare database schemas and data across environments and keep them in sync.',
         screenshot: 'screenshots/compare-data.png',
         items: [
             'Side-by-side schema comparison',
+            'Row-level data comparison',
             'Highlight added/removed/modified',
             'Generate migration scripts',
             'Compare specific tables',
             'Instance groups for environments',
             'One-click sync preview',
             'Safe dry-run mode',
-            'Rollback support',
         ],
     },
     {
@@ -159,7 +159,7 @@ const features = [
         color: '#22d3ee',
         title: 'Auto-Discovery',
         description: 'Automatically find and connect to databases without manual configuration.',
-        screenshot: 'screenshots/scanconnections.png',
+        screenshot: 'screenshots/scandbs.png',
         items: [
             'Port scanning (5432, 3306, etc.)',
             'Docker container inspection',
@@ -236,6 +236,24 @@ const features = [
             'Backup history and logs',
             'Auto-detection of DB tools',
             'SQLite file copy backup',
+        ],
+    },
+    {
+        icon: <span className="material-symbols-outlined">settings</span>,
+        color: '#94a3b8',
+        title: 'Settings & System Tools',
+        description:
+            'Configure DB Nexus to your needs and verify that all required system tools are properly installed.',
+        screenshot: 'screenshots/settings.png',
+        items: [
+            'System tools verification',
+            'Auto-detect pg_dump, mysqldump, sqlite3',
+            'Custom tool path configuration',
+            'Theme preferences (dark/light)',
+            'Default connection settings',
+            'Data export format options',
+            'Keyboard shortcut reference',
+            'Application version info',
         ],
     },
 ];

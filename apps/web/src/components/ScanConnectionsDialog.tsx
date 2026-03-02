@@ -428,7 +428,7 @@ export function ScanConnectionsDialog({
                                                 <Box
                                                     sx={{
                                                         display: 'flex',
-                                                        alignItems: 'flex-start',
+                                                        alignItems: 'center',
                                                         gap: 1.5,
                                                     }}
                                                 >
@@ -436,7 +436,7 @@ export function ScanConnectionsDialog({
                                                         checked={isSelected}
                                                         disabled={alreadyExists}
                                                         size="small"
-                                                        sx={{ p: 0, mt: 0.25 }}
+                                                        sx={{ p: 0 }}
                                                         onClick={(e) => e.stopPropagation()}
                                                         onChange={() =>
                                                             handleToggleConnection(index)
