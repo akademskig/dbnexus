@@ -340,6 +340,7 @@ export function ComparePage() {
                                                 width: '100%',
                                             }}
                                         >
+                                            <span>{group.name}</span>
                                             {project && (
                                                 <Chip
                                                     label={project.name}
@@ -352,7 +353,6 @@ export function ComparePage() {
                                                     }}
                                                 />
                                             )}
-                                            <span>{group.name}</span>
                                             <Chip
                                                 label={
                                                     group.databaseEngine === 'postgres'

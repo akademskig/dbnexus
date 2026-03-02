@@ -495,9 +495,9 @@ export function ConnectionFormDialog({
             TransitionProps={{ onEnter: handleEnter }}
         >
             <form onSubmit={handleSubmit}>
-                <DialogTitle>{connection ? 'Edit Database' : 'New Database'}</DialogTitle>
+                <DialogTitle>{connection ? 'Edit Database' : 'Add Database'}</DialogTitle>
                 <DialogContent>
-                    <Stack spacing={3} sx={{ mt: 1 }}>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField
                             label="Display Name"
                             value={formData.name}
@@ -506,11 +506,12 @@ export function ConnectionFormDialog({
                             helperText="A friendly name to identify this database connection"
                             required
                             fullWidth
+                            size="small"
                         />
 
                         {/* Project & Group selection */}
                         <Box sx={{ display: 'flex', gap: 2 }}>
-                            <FormControl fullWidth>
+                            <FormControl fullWidth size="small">
                                 <InputLabel>Project</InputLabel>
                                 <Select
                                     value={formData.projectId || ''}
@@ -548,7 +549,7 @@ export function ConnectionFormDialog({
                                     ))}
                                 </Select>
                             </FormControl>
-                            <FormControl fullWidth disabled={!formData.projectId}>
+                            <FormControl fullWidth size="small" disabled={!formData.projectId}>
                                 <InputLabel>Instance Group</InputLabel>
                                 <Select
                                     value={formData.groupId || ''}
@@ -607,7 +608,7 @@ export function ConnectionFormDialog({
 
                         {/* Server Selection - optional for non-SQLite engines */}
                         {!isSqlite && (
-                            <FormControl fullWidth>
+                            <FormControl fullWidth size="small">
                                 <InputLabel>Server (Optional)</InputLabel>
                                 <Select
                                     value={formData.serverId || ''}
@@ -665,6 +666,7 @@ export function ConnectionFormDialog({
                                             }
                                             placeholder="localhost"
                                             required
+                                            size="small"
                                             sx={{ flex: 2 }}
                                         />
                                         <TextField
@@ -681,6 +683,7 @@ export function ConnectionFormDialog({
                                                 formData.engine === 'postgres' ? '5432' : '3306'
                                             }
                                             required
+                                            size="small"
                                             sx={{ flex: 1 }}
                                         />
                                     </Box>
@@ -700,6 +703,7 @@ export function ConnectionFormDialog({
                                     }
                                     required
                                     fullWidth
+                                    size="small"
                                 />
 
                                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -711,6 +715,7 @@ export function ConnectionFormDialog({
                                         }
                                         placeholder="db_user"
                                         required
+                                        size="small"
                                         sx={{ flex: 1 }}
                                     />
                                     <TextField
@@ -721,10 +726,8 @@ export function ConnectionFormDialog({
                                             setFormData({ ...formData, password: e.target.value })
                                         }
                                         placeholder={connection ? '••••••••' : ''}
-                                        helperText={
-                                            connection ? 'Leave empty to keep current' : undefined
-                                        }
                                         required={!connection}
+                                        size="small"
                                         sx={{ flex: 1 }}
                                     />
                                 </Box>
@@ -741,6 +744,7 @@ export function ConnectionFormDialog({
                                                         ssl: e.target.checked,
                                                     })
                                                 }
+                                                size="small"
                                             />
                                         }
                                         label="Use SSL"
@@ -761,6 +765,7 @@ export function ConnectionFormDialog({
                                 helperText="Absolute path to the SQLite database file"
                                 required
                                 fullWidth
+                                size="small"
                             />
                         )}
 
@@ -775,6 +780,7 @@ export function ConnectionFormDialog({
                                 placeholder="public"
                                 helperText="Default schema to use (leave empty for 'public')"
                                 fullWidth
+                                size="small"
                             />
                         )}
 
@@ -839,6 +845,7 @@ export function ConnectionFormDialog({
                                     onChange={(e) =>
                                         setFormData({ ...formData, readOnly: e.target.checked })
                                     }
+                                    size="small"
                                 />
                             }
                             label="Read-only mode"
