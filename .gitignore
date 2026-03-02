@@ -46,3 +46,5 @@ temp/
 # Private documents
 BUSINESS_PLAN.md
 .cursorrules
+
+.pnpm-store/*
