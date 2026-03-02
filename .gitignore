@@ -47,4 +47,4 @@ temp/
 BUSINESS_PLAN.md
 .cursorrules
 
-.pnpm-store/
+.pnpm-store/*
