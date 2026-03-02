@@ -825,9 +825,10 @@ export function DataDiffDisplay({
                 initialState={{
                     pagination: { paginationModel: { pageSize: 10 } },
                 }}
+                autoHeight
                 sx={{
                     mb: compact ? 0 : 3,
-                    height: compact ? 300 : 400,
+                    maxHeight: compact ? 300 : 400,
                     border: 'none',
                     '& .MuiDataGrid-cell': {
                         borderColor: 'divider',
