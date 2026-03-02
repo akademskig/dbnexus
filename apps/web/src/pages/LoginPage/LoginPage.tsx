@@ -24,6 +24,7 @@ import {
     Lock as LockIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
+import { DynamicLogo } from '../../components/DynamicLogo';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -149,18 +150,9 @@ export function LoginPage() {
             >
                 <CardContent sx={{ p: 4 }}>
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
-                        <Box
-                            component="img"
-                            src={
-                                theme.palette.mode === 'dark' ? '/logo-dark.svg' : '/logo-light.svg'
-                            }
-                            alt="DB Nexus"
-                            sx={{
-                                width: 72,
-                                height: 72,
-                                mb: 2,
-                            }}
-                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                            <DynamicLogo size={72} />
+                        </Box>
                         <Typography variant="h4" fontWeight={600}>
                             DB Nexus
                         </Typography>
