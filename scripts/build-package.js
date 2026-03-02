@@ -122,7 +122,6 @@ const packageJson = {
         'database',
         'postgres',
         'mysql',
-        'mariadb',
         'sqlite',
         'database-management',
         'schema-migration',
