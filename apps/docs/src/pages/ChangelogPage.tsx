@@ -103,16 +103,6 @@ const changelog = [
         latest: true,
         changes: [
             {
-                type: 'fixed' as const,
-                text: 'Fixed ESM compatibility issue with bcrypt module causing "__dirname is not defined" error when running the globally installed npm package',
-            },
-        ],
-    },
-    {
-        version: '0.4.0',
-        date: 'March 2026',
-        changes: [
-            {
                 type: 'changed' as const,
                 text: 'Updated documentation with new screenshots and Settings & System Tools section',
             },
@@ -123,6 +113,10 @@ const changelog = [
             {
                 type: 'fixed' as const,
                 text: 'Improved checkbox alignment in scan dialog',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Fixed ESM compatibility issue when running globally installed npm package',
             },
         ],
     },

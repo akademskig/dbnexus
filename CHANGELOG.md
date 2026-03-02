@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - 2026-03-02
 
-### Fixed
-
-- **NPM Package**: Fixed ESM compatibility issue with bcrypt module causing `__dirname is not defined` error when running the globally installed package
-
-## [0.4.0] - 2026-03-02
-
 ### Changed
 
 - **Documentation**: Updated feature screenshots and documentation
@@ -23,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Scan Dialog**: Improved checkbox alignment for better visual consistency
+- **NPM Package**: Fixed ESM compatibility issue when running globally installed package
 
 ## [0.3.1] - 2026-01-23
 
