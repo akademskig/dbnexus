@@ -99,7 +99,7 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 const changelog = [
     {
         version: '0.4.0',
-        date: 'January 2026',
+        date: 'March 2026',
         latest: true,
         changes: [
             {
