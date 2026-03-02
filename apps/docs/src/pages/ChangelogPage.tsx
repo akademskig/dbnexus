@@ -98,9 +98,19 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.4.0',
+        version: '0.4.1',
         date: 'March 2026',
         latest: true,
+        changes: [
+            {
+                type: 'fixed' as const,
+                text: 'Fixed ESM compatibility issue with bcrypt module causing "__dirname is not defined" error when running the globally installed npm package',
+            },
+        ],
+    },
+    {
+        version: '0.4.0',
+        date: 'March 2026',
         changes: [
             {
                 type: 'changed' as const,
