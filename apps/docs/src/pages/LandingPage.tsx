@@ -443,12 +443,12 @@ export function LandingPage() {
                 <ScreenshotsGrid>
                     {[
                         {
-                            src: `screenshots/querypage.png`,
+                            src: `screenshots/query.png`,
                             label: 'Query Editor',
                         },
-                        { src: 'screenshots/schemadiagrampage.png', label: 'Schema Diagram' },
-                        { src: 'screenshots/comparepage-schema.png', label: 'Compare & Sync' },
-                        { src: 'screenshots/projectspage.png', label: 'Projects & Groups' },
+                        { src: 'screenshots/schemadiagram.png', label: 'Schema Diagram' },
+                        { src: 'screenshots/compare-data.png', label: 'Compare & Sync' },
+                        { src: 'screenshots/dbmanagement.png', label: 'Connection Management' },
                     ].map((shot, index) => (
                         <ScreenshotCard
                             key={shot.label}

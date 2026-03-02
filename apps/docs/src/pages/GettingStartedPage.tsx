@@ -111,13 +111,14 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                 <Paragraph>Once the UI is open, you have two options:</Paragraph>
                 <List>
                     <li>
-                        <strong>Scan for Databases:</strong> Click "Scan for Connections" to
-                        automatically discover databases running on your machine, in Docker
-                        containers, or configured in environment files.
+                        <strong>Scan for Databases:</strong> Click "Scan" to automatically discover
+                        databases running on your machine, in Docker containers, or configured in
+                        environment files.
                     </li>
                     <li>
-                        <strong>Add Manually:</strong> Click "Add Connection" and enter your
-                        database credentials.
+                        <strong>Add Manually:</strong> Click "Add" and enter your database
+                        credentials. You can add a connection directly or associate it with a server
+                        for additional management capabilities.
                     </li>
                 </List>
                 <Note>
@@ -168,8 +169,8 @@ dbnexus init`}</CodeBlock>
                     <li>Write and execute queries with syntax highlighting</li>
                     <li>Visualize your schema with the interactive diagram</li>
                     <li>Compare schemas between environments</li>
-                    <li>Organize connections into projects and groups</li>
-                    <li>Manage servers and start/stop Docker containers</li>
+                    <li>Organize connections into projects and sync groups</li>
+                    <li>Manage servers and control Docker containers</li>
                     <li>Create and restore database backups</li>
                 </List>
             </Section>

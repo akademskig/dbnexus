@@ -10,16 +10,12 @@ import {
     Typography,
     CircularProgress,
     Checkbox,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    ListItemSecondaryAction,
     Chip,
     IconButton,
-    Divider,
     LinearProgress,
     Collapse,
+    alpha,
+    Paper,
 } from '@mui/material';
 import { StyledTooltip } from './StyledTooltip';
 import { StatusAlert } from './StatusAlert';
@@ -32,6 +28,7 @@ import {
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
     Refresh as RefreshIcon,
+    RadarOutlined as RadarIcon,
 } from '@mui/icons-material';
 import { scannerApi, connectionsApi, type ScanResult, type DiscoveredConnection } from '../lib/api';
 import { useToastStore } from '../stores/toastStore';
@@ -44,33 +41,28 @@ interface ScanConnectionsDialogProps {
     groupId?: string;
 }
 
-const ENGINE_LABELS: Record<string, string> = {
-    postgres: 'PostgreSQL',
-    mysql: 'MySQL',
-    sqlite: 'SQLite',
+const ENGINE_COLORS: Record<string, string> = {
+    postgres: '#336791',
+    mysql: '#00758f',
+    sqlite: '#003b57',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
     'port-scan': 'Port Scan',
-    docker: 'Docker Container',
-    'env-file': 'Environment File',
-    'docker-compose': 'Docker Compose',
+    docker: 'Docker',
+    'env-file': 'Env File',
+    'docker-compose': 'Compose',
     'sqlite-file': 'SQLite File',
-    'config-file': 'Config File',
+    'config-file': 'Config',
 };
 
-// Helper to check if a discovered connection already exists
 function connectionExists(discovered: DiscoveredConnection, existing: ConnectionConfig[]): boolean {
     return existing.some((conn) => {
         if (discovered.engine === 'sqlite') {
-            // For SQLite, compare by filepath (database field stores the path)
             return conn.engine === 'sqlite' && conn.database === discovered.filepath;
         }
-        // For other engines, compare by host and port only
-        // This catches the same database whether found via port scan or Docker
         const discoveredHost = discovered.host || 'localhost';
         const connHost = conn.host || 'localhost';
-        // Normalize localhost variants
         const normalizeHost = (h: string) =>
             h === '127.0.0.1' || h === '0.0.0.0' ? 'localhost' : h;
         return (
@@ -93,20 +85,17 @@ export function ScanConnectionsDialog({
     const [showErrors, setShowErrors] = useState(false);
     const [addingConnections, setAddingConnections] = useState(false);
 
-    // Fetch existing connections to check for duplicates
     const { data: existingConnections = [] } = useQuery({
         queryKey: ['connections'],
         queryFn: connectionsApi.getAll,
     });
 
-    // Check if a connection at a given index already exists
     const isExistingConnection = (index: number): boolean => {
         const conn = scanResult?.connections[index];
         if (!conn) return false;
         return connectionExists(conn, existingConnections);
     };
 
-    // Get indices of new (non-existing) connections
     const newConnectionIndices = useMemo(() => {
         if (!scanResult) return [];
         return scanResult.connections
@@ -118,7 +107,6 @@ export function ScanConnectionsDialog({
         mutationFn: () => scannerApi.scanAll(),
         onSuccess: (result) => {
             setScanResult(result);
-            // Auto-select high confidence connections that don't already exist
             const highConfidenceNew = result.connections
                 .map((c, i) =>
                     c.confidence === 'high' && !connectionExists(c, existingConnections) ? i : -1
@@ -138,7 +126,6 @@ export function ScanConnectionsDialog({
     };
 
     const handleToggleConnection = (index: number) => {
-        // Don't allow toggling existing connections
         if (isExistingConnection(index)) return;
 
         const newSelected = new Set(selectedConnections);
@@ -152,7 +139,6 @@ export function ScanConnectionsDialog({
 
     const handleSelectAll = () => {
         if (newConnectionIndices.length > 0) {
-            // Check if all new connections are selected
             const allNewSelected = newConnectionIndices.every((i) => selectedConnections.has(i));
             if (allNewSelected) {
                 setSelectedConnections(new Set());
@@ -180,13 +166,12 @@ export function ScanConnectionsDialog({
                 const defaultDb = isPostgres ? 'postgres' : 'mysql';
                 const defaultUser = isPostgres ? 'postgres' : 'root';
 
-                // Determine connection type from source
                 const connectionType =
                     conn.source === 'docker' || conn.source === 'docker-compose'
                         ? 'docker'
                         : conn.source === 'port-scan' || conn.source === 'sqlite-file'
                           ? 'local'
-                          : 'local'; // env-file and config-file default to local
+                          : 'local';
 
                 await connectionsApi.create({
                     name: conn.name,
@@ -194,7 +179,6 @@ export function ScanConnectionsDialog({
                     connectionType,
                     host: isSqlite ? '' : conn.host || 'localhost',
                     port: isSqlite ? 0 : conn.port || defaultPort,
-                    // For SQLite, database field stores the file path
                     database: isSqlite ? conn.filepath || '' : conn.database || defaultDb,
                     username: isSqlite ? '' : conn.username || defaultUser,
                     password: isSqlite ? '' : conn.password || '',
@@ -229,25 +213,56 @@ export function ScanConnectionsDialog({
         onClose();
     };
 
-    const getEngineIcon = (_engine: string) => {
-        return <StorageIcon fontSize="small" />;
-    };
+    const existingCount = scanResult
+        ? scanResult.connections.length - newConnectionIndices.length
+        : 0;
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SearchIcon />
-                Scan for Database Connections
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ pb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <RadarIcon color="primary" />
+                    <Typography variant="h6" component="span">
+                        Scan for Databases
+                    </Typography>
+                </Box>
             </DialogTitle>
-            <DialogContent>
+
+            <DialogContent sx={{ pt: 1 }}>
+                {/* Initial State */}
                 {!scanResult && !scanMutation.isPending && (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <Typography variant="body1" color="text.secondary" gutterBottom>
-                            Scan your system for database connections
+                    <Box
+                        sx={{
+                            textAlign: 'center',
+                            py: 5,
+                            px: 2,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 72,
+                                height: 72,
+                                borderRadius: '50%',
+                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mx: 'auto',
+                                mb: 2.5,
+                            }}
+                        >
+                            <SearchIcon sx={{ fontSize: 36, color: 'primary.main' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom>
+                            Discover Database Connections
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            This will check local ports, Docker containers, environment files, and
-                            more.
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 3, maxWidth: 320, mx: 'auto' }}
+                        >
+                            Automatically find databases running locally, in Docker containers, or
+                            configured in environment files.
                         </Typography>
                         <Button
                             variant="contained"
@@ -260,34 +275,41 @@ export function ScanConnectionsDialog({
                     </Box>
                 )}
 
+                {/* Scanning State */}
                 {scanMutation.isPending && (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <CircularProgress size={48} sx={{ mb: 2 }} />
-                        <Typography variant="body1" color="text.secondary">
-                            Scanning for database connections...
+                    <Box sx={{ textAlign: 'center', py: 5 }}>
+                        <CircularProgress size={48} sx={{ mb: 2.5 }} />
+                        <Typography variant="h6" gutterBottom>
+                            Scanning...
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Checking ports, Docker, environment files, and more
+                            Checking ports, Docker containers, and config files
                         </Typography>
                     </Box>
                 )}
 
+                {/* Results */}
                 {scanResult && (
                     <Box>
-                        {/* Summary */}
+                        {/* Header */}
                         <Box
                             sx={{
-                                mb: 2,
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 2,
-                                flexWrap: 'wrap',
+                                justifyContent: 'space-between',
+                                mb: 2,
                             }}
                         >
-                            <Typography variant="body1">
-                                Found <strong>{scanResult.connections.length}</strong> connection
-                                {scanResult.connections.length !== 1 ? 's' : ''}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                    {scanResult.connections.length} found
+                                </Typography>
+                                {existingCount > 0 && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        ({existingCount} already added)
+                                    </Typography>
+                                )}
+                            </Box>
                             <StyledTooltip title="Scan again">
                                 <IconButton size="small" onClick={handleScan}>
                                     <RefreshIcon fontSize="small" />
@@ -303,6 +325,7 @@ export function ScanConnectionsDialog({
                                     startIcon={showErrors ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                                     onClick={() => setShowErrors(!showErrors)}
                                     color="warning"
+                                    sx={{ textTransform: 'none' }}
                                 >
                                     {scanResult.errors.length} warning
                                     {scanResult.errors.length > 1 ? 's' : ''}
@@ -322,124 +345,177 @@ export function ScanConnectionsDialog({
                         {/* Connection List */}
                         {scanResult.connections.length > 0 ? (
                             <>
-                                <Box
-                                    sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
-                                >
-                                    <Button
-                                        size="small"
-                                        onClick={handleSelectAll}
-                                        disabled={newConnectionIndices.length === 0}
+                                {newConnectionIndices.length > 0 && (
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            mb: 1.5,
+                                        }}
                                     >
-                                        {selectedConnections.size === newConnectionIndices.length &&
-                                        newConnectionIndices.length > 0
-                                            ? 'Deselect All'
-                                            : 'Select All New'}
-                                    </Button>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {selectedConnections.size} selected
-                                        {newConnectionIndices.length <
-                                            scanResult.connections.length &&
-                                            ` (${scanResult.connections.length - newConnectionIndices.length} already added)`}
-                                    </Typography>
-                                </Box>
-                                <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
+                                        <Button
+                                            size="small"
+                                            onClick={handleSelectAll}
+                                            sx={{ textTransform: 'none' }}
+                                        >
+                                            {selectedConnections.size ===
+                                                newConnectionIndices.length &&
+                                            newConnectionIndices.length > 0
+                                                ? 'Deselect all'
+                                                : 'Select all new'}
+                                        </Button>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {selectedConnections.size} selected
+                                        </Typography>
+                                    </Box>
+                                )}
+
+                                <Box
+                                    sx={{
+                                        maxHeight: 380,
+                                        overflow: 'auto',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1,
+                                    }}
+                                >
                                     {scanResult.connections.map((conn, index) => {
                                         const alreadyExists = isExistingConnection(index);
+                                        const isSelected = selectedConnections.has(index);
+                                        const engineColor = ENGINE_COLORS[conn.engine] || '#666';
+
                                         return (
-                                            <ListItem
+                                            <Paper
                                                 key={index}
+                                                variant="outlined"
+                                                onClick={() => handleToggleConnection(index)}
                                                 sx={{
-                                                    border: 1,
+                                                    p: 1.5,
+                                                    cursor: alreadyExists ? 'default' : 'pointer',
                                                     borderColor: alreadyExists
-                                                        ? 'success.main'
-                                                        : 'divider',
-                                                    borderRadius: 1,
-                                                    mb: 1,
+                                                        ? 'primary.main'
+                                                        : isSelected
+                                                          ? 'primary.main'
+                                                          : 'divider',
                                                     bgcolor: alreadyExists
-                                                        ? 'action.disabledBackground'
-                                                        : selectedConnections.has(index)
-                                                          ? 'action.selected'
+                                                        ? (theme) =>
+                                                              alpha(
+                                                                  theme.palette.primary.main,
+                                                                  0.04
+                                                              )
+                                                        : isSelected
+                                                          ? (theme) =>
+                                                                alpha(
+                                                                    theme.palette.primary.main,
+                                                                    0.08
+                                                                )
                                                           : 'background.paper',
                                                     opacity: alreadyExists ? 0.7 : 1,
+                                                    transition: 'all 0.15s ease',
+                                                    '&:hover': !alreadyExists
+                                                        ? {
+                                                              borderColor: 'primary.main',
+                                                              bgcolor: (theme) =>
+                                                                  alpha(
+                                                                      theme.palette.primary.main,
+                                                                      0.04
+                                                                  ),
+                                                          }
+                                                        : {},
                                                 }}
                                             >
-                                                <ListItemIcon>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        gap: 1.5,
+                                                    }}
+                                                >
                                                     <Checkbox
-                                                        edge="start"
-                                                        checked={selectedConnections.has(index)}
+                                                        checked={isSelected}
+                                                        disabled={alreadyExists}
+                                                        size="small"
+                                                        sx={{ p: 0, mt: 0.25 }}
+                                                        onClick={(e) => e.stopPropagation()}
                                                         onChange={() =>
                                                             handleToggleConnection(index)
                                                         }
-                                                        disabled={alreadyExists}
                                                     />
-                                                </ListItemIcon>
-                                                <ListItemIcon sx={{ minWidth: 36 }}>
-                                                    {getEngineIcon(conn.engine)}
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    primary={
+
+                                                    <Box
+                                                        sx={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: 1,
+                                                            bgcolor: engineColor,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        <StorageIcon
+                                                            sx={{
+                                                                fontSize: 18,
+                                                                color: 'white',
+                                                            }}
+                                                        />
+                                                    </Box>
+
+                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
                                                         <Box
                                                             sx={{
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 gap: 1,
+                                                                mb: 0.25,
                                                             }}
                                                         >
                                                             <Typography
-                                                                variant="body1"
-                                                                color={
-                                                                    alreadyExists
+                                                                variant="body2"
+                                                                fontWeight={600}
+                                                                noWrap
+                                                                sx={{
+                                                                    color: alreadyExists
                                                                         ? 'text.secondary'
-                                                                        : 'text.primary'
-                                                                }
+                                                                        : 'text.primary',
+                                                                }}
                                                             >
                                                                 {conn.name}
                                                             </Typography>
-                                                            <Chip
-                                                                label={
-                                                                    ENGINE_LABELS[conn.engine] ||
-                                                                    conn.engine
-                                                                }
-                                                                size="small"
-                                                                variant="outlined"
-                                                            />
                                                             {alreadyExists && (
                                                                 <Chip
-                                                                    label="Already added"
+                                                                    label="Added"
                                                                     size="small"
-                                                                    color="success"
+                                                                    color="primary"
                                                                     variant="filled"
+                                                                    sx={{
+                                                                        height: 20,
+                                                                        fontSize: 11,
+                                                                    }}
                                                                 />
                                                             )}
                                                         </Box>
-                                                    }
-                                                    secondary={
-                                                        <Box>
-                                                            <Typography
-                                                                variant="body2"
-                                                                color="text.secondary"
-                                                            >
-                                                                {conn.filepath
-                                                                    ? conn.filepath
-                                                                    : `${conn.host || 'localhost'}:${conn.port || '?'}${conn.database ? `/${conn.database}` : ''}`}
-                                                            </Typography>
-                                                            {conn.details && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                >
-                                                                    {conn.details}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    }
-                                                />
-                                                <ListItemSecondaryAction>
+
+                                                        <Typography
+                                                            variant="caption"
+                                                            color="text.secondary"
+                                                            noWrap
+                                                            component="div"
+                                                        >
+                                                            {conn.filepath
+                                                                ? conn.filepath
+                                                                : `${conn.host || 'localhost'}:${conn.port || '?'}${conn.database ? ` / ${conn.database}` : ''}`}
+                                                        </Typography>
+                                                    </Box>
+
                                                     <Box
                                                         sx={{
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: 1,
+                                                            gap: 0.75,
+                                                            flexShrink: 0,
                                                         }}
                                                     >
                                                         <Chip
@@ -449,44 +525,64 @@ export function ScanConnectionsDialog({
                                                             }
                                                             size="small"
                                                             variant="outlined"
+                                                            sx={{
+                                                                height: 22,
+                                                                fontSize: 11,
+                                                                '& .MuiChip-label': { px: 1 },
+                                                            }}
                                                         />
                                                         <StyledTooltip
                                                             title={`${conn.confidence} confidence${conn.password ? ' • credentials found' : ''}`}
                                                         >
-                                                            {conn.confidence === 'high' ? (
-                                                                <CheckCircleIcon
-                                                                    fontSize="small"
-                                                                    color="success"
-                                                                />
-                                                            ) : conn.confidence === 'medium' ? (
-                                                                <WarningIcon
-                                                                    fontSize="small"
-                                                                    color="warning"
-                                                                />
-                                                            ) : (
-                                                                <InfoIcon
-                                                                    fontSize="small"
-                                                                    color="info"
-                                                                />
-                                                            )}
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                }}
+                                                            >
+                                                                {conn.confidence === 'high' ? (
+                                                                    <CheckCircleIcon
+                                                                        sx={{
+                                                                            fontSize: 18,
+                                                                            color: 'success.main',
+                                                                        }}
+                                                                    />
+                                                                ) : conn.confidence === 'medium' ? (
+                                                                    <WarningIcon
+                                                                        sx={{
+                                                                            fontSize: 18,
+                                                                            color: 'warning.main',
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <InfoIcon
+                                                                        sx={{
+                                                                            fontSize: 18,
+                                                                            color: 'info.main',
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </Box>
                                                         </StyledTooltip>
                                                     </Box>
-                                                </ListItemSecondaryAction>
-                                            </ListItem>
+                                                </Box>
+                                            </Paper>
                                         );
                                     })}
-                                </List>
+                                </Box>
                             </>
                         ) : (
                             <StatusAlert severity="info">
-                                No database connections were found. Make sure your databases are
-                                running and accessible.
+                                No database connections found. Make sure your databases are running.
                             </StatusAlert>
                         )}
 
                         {/* Scanned Sources */}
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 2 }}
+                        >
                             Scanned: {scanResult.scannedSources.join(' • ')}
                         </Typography>
                     </Box>
@@ -494,8 +590,11 @@ export function ScanConnectionsDialog({
 
                 {addingConnections && <LinearProgress sx={{ mt: 2 }} />}
             </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-                <Button onClick={handleClose}>Cancel</Button>
+
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={handleClose} color="inherit">
+                    {scanResult ? 'Close' : 'Cancel'}
+                </Button>
                 {scanResult && newConnectionIndices.length > 0 && (
                     <Button
                         variant="contained"

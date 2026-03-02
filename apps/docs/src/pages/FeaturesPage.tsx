@@ -91,7 +91,6 @@ const features = [
         title: 'Server Management',
         description:
             'Manage database servers separately from individual connections. Control Docker containers and local instances directly from the UI.',
-        screenshot: 'screenshots/serverspage.png',
         items: [
             'Add PostgreSQL, MySQL, SQLite servers',
             'Start/stop servers with custom commands',
@@ -109,7 +108,7 @@ const features = [
         title: 'Query Editor',
         description:
             'A powerful SQL editor with everything you need to write and execute queries efficiently.',
-        screenshot: 'screenshots/querypage.png',
+        screenshot: 'screenshots/query.png',
         items: [
             'Syntax highlighting for SQL',
             'Auto-completion for tables & columns',
@@ -126,7 +125,7 @@ const features = [
         color: '#6366f1',
         title: 'Schema Diagram',
         description: 'Visualize your database structure with an interactive, editable diagram.',
-        screenshot: 'screenshots/schemadiagrampage.png',
+        screenshot: 'screenshots/schemadiagram.png',
         items: [
             'Drag and drop table positioning',
             'Foreign key relationship lines',
@@ -143,7 +142,7 @@ const features = [
         color: '#22c55e',
         title: 'Compare & Sync',
         description: 'Compare database schemas across environments and keep them in sync.',
-        screenshot: 'screenshots/comparepage-schema.png',
+        screenshot: 'screenshots/compare-data.png',
         items: [
             'Side-by-side schema comparison',
             'Highlight added/removed/modified',
@@ -177,7 +176,7 @@ const features = [
         color: '#38bdf8',
         title: 'Manage your connections',
         description: 'Keep all your database connections organized with powerful management tools.',
-        screenshot: 'screenshots/connectionmanagement.png',
+        screenshot: 'screenshots/dbmanagement.png',
         items: [
             'Add, edit, and remove connections',
             'Test connectivity and health status',
@@ -194,7 +193,6 @@ const features = [
         color: '#ec4899',
         title: 'Projects & Groups',
         description: 'Organize your connections into logical projects and instance groups.',
-        screenshot: 'screenshots/projectspage.png',
         items: [
             'Create projects for apps',
             'Instance groups (dev/staging/prod)',
@@ -211,7 +209,7 @@ const features = [
         color: '#8b5cf6',
         title: 'Foreign Key Navigation',
         description: 'Follow relationships in your data with clickable foreign key values.',
-        screenshot: 'screenshots/querypage.png',
+        screenshot: 'screenshots/query.png',
         items: [
             'Click FK values to navigate',
             'Jump to referenced row',
@@ -229,7 +227,6 @@ const features = [
         title: 'Backup & Restore',
         description:
             'Create and restore database backups using native tools. Supports compression and multiple backup methods.',
-        screenshot: 'screenshots/backups.png',
         items: [
             'Full database backups',
             'GZIP compression support',
