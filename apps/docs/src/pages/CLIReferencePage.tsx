@@ -143,7 +143,7 @@ dbnexus init`}</CodeBlock>
                     databases declaratively:
                 </Paragraph>
                 <CodeBlock language="yaml">{`# dbnexus.config.yaml
-version: "0.3.1"
+version: "0.4.0"
 servers:
   - name: Local PostgreSQL
     engine: postgres

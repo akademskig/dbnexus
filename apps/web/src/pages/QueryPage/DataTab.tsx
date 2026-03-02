@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -37,6 +37,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -72,6 +73,7 @@ interface DataTabProps {
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
+    readonly hasTableSelected?: boolean;
     readonly onUpdateRow?: (
         oldRow: Record<string, unknown>,
         newRow: Record<string, unknown>
@@ -106,6 +108,7 @@ export function DataTab({
     onSearch,
     searchQuery,
     tableSchema,
+    hasTableSelected = false,
     onUpdateRow,
     onDeleteRow: _onDeleteRow,
     onDeleteRows: _onDeleteRows,
@@ -339,24 +342,29 @@ export function DataTab({
     // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
     // Calculate global index based on current page and page size for server-side pagination
     // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
-    const rows = result
-        ? result.rows.map((row, rowIndex) => {
-              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
-              // Transform row data to match column field names (col_name_index format)
-              const transformedRow: Record<string, unknown> = {
-                  __rowIndex: `row_${globalIndex}`,
-                  __originalRow: row, // Keep original row data for operations
-              };
+    const rows = useMemo(
+        () =>
+            result
+                ? result?.rows?.map((row, rowIndex) => {
+                      const globalIndex =
+                          paginationModel.page * paginationModel.pageSize + rowIndex;
+                      // Transform row data to match column field names (col_name_index format)
+                      const transformedRow: Record<string, unknown> = {
+                          __rowIndex: `row_${globalIndex}`,
+                          __originalRow: row, // Keep original row data for operations
+                      };
 
-              // Map each column value to its indexed field name
-              result.columns.forEach((col, colIndex) => {
-                  const fieldName = `${col.name}_${colIndex}`;
-                  transformedRow[fieldName] = row[col.name];
-              });
+                      // Map each column value to its indexed field name
+                      result.columns.forEach((col, colIndex) => {
+                          const fieldName = `${col.name}_${colIndex}`;
+                          transformedRow[fieldName] = row[col.name];
+                      });
 
-              return transformedRow;
-          })
-        : [];
+                      return transformedRow;
+                  })
+                : [],
+        [result, paginationModel]
+    );
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
         return selectedRowIds
@@ -873,7 +881,7 @@ export function DataTab({
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {rows.length > 0 ? (
                             <DataGrid
-                                key={`datagrid-${totalRowCount}`}
+                                key={`datagrid-${tableName}-${totalRowCount}-${connectionHost}-${connectionDatabase}`}
                                 rows={rows}
                                 columns={columns}
                                 getRowId={(row) => row.__rowIndex}
@@ -973,12 +981,20 @@ export function DataTab({
                     sx={{
                         flex: 1,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'text.secondary',
+                        p: 4,
+                        textAlign: 'center',
                     }}
                 >
-                    <Typography variant="body2">Loading data...</Typography>
+                    <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                    <Typography variant="body2">
+                        {hasTableSelected
+                            ? 'No data to display'
+                            : 'Select a table to view its data or run a query'}
+                    </Typography>
                 </Box>
             )}
 

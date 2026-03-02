@@ -34,7 +34,14 @@ export type AuditAction =
     | 'column_dropped'
     | 'rows_inserted'
     | 'rows_updated'
-    | 'rows_deleted';
+    | 'rows_deleted'
+    | 'user_registered'
+    | 'user_logged_in'
+    | 'login_failed'
+    | 'password_changed'
+    | 'password_change_failed'
+    | 'api_key_created'
+    | 'api_key_deleted';
 
 export type AuditEntityType =
     | 'connection'
@@ -48,7 +55,9 @@ export type AuditEntityType =
     | 'schema_snapshot'
     | 'table'
     | 'column'
-    | 'row';
+    | 'row'
+    | 'user'
+    | 'api_key';
 
 export interface AuditLogEntry {
     id: string;

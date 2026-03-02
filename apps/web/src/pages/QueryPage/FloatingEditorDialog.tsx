@@ -36,7 +36,7 @@ export function FloatingEditorDialog({
     onExplain,
     loading = false,
 }: FloatingEditorDialogProps) {
-    const { mode } = useThemeModeStore();
+    const mode = useThemeModeStore((state) => state.getMode());
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [size] = useState({ width: 800, height: 600 });
     const editorRef = useRef<Parameters<OnMount>[0] | null>(null);

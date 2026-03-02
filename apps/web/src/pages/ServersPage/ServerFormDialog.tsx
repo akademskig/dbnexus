@@ -89,8 +89,6 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                 return 5432;
             case 'mysql':
                 return 3306;
-            case 'mariadb':
-                return 3306;
             default:
                 return 5432;
         }
@@ -200,7 +198,6 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                             >
                                 <ToggleButton value="postgres">PostgreSQL</ToggleButton>
                                 <ToggleButton value="mysql">MySQL</ToggleButton>
-                                <ToggleButton value="mariadb">MariaDB</ToggleButton>
                             </ToggleButtonGroup>
                             {server && (
                                 <Typography

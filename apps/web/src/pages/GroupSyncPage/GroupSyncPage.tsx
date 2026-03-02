@@ -45,10 +45,10 @@ function formatRelativeTime(date: Date): string {
 }
 
 // Helper to get default schema for a connection
-// For MySQL/MariaDB, the database name is the schema
+// For MySQL, the database name is the schema
 function getConnectionDefaultSchema(conn: ConnectionConfig | undefined): string {
     if (!conn) return 'public';
-    if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+    if (conn.engine === 'mysql') {
         return conn.database;
     }
     return conn.defaultSchema || 'public';

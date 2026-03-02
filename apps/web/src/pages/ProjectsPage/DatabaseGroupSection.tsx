@@ -106,7 +106,6 @@ export function DatabaseGroupSection({
                     const engineNames: Record<string, string> = {
                         postgres: 'PostgreSQL',
                         mysql: 'MySQL',
-                        mariadb: 'MariaDB',
                         sqlite: 'SQLite',
                     };
                     toast.error(
@@ -205,9 +204,7 @@ export function DatabaseGroupSection({
                             ? 'PostgreSQL'
                             : group.databaseEngine === 'mysql'
                               ? 'MySQL'
-                              : group.databaseEngine === 'mariadb'
-                                ? 'MariaDB'
-                                : 'SQLite'
+                              : 'SQLite'
                     }
                     size="small"
                     sx={{

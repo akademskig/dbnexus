@@ -33,9 +33,15 @@ interface ConnectionRow {
     server_id: string | null;
     project_id: string | null;
     group_id: string | null;
+    created_by: string | null;
     server_name?: string;
     project_name?: string;
     group_name?: string;
+}
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
 }
 
 export class ConnectionRepository {
@@ -58,7 +64,7 @@ export class ConnectionRepository {
     /**
      * Create a new connection with password
      */
-    create(input: ConnectionCreateInput): ConnectionConfig {
+    create(input: ConnectionCreateInput, userId?: string): ConnectionConfig {
         const id = MetadataDatabase.generateId();
         const now = new Date().toISOString();
         const encryptedPwd = input.password ? encryptPassword(input.password) : null;
@@ -67,8 +73,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -88,6 +94,7 @@ export class ConnectionRepository {
                 input.serverId || null,
                 input.projectId || null,
                 input.groupId || null,
+                userId || null,
                 now,
                 now
             );
@@ -142,12 +149,10 @@ export class ConnectionRepository {
     }
 
     /**
-     * Get all connections
+     * Get all connections (filtered by user unless admin)
      */
-    findAll(): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findAll(userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
                 s.name as server_name,
@@ -157,20 +162,26 @@ export class ConnectionRepository {
             LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
-            ORDER BY p.name, dg.name, c.name
-        `
-            )
-            .all() as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE c.created_by = ? OR c.created_by IS NULL`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY p.name, dg.name, c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by project
+     * Find connections by project (filtered by user unless admin)
      */
-    findByProject(projectId: string): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findByProject(projectId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
                 s.name as server_name,
@@ -181,20 +192,26 @@ export class ConnectionRepository {
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id = ?
-            ORDER BY dg.name, c.name
-        `
-            )
-            .all(projectId) as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [projectId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY dg.name, c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by database group
+     * Find connections by database group (filtered by user unless admin)
      */
-    findByGroup(groupId: string): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findByGroup(groupId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
                 s.name as server_name,
@@ -205,20 +222,26 @@ export class ConnectionRepository {
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.group_id = ?
-            ORDER BY c.name
-        `
-            )
-            .all(groupId) as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [groupId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find ungrouped connections (no project assigned)
+     * Find ungrouped connections (no project assigned, filtered by user unless admin)
      */
-    findUngrouped(): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findUngrouped(userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
                 s.name as server_name,
@@ -229,20 +252,26 @@ export class ConnectionRepository {
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id IS NULL
-            ORDER BY c.name
-        `
-            )
-            .all() as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by tag
+     * Find connections by tag (filtered by user unless admin)
      */
-    findByTag(tag: ConnectionTag): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findByTag(tag: ConnectionTag, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
                 s.name as server_name,
@@ -252,10 +281,18 @@ export class ConnectionRepository {
             LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
-            ORDER BY c.name
-        `
-            )
-            .all() as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE c.created_by = ? OR c.created_by IS NULL`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows
             .filter((row) => {
                 const tags = JSON.parse(row.tags) as string[];
@@ -440,6 +477,7 @@ export class ConnectionRepository {
             serverId: row.server_id || undefined,
             projectId: row.project_id || undefined,
             groupId: row.group_id || undefined,
+            createdBy: row.created_by || undefined,
             serverName: row.server_name,
             projectName: row.project_name,
             groupName: row.group_name,
@@ -447,26 +485,45 @@ export class ConnectionRepository {
     }
 
     /**
-     * Find connections by server ID
+     * Check if user can access a connection
      */
-    findByServerId(serverId: string): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
-                SELECT c.*,
-                    s.name as server_name,
-                    p.name as project_name,
-                    g.name as group_name
-                FROM connections c
-                LEFT JOIN servers s ON c.server_id = s.id
-                LEFT JOIN projects p ON c.project_id = p.id
-                LEFT JOIN database_groups g ON c.group_id = g.id
-                WHERE c.server_id = ?
-                ORDER BY c.name
-                `
-            )
-            .all(serverId) as ConnectionRow[];
+    canAccess(connectionId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
 
+        const row = this.db
+            .prepare('SELECT created_by FROM connections WHERE id = ?')
+            .get(connectionId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        return row.created_by === null || row.created_by === userContext.userId;
+    }
+
+    /**
+     * Find connections by server ID (filtered by user unless admin)
+     */
+    findByServerId(serverId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
+            SELECT c.*,
+                s.name as server_name,
+                p.name as project_name,
+                g.name as group_name
+            FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups g ON c.group_id = g.id
+            WHERE c.server_id = ?
+        `;
+
+        const params: unknown[] = [serverId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 }

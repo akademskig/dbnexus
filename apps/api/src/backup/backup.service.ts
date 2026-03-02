@@ -177,7 +177,6 @@ export class BackupService {
             case 'postgres':
                 return this.performPostgresBackup(connection, filePath, backupType, compression);
             case 'mysql':
-            case 'mariadb':
                 return this.performMySQLBackup(connection, filePath, backupType, compression);
             case 'sqlite':
                 return this.performSQLiteBackup(

@@ -30,7 +30,7 @@ export function generateContextAwareSQL(
 
     // Helper to quote identifiers based on engine
     const quote = (identifier: string): string => {
-        if (engine === 'mysql' || engine === 'mariadb') {
+        if (engine === 'mysql') {
             return `\`${identifier}\``;
         }
         return `"${identifier}"`;

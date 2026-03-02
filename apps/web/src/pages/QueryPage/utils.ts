@@ -57,20 +57,6 @@ export const COMMON_TYPES = {
         'DOUBLE',
         'JSON',
     ],
-    mariadb: [
-        'INT',
-        'BIGINT',
-        'VARCHAR(255)',
-        'TEXT',
-        'BOOLEAN',
-        'DATETIME',
-        'TIMESTAMP',
-        'DATE',
-        'DECIMAL',
-        'FLOAT',
-        'DOUBLE',
-        'JSON',
-    ],
 } as const;
 
 export type ColumnDefinition = {

@@ -1,5 +1,5 @@
 // Valid database engines
-export const DATABASE_ENGINES = ['postgres', 'mysql', 'mariadb', 'sqlite'] as const;
+export const DATABASE_ENGINES = ['postgres', 'mysql', 'sqlite'] as const;
 
 // Valid connection types
 export const CONNECTION_TYPES = ['local', 'docker', 'remote'] as const;

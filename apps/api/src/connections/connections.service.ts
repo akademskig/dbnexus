@@ -14,6 +14,7 @@ import type {
     ConnectionUpdateInput,
     ConnectionTestResult,
 } from '@dbnexus/shared';
+import type { UserContext } from '@dbnexus/metadata';
 
 @Injectable()
 export class ConnectionsService {
@@ -24,10 +25,17 @@ export class ConnectionsService {
     constructor(private readonly metadataService: MetadataService) {}
 
     /**
-     * Get all connections
+     * Get all connections (filtered by user unless admin)
      */
-    findAll(): ConnectionConfig[] {
-        return this.metadataService.connectionRepository.findAll();
+    findAll(userContext?: UserContext): ConnectionConfig[] {
+        return this.metadataService.connectionRepository.findAll(userContext);
+    }
+
+    /**
+     * Check if user can access a connection
+     */
+    canAccess(connectionId: string, userContext: UserContext): boolean {
+        return this.metadataService.connectionRepository.canAccess(connectionId, userContext);
     }
 
     /**
@@ -51,7 +59,7 @@ export class ConnectionsService {
     /**
      * Create a new connection
      */
-    async create(input: ConnectionCreateInput): Promise<ConnectionConfig> {
+    async create(input: ConnectionCreateInput, userId?: string): Promise<ConnectionConfig> {
         // Check for duplicate name
         const existing = this.metadataService.connectionRepository.findByName(input.name);
         if (existing) {
@@ -59,7 +67,7 @@ export class ConnectionsService {
         }
 
         // Create connection in database (password will be encrypted)
-        const connection = this.metadataService.connectionRepository.create(input);
+        const connection = this.metadataService.connectionRepository.create(input, userId);
         this.logger.log(`Created connection "${connection.name}" (${connection.id})`);
 
         // Audit log
@@ -195,11 +203,6 @@ export class ConnectionsService {
             return connector.testConnection();
         }
 
-        if (settings.engine === 'mariadb') {
-            const connector = new MysqlConnector(config, true);
-            return connector.testConnection();
-        }
-
         const connector = new PostgresConnector(config);
         return connector.testConnection();
     }
@@ -283,10 +286,6 @@ export class ConnectionsService {
 
         if (connection.engine === 'mysql') {
             return new MysqlConnector(config, false);
-        }
-
-        if (connection.engine === 'mariadb') {
-            return new MysqlConnector(config, true);
         }
 
         return new PostgresConnector(config);

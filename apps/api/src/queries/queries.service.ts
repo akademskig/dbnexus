@@ -229,7 +229,7 @@ export class QueriesService {
         }
 
         // MySQL operations
-        if (engine === 'mysql' || engine === 'mariadb') {
+        if (engine === 'mysql') {
             switch (op) {
                 case 'optimize':
                 case 'analyze_mysql':

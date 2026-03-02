@@ -111,14 +111,14 @@ const colorSchemeLabels: Record<ColorScheme, string> = {
     emerald: 'Emerald',
     rose: 'Rose',
     lightblue: 'Light Blue',
-    lime: 'Lime',
     orange: 'Orange',
-    githubGreen: 'GitHub Green',
+    githubGreen: 'Green',
 };
 
 // Appearance Tab Content
 function AppearanceTab() {
-    const { mode, toggleMode } = useThemeModeStore();
+    const { getMode, toggleMode } = useThemeModeStore();
+    const mode = getMode();
     const { colorScheme, setColorScheme } = useColorSchemeStore();
 
     return (
@@ -1250,7 +1250,7 @@ export function SettingsPage() {
 
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
-            <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+            <Box sx={{ maxWidth: 850, mx: 'auto' }}>
                 {/* Header */}
                 <Box sx={{ mb: 4 }}>
                     <Typography
@@ -1296,7 +1296,7 @@ export function SettingsPage() {
                             <Tab
                                 icon={<PaletteIcon fontSize="small" />}
                                 iconPosition="start"
-                                label="Preferences"
+                                label="UI"
                             />
                             <Tab
                                 icon={<KeyboardIcon fontSize="small" />}

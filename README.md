@@ -14,38 +14,34 @@
 
 ### Query Editor
 
-![Query Page](https://akademskig.github.io/dbnexus/screenshots/querypage.png)
+![Query Page](https://akademskig.github.io/dbnexus/screenshots/query.png)
 
 ### Schema Diagram
 
-![Schema Diagram](https://akademskig.github.io/dbnexus/screenshots/schemadiagrampage.png)
+![Schema Diagram](https://akademskig.github.io/dbnexus/screenshots/schemadiagram.png)
 
 ### Compare & Sync
 
-![Compare Schema](https://akademskig.github.io/dbnexus/screenshots/comparepage-schema.png)
+![Compare Data](https://akademskig.github.io/dbnexus/screenshots/compare-data.png)
 
 <details>
 <summary>📷 More Screenshots</summary>
 
-### Data Comparison
-
-![Compare Data](https://akademskig.github.io/dbnexus/screenshots/comparepage-data.png)
-
-### Projects & Groups
-
-![Projects Page](https://akademskig.github.io/dbnexus/screenshots/projectspage.png)
-
 ### Connection Management
 
-![Connection Management](https://akademskig.github.io/dbnexus/screenshots/connectionmanagement.png)
+![Connection Management](https://akademskig.github.io/dbnexus/screenshots/dbmanagement.png)
 
-### Query Logs
+### Activity Logs
 
-![Logs Page](https://akademskig.github.io/dbnexus/screenshots/logspage-query.png)
+![Logs Page](https://akademskig.github.io/dbnexus/screenshots/logs.png)
 
-### Connection Scanner
+### Database Scanner
 
-![Scan Connections](https://akademskig.github.io/dbnexus/screenshots/scanconnections.png)
+![Scan Databases](https://akademskig.github.io/dbnexus/screenshots/scandbs.png)
+
+### Settings
+
+![Settings](https://akademskig.github.io/dbnexus/screenshots/settings.png)
 
 </details>
 

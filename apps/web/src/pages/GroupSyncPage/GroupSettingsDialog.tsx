@@ -81,17 +81,19 @@ export function GroupSettingsDialog({
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['group', group.id] });
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
             queryClient.invalidateQueries({ queryKey: ['groupSyncStatus', group.id] });
             onClose();
         },
     });
 
     // Get the selected source connection's default schema
-    // For MySQL/MariaDB, the database name is the schema
+    // For MySQL, the database name is the schema
     const sourceConnection = connections.find((c) => c.id === sourceConnectionId);
     const getDefaultSchema = (conn: typeof sourceConnection) => {
         if (!conn) return 'public';
-        if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+        if (conn.engine === 'mysql') {
             return conn.database;
         }
         return conn.defaultSchema || 'public';

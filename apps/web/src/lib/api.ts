@@ -31,20 +31,37 @@ import type {
     DatabaseEngine,
 } from '@dbnexus/shared';
 
+import { useAuthStore } from '../stores/authStore';
+
 const API_BASE = '/api';
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const token = await useAuthStore.getState().getValidToken();
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string>),
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers,
-        },
+        headers,
     });
+
+    if (response.status === 401) {
+        const authEnabled = useAuthStore.getState().authEnabled;
+        if (authEnabled) {
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+        }
+    }
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        // If the error has requiresConfirmation, serialize the whole object so it can be parsed
         if (error.requiresConfirmation) {
             throw new Error(JSON.stringify(error));
         }
@@ -631,7 +648,7 @@ export interface SyncRun {
 
 export interface DiscoveredConnection {
     name: string;
-    engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    engine: 'postgres' | 'mysql' | 'sqlite';
     host?: string;
     port?: number;
     database?: string;
@@ -847,6 +864,62 @@ export interface Tag {
     name: string;
     color: string;
 }
+
+// ============ Users (Admin) ============
+
+export interface UserInfo {
+    id: string;
+    email: string;
+    name: string | null;
+    role: 'admin' | 'editor' | 'viewer';
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const usersApi = {
+    getAll: () => fetchApi<UserInfo[]>('/users'),
+
+    getById: (id: string) => fetchApi<UserInfo>(`/users/${id}`),
+
+    updateRole: (id: string, role: 'admin' | 'editor' | 'viewer') =>
+        fetchApi<UserInfo>(`/users/${id}/role`, {
+            method: 'PATCH',
+            body: JSON.stringify({ role }),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/users/${id}`, {
+            method: 'DELETE',
+        }),
+};
+
+// ============ API Keys ============
+
+export interface ApiKeyInfo {
+    id: string;
+    name: string;
+    key?: string;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+}
+
+export const apiKeysApi = {
+    getAll: () => fetchApi<ApiKeyInfo[]>('/auth/api-keys'),
+
+    create: (name: string, expiresAt?: string) =>
+        fetchApi<ApiKeyInfo>('/auth/api-keys', {
+            method: 'POST',
+            body: JSON.stringify({ name, expiresAt }),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/auth/api-keys/${id}`, {
+            method: 'DELETE',
+        }),
+};
+
+// ============ Settings ============
 
 export const settingsApi = {
     getAll: (): Promise<Record<string, unknown>> => {

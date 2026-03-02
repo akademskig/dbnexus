@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useSearchParams, Navigate } from 'react-router-dom';
+import { useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ReactFlow,
@@ -32,16 +32,15 @@ import {
     TextField,
     CircularProgress,
     Chip,
-    Divider,
     Paper,
     alpha,
     useTheme,
     InputAdornment,
+    Divider,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { StatusAlert } from '../../components/StatusAlert';
 import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -50,16 +49,15 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import StorageIcon from '@mui/icons-material/Storage';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import IconButton from '@mui/material/IconButton';
 import type { TableSchema } from '@dbnexus/shared';
 import { schemaApi, queriesApi, connectionsApi } from '../../lib/api';
 import { buildDropTableSql, buildTableName, quoteIdentifier } from '../../lib/sql';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
-import { GlassCard } from '../../components/GlassCard';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
-import { ConnectionSelector } from '../../components/ConnectionSelector';
 import {
     AddColumnDialog,
     EditColumnDialog,
@@ -119,6 +117,7 @@ export function DiagramEditorPage() {
     const theme = useTheme();
     const queryClient = useQueryClient();
     const toast = useToastStore();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Use shared connection store
@@ -129,7 +128,9 @@ export function DiagramEditorPage() {
     } = useConnectionStore();
 
     // Get URL params - these are the source of truth on page load
-    const urlConnectionId = searchParams.get('connection') || '';
+    // Support both 'connection' and 'connectionId' for backwards compatibility
+    const urlConnectionId =
+        searchParams.get('connectionId') || searchParams.get('connection') || '';
     const urlSchema = searchParams.get('schema') || '';
 
     // Fetch connections
@@ -255,29 +256,6 @@ export function DiagramEditorPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loadingConnections, connections.length]);
-
-    // Update URL when selection changes
-    const handleConnectionChange = useCallback(
-        (connectionId: string) => {
-            setSearchParams(
-                (prev) => {
-                    const newParams = new URLSearchParams(prev);
-                    if (connectionId) {
-                        newParams.set('connection', connectionId);
-                        // Reset schema when connection changes
-                        newParams.delete('schema');
-                    } else {
-                        newParams.delete('connection');
-                        newParams.delete('schema');
-                    }
-                    return newParams;
-                },
-                { replace: true }
-            );
-            setConnectionAndSchema(connectionId, '');
-        },
-        [setConnectionAndSchema, setSearchParams]
-    );
 
     const handleSchemaChange = useCallback(
         (schema: string) => {
@@ -1149,24 +1127,26 @@ export function DiagramEditorPage() {
             sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: isFullscreen ? 'calc(100vh - 32px)' : 'calc(100vh - 35px)',
-                minHeight: 500,
+                flex: 1,
+                minHeight: 0,
             }}
         >
             {/* Top Bar */}
-            <GlassCard sx={{ mb: 2, p: 1.5 }}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Connection Selector */}
-                    <ConnectionSelector
-                        value={selectedConnectionId}
-                        onChange={handleConnectionChange}
-                        disabled={loadingConnections}
-                        disableOffline={true}
-                        data-tour="connection-selector"
-                    />
-
-                    {/* Schema Selector */}
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                }}
+            >
+                {/* Schema Selector */}
+                {selectedConnectionId && schemas.length > 0 && (
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
                         <InputLabel>Schema</InputLabel>
                         <Select
                             value={selectedSchema}
@@ -1186,69 +1166,58 @@ export function DiagramEditorPage() {
                             ))}
                         </Select>
                     </FormControl>
-
-                    <Divider orientation="vertical" flexItem />
-
-                    <Button
-                        variant="contained"
+                )}
+                {/* Query */}
+                <StyledTooltip title="Query">
+                    <IconButton
                         size="small"
-                        startIcon={<AddIcon />}
+                        onClick={() => navigate(`/query/${selectedConnectionId}`)}
+                        disabled={!selectedConnectionId}
+                    >
+                        <TerminalIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
+                <Divider orientation="vertical" flexItem />
+
+                <StyledTooltip title="New Table">
+                    <IconButton
+                        size="small"
                         onClick={() => setCreateTableOpen(true)}
                         disabled={!selectedConnectionId || !selectedSchema || connection?.readOnly}
                     >
-                        New Table
-                    </Button>
+                        <AddIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
 
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<RefreshIcon />}
-                        onClick={() => refetchTables()}
-                        disabled={loadingTables || !selectedConnectionId || !selectedSchema}
-                    >
-                        Refresh
-                    </Button>
+                <Box sx={{ flex: 1 }} />
 
-                    <Box sx={{ flex: 1 }} />
+                <Chip
+                    label={`${tables.length} table${tables.length === 1 ? '' : 's'}`}
+                    size="small"
+                    sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
+                />
 
-                    <Chip
-                        label={`${tables.length} table${tables.length === 1 ? '' : 's'}`}
-                        size="small"
-                        sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}
-                    />
-
-                    <StyledTooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
-                        <IconButton
-                            size="small"
-                            onClick={() => setIsFullscreen(!isFullscreen)}
-                            sx={{
-                                border: 1,
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                            }}
-                        >
-                            {isFullscreen ? (
-                                <FullscreenExitIcon fontSize="small" />
-                            ) : (
-                                <FullscreenIcon fontSize="small" />
-                            )}
-                        </IconButton>
-                    </StyledTooltip>
-                </Box>
-            </GlassCard>
+                <StyledTooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                    <IconButton size="small" onClick={() => setIsFullscreen(!isFullscreen)}>
+                        {isFullscreen ? (
+                            <FullscreenExitIcon fontSize="small" />
+                        ) : (
+                            <FullscreenIcon fontSize="small" />
+                        )}
+                    </IconButton>
+                </StyledTooltip>
+            </Box>
 
             {/* Diagram Canvas */}
-            <GlassCard
+            <Box
                 sx={{
                     flex: 1,
-                    p: 0,
                     overflow: 'hidden',
-                    backgroundColor: 'background.default',
-                    '&:hover': { borderColor: 'divider', boxShadow: 'none' },
+                    bgcolor: 'background.default',
                 }}
             >
                 {renderDiagramCanvas()}
-            </GlassCard>
+            </Box>
 
             {/* Create Table Dialog */}
             <Dialog
@@ -1467,5 +1436,9 @@ export function DiagramEditorPage() {
         );
     }
 
-    return <Box sx={{ px: 3, pt: 2, pb: 1, height: 'calc(100vh - 64px)' }}>{diagramContent}</Box>;
+    return (
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {diagramContent}
+        </Box>
+    );
 }

@@ -1,49 +1,55 @@
-import { Box, Typography, Chip, IconButton } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import {
+    Box,
+    IconButton,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    InputAdornment,
+    Divider,
+} from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import GridViewIcon from '@mui/icons-material/GridView';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { useNavigate } from 'react-router-dom';
 import { StyledTooltip } from '../../components/StyledTooltip';
-import { ConnectionSelector } from '../../components/ConnectionSelector';
 import { QueryTemplateIcon } from '../../components/icons/QueryTemplateIcon';
-
-interface Connection {
-    id: string;
-    engine: string;
-    host?: string;
-    database: string;
-}
 
 interface QueryPageToolbarProps {
     selectedConnectionId: string;
-    selectedConnection: Connection | undefined;
+    schemas: string[];
+    selectedSchema: string;
+    onSchemaChange: (schema: string) => void;
     templatesOpen: boolean;
     savedQueriesOpen: boolean;
     historyOpen: boolean;
-    onConnectionChange: (connectionId: string) => void;
     onTemplatesToggle: () => void;
     onSavedQueriesToggle: () => void;
     onHistoryToggle: () => void;
-    onRefresh: () => void;
 }
 
 export function QueryPageToolbar({
     selectedConnectionId,
-    selectedConnection,
+    schemas,
+    selectedSchema,
+    onSchemaChange,
     templatesOpen,
     savedQueriesOpen,
     historyOpen,
-    onConnectionChange,
     onTemplatesToggle,
     onSavedQueriesToggle,
     onHistoryToggle,
-    onRefresh,
 }: QueryPageToolbarProps) {
+    const navigate = useNavigate();
+
     return (
         <Box
             sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2,
+                gap: 1.5,
                 px: 2,
                 py: 1.5,
                 borderBottom: 1,
@@ -51,31 +57,48 @@ export function QueryPageToolbar({
                 bgcolor: 'background.paper',
             }}
         >
-            <ConnectionSelector
-                value={selectedConnectionId}
-                onChange={onConnectionChange}
-                disableOffline={true}
-            />
-
-            {selectedConnection && (
-                <>
-                    <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                        {selectedConnection.engine === 'sqlite'
-                            ? selectedConnection.database.split('/').pop()
-                            : `${selectedConnection.host}/${selectedConnection.database}`}
-                    </Typography>
-                    <Chip
-                        label={selectedConnection.engine.toUpperCase()}
-                        size="small"
-                        sx={{
-                            fontSize: 10,
-                            height: 20,
-                            bgcolor: 'primary.dark',
-                            color: 'primary.contrastText',
-                        }}
-                    />
-                </>
+            {/* Schema Selector */}
+            {selectedConnectionId && schemas.length > 0 && (
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Schema</InputLabel>
+                    <Select
+                        value={selectedSchema}
+                        onChange={(e) => onSchemaChange(e.target.value)}
+                        label="Schema"
+                        startAdornment={
+                            <InputAdornment position="start">
+                                <GridViewIcon fontSize="small" sx={{ color: 'primary.main' }} />
+                            </InputAdornment>
+                        }
+                    >
+                        {schemas.map((schema) => (
+                            <MenuItem key={schema} value={schema}>
+                                {schema}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
             )}
+
+            <StyledTooltip title="View Schema Diagram">
+                <IconButton
+                    size="small"
+                    onClick={() => navigate(`/schema-diagram?connectionId=${selectedConnectionId}`)}
+                    disabled={!selectedConnectionId}
+                >
+                    <AccountTreeIcon fontSize="small" />
+                </IconButton>
+            </StyledTooltip>
+            <Divider orientation="vertical" flexItem />
+            <StyledTooltip title="Manage Database">
+                <IconButton
+                    size="small"
+                    onClick={() => navigate(`/connections/${selectedConnectionId}?tab=overview`)}
+                    disabled={!selectedConnectionId}
+                >
+                    <SettingsIcon fontSize="small" />
+                </IconButton>
+            </StyledTooltip>
 
             <Box sx={{ flex: 1 }} />
 
@@ -106,12 +129,6 @@ export function QueryPageToolbar({
                     color={historyOpen ? 'primary' : 'default'}
                 >
                     <HistoryIcon fontSize="small" />
-                </IconButton>
-            </StyledTooltip>
-
-            <StyledTooltip title="Refresh">
-                <IconButton size="small" onClick={onRefresh}>
-                    <RefreshIcon fontSize="small" />
                 </IconButton>
             </StyledTooltip>
         </Box>

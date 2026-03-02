@@ -5,7 +5,7 @@
 // Tags are now dynamic strings (managed in Settings)
 export type ConnectionTag = string;
 
-export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql' | 'mariadb';
+export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql';
 
 export type ConnectionType = 'local' | 'docker' | 'remote';
 
@@ -19,6 +19,7 @@ export interface Project {
     color?: string;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
 }
 
 export interface ProjectCreateInput {
@@ -49,6 +50,7 @@ export interface InstanceGroup {
     syncTargetSchema?: string; // Schema to sync (overrides connection defaultSchema)
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
     // Populated from joins
     projectName?: string;
     sourceConnectionName?: string;
@@ -129,6 +131,7 @@ export interface ConnectionConfig {
     readOnly: boolean;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
     // Server reference (for PostgreSQL/MySQL - SQLite doesn't use servers)
     serverId?: string;
     // Organization
@@ -200,6 +203,7 @@ export interface ServerConfig {
     stopCommand?: string;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
     // Populated from queries
     databaseCount?: number;
 }

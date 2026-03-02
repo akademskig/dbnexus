@@ -51,7 +51,7 @@ export class SchemaService {
 
         // Use appropriate quoting based on engine
         let sql: string;
-        if (connection.engine === 'mysql' || connection.engine === 'mariadb') {
+        if (connection.engine === 'mysql') {
             sql = `SELECT COUNT(*) as count FROM \`${schema}\`.\`${table}\``;
         } else if (connection.engine === 'sqlite') {
             sql = `SELECT COUNT(*) as count FROM "${table}"`;
@@ -80,7 +80,7 @@ export class SchemaService {
 
         // Generate SQL based on database engine
         let sql: string;
-        if (connection.engine === 'mysql' || connection.engine === 'mariadb') {
+        if (connection.engine === 'mysql') {
             sql = `CREATE SCHEMA \`${schemaName}\``;
         } else if (connection.engine === 'sqlite') {
             throw new Error('SQLite does not support creating schemas');
@@ -119,7 +119,7 @@ export class SchemaService {
 
         // Generate SQL based on database engine
         let sql: string;
-        if (connection.engine === 'mysql' || connection.engine === 'mariadb') {
+        if (connection.engine === 'mysql') {
             sql = `DROP SCHEMA \`${schemaName}\``;
         } else if (connection.engine === 'sqlite') {
             throw new Error('SQLite does not support deleting schemas');

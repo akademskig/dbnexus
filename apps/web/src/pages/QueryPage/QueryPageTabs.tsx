@@ -243,6 +243,7 @@ export function QueryPageTabs({
                         onSearch={onSearch}
                         searchQuery={searchQuery}
                         tableSchema={tableSchema}
+                        hasTableSelected={!!selectedTable}
                         onUpdateRow={onUpdateRow}
                         onDeleteRow={onDeleteRow}
                         onDeleteRows={onDeleteRows}

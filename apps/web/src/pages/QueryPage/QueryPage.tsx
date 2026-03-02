@@ -9,6 +9,7 @@ import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
+import { useRecentDatabasesStore } from '../../stores/recentDatabasesStore';
 import { QueryPageSidebar } from './QueryPageSidebar';
 import { QueryPageHeader } from './QueryPageHeader';
 import { QueryPageTabs } from './QueryPageTabs';
@@ -60,6 +61,12 @@ export function QueryPage() {
     useEffect(() => {
         if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
             setSelectedConnectionId(routeConnectionId);
+            // Reset all state when connection changes
+            setSelectedSchema('');
+            setSelectedTable(null);
+            setResult(null);
+            setError(null);
+            setSql('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [routeConnectionId]); // Only react to URL changes, not state changes
@@ -240,8 +247,21 @@ export function QueryPage() {
 
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
 
+    // Track recent database access
+    const { addRecentDatabase } = useRecentDatabasesStore();
+    useEffect(() => {
+        if (selectedConnection) {
+            addRecentDatabase({
+                connectionId: selectedConnection.id,
+                name: selectedConnection.name || selectedConnection.database,
+                engine: selectedConnection.engine,
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedConnection?.id, addRecentDatabase]);
+
     // Schemas query
-    const { data: schemas = [], refetch: refetchSchemas } = useQuery({
+    const { data: schemas = [] } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
@@ -251,6 +271,7 @@ export function QueryPage() {
     const {
         data: tables = [],
         isLoading: tablesLoading,
+        isFetching: tablesFetching,
         refetch: refetchTables,
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
@@ -325,7 +346,7 @@ export function QueryPage() {
                 const engine = selectedConnection?.engine;
                 let defaultSchema: string | undefined;
 
-                if (engine === 'mysql' || engine === 'mariadb') {
+                if (engine === 'mysql') {
                     defaultSchema =
                         selectedConnection?.database &&
                         schemas.includes(selectedConnection.database)
@@ -360,7 +381,7 @@ export function QueryPage() {
 
     // Execute mutation
 
-    // Restore table selection from URL
+    // Restore table selection from URL or auto-select first table
     useEffect(() => {
         // Skip restoration if we just did a FK query
         if (skipTableRestoreRef.current) {
@@ -391,7 +412,7 @@ export function QueryPage() {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tables, urlTable, urlSchema, selectedTable]);
+    }, [tables, tablesLoading, tablesFetching, urlTable, urlSchema, selectedTable]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -621,9 +642,7 @@ export function QueryPage() {
                 if (searchableColumns.length > 0) {
                     const searchConditions = searchableColumns.map((col) => {
                         const quotedCol = quoteIdentifier(col.name, engine);
-                        if (engine === 'sqlite') {
-                            return `${quotedCol} LIKE '%${searchTerm}%'`;
-                        } else if (engine === 'mysql' || engine === 'mariadb') {
+                        if (engine === 'sqlite' || engine === 'mysql') {
                             return `${quotedCol} LIKE '%${searchTerm}%'`;
                         } else {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
@@ -653,6 +672,8 @@ export function QueryPage() {
     const handleTableSelect = useCallback(
         async (table: TableInfo) => {
             setSelectedTable(table);
+            setResult(null);
+            setError(null);
             setTotalRowCount(null);
             setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
             setSearchQuery('');
@@ -866,13 +887,6 @@ export function QueryPage() {
         }
     }, [selectedTable, selectedConnectionId, refetchTables]);
 
-    // Group tables by schema
-    const handleRefresh = () => {
-        refetchSchemas();
-        refetchTables();
-        refetchRowCount();
-    };
-
     // Row operations hook
     const {
         addRowOpen,
@@ -981,24 +995,21 @@ export function QueryPage() {
             {/* Top Toolbar */}
             <QueryPageToolbar
                 selectedConnectionId={selectedConnectionId}
-                selectedConnection={selectedConnection}
+                schemas={schemas}
+                selectedSchema={selectedSchema}
+                onSchemaChange={handleSchemaChange}
                 templatesOpen={templatesOpen}
                 savedQueriesOpen={savedQueriesOpen}
                 historyOpen={historyOpen}
-                onConnectionChange={handleConnectionChange}
                 onTemplatesToggle={() => setTemplatesOpen(true)}
                 onSavedQueriesToggle={() => setSavedQueriesOpen(true)}
                 onHistoryToggle={() => setHistoryOpen(true)}
-                onRefresh={handleRefresh}
             />
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 <QueryPageSidebar
                     selectedConnectionId={selectedConnectionId}
-                    schemas={schemas}
-                    selectedSchema={selectedSchema}
-                    onSchemaChange={handleSchemaChange}
                     tableSearch={tableSearch}
                     onTableSearchChange={setTableSearch}
                     filteredTables={filteredTables}
@@ -1027,8 +1038,6 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
-                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
-                                    refreshing={executeMutation.isPending}
                                 />
                             )}
                             {splitViewOpen ? (
@@ -1051,6 +1060,7 @@ export function QueryPage() {
                                         }}
                                     >
                                         <QueryPageTabs
+                                            key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                             activeTab={activeTab}
                                             onTabChange={handleTabChange}
                                             result={result}
@@ -1138,6 +1148,7 @@ export function QueryPage() {
                                 </Group>
                             ) : (
                                 <QueryPageTabs
+                                    key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                     activeTab={activeTab}
                                     onTabChange={handleTabChange}
                                     result={result}

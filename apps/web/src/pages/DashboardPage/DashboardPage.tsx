@@ -1,57 +1,81 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Grid, Button } from '@mui/material';
-import { StyledTooltip } from '../../components/StyledTooltip';
 import {
-    Add as AddIcon,
-    Hub as HubIcon,
-    Bolt as BoltIcon,
-    Speed as SpeedIcon,
-    Warning as WarningIcon,
-    Sync as SyncIcon,
-    Storage as StorageIcon,
-    History as HistoryIcon,
+    Box,
+    Typography,
+    Button,
+    Grid,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+} from '@mui/material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
     Search as SearchIcon,
+    Add as AddIcon,
+    Dns as DnsIcon,
+    Storage as StorageIcon,
+    Sync as SyncIcon,
 } from '@mui/icons-material';
-import { useQueryClient } from '@tanstack/react-query';
-import { connectionsApi, queriesApi, syncApi } from '../../lib/api';
+import { connectionsApi, serversApi, syncApi, projectsApi, groupsApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
-import type {
-    ConnectionConfig,
-    QueryHistoryEntry,
-    InstanceGroup,
-    InstanceGroupSyncStatus,
-} from '@dbnexus/shared';
-import { StatCard } from './StatCard';
-import { ConnectionRow } from './ConnectionRow';
-import { ActivityItem } from './ActivityItem';
-import { SyncGroupRow } from './SyncGroupRow';
-import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
+import type { InstanceGroupSyncStatus } from '@dbnexus/shared';
+import { QuickAccessSection } from './QuickAccessSection';
+import { SyncGroupsSection } from './SyncGroupsSection';
+import { ServerDatabaseTable } from './ServerDatabaseTable';
+import { ProjectsSection } from './ProjectsSection';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
+import { StyledTooltip } from '../../components/StyledTooltip';
+import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
+import { ConnectionFormDialog, GroupFormDialog } from '../ConnectionsPage/Dialogs';
 
 export function DashboardPage() {
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const [connections, setConnections] = useState<ConnectionConfig[]>([]);
-    const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
-    const [syncGroups, setSyncGroups] = useState<InstanceGroup[]>([]);
     const [syncStatuses, setSyncStatuses] = useState<Record<string, InstanceGroupSyncStatus>>({});
     const [syncChecking, setSyncChecking] = useState<Record<string, boolean>>({});
-    const [loading, setLoading] = useState(true);
     const [scanDialogOpen, setScanDialogOpen] = useState(false);
+    const [addMenuAnchor, setAddMenuAnchor] = useState<null | HTMLElement>(null);
+    const [serverDialogOpen, setServerDialogOpen] = useState(false);
+    const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
+    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+    const [groupDialogProjectId, setGroupDialogProjectId] = useState<string | null>(null);
 
-    // Use global connection health store
-    const { healthStatus, checkAllConnections } = useConnectionHealthStore();
+    const { checkAllConnections } = useConnectionHealthStore();
 
-    // Check sync status for a group in background
+    const { data: servers = [], isLoading: loadingServers } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
+    });
+
+    const { data: connections = [], isLoading: loadingConnections } = useQuery({
+        queryKey: ['connections'],
+        queryFn: () => connectionsApi.getAll(),
+    });
+
+    const { data: projects = [], isLoading: loadingProjects } = useQuery({
+        queryKey: ['projects'],
+        queryFn: () => projectsApi.getAll(),
+    });
+
+    const { data: syncGroups = [] } = useQuery({
+        queryKey: ['syncGroups'],
+        queryFn: () => syncApi.getSyncEnabledGroups().catch(() => []),
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+    });
+
+    const loading = loadingServers || loadingConnections || loadingProjects;
+
     const checkGroupSyncStatus = async (groupId: string) => {
         setSyncChecking((prev) => ({ ...prev, [groupId]: true }));
         try {
             const status = await syncApi.getGroupSyncStatus(groupId);
             setSyncStatuses((prev) => ({ ...prev, [groupId]: status }));
-            // Also update React Query cache so GroupSyncPage can use it
             queryClient.setQueryData(['groupSyncStatus', groupId], status);
         } catch (error) {
             console.error(`Failed to check sync status for group ${groupId}:`, error);
@@ -60,42 +84,23 @@ export function DashboardPage() {
         }
     };
 
-    const loadData = async () => {
-        try {
-            const [conns, hist, groups] = await Promise.all([
-                connectionsApi.getAll(),
-                queriesApi.getHistory(undefined, 10),
-                syncApi.getSyncEnabledGroups().catch(() => []),
-            ]);
-            setConnections(conns);
-            setHistory(hist);
-            setSyncGroups(groups);
-
-            // Check health for all connections using global store
-            checkAllConnections(conns.map((c) => c.id));
-
-            // Check sync status for each group with sync enabled (in background)
-            groups.forEach((group) => {
-                if (group.sourceConnectionId && (group.syncSchema || group.syncData)) {
-                    checkGroupSyncStatus(group.id);
-                }
-            });
-        } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (connections.length > 0) {
+            checkAllConnections(connections.map((c) => c.id));
         }
-    };
+    }, [connections, checkAllConnections]);
 
-    // Load data on mount
     useEffect(() => {
-        loadData();
+        syncGroups.forEach((group) => {
+            if (group.sourceConnectionId && (group.syncSchema || group.syncData)) {
+                checkGroupSyncStatus(group.id);
+            }
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [syncGroups]);
 
-    // Auto-refresh sync status every 10 minutes
     useEffect(() => {
-        const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes in ms
+        const REFRESH_INTERVAL = 10 * 60 * 1000;
 
         const refreshSyncStatuses = () => {
             syncGroups.forEach((group) => {
@@ -106,25 +111,16 @@ export function DashboardPage() {
         };
 
         const intervalId = setInterval(refreshSyncStatuses, REFRESH_INTERVAL);
-
         return () => clearInterval(intervalId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [syncGroups]);
-
-    const totalQueries = history.length;
-    const successfulQueries = history.filter((h) => h.success).length;
-    const failedQueries = history.filter((h) => !h.success).length;
-    const avgDuration =
-        history.length > 0
-            ? Math.round(history.reduce((acc, h) => acc + h.executionTimeMs, 0) / history.length)
-            : 0;
 
     return (
         <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
             {/* Header */}
             <Box
                 sx={{
-                    mb: 5,
+                    mb: 4,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -137,21 +133,70 @@ export function DashboardPage() {
                             fontWeight: 600,
                             color: 'text.primary',
                             letterSpacing: '-0.02em',
-                            mb: 1,
+                            mb: 0.5,
                         }}
                     >
                         Dashboard
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Overview of your database connections and activity
+                        Manage your servers and databases
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 1 }} data-tour="add-connection">
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+                    >
+                        Add
+                    </Button>
+                    <Menu
+                        anchorEl={addMenuAnchor}
+                        open={Boolean(addMenuAnchor)}
+                        onClose={() => setAddMenuAnchor(null)}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    >
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setServerDialogOpen(true);
+                            }}
+                        >
+                            <ListItemIcon>
+                                <DnsIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Server</ListItemText>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setConnectionDialogOpen(true);
+                            }}
+                        >
+                            <ListItemIcon>
+                                <StorageIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Database</ListItemText>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setAddMenuAnchor(null);
+                                setGroupDialogProjectId(projects[0]?.id ?? null);
+                                setGroupDialogOpen(true);
+                            }}
+                            disabled={projects.length === 0}
+                        >
+                            <ListItemIcon>
+                                <SyncIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Add Sync Group</ListItemText>
+                        </MenuItem>
+                    </Menu>
                     <StyledTooltip title="Scan for database connections">
                         <Button
-                            size="large"
                             variant="outlined"
-                            startIcon={<SearchIcon fontSize="large" />}
+                            startIcon={<SearchIcon />}
                             onClick={() => setScanDialogOpen(true)}
                         >
                             Scan
@@ -160,286 +205,46 @@ export function DashboardPage() {
                 </Box>
             </Box>
 
-            {/* Stats Row */}
-            <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={6} md={3}>
-                    <StatCard
-                        label="Connections"
-                        value={loading ? '-' : String(connections.length)}
-                        loading={loading}
-                        icon={<HubIcon />}
-                        color="#0ea5e9"
-                    />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <StatCard
-                        label="Recent Queries"
-                        value={loading ? '-' : String(totalQueries)}
-                        loading={loading}
-                        icon={<BoltIcon />}
-                        color="#8b5cf6"
-                    />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <StatCard
-                        label="Avg Response"
-                        value={loading ? '-' : `${avgDuration}ms`}
-                        loading={loading}
-                        icon={<SpeedIcon />}
-                        color="#10b981"
-                    />
-                </Grid>
-                <Grid item xs={6} md={3}>
-                    <StatCard
-                        label="Errors"
-                        value={loading ? '-' : String(failedQueries)}
-                        change={failedQueries > 0 ? `+${failedQueries}` : undefined}
-                        changeType={failedQueries > 0 ? 'down' : 'neutral'}
-                        loading={loading}
-                        icon={<WarningIcon />}
-                        color="#ef4444"
-                    />
-                </Grid>
-            </Grid>
-
+            {/* Two Column Layout */}
             <Grid container spacing={3}>
-                {/* Connections Table */}
+                {/* Left Column - Servers, Databases & Projects */}
                 <Grid item xs={12} lg={8}>
-                    <GlassCard noPadding>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                px: 2,
-                                py: 1.5,
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle2"
-                                sx={{ color: 'text.primary', fontWeight: 600 }}
-                            >
-                                Connections
-                            </Typography>
-                            <Button
-                                size="small"
-                                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                                onClick={() => navigate('/dashboard')}
-                                sx={{
-                                    color: 'primary.main',
-                                    textTransform: 'none',
-                                    fontSize: 13,
-                                    '&:hover': { bgcolor: 'action.hover' },
-                                }}
-                            >
-                                Add new
-                            </Button>
-                        </Box>
-                        {/* Table header */}
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr 100px 40px',
-                                px: 2,
-                                py: 1,
-                                bgcolor: 'background.default',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                            }}
-                        >
-                            <Typography
-                                variant="caption"
-                                sx={{ color: 'text.secondary', fontWeight: 500 }}
-                            >
-                                NAME
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                sx={{ color: 'text.secondary', fontWeight: 500 }}
-                            >
-                                HOST
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                sx={{ color: 'text.secondary', fontWeight: 500 }}
-                            >
-                                STATUS
-                            </Typography>
-                            <Box />
-                        </Box>
-                        {loading ? (
-                            <LoadingState size="small" />
-                        ) : connections.length === 0 ? (
-                            <Box sx={{ textAlign: 'center', py: 3 }}>
-                                <StorageIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                    No connections yet
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        gap: 1,
-                                        justifyContent: 'center',
-                                        mt: 2,
-                                    }}
-                                >
-                                    <Button
-                                        size="small"
-                                        startIcon={<SearchIcon />}
-                                        onClick={() => setScanDialogOpen(true)}
-                                    >
-                                        Scan
-                                    </Button>
-                                    <Button
-                                        size="small"
-                                        startIcon={<AddIcon />}
-                                        onClick={() => navigate('/projects')}
-                                    >
-                                        Add Manually
-                                    </Button>
-                                </Box>
-                            </Box>
-                        ) : (
-                            <>
-                                {connections.slice(0, 5).map((conn, i) => {
-                                    const health = healthStatus[conn.id];
-                                    const status: 'online' | 'offline' | 'checking' = health
-                                        ? health.isOnline
-                                            ? 'online'
-                                            : 'offline'
-                                        : 'checking';
-                                    return (
-                                        <ConnectionRow
-                                            key={conn.id}
-                                            connection={conn}
-                                            status={status}
-                                            isFirst={i === 0}
-                                            onClick={() => navigate(`/query/${conn.id}`)}
-                                        />
-                                    );
-                                })}
-                                {connections.length > 5 && (
-                                    <Box
-                                        sx={{
-                                            textAlign: 'center',
-                                            py: 2,
-                                            borderTop: '1px solid',
-                                            borderColor: 'divider',
-                                        }}
-                                    >
-                                        <Button
-                                            size="small"
-                                            onClick={() => navigate('/projects')}
-                                            sx={{
-                                                color: 'text.secondary',
-                                                textTransform: 'none',
-                                                fontSize: 13,
-                                                '&:hover': {
-                                                    bgcolor: 'action.hover',
-                                                    color: 'primary.main',
-                                                },
-                                            }}
-                                        >
-                                            View all {connections.length} connections
-                                        </Button>
-                                    </Box>
-                                )}
-                            </>
-                        )}
-                    </GlassCard>
-                </Grid>
-
-                {/* Activity */}
-                <Grid item xs={12} lg={4}>
-                    <GlassCard>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 2,
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle2"
-                                sx={{ color: 'text.primary', fontWeight: 600 }}
-                            >
-                                Recent Activity
-                            </Typography>
-                            {history.length > 0 && (
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                    {successfulQueries}/{totalQueries} successful
-                                </Typography>
-                            )}
-                        </Box>
-                        {loading ? (
-                            <LoadingState size="small" />
-                        ) : history.length === 0 ? (
-                            <EmptyState
-                                icon={<HistoryIcon />}
-                                title="No recent activity"
-                                description="Queries you run will appear here."
-                                size="small"
-                            />
-                        ) : (
-                            <Box
-                                sx={{
-                                    '& > *:not(:last-child)': {
-                                        borderBottom: '1px solid',
-                                        borderColor: 'divider',
-                                    },
-                                }}
-                            >
-                                {history.slice(0, 5).map((entry) => (
-                                    <ActivityItem key={entry.id} entry={entry} />
-                                ))}
-                            </Box>
-                        )}
-                    </GlassCard>
-                </Grid>
-
-                {/* Instance Group Sync Status */}
-                {syncGroups.length > 0 && (
-                    <Grid item xs={12}>
-                        <GlassCard noPadding>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    px: 2,
-                                    py: 1.5,
-                                    borderBottom: '1px solid',
-                                    borderColor: 'divider',
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <SyncIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                                    <Typography
-                                        variant="subtitle2"
-                                        sx={{ color: 'text.primary', fontWeight: 600 }}
-                                    >
-                                        Instance Groups with Sync
-                                    </Typography>
-                                </Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                    {syncGroups.length} group{syncGroups.length !== 1 ? 's' : ''}
-                                </Typography>
-                            </Box>
-                            {syncGroups.map((group) => (
-                                <SyncGroupRow
-                                    key={group.id}
-                                    group={group}
-                                    syncStatus={syncStatuses[group.id]}
-                                    checking={syncChecking[group.id] || false}
-                                    onClick={() => navigate(`/groups/${group.id}/sync`)}
-                                />
-                            ))}
+                    {loading ? (
+                        <GlassCard>
+                            <LoadingState message="Loading servers and databases..." />
                         </GlassCard>
-                    </Grid>
-                )}
+                    ) : (
+                        <>
+                            <ServerDatabaseTable
+                                servers={servers}
+                                connections={connections}
+                                loading={loading}
+                            />
+                            <Box sx={{ mt: 3 }} data-tour="create-project">
+                                <ProjectsSection
+                                    projects={projects}
+                                    connections={connections}
+                                    loading={loadingProjects}
+                                />
+                            </Box>
+                        </>
+                    )}
+                </Grid>
+
+                {/* Right Column - Quick Access & Sync Groups */}
+                <Grid item xs={12} lg={4}>
+                    {/* Quick Access Section */}
+                    <QuickAccessSection />
+
+                    {/* Sync Groups Section */}
+                    <SyncGroupsSection
+                        syncGroups={syncGroups}
+                        syncStatuses={syncStatuses}
+                        syncChecking={syncChecking}
+                        connections={connections}
+                        onCheckStatus={checkGroupSyncStatus}
+                    />
+                </Grid>
             </Grid>
 
             {/* Scan Connections Dialog */}
@@ -447,7 +252,37 @@ export function DashboardPage() {
                 open={scanDialogOpen}
                 onClose={() => {
                     setScanDialogOpen(false);
-                    loadData(); // Refresh after scanning
+                    queryClient.invalidateQueries({ queryKey: ['servers'] });
+                    queryClient.invalidateQueries({ queryKey: ['connections'] });
+                    queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
+                }}
+            />
+
+            {/* Server Form Dialog */}
+            <ServerFormDialog
+                open={serverDialogOpen}
+                server={null}
+                onClose={() => setServerDialogOpen(false)}
+            />
+
+            {/* Connection Form Dialog */}
+            <ConnectionFormDialog
+                open={connectionDialogOpen}
+                connection={null}
+                projects={projects}
+                groups={groups}
+                servers={servers}
+                onClose={() => setConnectionDialogOpen(false)}
+            />
+
+            {/* Group Form Dialog */}
+            <GroupFormDialog
+                open={groupDialogOpen}
+                group={null}
+                projectId={groupDialogProjectId}
+                onClose={() => {
+                    setGroupDialogOpen(false);
+                    setGroupDialogProjectId(null);
                 }}
             />
         </Box>

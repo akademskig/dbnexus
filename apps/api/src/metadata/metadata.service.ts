@@ -13,6 +13,7 @@ import {
     BackupLogsRepository,
     ServerRepository,
     SettingsRepository,
+    UserRepository,
 } from '@dbnexus/metadata';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -33,6 +34,7 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
     private _backupLogsRepository!: BackupLogsRepository;
     private _serverRepository!: ServerRepository;
     private _settingsRepository!: SettingsRepository;
+    private _userRepository!: UserRepository;
 
     onModuleInit() {
         // Get data directory path
@@ -77,6 +79,7 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
         this._backupLogsRepository = new BackupLogsRepository(this.db.db);
         this._serverRepository = new ServerRepository(this.db);
         this._settingsRepository = new SettingsRepository(this.db);
+        this._userRepository = new UserRepository(this.db.db);
 
         this.logger.log(`📦 Metadata database initialized at ${dbPath}`);
     }
@@ -131,6 +134,10 @@ export class MetadataService implements OnModuleInit, OnModuleDestroy {
 
     get settingsRepository(): SettingsRepository {
         return this._settingsRepository;
+    }
+
+    get userRepository(): UserRepository {
+        return this._userRepository;
     }
 
     get database(): MetadataDatabase {

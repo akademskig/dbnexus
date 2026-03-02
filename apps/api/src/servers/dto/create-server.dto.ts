@@ -18,7 +18,7 @@ export class CreateServerDto {
     name!: string;
 
     @IsString()
-    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, mariadb, or sqlite' })
+    @IsIn([...DATABASE_ENGINES], { message: 'Engine must be postgres, mysql, or sqlite' })
     engine!: DatabaseEngine;
 
     @IsOptional()

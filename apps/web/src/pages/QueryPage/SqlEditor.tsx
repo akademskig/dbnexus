@@ -50,7 +50,7 @@ export function SqlEditor({
     result,
     error,
 }: SqlEditorProps) {
-    const { mode } = useThemeModeStore();
+    const mode = useThemeModeStore((state) => state.getMode());
     const toast = useToastStore();
     const [outputPanelOpen, setOutputPanelOpen] = useState(false);
     const theme = useTheme();

@@ -98,9 +98,27 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
+        version: '0.4.0',
+        date: 'January 2026',
+        latest: true,
+        changes: [
+            {
+                type: 'changed' as const,
+                text: 'Updated documentation with new screenshots and Settings & System Tools section',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Added data comparison feature documentation to Compare & Sync',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Improved checkbox alignment in scan dialog',
+            },
+        ],
+    },
+    {
         version: '0.3.1',
         date: 'February 2026',
-        latest: true,
         changes: [
             {
                 type: 'added' as const,
