@@ -4,6 +4,7 @@ import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from '../stores/authStore';
 import { useFavoriteTablesStore } from '../stores/favoriteTablesStore';
 import { useThemeModeStore } from '../stores/themeModeStore';
+import { useColorSchemeStore } from '../stores/colorSchemeStore';
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -15,6 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const [isChecking, setIsChecking] = useState(true);
     const syncFavorites = useFavoriteTablesStore((state) => state.syncFromBackend);
     const syncTheme = useThemeModeStore((state) => state.syncFromBackend);
+    const syncColorScheme = useColorSchemeStore((state) => state.syncFromBackend);
     const setThemeUser = useThemeModeStore((state) => state.setCurrentUser);
 
     useEffect(() => {
@@ -31,8 +33,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             setThemeUser(user.id);
             syncFavorites();
             syncTheme();
+            syncColorScheme();
         }
-    }, [isAuthenticated, user?.id, setThemeUser, syncFavorites, syncTheme]);
+    }, [isAuthenticated, user?.id, setThemeUser, syncFavorites, syncTheme, syncColorScheme]);
 
     if (isChecking) {
         return (
