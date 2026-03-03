@@ -47,12 +47,12 @@ interface PlanNode {
     'Startup Cost'?: number;
     'Actual Total Time'?: number;
     'Actual Startup Time'?: number;
-    'Filter'?: string;
+    Filter?: string;
     'Index Cond'?: string;
     'Join Type'?: string;
     'Hash Cond'?: string;
     'Sort Key'?: string[];
-    'Plans'?: PlanNode[];
+    Plans?: PlanNode[];
     [key: string]: unknown;
 }
 
@@ -64,7 +64,8 @@ function getNodeIcon(nodeType: string) {
     if (type.includes('sort')) return <SortIcon fontSize="small" />;
     if (type.includes('join') || type.includes('nested loop') || type.includes('hash'))
         return <JoinInnerIcon fontSize="small" />;
-    if (type.includes('aggregate') || type.includes('group')) return <StorageIcon fontSize="small" />;
+    if (type.includes('aggregate') || type.includes('group'))
+        return <StorageIcon fontSize="small" />;
     return <AccountTreeIcon fontSize="small" />;
 }
 
@@ -80,10 +81,12 @@ interface ThemePalette {
 function getNodeColor(nodeType: string, theme: ThemePalette) {
     const type = nodeType.toLowerCase();
     if (type.includes('seq scan')) return theme.palette.warning.main;
-    if (type.includes('index scan') || type.includes('index only')) return theme.palette.success.main;
+    if (type.includes('index scan') || type.includes('index only'))
+        return theme.palette.success.main;
     if (type.includes('bitmap')) return theme.palette.info.main;
     if (type.includes('nested loop')) return theme.palette.warning.light;
-    if (type.includes('hash join') || type.includes('merge join')) return theme.palette.success.light;
+    if (type.includes('hash join') || type.includes('merge join'))
+        return theme.palette.success.light;
     return theme.palette.text.secondary;
 }
 
@@ -195,7 +198,9 @@ function PlanTreeNode({ node, depth, maxCost, isLast, parentLines }: PlanTreeNod
                 >
                     {/* Header row */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Box sx={{ color: nodeColor, display: 'flex' }}>{getNodeIcon(node['Node Type'])}</Box>
+                        <Box sx={{ color: nodeColor, display: 'flex' }}>
+                            {getNodeIcon(node['Node Type'])}
+                        </Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {node['Node Type']}
                         </Typography>
@@ -230,7 +235,9 @@ function PlanTreeNode({ node, depth, maxCost, isLast, parentLines }: PlanTreeNod
                             </StyledTooltip>
                         )}
                         {isExpensive && (
-                            <StyledTooltip title={`High cost operation (${costPercent.toFixed(0)}% of total)`}>
+                            <StyledTooltip
+                                title={`High cost operation (${costPercent.toFixed(0)}% of total)`}
+                            >
                                 <Chip
                                     label={`${costPercent.toFixed(0)}%`}
                                     size="small"
@@ -254,7 +261,11 @@ function PlanTreeNode({ node, depth, maxCost, isLast, parentLines }: PlanTreeNod
                         {hasActualData && (
                             <Typography variant="caption" color="text.secondary">
                                 Time:{' '}
-                                <Typography component="span" variant="caption" sx={{ fontWeight: 500 }}>
+                                <Typography
+                                    component="span"
+                                    variant="caption"
+                                    sx={{ fontWeight: 500 }}
+                                >
                                     {formatTime(node['Actual Total Time'])}
                                 </Typography>
                             </Typography>
@@ -315,7 +326,8 @@ function PlanTreeView({ plan }: { plan: unknown }) {
     }
 
     const getMaxCost = (node: PlanNode): number => {
-        const childMax = node['Plans']?.reduce((max, child) => Math.max(max, getMaxCost(child)), 0) || 0;
+        const childMax =
+            node['Plans']?.reduce((max, child) => Math.max(max, getMaxCost(child)), 0) || 0;
         return Math.max(node['Total Cost'] || 0, childMax);
     };
 
@@ -323,7 +335,13 @@ function PlanTreeView({ plan }: { plan: unknown }) {
 
     return (
         <Box sx={{ py: 1 }}>
-            <PlanTreeNode node={rootNode} depth={0} maxCost={maxCost} isLast={true} parentLines={[]} />
+            <PlanTreeNode
+                node={rootNode}
+                depth={0}
+                maxCost={maxCost}
+                isLast={true}
+                parentLines={[]}
+            />
         </Box>
     );
 }

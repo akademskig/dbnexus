@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { Editor, type Monaco, type OnMount } from '@monaco-editor/react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
+import { format as formatSql } from 'sql-formatter';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -18,6 +19,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { useToastStore } from '../../stores/toastStore';
@@ -71,6 +74,22 @@ export function SqlEditor({
     const handleCopy = () => {
         navigator.clipboard.writeText(sql);
         toast.success('SQL copied to clipboard');
+    };
+
+    const handleFormat = () => {
+        if (!sql.trim()) return;
+        try {
+            const formatted = formatSql(sql, {
+                language: 'postgresql',
+                tabWidth: 2,
+                keywordCase: 'upper',
+                linesBetweenQueries: 2,
+            });
+            onSqlChange(formatted);
+            toast.success('SQL formatted');
+        } catch {
+            toast.error('Failed to format SQL');
+        }
     };
 
     const handleEditorMount: OnMount = (_editor, monaco) => {
@@ -181,6 +200,14 @@ export function SqlEditor({
                     </Button>
                 </StyledTooltip>
 
+                <StyledTooltip title="Format SQL (Shift+Alt+F)">
+                    <span>
+                        <IconButton size="small" onClick={handleFormat} disabled={!sql.trim()}>
+                            <AutoFixHighIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+
                 <Box sx={{ flex: 1 }} />
 
                 {/* Output Panel Toggle */}
@@ -229,6 +256,34 @@ export function SqlEditor({
                 <StyledTooltip title="Pop Out Editor">
                     <IconButton size="small" onClick={onPopOut}>
                         <OpenInNewIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
+
+                <StyledTooltip
+                    title={
+                        <Box sx={{ p: 0.5 }}>
+                            <Typography variant="caption" fontWeight={600} sx={{ mb: 1, display: 'block' }}>
+                                Keyboard Shortcuts
+                            </Typography>
+                            <Box sx={{ display: 'grid', gap: 0.5, fontSize: 11 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                    <span>Run Query</span>
+                                    <Typography component="span" fontFamily="monospace" fontSize={11}>⌘/Ctrl+Enter</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                    <span>Save Query</span>
+                                    <Typography component="span" fontFamily="monospace" fontSize={11}>⌘/Ctrl+S</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                    <span>Format SQL</span>
+                                    <Typography component="span" fontFamily="monospace" fontSize={11}>Shift+Alt+F</Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    }
+                >
+                    <IconButton size="small" sx={{ opacity: 0.6 }}>
+                        <KeyboardIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
             </Box>

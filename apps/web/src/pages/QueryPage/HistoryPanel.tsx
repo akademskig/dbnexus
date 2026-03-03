@@ -1,4 +1,5 @@
-import { Box, Typography, Chip, IconButton } from '@mui/material';
+import { Box, Typography, Chip, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { useState } from 'react';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import HistoryIcon from '@mui/icons-material/History';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -7,6 +8,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import ReplayIcon from '@mui/icons-material/Replay';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import type { QueryHistoryEntry } from '@dbnexus/shared';
 
 interface HistoryPanelProps {
@@ -30,9 +34,62 @@ export function HistoryPanel({
     onRefresh,
     clearing,
 }: HistoryPanelProps) {
+    const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+
     const getConnectionName = (connectionId: string) => {
         const conn = connections.find((c) => c.id === connectionId);
         return conn?.name ?? 'Unknown';
+    };
+
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportJson = () => {
+        const exportData = history.map((entry) => ({
+            sql: entry.sql,
+            connection: getConnectionName(entry.connectionId),
+            executedAt: new Date(entry.executedAt).toISOString(),
+            success: entry.success,
+            rowCount: entry.rowCount,
+            executionTimeMs: entry.executionTimeMs,
+            error: entry.error || null,
+        }));
+        const json = JSON.stringify(exportData, null, 2);
+        downloadFile(json, `query-history-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+        setExportMenuAnchor(null);
+    };
+
+    const handleExportCsv = () => {
+        const headers = ['SQL', 'Connection', 'Executed At', 'Success', 'Row Count', 'Execution Time (ms)', 'Error'];
+        const escapeCSV = (value: string | number | boolean | null) => {
+            if (value === null || value === undefined) return '';
+            const str = String(value);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replaceAll('"', '""')}"`;
+            }
+            return str;
+        };
+        const rows = history.map((entry) => [
+            escapeCSV(entry.sql),
+            escapeCSV(getConnectionName(entry.connectionId)),
+            escapeCSV(new Date(entry.executedAt).toISOString()),
+            escapeCSV(entry.success),
+            escapeCSV(entry.rowCount ?? ''),
+            escapeCSV(entry.executionTimeMs ?? ''),
+            escapeCSV(entry.error || ''),
+        ]);
+        const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+        downloadFile(csv, `query-history-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+        setExportMenuAnchor(null);
     };
 
     const formatTime = (date: Date) => {
@@ -51,7 +108,7 @@ export function HistoryPanel({
     };
 
     const truncateSql = (sql: string, maxLength = 150) => {
-        const cleaned = sql.replace(/\s+/g, ' ').trim();
+        const cleaned = sql.replaceAll(/\s+/g, ' ').trim();
         if (cleaned.length <= maxLength) return cleaned;
         return cleaned.slice(0, maxLength) + '...';
     };
@@ -79,6 +136,37 @@ export function HistoryPanel({
                         <RefreshIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
+                <StyledTooltip title="Export History">
+                    <span>
+                        <IconButton
+                            size="small"
+                            onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                            disabled={history.length === 0}
+                        >
+                            <FileDownloadIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+                <Menu
+                    anchorEl={exportMenuAnchor}
+                    open={Boolean(exportMenuAnchor)}
+                    onClose={() => setExportMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    <MenuItem onClick={handleExportJson}>
+                        <ListItemIcon>
+                            <DataObjectIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Export as JSON</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={handleExportCsv}>
+                        <ListItemIcon>
+                            <TableChartIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Export as CSV</ListItemText>
+                    </MenuItem>
+                </Menu>
                 <StyledTooltip title="Clear All">
                     <IconButton
                         size="small"
