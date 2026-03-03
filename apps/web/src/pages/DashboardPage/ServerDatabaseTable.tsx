@@ -22,6 +22,9 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
 import type { ServerConfig, ConnectionConfig, DatabaseEngine } from '@dbnexus/shared';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { GlassCard } from '../../components/GlassCard';
@@ -57,6 +60,10 @@ interface ServerRowProps {
     defaultExpanded?: boolean;
     onEditConnection: (connection: ConnectionConfig) => void;
     onDeleteConnection: (connection: ConnectionConfig) => void;
+    onEditServer: (server: ServerConfig) => void;
+    onDeleteServer: (server: ServerConfig) => void;
+    onStartServer: (server: ServerConfig) => void;
+    onStopServer: (server: ServerConfig) => void;
 }
 
 function StatusDot({ online }: { online: boolean }) {
@@ -187,10 +194,17 @@ function ServerRow({
     defaultExpanded = false,
     onEditConnection,
     onDeleteConnection,
+    onEditServer,
+    onDeleteServer,
+    onStartServer,
+    onStopServer,
 }: ServerRowProps) {
     const navigate = useNavigate();
     const [expanded, setExpanded] = useState(defaultExpanded);
+    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const engineColor = ENGINE_COLORS[server.engine] || '#666';
+
+    const handleMenuClose = () => setMenuAnchor(null);
 
     return (
         <Box>
@@ -237,17 +251,102 @@ function ServerRow({
                         height: 20,
                     }}
                 />
-                <Typography variant="caption" color="text.secondary">
-                    {databases.length} db{databases.length !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                    <StyledTooltip title="Manage Server">
-                        <IconButton size="small" onClick={() => navigate(`/servers/${server.id}`)}>
-                            <SettingsIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </StyledTooltip>
-                </Box>
+                <StyledTooltip
+                    title={`${databases.length} database${databases.length !== 1 ? 's' : ''}`}
+                >
+                    <Chip
+                        icon={<StorageIcon sx={{ fontSize: 12 }} />}
+                        label={databases.length}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            height: 18,
+                            fontSize: 10,
+                            '& .MuiChip-icon': { ml: 0.5 },
+                            borderColor: 'divider',
+                        }}
+                    />
+                </StyledTooltip>
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAnchor(e.currentTarget);
+                    }}
+                    sx={{ color: 'text.secondary' }}
+                >
+                    <MoreVertIcon sx={{ fontSize: 18 }} />
+                </IconButton>
             </Box>
+
+            <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <MenuItem
+                    onClick={() => {
+                        handleMenuClose();
+                        onEditServer(server);
+                    }}
+                >
+                    <ListItemIcon>
+                        <EditIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Edit Server</ListItemText>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        handleMenuClose();
+                        navigate(`/servers/${server.id}`);
+                    }}
+                >
+                    <ListItemIcon>
+                        <OpenInNewIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Server Management</ListItemText>
+                </MenuItem>
+                {server.startCommand && (
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            onStartServer(server);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <PlayArrowIcon fontSize="small" color="success" />
+                        </ListItemIcon>
+                        <ListItemText>Start Server</ListItemText>
+                    </MenuItem>
+                )}
+                {server.stopCommand && (
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            onStopServer(server);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <StopIcon fontSize="small" color="warning" />
+                        </ListItemIcon>
+                        <ListItemText>Stop Server</ListItemText>
+                    </MenuItem>
+                )}
+                <MenuItem
+                    onClick={() => {
+                        handleMenuClose();
+                        onDeleteServer(server);
+                    }}
+                    sx={{ color: 'error.main' }}
+                >
+                    <ListItemIcon>
+                        <DeleteIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Delete Server</ListItemText>
+                </MenuItem>
+            </Menu>
             <Collapse in={expanded}>
                 {databases.length === 0 ? (
                     <Typography
@@ -325,9 +424,22 @@ function StandaloneDatabasesSection({
                 >
                     Standalone Databases
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                    {databases.length} db{databases.length !== 1 ? 's' : ''}
-                </Typography>
+                <StyledTooltip
+                    title={`${databases.length} database${databases.length !== 1 ? 's' : ''}`}
+                >
+                    <Chip
+                        icon={<StorageIcon sx={{ fontSize: 12 }} />}
+                        label={databases.length}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            height: 18,
+                            fontSize: 10,
+                            '& .MuiChip-icon': { ml: 0.5 },
+                            borderColor: 'divider',
+                        }}
+                    />
+                </StyledTooltip>
             </Box>
             <Collapse in={expanded}>
                 {databases.map((db) => (
@@ -347,10 +459,20 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const [serverFormOpen, setServerFormOpen] = useState(false);
+    const [serverToEdit, setServerToEdit] = useState<ServerConfig | null>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [serverDeleteDialogOpen, setServerDeleteDialogOpen] = useState(false);
     const [connectionToEdit, setConnectionToEdit] = useState<ConnectionConfig | null>(null);
     const [connectionToDelete, setConnectionToDelete] = useState<ConnectionConfig | null>(null);
+    const [serverToDelete, setServerToDelete] = useState<ServerConfig | null>(null);
+    const [commandConfirmDialog, setCommandConfirmDialog] = useState<{
+        open: boolean;
+        type: 'start' | 'stop';
+        serverId: string;
+        serverName: string;
+        command: string;
+    } | null>(null);
 
     const { data: projects = [] } = useQuery({
         queryKey: ['projects'],
@@ -380,6 +502,72 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
         },
     });
 
+    const deleteServerMutation = useMutation({
+        mutationFn: (id: string) => serversApi.delete(id),
+        onSuccess: (result) => {
+            if (result.success) {
+                queryClient.invalidateQueries({ queryKey: ['servers'] });
+                queryClient.invalidateQueries({ queryKey: ['connections'] });
+                toast.success('Server deleted');
+            } else {
+                toast.error(result.message || 'Failed to delete server');
+            }
+            setServerDeleteDialogOpen(false);
+            setServerToDelete(null);
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to delete server: ${error.message}`);
+            setServerDeleteDialogOpen(false);
+            setServerToDelete(null);
+        },
+    });
+
+    const startServerMutation = useMutation({
+        mutationFn: ({ id, confirmed }: { id: string; confirmed?: boolean }) =>
+            serversApi.start(id, confirmed),
+        onSuccess: (result, variables) => {
+            if (result.requiresConfirmation && result.command) {
+                setCommandConfirmDialog({
+                    open: true,
+                    type: 'start',
+                    serverId: variables.id,
+                    serverName: result.serverName || 'Server',
+                    command: result.command,
+                });
+            } else if (result.success) {
+                toast.success(result.message || 'Server started');
+            } else {
+                toast.error(result.message || 'Failed to start server');
+            }
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to start server: ${error.message}`);
+        },
+    });
+
+    const stopServerMutation = useMutation({
+        mutationFn: ({ id, confirmed }: { id: string; confirmed?: boolean }) =>
+            serversApi.stop(id, confirmed),
+        onSuccess: (result, variables) => {
+            if (result.requiresConfirmation && result.command) {
+                setCommandConfirmDialog({
+                    open: true,
+                    type: 'stop',
+                    serverId: variables.id,
+                    serverName: result.serverName || 'Server',
+                    command: result.command,
+                });
+            } else if (result.success) {
+                toast.success(result.message || 'Server stopped');
+            } else {
+                toast.error(result.message || 'Failed to stop server');
+            }
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to stop server: ${error.message}`);
+        },
+    });
+
     const handleEditClick = (connection: ConnectionConfig) => {
         setConnectionToEdit(connection);
         setEditDialogOpen(true);
@@ -394,6 +582,40 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
         if (connectionToDelete) {
             deleteMutation.mutate(connectionToDelete.id);
         }
+    };
+
+    const handleEditServer = (server: ServerConfig) => {
+        setServerToEdit(server);
+        setServerFormOpen(true);
+    };
+
+    const handleDeleteServer = (server: ServerConfig) => {
+        setServerToDelete(server);
+        setServerDeleteDialogOpen(true);
+    };
+
+    const handleStartServer = (server: ServerConfig) => {
+        startServerMutation.mutate({ id: server.id });
+    };
+
+    const handleStopServer = (server: ServerConfig) => {
+        stopServerMutation.mutate({ id: server.id });
+    };
+
+    const handleConfirmCommand = () => {
+        if (!commandConfirmDialog) return;
+        const { type, serverId } = commandConfirmDialog;
+        setCommandConfirmDialog(null);
+        if (type === 'start') {
+            startServerMutation.mutate({ id: serverId, confirmed: true });
+        } else {
+            stopServerMutation.mutate({ id: serverId, confirmed: true });
+        }
+    };
+
+    const handleServerFormClose = () => {
+        setServerFormOpen(false);
+        setServerToEdit(null);
     };
 
     const { serverDatabases, standaloneDatabases } = useMemo(() => {
@@ -432,8 +654,8 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
                 </GlassCard>
                 <ServerFormDialog
                     open={serverFormOpen}
-                    server={null}
-                    onClose={() => setServerFormOpen(false)}
+                    server={serverToEdit}
+                    onClose={handleServerFormClose}
                 />
             </>
         );
@@ -482,6 +704,10 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
                             databases={serverDatabases.get(server.id) || []}
                             onEditConnection={handleEditClick}
                             onDeleteConnection={handleDeleteClick}
+                            onEditServer={handleEditServer}
+                            onDeleteServer={handleDeleteServer}
+                            onStartServer={handleStartServer}
+                            onStopServer={handleStopServer}
                         />
                     </Box>
                 ))}
@@ -495,8 +721,8 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
 
             <ServerFormDialog
                 open={serverFormOpen}
-                server={null}
-                onClose={() => setServerFormOpen(false)}
+                server={serverToEdit}
+                onClose={handleServerFormClose}
             />
 
             <ConnectionFormDialog
@@ -522,6 +748,55 @@ export function ServerDatabaseTable({ servers, connections, loading }: ServerDat
                 message={`Remove "${connectionToDelete?.name || connectionToDelete?.database}" from DB Nexus? The actual database will not be affected.`}
                 confirmLabel="Remove"
                 confirmColor="warning"
+            />
+
+            <ConfirmDialog
+                open={serverDeleteDialogOpen}
+                onCancel={() => {
+                    setServerDeleteDialogOpen(false);
+                    setServerToDelete(null);
+                }}
+                onConfirm={() => {
+                    if (serverToDelete) {
+                        deleteServerMutation.mutate(serverToDelete.id);
+                    }
+                }}
+                title="Delete Server"
+                message={`Delete "${serverToDelete?.name}"? This will remove the server configuration from DB Nexus. Any databases on this server will become standalone.`}
+                confirmLabel="Delete"
+                confirmColor="error"
+            />
+
+            <ConfirmDialog
+                open={commandConfirmDialog?.open ?? false}
+                onCancel={() => setCommandConfirmDialog(null)}
+                onConfirm={handleConfirmCommand}
+                title={`${commandConfirmDialog?.type === 'start' ? 'Start' : 'Stop'} Server`}
+                message={
+                    <Box>
+                        <Typography variant="body2" sx={{ mb: 2 }}>
+                            {commandConfirmDialog?.type === 'start' ? 'Start' : 'Stop'}{' '}
+                            <strong>{commandConfirmDialog?.serverName}</strong>?
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            The following command will be executed:
+                        </Typography>
+                        <Box
+                            sx={{
+                                p: 1.5,
+                                bgcolor: 'action.hover',
+                                borderRadius: 1,
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                                wordBreak: 'break-all',
+                            }}
+                        >
+                            {commandConfirmDialog?.command}
+                        </Box>
+                    </Box>
+                }
+                confirmLabel={commandConfirmDialog?.type === 'start' ? 'Start' : 'Stop'}
+                confirmColor={commandConfirmDialog?.type === 'start' ? 'primary' : 'warning'}
             />
         </>
     );
