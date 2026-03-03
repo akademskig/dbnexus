@@ -51,10 +51,7 @@ export const useFavoriteTablesStore = create<FavoriteTablesState>()(
                     }
 
                     return {
-                        favorites: [
-                            ...state.favorites,
-                            { connectionId, schema, tableName },
-                        ],
+                        favorites: [...state.favorites, { connectionId, schema, tableName }],
                     };
                 });
             },

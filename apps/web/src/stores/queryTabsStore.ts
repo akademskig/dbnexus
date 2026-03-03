@@ -87,17 +87,13 @@ export const useQueryTabsStore = create<QueryTabsState>()(
 
             updateTab: (id: string, updates: Partial<QueryTab>) => {
                 set((state) => ({
-                    tabs: state.tabs.map((tab) =>
-                        tab.id === id ? { ...tab, ...updates } : tab
-                    ),
+                    tabs: state.tabs.map((tab) => (tab.id === id ? { ...tab, ...updates } : tab)),
                 }));
             },
 
             renameTab: (id: string, name: string) => {
                 set((state) => ({
-                    tabs: state.tabs.map((tab) =>
-                        tab.id === id ? { ...tab, name } : tab
-                    ),
+                    tabs: state.tabs.map((tab) => (tab.id === id ? { ...tab, name } : tab)),
                 }));
             },
 

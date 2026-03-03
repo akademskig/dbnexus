@@ -52,10 +52,14 @@ export function QueryPageSidebar({
     const views = filteredTables.filter((t) => t.type === 'view');
 
     const favoriteTables = filteredTables.filter(
-        (t) => selectedConnectionId && isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
+        (t) =>
+            selectedConnectionId &&
+            isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
     );
     const nonFavoriteTables = tables.filter(
-        (t) => !selectedConnectionId || !isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
+        (t) =>
+            !selectedConnectionId ||
+            !isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
     );
 
     return (
@@ -118,7 +122,9 @@ export function QueryPageSidebar({
                                         '&:hover': { bgcolor: 'action.hover' },
                                     }}
                                 >
-                                    <StarIcon sx={{ fontSize: 14, color: 'warning.main', mr: 0.75 }} />
+                                    <StarIcon
+                                        sx={{ fontSize: 14, color: 'warning.main', mr: 0.75 }}
+                                    />
                                     <Typography
                                         variant="caption"
                                         fontWeight={600}

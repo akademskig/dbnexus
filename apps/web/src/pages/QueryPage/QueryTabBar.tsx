@@ -142,10 +142,7 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                         <CodeIcon
                             sx={{
                                 fontSize: 14,
-                                color:
-                                    tab.id === activeTabId
-                                        ? 'primary.main'
-                                        : 'text.secondary',
+                                color: tab.id === activeTabId ? 'primary.main' : 'text.secondary',
                             }}
                         />
                         {editingTabId === tab.id ? (
@@ -183,9 +180,7 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                                     fontSize: 12,
                                     fontWeight: tab.id === activeTabId ? 600 : 400,
                                     color:
-                                        tab.id === activeTabId
-                                            ? 'text.primary'
-                                            : 'text.secondary',
+                                        tab.id === activeTabId ? 'text.primary' : 'text.secondary',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -231,19 +226,13 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                         : undefined
                 }
             >
-                <MenuItem
-                    onClick={() => contextTab && handleStartRename(contextTab)}
-                    dense
-                >
+                <MenuItem onClick={() => contextTab && handleStartRename(contextTab)} dense>
                     <ListItemIcon>
                         <EditIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>Rename</ListItemText>
                 </MenuItem>
-                <MenuItem
-                    onClick={() => contextMenu && handleDuplicate(contextMenu.tabId)}
-                    dense
-                >
+                <MenuItem onClick={() => contextMenu && handleDuplicate(contextMenu.tabId)} dense>
                     <ListItemIcon>
                         <ContentCopyIcon fontSize="small" />
                     </ListItemIcon>
