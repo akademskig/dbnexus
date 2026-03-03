@@ -21,7 +21,11 @@ const JOIN_SNIPPETS = [
     { label: 'INNER JOIN', insert: 'INNER JOIN ', detail: 'Join matching rows from both tables' },
     { label: 'LEFT JOIN', insert: 'LEFT JOIN ', detail: 'Include all rows from left table' },
     { label: 'RIGHT JOIN', insert: 'RIGHT JOIN ', detail: 'Include all rows from right table' },
-    { label: 'FULL OUTER JOIN', insert: 'FULL OUTER JOIN ', detail: 'Include all rows from both tables' },
+    {
+        label: 'FULL OUTER JOIN',
+        insert: 'FULL OUTER JOIN ',
+        detail: 'Include all rows from both tables',
+    },
     { label: 'CROSS JOIN', insert: 'CROSS JOIN ', detail: 'Cartesian product of both tables' },
 ];
 
@@ -289,6 +293,43 @@ function buildFunctionSuggestions(range: CompletionRange, kindFunction: number):
     }));
 }
 
+function buildInferredColumns(
+    tableName: string,
+    foreignKeys: ForeignKeyData[],
+    sourceTableName: string | null
+): Array<{ name: string; detail: string }> {
+    const inferredColumns: Array<{ name: string; detail: string }> = [];
+    const addedColumns = new Set<string>();
+
+    const addColumn = (name: string, detail: string) => {
+        if (!addedColumns.has(name.toLowerCase())) {
+            addedColumns.add(name.toLowerCase());
+            inferredColumns.push({ name, detail });
+        }
+    };
+
+    addColumn('id', 'inferred • primary key');
+
+    if (sourceTableName) {
+        const singularSource = singularize(sourceTableName.toLowerCase());
+        addColumn(`${singularSource}_id`, `inferred • FK to ${sourceTableName}`);
+    }
+
+    for (const fk of foreignKeys) {
+        if (fk.targetTable.toLowerCase() === tableName.toLowerCase()) {
+            addColumn(fk.targetColumn, `inferred • referenced by ${fk.sourceTable}`);
+        }
+        if (fk.sourceTable.toLowerCase() === tableName.toLowerCase()) {
+            addColumn(fk.sourceColumn, `inferred • FK to ${fk.targetTable}`);
+        }
+    }
+
+    addColumn('created_at', 'inferred • timestamp');
+    addColumn('updated_at', 'inferred • timestamp');
+
+    return inferredColumns;
+}
+
 function buildJoinSnippetSuggestions(range: CompletionRange, kindSnippet: number): Suggestion[] {
     return JOIN_SNIPPETS.map((js) => ({
         label: js.label,
@@ -310,27 +351,27 @@ function generateAlias(tableName: string, usedAliases: string[]): string {
     if (!usedAliases.includes(firstChar)) {
         return firstChar;
     }
-    
+
     const words = tableName.split('_');
     if (words.length > 1) {
-        const initials = words.map(w => w.charAt(0).toLowerCase()).join('');
+        const initials = words.map((w) => w.charAt(0).toLowerCase()).join('');
         if (!usedAliases.includes(initials)) {
             return initials;
         }
     }
-    
+
     const twoChars = tableName.slice(0, 2).toLowerCase();
     if (!usedAliases.includes(twoChars)) {
         return twoChars;
     }
-    
+
     for (let i = 1; i <= 9; i++) {
         const numbered = `${firstChar}${i}`;
         if (!usedAliases.includes(numbered)) {
             return numbered;
         }
     }
-    
+
     return tableName.slice(0, 3).toLowerCase();
 }
 
@@ -344,17 +385,18 @@ function buildJoinWithForeignKey(
     insertTextRules: number
 ): Suggestion[] {
     const targetTable = tables.find(
-        (t) => t.name.toLowerCase() === fk.targetTable.toLowerCase() &&
+        (t) =>
+            t.name.toLowerCase() === fk.targetTable.toLowerCase() &&
             (!fk.targetSchema || t.schema?.toLowerCase() === fk.targetSchema.toLowerCase())
     );
-    
+
     if (!targetTable) return [];
-    
+
     const targetRef = getTableReference(targetTable);
     const alias = generateAlias(fk.targetTable, usedAliases);
-    
+
     const suggestions: Suggestion[] = [];
-    
+
     for (const joinType of ['JOIN', 'LEFT JOIN', 'INNER JOIN']) {
         suggestions.push({
             label: `${joinType} ${fk.targetTable} (FK: ${fk.sourceColumn})`,
@@ -366,13 +408,20 @@ function buildJoinWithForeignKey(
             insertTextRules,
         });
     }
-    
+
     return suggestions;
 }
 
 function singularize(word: string): string {
     if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
-    if (word.endsWith('es') && (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('zes') || word.endsWith('ches') || word.endsWith('shes'))) {
+    if (
+        word.endsWith('es') &&
+        (word.endsWith('ses') ||
+            word.endsWith('xes') ||
+            word.endsWith('zes') ||
+            word.endsWith('ches') ||
+            word.endsWith('shes'))
+    ) {
         return word.slice(0, -2);
     }
     if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
@@ -404,19 +453,28 @@ function buildJoinTableSuggestions(
 
         for (const fk of relevantFks) {
             suggestions.push(
-                ...buildJoinWithForeignKey(fk, tables, sourceRef, usedAliases, range, kindSnippet, insertTextRules)
+                ...buildJoinWithForeignKey(
+                    fk,
+                    tables,
+                    sourceRef,
+                    usedAliases,
+                    range,
+                    kindSnippet,
+                    insertTextRules
+                )
             );
         }
     }
 
-    const sourceFkColumn = sourceTable?.name 
+    const sourceFkColumn = sourceTable?.name
         ? `${singularize(sourceTable.name.toLowerCase())}_id`
         : 'source_id';
 
     for (const table of tables) {
         const tableRef = getTableReference(table);
         const alias = generateAlias(table.name, usedAliases);
-        const isDefaultSchema = !table.schema || table.schema === 'public' || table.schema === 'main';
+        const isDefaultSchema =
+            !table.schema || table.schema === 'public' || table.schema === 'main';
         const displayName = isDefaultSchema ? table.name : `${table.schema}.${table.name}`;
 
         suggestions.push({
@@ -434,7 +492,9 @@ function buildJoinTableSuggestions(
             kind: kindClass,
             insertText: tableRef,
             range,
-            detail: table.schema ? `${table.schema} • ${table.type || 'table'}` : table.type || 'table',
+            detail: table.schema
+                ? `${table.schema} • ${table.type || 'table'}`
+                : table.type || 'table',
             sortText: '2' + table.name,
         });
     }
@@ -470,7 +530,10 @@ export function registerSqlCompletionProvider(
             const suggestions: Suggestion[] = [];
             const { CompletionItemKind, CompletionItemInsertTextRule } = monaco.languages;
 
-            const afterJoin = /\b(JOIN|LEFT\s+JOIN|RIGHT\s+JOIN|INNER\s+JOIN|FULL\s+(?:OUTER\s+)?JOIN|CROSS\s+JOIN)\s+\w*$/i.test(textBeforeCursor);
+            const afterJoin =
+                /\b(JOIN|LEFT\s+JOIN|RIGHT\s+JOIN|INNER\s+JOIN|FULL\s+(?:OUTER\s+)?JOIN|CROSS\s+JOIN)\s+\w*$/i.test(
+                    textBeforeCursor
+                );
             const afterFrom = /\b(FROM|INTO|UPDATE)\s+\w*$/i.test(textBeforeCursor);
             const afterSelect = /\b(SELECT|WHERE|AND|OR|ORDER\s+BY|GROUP\s+BY|SET|ON)\s+\w*$/i.test(
                 textBeforeCursor
@@ -478,12 +541,15 @@ export function registerSqlCompletionProvider(
             const afterDot = textBeforeCursor.endsWith('.');
             const wantsJoin = /\b(LEFT|RIGHT|INNER|FULL|CROSS|OUTER)\s*$/i.test(textBeforeCursor);
 
-            const fromMatch = originalTextBeforeCursor.match(/\bFROM\s+(?:"[^"]+"\s*\.\s*)?"?(\w+)"?(?:\s+(?:AS\s+)?(\w+))?/i);
+            const fromMatch = originalTextBeforeCursor.match(
+                /\bFROM\s+(?:"[^"]+"\s*\.\s*)?"?(\w+)"?(?:\s+(?:AS\s+)?(\w+))?/i
+            );
             const sourceTable: SourceTableInfo | null = fromMatch?.[1]
                 ? { name: fromMatch[1], alias: fromMatch[2] || null }
                 : null;
 
-            const tableAliasPattern = /(?:FROM|JOIN)\s+(?:(?:"[^"]+"|[\w]+)\s*\.\s*)?(?:"([^"]+)"|(\w+))(?:\s+(?:AS\s+)?(\w+))?/gi;
+            const tableAliasPattern =
+                /(?:FROM|JOIN)\s+(?:(?:"[^"]+"|[\w]+)\s*\.\s*)?(?:"([^"]+)"|(\w+))(?:\s+(?:AS\s+)?(\w+))?/gi;
             const usedAliases: string[] = [];
             const aliasToTable = new Map<string, string>();
             let tableAliasMatch;
@@ -500,11 +566,11 @@ export function registerSqlCompletionProvider(
                 const match = originalTextBeforeCursor.match(/(\w+)\.$/);
                 if (match?.[1]) {
                     const identifier = match[1].toLowerCase();
-                    
+
                     const tableNameFromAlias = aliasToTable.get(identifier);
                     const actualTableName = tableNameFromAlias || identifier;
                     const isKnownAlias = aliasToTable.has(identifier);
-                    
+
                     const matchedTable = tables.find(
                         (t) =>
                             t.name.toLowerCase() === actualTableName ||
@@ -512,9 +578,9 @@ export function registerSqlCompletionProvider(
                     );
                     const tableColumns = matchedTable
                         ? columns.filter(
-                            (col) =>
-                                col.tableName?.toLowerCase() === matchedTable.name.toLowerCase()
-                        )
+                              (col) =>
+                                  col.tableName?.toLowerCase() === matchedTable.name.toLowerCase()
+                          )
                         : [];
 
                     if (tableColumns.length > 0) {
@@ -526,14 +592,25 @@ export function registerSqlCompletionProvider(
                                 '0'
                             )
                         );
+                    } else if (isKnownAlias && actualTableName) {
+                        const inferredColumns = buildInferredColumns(
+                            actualTableName,
+                            foreignKeys,
+                            sourceTable?.name || null
+                        );
+                        suggestions.push(
+                            ...inferredColumns.map((col) => ({
+                                label: col.name,
+                                kind: CompletionItemKind.Field,
+                                insertText: col.name,
+                                range,
+                                detail: col.detail,
+                                sortText: '0' + col.name,
+                            }))
+                        );
                     } else if (!isKnownAlias) {
                         suggestions.push(
-                            ...buildColumnSuggestions(
-                                columns,
-                                range,
-                                CompletionItemKind.Field,
-                                '0'
-                            )
+                            ...buildColumnSuggestions(columns, range, CompletionItemKind.Field, '0')
                         );
                     }
                 }
