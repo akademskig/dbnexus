@@ -33,7 +33,7 @@ import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { useToastStore } from '../../stores/toastStore';
 import { connectionsApi, projectsApi, serversApi, groupsApi } from '../../lib/api';
 import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
-import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
+import { ConnectionFormDialog } from '../../components/dialogs/ConnectionDialogs';
 
 const ENGINE_COLORS: Record<DatabaseEngine, string> = {
     postgres: '#336791',

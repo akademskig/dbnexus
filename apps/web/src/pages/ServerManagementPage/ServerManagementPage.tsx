@@ -45,8 +45,8 @@ import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
-import { ConnectionCard } from '../ProjectsPage/ConnectionCard';
-import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
+import { ConnectionCard } from '../../components/ConnectionCard';
+import { ConnectionFormDialog } from '../../components/dialogs/ConnectionDialogs';
 import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
 import { CreateDatabaseDialog } from './CreateDatabaseDialog';
 

@@ -34,7 +34,7 @@ import type {
 } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
 import { PROJECT_COLORS } from './constants';
-import { StatusAlert } from '@/components/StatusAlert';
+import { StatusAlert } from '../StatusAlert';
 
 // Project form dialog
 interface ProjectFormDialogProps {

@@ -15,7 +15,7 @@ import { StyledTooltip } from '../../components/StyledTooltip';
 import type { ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { connectionsApi, schemaApi, projectsApi, groupsApi, serversApi } from '../../lib/api';
-import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
+import { ConnectionFormDialog } from '../../components/dialogs/ConnectionDialogs';
 import { StatusAlert } from '@/components/StatusAlert';
 
 interface StatCardProps {

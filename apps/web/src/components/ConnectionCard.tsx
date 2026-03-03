@@ -9,7 +9,7 @@ import {
     CircularProgress,
     Collapse,
 } from '@mui/material';
-import { StyledTooltip } from '../../components/StyledTooltip';
+import { StyledTooltip } from './StyledTooltip';
 import StorageIcon from '@mui/icons-material/Storage';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -21,13 +21,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { connectionsApi } from '../../lib/api';
+import { connectionsApi } from '../lib/api';
 import type { ConnectionConfig } from '@dbnexus/shared';
-import { useTagsStore } from '../../stores/tagsStore';
-import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import { useTagsStore } from '../stores/tagsStore';
+import { useConnectionHealthStore } from '../stores/connectionHealthStore';
 import { DetailRow } from './DetailRow';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { StatusAlert } from '@/components/StatusAlert';
+import { ConfirmDialog } from './ConfirmDialog';
+import { StatusAlert } from './StatusAlert';
 
 interface ConnectionCardProps {
     readonly connection: ConnectionConfig;

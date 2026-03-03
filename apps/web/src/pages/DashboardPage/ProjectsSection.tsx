@@ -34,7 +34,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { useToastStore } from '../../stores/toastStore';
 import { projectsApi, connectionsApi, groupsApi } from '../../lib/api';
-import { ProjectFormDialog, GroupFormDialog } from '../ProjectsPage/Dialogs';
+import { ProjectFormDialog, GroupFormDialog } from '../../components/dialogs/ConnectionDialogs';
 import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
 interface ProjectsSectionProps {
