@@ -21,7 +21,11 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { useToastStore } from '../../stores/toastStore';
-import { registerSqlCompletionProvider, type ColumnData, type ForeignKeyData } from './sqlAutocomplete';
+import {
+    registerSqlCompletionProvider,
+    type ColumnData,
+    type ForeignKeyData,
+} from './sqlAutocomplete';
 import type { QueryResult, TableInfo } from '@dbnexus/shared';
 
 interface SqlEditorProps {
@@ -74,7 +78,12 @@ export function SqlEditor({
         if (completionProviderRef.current) {
             completionProviderRef.current.dispose();
         }
-        completionProviderRef.current = registerSqlCompletionProvider(monaco, tables, columns, foreignKeys);
+        completionProviderRef.current = registerSqlCompletionProvider(
+            monaco,
+            tables,
+            columns,
+            foreignKeys
+        );
     };
 
     useEffect(() => {

@@ -969,8 +969,7 @@ export function Layout() {
                                             {serverConnections.map((conn) => {
                                                 const isConnActive =
                                                     location.pathname === `/query/${conn.id}` ||
-                                                    location.pathname ===
-                                                        `/connections/${conn.id}`;
+                                                    location.pathname === `/connections/${conn.id}`;
                                                 return (
                                                     <MenuItem
                                                         key={conn.id}
@@ -1000,9 +999,7 @@ export function Layout() {
                                 <>
                                     <StyledTooltip title="Databases" placement="right" arrow>
                                         <ListItemButton
-                                            onClick={(e) =>
-                                                setDatabasesMenuAnchor(e.currentTarget)
-                                            }
+                                            onClick={(e) => setDatabasesMenuAnchor(e.currentTarget)}
                                             selected={isDatabasesChildActive}
                                             sx={{ justifyContent: 'center', py: 1.5 }}
                                         >
