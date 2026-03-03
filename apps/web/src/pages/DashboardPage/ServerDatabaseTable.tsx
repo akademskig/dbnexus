@@ -16,7 +16,6 @@ import {
 import DnsIcon from '@mui/icons-material/Dns';
 import StorageIcon from '@mui/icons-material/Storage';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
@@ -209,13 +208,13 @@ function ServerRow({
                 }}
                 onClick={() => setExpanded(!expanded)}
             >
-                <IconButton size="small" sx={{ p: 0 }}>
-                    {expanded ? (
-                        <ExpandLessIcon sx={{ fontSize: 20 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 20 }} />
-                    )}
-                </IconButton>
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 20,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <DnsIcon sx={{ fontSize: 18, color: engineColor }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>
                     {server.name}
@@ -312,13 +311,13 @@ function StandaloneDatabasesSection({
                 }}
                 onClick={() => setExpanded(!expanded)}
             >
-                <IconButton size="small" sx={{ p: 0 }}>
-                    {expanded ? (
-                        <ExpandLessIcon sx={{ fontSize: 20 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 20 }} />
-                    )}
-                </IconButton>
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 20,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <StorageIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Typography
                     variant="body2"

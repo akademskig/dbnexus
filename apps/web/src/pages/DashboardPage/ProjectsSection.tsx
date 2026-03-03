@@ -230,6 +230,13 @@ function GroupSection({
                     },
                 }}
             >
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 14,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <LayersIcon
                     sx={{ fontSize: 14, color: isSyncEnabled ? 'success.main' : 'text.primary' }}
                 />
@@ -261,20 +268,6 @@ function GroupSection({
                         sx={{ height: 16, fontSize: 10, minWidth: 20, borderColor: 'divider' }}
                     />
                 </StyledTooltip>
-                <IconButton
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setExpanded(!expanded);
-                    }}
-                    sx={{
-                        p: 0.25,
-                        transition: 'transform 0.2s',
-                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                >
-                    <ExpandMoreIcon sx={{ fontSize: 14 }} />
-                </IconButton>
                 <IconButton
                     size="small"
                     onClick={(e) => {
@@ -464,6 +457,13 @@ function ProjectRow({
                     },
                 }}
             >
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 18,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <Box
                     sx={{
                         width: 26,
@@ -527,19 +527,6 @@ function ProjectRow({
                         />
                     </StyledTooltip>
                 </Box>
-                <IconButton
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setExpanded(!expanded);
-                    }}
-                    sx={{
-                        transition: 'transform 0.2s',
-                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                >
-                    <ExpandMoreIcon sx={{ fontSize: 18 }} />
-                </IconButton>
                 <IconButton
                     size="small"
                     onClick={(e) => {

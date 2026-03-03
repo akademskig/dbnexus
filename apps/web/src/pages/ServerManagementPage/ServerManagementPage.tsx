@@ -264,7 +264,7 @@ export function ServerManagementPage() {
             if (result.success) {
                 queryClient.invalidateQueries({ queryKey: ['servers'] });
                 toast.success('Server deleted');
-                navigate('/servers');
+                navigate('/dashboard');
             } else {
                 toast.error(result.message || 'Failed to delete server');
             }
@@ -375,8 +375,8 @@ export function ServerManagementPage() {
                         title="Server not found"
                         description="The requested server could not be found."
                         action={{
-                            label: 'Back to Servers',
-                            onClick: () => navigate('/servers'),
+                            label: 'Back to Dashboard',
+                            onClick: () => navigate('/dashboard'),
                         }}
                         size="large"
                     />
@@ -393,14 +393,14 @@ export function ServerManagementPage() {
             <Box sx={{ mb: 3 }}>
                 {/* Breadcrumbs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <IconButton size="small" onClick={() => navigate('/servers')}>
+                    <IconButton size="small" onClick={() => navigate('/dashboard')}>
                         <ArrowBackIcon />
                     </IconButton>
                     <Breadcrumbs>
                         <Link
                             component="button"
                             variant="body2"
-                            onClick={() => navigate('/servers')}
+                            onClick={() => navigate('/dashboard')}
                             sx={{ cursor: 'pointer' }}
                             underline="hover"
                         >
