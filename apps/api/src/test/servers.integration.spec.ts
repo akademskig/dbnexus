@@ -10,7 +10,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { createTestApp, TEST_SERVERS, checkDockerContainers } from './setup.js';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { ServersController } from '../servers/servers.controller.js';
