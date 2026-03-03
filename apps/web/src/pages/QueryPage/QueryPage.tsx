@@ -38,13 +38,7 @@ export function QueryPage() {
     const toast = useToastStore();
 
     // Query tabs store
-    const {
-        tabs,
-        activeTabId,
-        addTab,
-        updateTab,
-        getActiveTab,
-    } = useQueryTabsStore();
+    const { tabs, activeTabId, addTab, updateTab, getActiveTab } = useQueryTabsStore();
 
     // Shared connection store (for syncing with other pages like Schema Visualizer)
     const {
@@ -1013,7 +1007,14 @@ export function QueryPage() {
                 `Querying ${info.referencedTable} where ${info.referencedColumn} = ${info.value}`
             );
         },
-        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, toast, setSql]
+        [
+            selectedConnectionId,
+            selectedConnection?.engine,
+            selectedSchema,
+            executeMutation,
+            toast,
+            setSql,
+        ]
     );
 
     // Redirect to dashboard if no connections after loading
@@ -1041,6 +1042,7 @@ export function QueryPage() {
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 <QueryPageSidebar
                     selectedConnectionId={selectedConnectionId}
+                    selectedSchema={selectedSchema}
                     tableSearch={tableSearch}
                     onTableSearchChange={setTableSearch}
                     filteredTables={filteredTables}
