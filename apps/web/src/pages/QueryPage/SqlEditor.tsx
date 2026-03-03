@@ -21,7 +21,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { useToastStore } from '../../stores/toastStore';
-import { registerSqlCompletionProvider, type ColumnData } from './sqlAutocomplete';
+import { registerSqlCompletionProvider, type ColumnData, type ForeignKeyData } from './sqlAutocomplete';
 import type { QueryResult, TableInfo } from '@dbnexus/shared';
 
 interface SqlEditorProps {
@@ -38,6 +38,7 @@ interface SqlEditorProps {
     error?: string | null;
     tables?: TableInfo[];
     columns?: ColumnData[];
+    foreignKeys?: ForeignKeyData[];
 }
 
 export function SqlEditor({
@@ -54,6 +55,7 @@ export function SqlEditor({
     error,
     tables = [],
     columns = [],
+    foreignKeys = [],
 }: SqlEditorProps) {
     const mode = useThemeModeStore((state) => state.getMode());
     const toast = useToastStore();
@@ -72,7 +74,7 @@ export function SqlEditor({
         if (completionProviderRef.current) {
             completionProviderRef.current.dispose();
         }
-        completionProviderRef.current = registerSqlCompletionProvider(monaco, tables, columns);
+        completionProviderRef.current = registerSqlCompletionProvider(monaco, tables, columns, foreignKeys);
     };
 
     useEffect(() => {
@@ -80,9 +82,14 @@ export function SqlEditor({
             if (completionProviderRef.current) {
                 completionProviderRef.current.dispose();
             }
-            completionProviderRef.current = registerSqlCompletionProvider(monacoRef.current, tables, columns);
+            completionProviderRef.current = registerSqlCompletionProvider(
+                monacoRef.current,
+                tables,
+                columns,
+                foreignKeys
+            );
         }
-    }, [tables, columns]);
+    }, [tables, columns, foreignKeys]);
 
     useEffect(() => {
         return () => {

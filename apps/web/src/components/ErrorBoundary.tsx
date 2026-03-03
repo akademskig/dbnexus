@@ -1,7 +1,7 @@
 import { Component, ReactNode } from 'react';
 import { Box, Typography, Button, Paper, alpha } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import HomeIcon from '@mui/icons-material/Home';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import BugReportIcon from '@mui/icons-material/BugReport';
 
 const GITHUB_ISSUES_URL = 'https://github.com/akademskig/dbnexus/issues/new';
@@ -30,9 +30,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         console.error('Error caught by boundary:', error, errorInfo);
     }
 
-    handleGoHome = () => {
-        this.setState({ hasError: false, error: null });
-        globalThis.location.href = '/dashboard';
+    handleReload = () => {
+        globalThis.location.reload();
     };
 
     render() {
@@ -95,8 +94,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                             color="text.secondary"
                             sx={{ mb: 2, lineHeight: 1.6 }}
                         >
-                            An unexpected error occurred. You can try refreshing or go back to the
-                            dashboard.
+                            An unexpected error occurred. Please try reloading the page.
                         </Typography>
 
                         {this.state.error && (
@@ -132,10 +130,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                             </Button>
                             <Button
                                 variant="contained"
-                                startIcon={<HomeIcon />}
-                                onClick={this.handleGoHome}
+                                startIcon={<RefreshIcon />}
+                                onClick={this.handleReload}
                             >
-                                Dashboard
+                                Reload Page
                             </Button>
                         </Box>
                     </Paper>

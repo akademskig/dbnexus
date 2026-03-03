@@ -349,13 +349,13 @@ export function QueryPage() {
                 if (engine === 'mysql') {
                     defaultSchema =
                         selectedConnection?.database &&
-                        schemas.includes(selectedConnection.database)
+                            schemas.includes(selectedConnection.database)
                             ? selectedConnection.database
                             : schemas[0];
                 } else {
                     defaultSchema =
                         (selectedConnection?.defaultSchema &&
-                        schemas.includes(selectedConnection.defaultSchema)
+                            schemas.includes(selectedConnection.defaultSchema)
                             ? selectedConnection.defaultSchema
                             : null) ??
                         schemas.find((s) => s === 'public') ??
@@ -1150,6 +1150,17 @@ export function QueryPage() {
                                                 nullable: col.nullable,
                                                 tableName: tableSchema.name,
                                             }))}
+                                            foreignKeys={tableSchema?.foreignKeys.flatMap((fk) => {
+                                                const cols = Array.isArray(fk.columns) ? fk.columns : [];
+                                                const refCols = Array.isArray(fk.referencedColumns) ? fk.referencedColumns : [];
+                                                return cols.map((col, i) => ({
+                                                    sourceTable: tableSchema.name,
+                                                    sourceColumn: col,
+                                                    targetTable: fk.referencedTable,
+                                                    targetSchema: fk.referencedSchema,
+                                                    targetColumn: refCols[i] || refCols[0] || col,
+                                                }));
+                                            })}
                                         />
                                     </Panel>
                                 </Group>
