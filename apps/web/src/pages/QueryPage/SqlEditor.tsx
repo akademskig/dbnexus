@@ -29,6 +29,7 @@ import {
     type ColumnData,
     type ForeignKeyData,
 } from './sqlAutocomplete';
+import { QueryTabBar } from './QueryTabBar';
 import type { QueryResult, TableInfo } from '@dbnexus/shared';
 
 interface SqlEditorProps {
@@ -46,6 +47,7 @@ interface SqlEditorProps {
     tables?: TableInfo[];
     columns?: ColumnData[];
     foreignKeys?: ForeignKeyData[];
+    connectionId?: string;
 }
 
 export function SqlEditor({
@@ -63,6 +65,7 @@ export function SqlEditor({
     tables = [],
     columns = [],
     foreignKeys = [],
+    connectionId,
 }: SqlEditorProps) {
     const mode = useThemeModeStore((state) => state.getMode());
     const toast = useToastStore();
@@ -140,6 +143,9 @@ export function SqlEditor({
                 overflow: 'hidden',
             }}
         >
+            {/* Query Tabs */}
+            <QueryTabBar connectionId={connectionId} />
+
             {/* Toolbar */}
             <Box
                 sx={{
@@ -262,21 +268,61 @@ export function SqlEditor({
                 <StyledTooltip
                     title={
                         <Box sx={{ p: 0.5 }}>
-                            <Typography variant="caption" fontWeight={600} sx={{ mb: 1, display: 'block' }}>
+                            <Typography
+                                variant="caption"
+                                fontWeight={600}
+                                sx={{ mb: 1, display: 'block' }}
+                            >
                                 Keyboard Shortcuts
                             </Typography>
                             <Box sx={{ display: 'grid', gap: 0.5, fontSize: 11 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
                                     <span>Run Query</span>
-                                    <Typography component="span" fontFamily="monospace" fontSize={11}>⌘/Ctrl+Enter</Typography>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        ⌘/Ctrl+Enter
+                                    </Typography>
                                 </Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
                                     <span>Save Query</span>
-                                    <Typography component="span" fontFamily="monospace" fontSize={11}>⌘/Ctrl+S</Typography>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        ⌘/Ctrl+S
+                                    </Typography>
                                 </Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
                                     <span>Format SQL</span>
-                                    <Typography component="span" fontFamily="monospace" fontSize={11}>Shift+Alt+F</Typography>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        Shift+Alt+F
+                                    </Typography>
                                 </Box>
                             </Box>
                         </Box>

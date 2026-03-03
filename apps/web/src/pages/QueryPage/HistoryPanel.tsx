@@ -1,4 +1,13 @@
-import { Box, Typography, Chip, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import {
+    Box,
+    Typography,
+    Chip,
+    IconButton,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+} from '@mui/material';
 import { useState } from 'react';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import HistoryIcon from '@mui/icons-material/History';
@@ -64,12 +73,24 @@ export function HistoryPanel({
             error: entry.error || null,
         }));
         const json = JSON.stringify(exportData, null, 2);
-        downloadFile(json, `query-history-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+        downloadFile(
+            json,
+            `query-history-${new Date().toISOString().split('T')[0]}.json`,
+            'application/json'
+        );
         setExportMenuAnchor(null);
     };
 
     const handleExportCsv = () => {
-        const headers = ['SQL', 'Connection', 'Executed At', 'Success', 'Row Count', 'Execution Time (ms)', 'Error'];
+        const headers = [
+            'SQL',
+            'Connection',
+            'Executed At',
+            'Success',
+            'Row Count',
+            'Execution Time (ms)',
+            'Error',
+        ];
         const escapeCSV = (value: string | number | boolean | null) => {
             if (value === null || value === undefined) return '';
             const str = String(value);
@@ -88,7 +109,11 @@ export function HistoryPanel({
             escapeCSV(entry.error || ''),
         ]);
         const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-        downloadFile(csv, `query-history-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+        downloadFile(
+            csv,
+            `query-history-${new Date().toISOString().split('T')[0]}.csv`,
+            'text/csv'
+        );
         setExportMenuAnchor(null);
     };
 
