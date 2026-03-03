@@ -17,7 +17,6 @@ import DnsIcon from '@mui/icons-material/Dns';
 import StorageIcon from '@mui/icons-material/Storage';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -130,59 +129,67 @@ function DatabaseRow({ connection, onEdit, onDelete }: DatabaseRowProps) {
                 >
                     {displayName}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <StyledTooltip title="Query">
-                        <IconButton
-                            size="small"
-                            onClick={() => navigate(`/query/${connection.id}`)}
-                            disabled={!online}
-                        >
-                            <TerminalIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </StyledTooltip>
-                    <StyledTooltip title="Manage">
-                        <IconButton
-                            size="small"
-                            onClick={() => navigate(`/connections/${connection.id}?tab=overview`)}
-                        >
-                            <SettingsIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </StyledTooltip>
-                    <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}>
-                        <MoreVertIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                    <Menu
-                        anchorEl={menuAnchor}
-                        open={Boolean(menuAnchor)}
-                        onClose={handleMenuClose}
-                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                <IconButton
+                    size="small"
+                    onClick={(e) => setMenuAnchor(e.currentTarget)}
+                    sx={{ color: 'text.secondary' }}
+                >
+                    <MoreVertIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={menuAnchor}
+                    open={Boolean(menuAnchor)}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            navigate(`/query/${connection.id}`);
+                        }}
+                        disabled={!online}
                     >
-                        <MenuItem
-                            onClick={() => {
-                                handleMenuClose();
-                                onEdit(connection);
-                            }}
-                        >
-                            <ListItemIcon>
-                                <EditIcon fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText>Edit Database</ListItemText>
-                        </MenuItem>
-                        <MenuItem
-                            onClick={() => {
-                                handleMenuClose();
-                                onDelete(connection);
-                            }}
-                            sx={{ color: 'error.main' }}
-                        >
-                            <ListItemIcon>
-                                <DeleteIcon fontSize="small" color="error" />
-                            </ListItemIcon>
-                            <ListItemText>Remove</ListItemText>
-                        </MenuItem>
-                    </Menu>
-                </Box>
+                        <ListItemIcon>
+                            <TerminalIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Query</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            navigate(`/connections/${connection.id}?tab=overview`);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <OpenInNewIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Manage</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            onEdit(connection);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <EditIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Edit</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                        onClick={() => {
+                            handleMenuClose();
+                            onDelete(connection);
+                        }}
+                        sx={{ color: 'error.main' }}
+                    >
+                        <ListItemIcon>
+                            <DeleteIcon fontSize="small" color="error" />
+                        </ListItemIcon>
+                        <ListItemText>Remove</ListItemText>
+                    </MenuItem>
+                </Menu>
             </Box>
         </StyledTooltip>
     );
@@ -295,7 +302,7 @@ function ServerRow({
                     <ListItemIcon>
                         <EditIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Edit Server</ListItemText>
+                    <ListItemText>Edit</ListItemText>
                 </MenuItem>
                 <MenuItem
                     onClick={() => {
@@ -306,7 +313,7 @@ function ServerRow({
                     <ListItemIcon>
                         <OpenInNewIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Server Management</ListItemText>
+                    <ListItemText>Manage</ListItemText>
                 </MenuItem>
                 {server.startCommand && (
                     <MenuItem
@@ -318,7 +325,7 @@ function ServerRow({
                         <ListItemIcon>
                             <PlayArrowIcon fontSize="small" color="success" />
                         </ListItemIcon>
-                        <ListItemText>Start Server</ListItemText>
+                        <ListItemText>Start</ListItemText>
                     </MenuItem>
                 )}
                 {server.stopCommand && (
@@ -331,7 +338,7 @@ function ServerRow({
                         <ListItemIcon>
                             <StopIcon fontSize="small" color="warning" />
                         </ListItemIcon>
-                        <ListItemText>Stop Server</ListItemText>
+                        <ListItemText>Stop</ListItemText>
                     </MenuItem>
                 )}
                 <MenuItem
@@ -344,7 +351,7 @@ function ServerRow({
                     <ListItemIcon>
                         <DeleteIcon fontSize="small" color="error" />
                     </ListItemIcon>
-                    <ListItemText>Delete Server</ListItemText>
+                    <ListItemText>Delete</ListItemText>
                 </MenuItem>
             </Menu>
             <Collapse in={expanded}>
