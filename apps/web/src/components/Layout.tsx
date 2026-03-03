@@ -110,6 +110,7 @@ export function Layout() {
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [serversMenuAnchor, setServersMenuAnchor] = useState<null | HTMLElement>(null);
+    const [databasesMenuAnchor, setDatabasesMenuAnchor] = useState<null | HTMLElement>(null);
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
     const [serverFormOpen, setServerFormOpen] = useState(false);
 
@@ -905,12 +906,20 @@ export function Layout() {
                     ) : (
                         /* Collapsed servers menu */
                         <>
-                            <StyledTooltip title="Servers & Databases" placement="right" arrow>
+                            <StyledTooltip title="Servers" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setServersMenuAnchor(e.currentTarget)}
+                                    selected={isServersChildActive}
                                     sx={{ justifyContent: 'center', py: 1.5 }}
                                 >
-                                    <DnsIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                                    <DnsIcon
+                                        sx={{
+                                            fontSize: 20,
+                                            color: isServersChildActive
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                        }}
+                                    />
                                 </ListItemButton>
                             </StyledTooltip>
                             <Menu
@@ -934,12 +943,14 @@ export function Layout() {
                                         color: 'text.secondary',
                                     }}
                                 >
-                                    Servers & Databases
+                                    Servers
                                 </Typography>
                                 <Divider />
                                 {servers.map((server) => {
                                     const serverConnections =
                                         connectionsByServer.byServer[server.id] || [];
+                                    const isServerActive =
+                                        location.pathname === `/servers/${server.id}`;
                                     return (
                                         <Box key={server.id}>
                                             <MenuItem
@@ -947,6 +958,7 @@ export function Layout() {
                                                     navigate(`/servers/${server.id}`);
                                                     setServersMenuAnchor(null);
                                                 }}
+                                                selected={isServerActive}
                                                 sx={{ fontWeight: 500, fontSize: 13 }}
                                             >
                                                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -954,25 +966,106 @@ export function Layout() {
                                                 </ListItemIcon>
                                                 {server.name}
                                             </MenuItem>
-                                            {serverConnections.map((conn) => (
-                                                <MenuItem
-                                                    key={conn.id}
-                                                    onClick={() => {
-                                                        handleDatabaseClick(conn.id);
-                                                        setServersMenuAnchor(null);
-                                                    }}
-                                                    sx={{ pl: 4, fontSize: 12 }}
-                                                >
-                                                    <ListItemIcon sx={{ minWidth: 24 }}>
-                                                        <StorageIcon sx={{ fontSize: 14 }} />
-                                                    </ListItemIcon>
-                                                    {conn.name || conn.database}
-                                                </MenuItem>
-                                            ))}
+                                            {serverConnections.map((conn) => {
+                                                const isConnActive =
+                                                    location.pathname === `/query/${conn.id}` ||
+                                                    location.pathname ===
+                                                        `/connections/${conn.id}`;
+                                                return (
+                                                    <MenuItem
+                                                        key={conn.id}
+                                                        onClick={() => {
+                                                            handleDatabaseClick(conn.id);
+                                                            setServersMenuAnchor(null);
+                                                        }}
+                                                        selected={isConnActive}
+                                                        sx={{ pl: 4, fontSize: 12 }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 24 }}>
+                                                            <StorageIcon sx={{ fontSize: 14 }} />
+                                                        </ListItemIcon>
+                                                        {conn.name || conn.database}
+                                                    </MenuItem>
+                                                );
+                                            })}
                                         </Box>
                                     );
                                 })}
                             </Menu>
+
+                            {/* Collapsed databases menu (standalone) */}
+                            {connectionsByServer.standalone.filter((conn) =>
+                                isConnectionOnline(conn.id)
+                            ).length > 0 && (
+                                <>
+                                    <StyledTooltip title="Databases" placement="right" arrow>
+                                        <ListItemButton
+                                            onClick={(e) =>
+                                                setDatabasesMenuAnchor(e.currentTarget)
+                                            }
+                                            selected={isDatabasesChildActive}
+                                            sx={{ justifyContent: 'center', py: 1.5 }}
+                                        >
+                                            <StorageIcon
+                                                sx={{
+                                                    fontSize: 20,
+                                                    color: isDatabasesChildActive
+                                                        ? 'primary.main'
+                                                        : 'text.secondary',
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </StyledTooltip>
+                                    <Menu
+                                        anchorEl={databasesMenuAnchor}
+                                        open={Boolean(databasesMenuAnchor)}
+                                        onClose={() => setDatabasesMenuAnchor(null)}
+                                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                                        slotProps={{
+                                            paper: {
+                                                sx: { maxHeight: 400, overflowY: 'auto' },
+                                            },
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                px: 2,
+                                                py: 1,
+                                                display: 'block',
+                                                color: 'text.secondary',
+                                            }}
+                                        >
+                                            Databases
+                                        </Typography>
+                                        <Divider />
+                                        {connectionsByServer.standalone
+                                            .filter((conn) => isConnectionOnline(conn.id))
+                                            .map((conn) => {
+                                                const isActive =
+                                                    location.pathname === `/query/${conn.id}` ||
+                                                    location.pathname === `/connections/${conn.id}`;
+                                                return (
+                                                    <MenuItem
+                                                        key={conn.id}
+                                                        onClick={() => {
+                                                            handleDatabaseClick(conn.id);
+                                                            setDatabasesMenuAnchor(null);
+                                                        }}
+                                                        selected={isActive}
+                                                        sx={{ fontSize: 13 }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 28 }}>
+                                                            <StorageIcon sx={{ fontSize: 16 }} />
+                                                        </ListItemIcon>
+                                                        {conn.name || conn.database}
+                                                    </MenuItem>
+                                                );
+                                            })}
+                                    </Menu>
+                                </>
+                            )}
 
                             {/* Collapsed sync menu */}
                             {groups.length > 0 && (
