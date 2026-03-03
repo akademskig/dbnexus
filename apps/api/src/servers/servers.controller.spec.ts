@@ -194,7 +194,10 @@ describe('ServersController', () => {
             const result = controller.createServer(input);
 
             expect(result).toEqual(mockServer);
-            expect(mockMetadataService.serverRepository.create).toHaveBeenCalledWith(input, undefined);
+            expect(mockMetadataService.serverRepository.create).toHaveBeenCalledWith(
+                input,
+                undefined
+            );
             expect(mockMetadataService.auditLogRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
                     action: 'server_created',

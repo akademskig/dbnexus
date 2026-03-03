@@ -68,4 +68,8 @@ export class UpdateDatabaseGroupDto {
     @IsOptional()
     @IsString()
     syncTargetSchema?: string | null;
+
+    @IsOptional()
+    @IsBoolean()
+    isPublic?: boolean;
 }

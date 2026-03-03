@@ -11,7 +11,7 @@ interface ProjectRow {
     description: string | null;
     color: string | null;
     created_by: string | null;
-    is_private: number;
+    is_public: number;
     created_at: string;
     updated_at: string;
 }
@@ -67,7 +67,7 @@ export class ProjectRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE (created_by = ? OR created_by IS NULL OR is_private = 0)`;
+            query += ` WHERE (created_by = ? OR created_by IS NULL OR is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -88,12 +88,12 @@ export class ProjectRepository {
 
         const row = this.db
             .getDb()
-            .prepare('SELECT created_by, is_private FROM projects WHERE id = ?')
-            .get(projectId) as { created_by: string | null; is_private: number } | undefined;
+            .prepare('SELECT created_by, is_public FROM projects WHERE id = ?')
+            .get(projectId) as { created_by: string | null; is_public: number } | undefined;
 
         if (!row) return false;
         return (
-            row.created_by === null || row.created_by === userContext.userId || row.is_private === 0
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
         );
     }
 
@@ -102,7 +102,6 @@ export class ProjectRepository {
      */
     canModify(projectId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
-        if (!userContext.userId) return false;
 
         const row = this.db
             .getDb()
@@ -110,7 +109,8 @@ export class ProjectRepository {
             .get(projectId) as { created_by: string | null } | undefined;
 
         if (!row) return false;
-        return row.created_by === userContext.userId;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     /**
@@ -132,9 +132,9 @@ export class ProjectRepository {
             updates.push('color = ?');
             values.push(input.color);
         }
-        if (input.isPrivate !== undefined) {
-            updates.push('is_private = ?');
-            values.push(input.isPrivate ? 1 : 0);
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length === 0) {
@@ -180,7 +180,7 @@ export class ProjectRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by || undefined,
-            isPrivate: row.is_private === 1,
+            isPublic: row.is_public === 1,
         };
     }
 }

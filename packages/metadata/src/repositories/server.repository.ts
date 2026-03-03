@@ -31,7 +31,7 @@ interface ServerRow {
     start_command: string | null;
     stop_command: string | null;
     created_by: string | null;
-    is_private: number;
+    is_public: number;
     created_at: string;
     updated_at: string;
     database_count?: number;
@@ -78,7 +78,7 @@ export class ServerRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by ?? undefined,
-            isPrivate: row.is_private === 1,
+            isPublic: row.is_public === 1,
             databaseCount: row.database_count,
         };
     }
@@ -169,7 +169,7 @@ export class ServerRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE (s.created_by = ? OR s.created_by IS NULL OR s.is_private = 0)`;
+            query += ` WHERE (s.created_by = ? OR s.created_by IS NULL OR s.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -193,7 +193,7 @@ export class ServerRepository {
         const params: unknown[] = [engine];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (s.created_by = ? OR s.created_by IS NULL OR s.is_private = 0)`;
+            query += ` AND (s.created_by = ? OR s.created_by IS NULL OR s.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -210,12 +210,12 @@ export class ServerRepository {
         if (userContext.isAdmin) return true;
 
         const row = this.db
-            .prepare('SELECT created_by, is_private FROM servers WHERE id = ?')
-            .get(serverId) as { created_by: string | null; is_private: number } | undefined;
+            .prepare('SELECT created_by, is_public FROM servers WHERE id = ?')
+            .get(serverId) as { created_by: string | null; is_public: number } | undefined;
 
         if (!row) return false;
         return (
-            row.created_by === null || row.created_by === userContext.userId || row.is_private === 0
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
         );
     }
 
@@ -224,14 +224,14 @@ export class ServerRepository {
      */
     canModify(serverId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
-        if (!userContext.userId) return false;
 
         const row = this.db.prepare('SELECT created_by FROM servers WHERE id = ?').get(serverId) as
             | { created_by: string | null }
             | undefined;
 
         if (!row) return false;
-        return row.created_by === userContext.userId;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 
     /**
@@ -286,9 +286,9 @@ export class ServerRepository {
             updates.push('stop_command = ?');
             values.push(input.stopCommand || null);
         }
-        if (input.isPrivate !== undefined) {
-            updates.push('is_private = ?');
-            values.push(input.isPrivate ? 1 : 0);
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length === 0) {

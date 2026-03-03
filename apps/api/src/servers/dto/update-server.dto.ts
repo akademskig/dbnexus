@@ -58,4 +58,8 @@ export class UpdateServerDto {
     @IsOptional()
     @IsString()
     stopCommand?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isPublic?: boolean;
 }

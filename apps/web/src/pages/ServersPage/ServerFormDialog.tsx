@@ -17,6 +17,7 @@ import {
     Chip,
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
+import PublicIcon from '@mui/icons-material/Public';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { serversApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
@@ -34,7 +35,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const { tags: availableTags } = useTagsStore();
-    const [formData, setFormData] = useState<ServerCreateInput>({
+    const [formData, setFormData] = useState<ServerCreateInput & { isPublic?: boolean }>({
         name: '',
         engine: 'postgres',
         host: 'localhost',
@@ -45,6 +46,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
         tags: [],
         startCommand: '',
         stopCommand: '',
+        isPublic: false,
     });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
@@ -64,6 +66,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                 tags: server.tags,
                 startCommand: server.startCommand ?? '',
                 stopCommand: server.stopCommand ?? '',
+                isPublic: server.isPublic || false,
             });
         } else {
             setFormData({
@@ -77,6 +80,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                 tags: [],
                 startCommand: '',
                 stopCommand: '',
+                isPublic: false,
             });
         }
         setTestResult(null);
@@ -164,7 +168,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
             <form onSubmit={handleSubmit}>
                 <DialogTitle>{server ? 'Edit Server' : 'New Server'}</DialogTitle>
                 <DialogContent>
-                    <Stack spacing={3} sx={{ mt: 1 }}>
+                    <Stack spacing={1} sx={{ mt: 1 }}>
                         <TextField
                             label="Server Name"
                             value={formData.name}
@@ -371,6 +375,23 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
                                 />
                             </Stack>
                         </Box>
+
+                        {server && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={formData.isPublic || false}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, isPublic: e.target.checked })
+                                        }
+                                        size="small"
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
+                                    />
+                                }
+                                label="Make public (visible to all users)"
+                            />
+                        )}
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>

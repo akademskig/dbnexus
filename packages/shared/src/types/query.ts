@@ -25,7 +25,7 @@ export interface SavedQuery {
     createdAt: Date;
     updatedAt: Date;
     createdBy?: string; // User ID who created this resource
-    isPrivate?: boolean; // If true, only the owner can view (default: false = public)
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
 }
 
 export interface QueryFolder {

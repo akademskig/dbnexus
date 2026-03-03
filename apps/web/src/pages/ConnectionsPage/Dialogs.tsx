@@ -21,7 +21,7 @@ import {
     Chip,
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
-import LockIcon from '@mui/icons-material/Lock';
+import PublicIcon from '@mui/icons-material/Public';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, projectsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
@@ -49,19 +49,19 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState(PROJECT_COLORS[0]);
-    const [isPrivate, setIsPrivate] = useState(false);
+    const [isPublic, setIsPublic] = useState(false);
 
     const handleEnter = () => {
         if (project) {
             setName(project.name);
             setDescription(project.description || '');
             setColor(project.color || PROJECT_COLORS[0]);
-            setIsPrivate(project.isPrivate || false);
+            setIsPublic(project.isPublic || false);
         } else {
             setName('');
             setDescription('');
             setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
-            setIsPrivate(false);
+            setIsPublic(false);
         }
     };
 
@@ -80,7 +80,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
             data,
         }: {
             id: string;
-            data: { name: string; description?: string; color?: string; isPrivate?: boolean };
+            data: { name: string; description?: string; color?: string; isPublic?: boolean };
         }) => projectsApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -94,7 +94,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
         if (project) {
             updateMutation.mutate({
                 id: project.id,
-                data: { name, description, color, isPrivate },
+                data: { name, description, color, isPublic },
             });
         } else {
             createMutation.mutate({ name, description, color });
@@ -158,14 +158,14 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={isPrivate}
-                                        onChange={(e) => setIsPrivate(e.target.checked)}
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
                                         size="small"
-                                        icon={<LockIcon />}
-                                        checkedIcon={<LockIcon />}
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
                                     />
                                 }
-                                label="Make private (visible only to you)"
+                                label="Make public (visible to all users)"
                             />
                         )}
                     </Stack>
@@ -201,19 +201,19 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     const [databaseEngine, setDatabaseEngine] = useState<'postgres' | 'mysql' | 'sqlite'>(
         'postgres'
     );
-    const [isPrivate, setIsPrivate] = useState(false);
+    const [isPublic, setIsPublic] = useState(false);
 
     const handleEnter = () => {
         if (group) {
             setName(group.name);
             setDescription(group.description || '');
             setDatabaseEngine(group.databaseEngine);
-            setIsPrivate(group.isPrivate || false);
+            setIsPublic(group.isPublic || false);
         } else {
             setName('');
             setDescription('');
             setDatabaseEngine('postgres');
-            setIsPrivate(false);
+            setIsPublic(false);
         }
     };
 
@@ -229,7 +229,7 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
 
     const updateMutation = useMutation({
         mutationFn: () =>
-            projectsApi.updateGroup(projectId!, group!.id, { name, description, isPrivate }),
+            projectsApi.updateGroup(projectId!, group!.id, { name, description, isPublic }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             toast.success('Instance group updated');
@@ -327,14 +327,14 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={isPrivate}
-                                        onChange={(e) => setIsPrivate(e.target.checked)}
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
                                         size="small"
-                                        icon={<LockIcon />}
-                                        checkedIcon={<LockIcon />}
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
                                     />
                                 }
-                                label="Make private (visible only to you)"
+                                label="Make public (visible to all users)"
                             />
                         )}
                     </Stack>
@@ -381,7 +381,7 @@ export function ConnectionFormDialog({
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const { tags: availableTags } = useTagsStore();
-    const [formData, setFormData] = useState<ConnectionCreateInput>({
+    const [formData, setFormData] = useState<ConnectionCreateInput & { isPublic?: boolean }>({
         name: '',
         engine: 'postgres',
         host: 'localhost',
@@ -396,6 +396,7 @@ export function ConnectionFormDialog({
         serverId: undefined,
         projectId: undefined,
         groupId: undefined,
+        isPublic: false,
     });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
@@ -430,6 +431,7 @@ export function ConnectionFormDialog({
                 serverId: connection.serverId,
                 projectId: connection.projectId,
                 groupId: connection.groupId,
+                isPublic: connection.isPublic || false,
             });
         } else {
             // Determine engine from preselected server or initial group
@@ -456,6 +458,7 @@ export function ConnectionFormDialog({
                 serverId: preselectedServerId,
                 projectId: initialProjectId,
                 groupId: initialGroupId,
+                isPublic: false,
             });
         }
         setTestResult(null);
@@ -896,20 +899,19 @@ export function ConnectionFormDialog({
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={connection.isPrivate || false}
+                                        checked={formData.isPublic || false}
                                         onChange={(e) =>
                                             setFormData({
                                                 ...formData,
-                                                // @ts-expect-error - isPrivate is an update-only field
-                                                isPrivate: e.target.checked,
+                                                isPublic: e.target.checked,
                                             })
                                         }
                                         size="small"
-                                        icon={<LockIcon />}
-                                        checkedIcon={<LockIcon />}
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
                                     />
                                 }
-                                label="Make private (visible only to you)"
+                                label="Make public (visible to all users)"
                             />
                         )}
 
