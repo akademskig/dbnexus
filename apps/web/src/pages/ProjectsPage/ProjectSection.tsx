@@ -24,6 +24,7 @@ import LayersIcon from '@mui/icons-material/Layers';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import StorageIcon from '@mui/icons-material/Storage';
 import AddIcon from '@mui/icons-material/Add';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi, connectionsApi } from '../../lib/api';
 import type { ConnectionConfig, Project, DatabaseGroup } from '@dbnexus/shared';
@@ -31,6 +32,7 @@ import { PROJECT_COLORS } from './constants';
 import { ConnectionCard } from './ConnectionCard';
 import { DatabaseGroupSection } from './DatabaseGroupSection';
 import { useToastStore } from '../../stores/toastStore';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 interface ProjectSectionProps {
     project: Project;
@@ -65,6 +67,7 @@ export function ProjectSection({
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [showAllUngrouped, setShowAllUngrouped] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const queryClient = useQueryClient();
     const toast = useToastStore();
 
@@ -301,7 +304,7 @@ export function ProjectSection({
                 <MenuItem
                     onClick={() => {
                         setMenuAnchor(null);
-                        deleteProjectMutation.mutate();
+                        setDeleteDialogOpen(true);
                     }}
                     sx={{ color: 'error.main' }}
                 >
@@ -311,6 +314,49 @@ export function ProjectSection({
                     <ListItemText>Delete Project</ListItemText>
                 </MenuItem>
             </Menu>
+
+            {/* Delete confirmation dialog */}
+            <ConfirmDialog
+                open={deleteDialogOpen}
+                onCancel={() => setDeleteDialogOpen(false)}
+                onConfirm={() => {
+                    deleteProjectMutation.mutate();
+                    setDeleteDialogOpen(false);
+                }}
+                title="Delete Project"
+                message={
+                    <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                            <WarningAmberIcon sx={{ color: 'warning.main' }} />
+                            <Typography>
+                                Are you sure you want to delete <strong>{project.name}</strong>?
+                            </Typography>
+                        </Box>
+                        {totalConnections > 0 && (
+                            <Box
+                                sx={{
+                                    p: 1.5,
+                                    bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
+                                    borderRadius: 1,
+                                    mb: 2,
+                                }}
+                            >
+                                <Typography variant="body2" color="text.secondary">
+                                    This project contains {totalConnections} connection
+                                    {totalConnections !== 1 ? 's' : ''} and {allGroups.length} group
+                                    {allGroups.length !== 1 ? 's' : ''}. They will be moved to
+                                    ungrouped.
+                                </Typography>
+                            </Box>
+                        )}
+                        <Typography variant="body2" color="text.secondary">
+                            This action cannot be undone.
+                        </Typography>
+                    </Box>
+                }
+                confirmLabel="Delete"
+                confirmColor="error"
+            />
 
             {/* Project content */}
             <Collapse in={expanded}>

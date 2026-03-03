@@ -26,9 +26,11 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LayersIcon from '@mui/icons-material/Layers';
 import SyncIcon from '@mui/icons-material/Sync';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { Project, ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { GlassCard } from '../../components/GlassCard';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { useToastStore } from '../../stores/toastStore';
 import { projectsApi, connectionsApi, groupsApi } from '../../lib/api';
@@ -569,6 +571,7 @@ function ProjectRow({
                 <MenuItem
                     onClick={() => {
                         setMenuAnchor(null);
+
                         onDelete();
                     }}
                     sx={{ color: 'error.main' }}
@@ -663,6 +666,8 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
     const [settingsGroup, setSettingsGroup] = useState<DatabaseGroup | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
     const { data: groups = [] } = useQuery({
         queryKey: ['groups'],
@@ -846,7 +851,10 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             connections={connections}
                             groups={groups}
                             onEdit={() => handleEditProject(project)}
-                            onDelete={() => deleteProjectMutation.mutate(project.id)}
+                            onDelete={() => {
+                                setProjectToDelete(project);
+                                setDeleteDialogOpen(true);
+                            }}
                             onNavigate={(path) => navigate(path)}
                             onMoveConnection={handleMoveConnection}
                             onMoveConnectionToGroup={handleMoveConnectionToGroup}
@@ -926,6 +934,69 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                     onClose={() => setSettingsGroup(null)}
                     group={settingsGroup}
                     connections={connections.filter((c) => c.groupId === settingsGroup.id)}
+                />
+            )}
+
+            {projectToDelete && (
+                <ConfirmDialog
+                    open={deleteDialogOpen}
+                    onCancel={() => {
+                        setDeleteDialogOpen(false);
+                        setProjectToDelete(null);
+                    }}
+                    onConfirm={() => {
+                        deleteProjectMutation.mutate(projectToDelete.id);
+                        setDeleteDialogOpen(false);
+                        setProjectToDelete(null);
+                    }}
+                    title="Delete Project"
+                    message={
+                        <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                <WarningAmberIcon sx={{ color: 'warning.main' }} />
+                                <Typography>
+                                    Are you sure you want to delete{' '}
+                                    <strong>{projectToDelete.name}</strong>?
+                                </Typography>
+                            </Box>
+                            {(() => {
+                                const projectConns = connections.filter(
+                                    (c) => c.projectId === projectToDelete.id
+                                );
+                                const projectGroups = groups.filter(
+                                    (g) => g.projectId === projectToDelete.id
+                                );
+                                if (projectConns.length > 0 || projectGroups.length > 0) {
+                                    return (
+                                        <Box
+                                            sx={{
+                                                p: 1.5,
+                                                bgcolor: (theme) =>
+                                                    alpha(theme.palette.warning.main, 0.1),
+                                                borderRadius: 1,
+                                                mb: 2,
+                                            }}
+                                        >
+                                            <Typography variant="body2" color="text.secondary">
+                                                This project contains {projectConns.length}{' '}
+                                                connection
+                                                {projectConns.length !== 1 ? 's' : ''} and{' '}
+                                                {projectGroups.length} group
+                                                {projectGroups.length !== 1 ? 's' : ''}. They will
+                                                be moved to ungrouped.
+                                            </Typography>
+                                        </Box>
+                                    );
+                                }
+                                return null;
+                            })()}
+                            <Typography variant="body2" color="text.secondary">
+                                This action cannot be undone.
+                            </Typography>
+                        </Box>
+                    }
+                    confirmLabel="Delete"
+                    confirmColor="error"
                 />
             )}
         </>
