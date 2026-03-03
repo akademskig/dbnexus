@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -8,7 +8,7 @@ import {
     alpha,
     useTheme,
 } from '@mui/material';
-import { Editor } from '@monaco-editor/react';
+import { Editor, type Monaco, type OnMount } from '@monaco-editor/react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
@@ -21,7 +21,8 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { useToastStore } from '../../stores/toastStore';
-import type { QueryResult } from '@dbnexus/shared';
+import { registerSqlCompletionProvider, type ColumnData } from './sqlAutocomplete';
+import type { QueryResult, TableInfo } from '@dbnexus/shared';
 
 interface SqlEditorProps {
     sql: string;
@@ -35,6 +36,8 @@ interface SqlEditorProps {
     explainLoading?: boolean;
     result?: QueryResult | null;
     error?: string | null;
+    tables?: TableInfo[];
+    columns?: ColumnData[];
 }
 
 export function SqlEditor({
@@ -49,15 +52,45 @@ export function SqlEditor({
     explainLoading,
     result,
     error,
+    tables = [],
+    columns = [],
 }: SqlEditorProps) {
     const mode = useThemeModeStore((state) => state.getMode());
     const toast = useToastStore();
     const [outputPanelOpen, setOutputPanelOpen] = useState(false);
     const theme = useTheme();
+    const monacoRef = useRef<Monaco | null>(null);
+    const completionProviderRef = useRef<{ dispose: () => void } | null>(null);
+
     const handleCopy = () => {
         navigator.clipboard.writeText(sql);
         toast.success('SQL copied to clipboard');
     };
+
+    const handleEditorMount: OnMount = (_editor, monaco) => {
+        monacoRef.current = monaco;
+        if (completionProviderRef.current) {
+            completionProviderRef.current.dispose();
+        }
+        completionProviderRef.current = registerSqlCompletionProvider(monaco, tables, columns);
+    };
+
+    useEffect(() => {
+        if (monacoRef.current) {
+            if (completionProviderRef.current) {
+                completionProviderRef.current.dispose();
+            }
+            completionProviderRef.current = registerSqlCompletionProvider(monacoRef.current, tables, columns);
+        }
+    }, [tables, columns]);
+
+    useEffect(() => {
+        return () => {
+            if (completionProviderRef.current) {
+                completionProviderRef.current.dispose();
+            }
+        };
+    }, []);
 
     // Auto-open output panel when there's a result or error
     const hasOutput = result !== null || error !== null;
@@ -201,6 +234,7 @@ export function SqlEditor({
                                     value={sql}
                                     onChange={(value) => onSqlChange(value || '')}
                                     theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                                    onMount={handleEditorMount}
                                     options={{
                                         minimap: { enabled: false },
                                         fontSize: 14,
@@ -213,6 +247,8 @@ export function SqlEditor({
                                         wrappingIndent: 'indent',
                                         padding: { top: 12, bottom: 12 },
                                         lineNumbersMinChars: 3,
+                                        quickSuggestions: true,
+                                        suggestOnTriggerCharacters: true,
                                     }}
                                 />
                             </Box>
@@ -338,6 +374,7 @@ export function SqlEditor({
                             value={sql}
                             onChange={(value) => onSqlChange(value || '')}
                             theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                            onMount={handleEditorMount}
                             options={{
                                 minimap: { enabled: false },
                                 fontSize: 14,
@@ -350,6 +387,8 @@ export function SqlEditor({
                                 wrappingIndent: 'indent',
                                 padding: { top: 12, bottom: 12 },
                                 lineNumbersMinChars: 3,
+                                quickSuggestions: true,
+                                suggestOnTriggerCharacters: true,
                             }}
                         />
                     </Box>

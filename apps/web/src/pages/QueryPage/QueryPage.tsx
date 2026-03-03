@@ -1143,6 +1143,13 @@ export function QueryPage() {
                                             explainLoading={explainMutation.isPending}
                                             result={result}
                                             error={error}
+                                            tables={tables}
+                                            columns={tableSchema?.columns.map((col) => ({
+                                                name: col.name,
+                                                dataType: col.dataType,
+                                                nullable: col.nullable,
+                                                tableName: tableSchema.name,
+                                            }))}
                                         />
                                     </Panel>
                                 </Group>
