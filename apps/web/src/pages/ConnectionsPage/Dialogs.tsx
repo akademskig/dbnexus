@@ -21,6 +21,7 @@ import {
     Chip,
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
+import LockIcon from '@mui/icons-material/Lock';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectionsApi, projectsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
@@ -48,16 +49,19 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState(PROJECT_COLORS[0]);
+    const [isPrivate, setIsPrivate] = useState(false);
 
     const handleEnter = () => {
         if (project) {
             setName(project.name);
             setDescription(project.description || '');
             setColor(project.color || PROJECT_COLORS[0]);
+            setIsPrivate(project.isPrivate || false);
         } else {
             setName('');
             setDescription('');
             setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
+            setIsPrivate(false);
         }
     };
 
@@ -76,7 +80,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
             data,
         }: {
             id: string;
-            data: { name: string; description?: string; color?: string };
+            data: { name: string; description?: string; color?: string; isPrivate?: boolean };
         }) => projectsApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -88,7 +92,10 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (project) {
-            updateMutation.mutate({ id: project.id, data: { name, description, color } });
+            updateMutation.mutate({
+                id: project.id,
+                data: { name, description, color, isPrivate },
+            });
         } else {
             createMutation.mutate({ name, description, color });
         }
@@ -146,6 +153,21 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
                                 ))}
                             </Box>
                         </Box>
+
+                        {project && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPrivate}
+                                        onChange={(e) => setIsPrivate(e.target.checked)}
+                                        size="small"
+                                        icon={<LockIcon />}
+                                        checkedIcon={<LockIcon />}
+                                    />
+                                }
+                                label="Make private (visible only to you)"
+                            />
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -179,16 +201,19 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     const [databaseEngine, setDatabaseEngine] = useState<'postgres' | 'mysql' | 'sqlite'>(
         'postgres'
     );
+    const [isPrivate, setIsPrivate] = useState(false);
 
     const handleEnter = () => {
         if (group) {
             setName(group.name);
             setDescription(group.description || '');
             setDatabaseEngine(group.databaseEngine);
+            setIsPrivate(group.isPrivate || false);
         } else {
             setName('');
             setDescription('');
             setDatabaseEngine('postgres');
+            setIsPrivate(false);
         }
     };
 
@@ -203,7 +228,8 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     });
 
     const updateMutation = useMutation({
-        mutationFn: () => projectsApi.updateGroup(projectId!, group!.id, { name, description }),
+        mutationFn: () =>
+            projectsApi.updateGroup(projectId!, group!.id, { name, description, isPrivate }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             toast.success('Instance group updated');
@@ -294,6 +320,21 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                 disabled
                                 fullWidth
                                 helperText="Database engine cannot be changed after group creation"
+                            />
+                        )}
+
+                        {group && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPrivate}
+                                        onChange={(e) => setIsPrivate(e.target.checked)}
+                                        size="small"
+                                        icon={<LockIcon />}
+                                        checkedIcon={<LockIcon />}
+                                    />
+                                }
+                                label="Make private (visible only to you)"
                             />
                         )}
                     </Stack>
@@ -850,6 +891,27 @@ export function ConnectionFormDialog({
                             }
                             label="Read-only mode"
                         />
+
+                        {connection && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={connection.isPrivate || false}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                // @ts-expect-error - isPrivate is an update-only field
+                                                isPrivate: e.target.checked,
+                                            })
+                                        }
+                                        size="small"
+                                        icon={<LockIcon />}
+                                        checkedIcon={<LockIcon />}
+                                    />
+                                }
+                                label="Make private (visible only to you)"
+                            />
+                        )}
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>

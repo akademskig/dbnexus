@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 21;
+export const SCHEMA_VERSION = 22;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -508,5 +508,51 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_backups_created_by ON backups(created_by);
 
   UPDATE schema_version SET version = 21;
+  `,
+
+    // Version 22: Add is_private to resources + rename settings to user_preferences with user_id
+    `
+  -- Create system user for storing system-wide preferences (if not exists)
+  INSERT OR IGNORE INTO users (id, email, password_hash, role, created_at, updated_at)
+  VALUES ('system', 'system@internal', '', 'admin', datetime('now'), datetime('now'));
+
+  -- Create user_preferences table (replaces settings)
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, key)
+  );
+
+  -- Migrate existing settings as system defaults (user_id = 'system')
+  INSERT INTO user_preferences (id, user_id, key, value, updated_at)
+  SELECT hex(randomblob(16)), 'system', key, value, updated_at FROM settings;
+
+  -- Drop old settings table
+  DROP TABLE IF EXISTS settings;
+
+  -- Create index for user preferences
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_key ON user_preferences(user_id, key);
+
+  -- Add is_private to connections (default 0 = public)
+  ALTER TABLE connections ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+
+  -- Add is_private to servers (default 0 = public)
+  ALTER TABLE servers ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+
+  -- Add is_private to projects (default 0 = public)
+  ALTER TABLE projects ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+
+  -- Add is_private to database_groups (default 0 = public)
+  ALTER TABLE database_groups ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+
+  -- Add is_private to saved_queries (default 0 = public)
+  ALTER TABLE saved_queries ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+
+  UPDATE schema_version SET version = 22;
   `,
 ];

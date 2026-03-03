@@ -20,6 +20,7 @@ export interface Project {
     createdAt: Date;
     updatedAt: Date;
     createdBy?: string; // User ID who created this resource
+    isPrivate?: boolean; // If true, only the owner can view (default: false = public)
 }
 
 export interface ProjectCreateInput {
@@ -32,6 +33,7 @@ export interface ProjectUpdateInput {
     name?: string;
     description?: string;
     color?: string;
+    isPrivate?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export interface InstanceGroup {
     createdAt: Date;
     updatedAt: Date;
     createdBy?: string; // User ID who created this resource
+    isPrivate?: boolean; // If true, only the owner can view (default: false = public)
     // Populated from joins
     projectName?: string;
     sourceConnectionName?: string;
@@ -75,6 +78,7 @@ export interface InstanceGroupUpdateInput {
     syncSchema?: boolean;
     syncData?: boolean;
     syncTargetSchema?: string | null;
+    isPrivate?: boolean;
 }
 
 /**
@@ -132,6 +136,7 @@ export interface ConnectionConfig {
     createdAt: Date;
     updatedAt: Date;
     createdBy?: string; // User ID who created this resource
+    isPrivate?: boolean; // If true, only the owner can view (default: false = public)
     // Server reference (for PostgreSQL/MySQL - SQLite doesn't use servers)
     serverId?: string;
     // Organization
@@ -173,6 +178,7 @@ export interface ConnectionUpdateInput {
     defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
+    isPrivate?: boolean;
     serverId?: string | null; // Link to a server (null to unlink)
     projectId?: string | null;
     groupId?: string | null;
@@ -204,6 +210,7 @@ export interface ServerConfig {
     createdAt: Date;
     updatedAt: Date;
     createdBy?: string; // User ID who created this resource
+    isPrivate?: boolean; // If true, only the owner can view (default: false = public)
     // Populated from queries
     databaseCount?: number;
 }
@@ -233,4 +240,5 @@ export interface ServerUpdateInput {
     tags?: ConnectionTag[];
     startCommand?: string;
     stopCommand?: string;
+    isPrivate?: boolean;
 }

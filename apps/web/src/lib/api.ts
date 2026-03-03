@@ -974,3 +974,28 @@ export const settingsApi = {
         });
     },
 };
+
+// ============ User Preferences ============
+
+export const preferencesApi = {
+    getAll: (): Promise<Record<string, unknown>> => {
+        return fetchApi('/preferences');
+    },
+
+    get: <T>(key: string): Promise<{ value: T | null }> => {
+        return fetchApi(`/preferences/${key}`);
+    },
+
+    set: <T>(key: string, value: T): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+        });
+    },
+
+    delete: (key: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'DELETE',
+        });
+    },
+};

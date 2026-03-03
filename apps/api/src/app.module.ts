@@ -15,6 +15,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { BackupModule } from './backup/backup.module.js';
 import { ServersModule } from './servers/servers.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { PreferencesModule } from './preferences/preferences.module.js';
 import { AuthModule, CombinedAuthGuard, RolesGuard } from './auth/index.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -44,6 +45,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         BackupModule,
         ServersModule,
         SettingsModule,
+        PreferencesModule,
         UsersModule,
     ],
     providers: [

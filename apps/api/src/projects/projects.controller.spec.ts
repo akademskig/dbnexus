@@ -53,6 +53,7 @@ describe('ProjectsController', () => {
             create: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            canModify: jest.fn().mockReturnValue(true),
         },
         databaseGroupRepository: {
             findAll: jest.fn(),
@@ -60,6 +61,7 @@ describe('ProjectsController', () => {
             create: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            canModify: jest.fn().mockReturnValue(true),
         },
         connectionRepository: {
             findByProject: jest.fn(),
@@ -176,7 +178,8 @@ describe('ProjectsController', () => {
 
                 expect(result).toEqual([mockGroup]);
                 expect(mockMetadataService.databaseGroupRepository.findAll).toHaveBeenCalledWith(
-                    'project-123'
+                    'project-123',
+                    { userId: null, isAdmin: false }
                 );
             });
         });
@@ -202,12 +205,15 @@ describe('ProjectsController', () => {
                 });
 
                 expect(result).toEqual(mockGroup);
-                expect(mockMetadataService.databaseGroupRepository.create).toHaveBeenCalledWith({
-                    name: 'Development',
-                    description: 'Dev databases',
-                    databaseEngine: 'postgres',
-                    projectId: 'project-123',
-                });
+                expect(mockMetadataService.databaseGroupRepository.create).toHaveBeenCalledWith(
+                    {
+                        name: 'Development',
+                        description: 'Dev databases',
+                        databaseEngine: 'postgres',
+                        projectId: 'project-123',
+                    },
+                    undefined
+                );
             });
         });
 
@@ -334,7 +340,8 @@ describe('GroupsController', () => {
             controller.getAllGroups('project-123');
 
             expect(mockMetadataService.databaseGroupRepository.findAll).toHaveBeenCalledWith(
-                'project-123'
+                'project-123',
+                { userId: null, isAdmin: false }
             );
         });
     });

@@ -13,6 +13,7 @@ interface SavedQueryRow {
     connection_id: string | null;
     folder_id: string | null;
     created_by: string | null;
+    is_private: number;
     created_at: string;
     updated_at: string;
 }
@@ -94,7 +95,7 @@ export class QueryLogsRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ' WHERE created_by = ? OR created_by IS NULL';
+            query += ' WHERE (created_by = ? OR created_by IS NULL OR is_private = 0)';
             params.push(userContext.userId);
         }
 
@@ -116,7 +117,7 @@ export class QueryLogsRepository {
         }
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ' AND (created_by = ? OR created_by IS NULL)';
+            query += ' AND (created_by = ? OR created_by IS NULL OR is_private = 0)';
             params.push(userContext.userId);
         }
 
@@ -127,22 +128,45 @@ export class QueryLogsRepository {
     }
 
     /**
-     * Check if user can access a saved query
+     * Check if user can access (view) a saved query
      */
     canAccessSavedQuery(queryId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by, is_private FROM saved_queries WHERE id = ?')
+            .get(queryId) as { created_by: string | null; is_private: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_private === 0
+        );
+    }
+
+    /**
+     * Check if user can modify (update/delete) a saved query
+     */
+    canModifySavedQuery(queryId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+        if (!userContext.userId) return false;
 
         const row = this.db
             .prepare('SELECT created_by FROM saved_queries WHERE id = ?')
             .get(queryId) as { created_by: string | null } | undefined;
 
         if (!row) return false;
-        return row.created_by === null || row.created_by === userContext.userId;
+        return row.created_by === userContext.userId;
     }
 
     updateSavedQuery(
         id: string,
-        input: { name?: string; sql?: string; connectionId?: string; folderId?: string }
+        input: {
+            name?: string;
+            sql?: string;
+            connectionId?: string;
+            folderId?: string;
+            isPrivate?: boolean;
+        }
     ): SavedQuery | null {
         const updates: string[] = [];
         const values: unknown[] = [];
@@ -162,6 +186,10 @@ export class QueryLogsRepository {
         if (input.folderId !== undefined) {
             updates.push('folder_id = ?');
             values.push(input.folderId);
+        }
+        if (input.isPrivate !== undefined) {
+            updates.push('is_private = ?');
+            values.push(input.isPrivate ? 1 : 0);
         }
 
         if (updates.length > 0) {
@@ -292,6 +320,7 @@ export class QueryLogsRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by ?? undefined,
+            isPrivate: row.is_private === 1,
         };
     }
 
