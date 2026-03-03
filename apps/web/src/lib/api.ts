@@ -228,10 +228,10 @@ export const serversApi = {
 // ============ Queries ============
 
 export const queriesApi = {
-    execute: (connectionId: string, sql: string, confirmed?: boolean) =>
+    execute: (connectionId: string, sql: string, confirmed?: boolean, noLimit?: boolean) =>
         fetchApi<QueryResult>('/queries/execute', {
             method: 'POST',
-            body: JSON.stringify({ connectionId, sql, confirmed }),
+            body: JSON.stringify({ connectionId, sql, confirmed, noLimit }),
         }),
 
     validate: (connectionId: string, sql: string) =>

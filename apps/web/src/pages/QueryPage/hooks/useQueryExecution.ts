@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { QueryResult, TableInfo } from '@dbnexus/shared';
 import { queriesApi } from '../../../lib/api';
@@ -53,10 +53,18 @@ export function useQueryExecution({
     const lastExecutedQueryRef = useRef<string>('');
 
     const executeMutation = useMutation({
-        mutationFn: async ({ query, confirmed }: { query: string; confirmed?: boolean }) => {
+        mutationFn: async ({
+            query,
+            confirmed,
+            noLimit,
+        }: {
+            query: string;
+            confirmed?: boolean;
+            noLimit?: boolean;
+        }) => {
             if (!selectedConnectionId) throw new Error('No connection selected');
             lastExecutedQueryRef.current = query;
-            return queriesApi.execute(selectedConnectionId, query, confirmed);
+            return queriesApi.execute(selectedConnectionId, query, confirmed, noLimit);
         },
         onSuccess: (data) => {
             setResult(data);
@@ -145,11 +153,15 @@ export function useQueryExecution({
         },
     });
 
-    const handleExecute = useCallback(() => {
-        if (!sql.trim()) return;
-        setConfirmDangerous(null);
-        executeMutation.mutate({ query: sql });
-    }, [executeMutation, sql]);
+    const handleExecute = useCallback(
+        (noLimitOrEvent?: boolean | React.MouseEvent) => {
+            if (!sql.trim()) return;
+            setConfirmDangerous(null);
+            const noLimit = typeof noLimitOrEvent === 'boolean' ? noLimitOrEvent : undefined;
+            executeMutation.mutate({ query: sql, noLimit });
+        },
+        [executeMutation, sql]
+    );
 
     const handleExplain = useCallback(
         (analyze = false) => {

@@ -8,6 +8,7 @@ export interface QueryResult {
     rowCount: number;
     executionTimeMs: number;
     truncated: boolean;
+    limitApplied?: number;
 }
 
 export interface QueryColumn {

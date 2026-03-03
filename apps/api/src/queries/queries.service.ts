@@ -14,7 +14,10 @@ export interface ExecuteQueryInput {
     connectionId: string;
     sql: string;
     confirmed?: boolean;
+    noLimit?: boolean;
 }
+
+const DEFAULT_ROW_LIMIT = 1000;
 
 @Injectable()
 export class QueriesService {
@@ -37,7 +40,7 @@ export class QueriesService {
      * Execute a query
      */
     async execute(input: ExecuteQueryInput): Promise<QueryResult> {
-        const { connectionId, sql, confirmed } = input;
+        const { connectionId, sql, confirmed, noLimit } = input;
         const connection = this.connectionsService.findById(connectionId);
 
         // Validate the query
@@ -55,12 +58,20 @@ export class QueriesService {
             });
         }
 
+        // Apply default LIMIT to SELECT queries to prevent OOM
+        const { query: finalSql, limitApplied } = this.applyDefaultLimit(sql, noLimit);
+
         // Get connector and execute
         const connector = await this.connectionsService.getConnector(connectionId);
         const startTime = Date.now();
 
         try {
-            const result = await connector.query(sql);
+            const result = await connector.query(finalSql);
+
+            // Add limit info to result
+            if (limitApplied) {
+                result.limitApplied = DEFAULT_ROW_LIMIT;
+            }
 
             // Log to history
             this.metadataService.queryLogsRepository.addHistoryEntry({
@@ -91,6 +102,35 @@ export class QueriesService {
 
             throw new BadRequestException(errorMessage);
         }
+    }
+
+    /**
+     * Apply default LIMIT to SELECT queries without one
+     */
+    private applyDefaultLimit(
+        sql: string,
+        noLimit?: boolean
+    ): { query: string; limitApplied: boolean } {
+        if (noLimit) {
+            return { query: sql, limitApplied: false };
+        }
+
+        const trimmed = sql.trim();
+        const upper = trimmed.toUpperCase();
+
+        if (!upper.startsWith('SELECT')) {
+            return { query: sql, limitApplied: false };
+        }
+
+        if (/\bLIMIT\s+\d+/i.test(trimmed)) {
+            return { query: sql, limitApplied: false };
+        }
+
+        const endsWithSemicolon = trimmed.endsWith(';');
+        const queryWithoutSemicolon = endsWithSemicolon ? trimmed.slice(0, -1) : trimmed;
+        const limitedQuery = `${queryWithoutSemicolon} LIMIT ${DEFAULT_ROW_LIMIT}${endsWithSemicolon ? ';' : ''}`;
+
+        return { query: limitedQuery, limitApplied: true };
     }
 
     /**
