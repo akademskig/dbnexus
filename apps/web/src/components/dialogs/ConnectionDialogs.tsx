@@ -314,8 +314,8 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                     group.databaseEngine === 'postgres'
                                         ? 'PostgreSQL'
                                         : group.databaseEngine === 'mysql'
-                                          ? 'MySQL'
-                                          : 'SQLite'
+                                            ? 'MySQL'
+                                            : 'SQLite'
                                 }
                                 disabled
                                 fullWidth
@@ -883,6 +883,7 @@ export function ConnectionFormDialog({
                         </Box>
 
                         <FormControlLabel
+                            sx={{ mt: 1 }}
                             control={
                                 <Checkbox
                                     checked={formData.readOnly}

@@ -74,8 +74,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, is_public, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -95,6 +95,7 @@ export class ConnectionRepository {
                 input.serverId || null,
                 input.projectId || null,
                 input.groupId || null,
+                input.isPublic ? 1 : 0,
                 userId || null,
                 now,
                 now

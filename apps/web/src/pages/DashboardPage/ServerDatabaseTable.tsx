@@ -16,7 +16,6 @@ import {
 import DnsIcon from '@mui/icons-material/Dns';
 import StorageIcon from '@mui/icons-material/Storage';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TerminalIcon from '@mui/icons-material/Terminal';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,7 +28,7 @@ import { StyledTooltip } from '../../components/StyledTooltip';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import { DatabaseRow } from '../../components/DatabaseRow';
 import { useToastStore } from '../../stores/toastStore';
 import { connectionsApi, projectsApi, serversApi, groupsApi } from '../../lib/api';
 import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
@@ -63,136 +62,6 @@ interface ServerRowProps {
     onDeleteServer: (server: ServerConfig) => void;
     onStartServer: (server: ServerConfig) => void;
     onStopServer: (server: ServerConfig) => void;
-}
-
-function StatusDot({ online }: { online: boolean }) {
-    return (
-        <Box
-            sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: online ? 'success.main' : 'error.main',
-                flexShrink: 0,
-            }}
-        />
-    );
-}
-
-interface DatabaseRowProps {
-    connection: ConnectionConfig;
-    onEdit: (connection: ConnectionConfig) => void;
-    onDelete: (connection: ConnectionConfig) => void;
-}
-
-function DatabaseRow({ connection, onEdit, onDelete }: DatabaseRowProps) {
-    const navigate = useNavigate();
-    const { isOnline } = useConnectionHealthStore();
-    const online = isOnline(connection.id);
-    const displayName = connection.name || connection.database;
-    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-
-    const handleMenuClose = () => setMenuAnchor(null);
-
-    return (
-        <StyledTooltip
-            title="Connection is offline"
-            placement="top"
-            arrow
-            disableHoverListener={online}
-        >
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    py: 1,
-                    px: 2,
-                    pl: 5,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-                    '&:hover': {
-                        bgcolor: 'action.hover',
-                    },
-                }}
-            >
-                <StorageIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                <StatusDot online={online} />
-                <Typography
-                    variant="body2"
-                    sx={{
-                        flex: 1,
-                        fontWeight: 500,
-                        color: online ? 'text.primary' : 'text.disabled',
-                    }}
-                >
-                    {displayName}
-                </Typography>
-                <IconButton
-                    size="small"
-                    onClick={(e) => setMenuAnchor(e.currentTarget)}
-                    sx={{ color: 'text.secondary' }}
-                >
-                    <MoreVertIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-                <Menu
-                    anchorEl={menuAnchor}
-                    open={Boolean(menuAnchor)}
-                    onClose={handleMenuClose}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                >
-                    <MenuItem
-                        onClick={() => {
-                            handleMenuClose();
-                            navigate(`/query/${connection.id}`);
-                        }}
-                        disabled={!online}
-                    >
-                        <ListItemIcon>
-                            <TerminalIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Query</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => {
-                            handleMenuClose();
-                            navigate(`/connections/${connection.id}?tab=overview`);
-                        }}
-                    >
-                        <ListItemIcon>
-                            <OpenInNewIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Manage</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => {
-                            handleMenuClose();
-                            onEdit(connection);
-                        }}
-                    >
-                        <ListItemIcon>
-                            <EditIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Edit</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => {
-                            handleMenuClose();
-                            onDelete(connection);
-                        }}
-                        sx={{ color: 'error.main' }}
-                    >
-                        <ListItemIcon>
-                            <DeleteIcon fontSize="small" color="error" />
-                        </ListItemIcon>
-                        <ListItemText>Remove</ListItemText>
-                    </MenuItem>
-                </Menu>
-            </Box>
-        </StyledTooltip>
-    );
 }
 
 function ServerRow({
@@ -375,6 +244,7 @@ function ServerRow({
                             connection={db}
                             onEdit={onEditConnection}
                             onDelete={onDeleteConnection}
+                            indent={5}
                         />
                     ))
                 )}
@@ -455,6 +325,7 @@ function StandaloneDatabasesSection({
                         connection={db}
                         onEdit={onEditConnection}
                         onDelete={onDeleteConnection}
+                        indent={5}
                     />
                 ))}
             </Collapse>

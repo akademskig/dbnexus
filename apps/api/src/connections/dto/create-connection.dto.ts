@@ -79,4 +79,8 @@ export class CreateConnectionDto {
     @IsArray()
     @IsString({ each: true })
     tags?: ConnectionTag[];
+
+    @IsOptional()
+    @IsBoolean()
+    isPublic?: boolean;
 }

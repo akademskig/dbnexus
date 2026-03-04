@@ -164,6 +164,7 @@ export interface ConnectionCreateInput {
     serverId?: string; // Link to a server (for PostgreSQL/MySQL)
     projectId?: string;
     groupId?: string;
+    isPublic?: boolean;
 }
 
 export interface ConnectionUpdateInput {

@@ -21,7 +21,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LayersIcon from '@mui/icons-material/Layers';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -31,7 +30,7 @@ import type { Project, ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { GlassCard } from '../../components/GlassCard';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import { DatabaseRow } from '../../components/DatabaseRow';
 import { useToastStore } from '../../stores/toastStore';
 import { projectsApi, connectionsApi, groupsApi } from '../../lib/api';
 import { ProjectFormDialog, GroupFormDialog } from '../../components/dialogs/ConnectionDialogs';
@@ -41,104 +40,6 @@ interface ProjectsSectionProps {
     projects: Project[];
     connections: ConnectionConfig[];
     loading?: boolean;
-}
-
-function ConnectionRow({
-    connection,
-    onNavigate,
-    indent,
-}: {
-    connection: ConnectionConfig;
-    onNavigate: (path: string) => void;
-    indent?: number;
-}) {
-    const { isOnline } = useConnectionHealthStore();
-    const online = isOnline(connection.id);
-
-    const handleDragStart = (e: React.DragEvent) => {
-        e.dataTransfer.setData(
-            'application/json',
-            JSON.stringify({
-                connectionId: connection.id,
-                connectionName: connection.name,
-                currentProjectId: connection.projectId || null,
-                currentGroupId: connection.groupId || null,
-            })
-        );
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    return (
-        <StyledTooltip title="Connection is offline" placement="top" disableHoverListener={online}>
-            <Box
-                draggable
-                onDragStart={handleDragStart}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    py: 0.75,
-                    px: 2,
-                    pl: indent || 5,
-                    cursor: 'grab',
-                    transition: 'background 0.15s, opacity 0.15s',
-                    '&:hover': {
-                        bgcolor: 'action.hover',
-                    },
-                    '&:active': {
-                        cursor: 'grabbing',
-                        opacity: 0.6,
-                    },
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: online ? 'success.main' : 'error.main',
-                        flexShrink: 0,
-                    }}
-                />
-                <StorageIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography
-                    variant="caption"
-                    sx={{
-                        flex: 1,
-                        fontWeight: 500,
-                        color: online ? 'text.primary' : 'text.disabled',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {connection.name}
-                </Typography>
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ flexShrink: 0, fontSize: 10 }}
-                >
-                    {connection.engine.toUpperCase()}
-                </Typography>
-                <StyledTooltip title="Query">
-                    <span>
-                        <IconButton
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onNavigate(`/query/${connection.id}`);
-                            }}
-                            disabled={!online}
-                            sx={{ p: 0.25 }}
-                        >
-                            <PlayArrowIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                    </span>
-                </StyledTooltip>
-            </Box>
-        </StyledTooltip>
-    );
 }
 
 function GroupSection({
@@ -340,10 +241,10 @@ function GroupSection({
                 <Box sx={{ py: 0.5, bgcolor: 'background.default', borderRadius: '0 0 4px 4px' }}>
                     {groupConnections.length > 0 ? (
                         groupConnections.map((conn) => (
-                            <ConnectionRow
+                            <DatabaseRow
                                 key={conn.id}
                                 connection={conn}
-                                onNavigate={onNavigate}
+                                draggable
                                 indent={3}
                             />
                         ))
@@ -628,10 +529,10 @@ function ProjectRow({
                                 </Typography>
                             )}
                             {ungroupedProjectConnections.map((conn) => (
-                                <ConnectionRow
+                                <DatabaseRow
                                     key={conn.id}
                                     connection={conn}
-                                    onNavigate={onNavigate}
+                                    draggable
                                 />
                             ))}
                         </Box>
@@ -896,10 +797,10 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             </Typography>
                         </Box>
                         {ungroupedConnections.slice(0, 5).map((conn) => (
-                            <ConnectionRow
+                            <DatabaseRow
                                 key={conn.id}
                                 connection={conn}
-                                onNavigate={(path) => navigate(path)}
+                                draggable
                             />
                         ))}
                         {ungroupedConnections.length > 5 && (
