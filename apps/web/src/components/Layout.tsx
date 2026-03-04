@@ -996,6 +996,7 @@ export function Layout() {
                                     sx={{
                                         px: 2,
                                         py: 1,
+                                        pt: 0,
                                         display: 'block',
                                         color: 'text.secondary',
                                     }}
@@ -1021,7 +1022,23 @@ export function Layout() {
                                                 <ListItemIcon sx={{ minWidth: 28 }}>
                                                     <DnsIcon sx={{ fontSize: 16 }} />
                                                 </ListItemIcon>
-                                                {server.name}
+                                                <Box sx={{ flex: 1 }}>{server.name}</Box>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/servers/${server.id}`);
+                                                        setServersMenuAnchor(null);
+                                                    }}
+                                                    sx={{
+                                                        p: 0.5,
+                                                        ml: 1,
+                                                        color: 'text.disabled',
+                                                        '&:hover': { color: 'primary.main' },
+                                                    }}
+                                                >
+                                                    <SettingsIcon sx={{ fontSize: 14 }} />
+                                                </IconButton>
                                             </MenuItem>
                                             {serverConnections.map((conn) => {
                                                 const isConnActive =
@@ -1040,7 +1057,27 @@ export function Layout() {
                                                         <ListItemIcon sx={{ minWidth: 24 }}>
                                                             <StorageIcon sx={{ fontSize: 14 }} />
                                                         </ListItemIcon>
-                                                        {conn.name || conn.database}
+                                                        <Box sx={{ flex: 1 }}>
+                                                            {conn.name || conn.database}
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/connections/${conn.id}`);
+                                                                setServersMenuAnchor(null);
+                                                            }}
+                                                            sx={{
+                                                                p: 0.5,
+                                                                ml: 1,
+                                                                color: 'text.disabled',
+                                                                '&:hover': {
+                                                                    color: 'primary.main',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <SettingsIcon sx={{ fontSize: 12 }} />
+                                                        </IconButton>
                                                     </MenuItem>
                                                 );
                                             })}
@@ -1087,6 +1124,7 @@ export function Layout() {
                                             sx={{
                                                 px: 2,
                                                 py: 1,
+                                                pt: 0,
                                                 display: 'block',
                                                 color: 'text.secondary',
                                             }}
@@ -1113,7 +1151,27 @@ export function Layout() {
                                                         <ListItemIcon sx={{ minWidth: 28 }}>
                                                             <StorageIcon sx={{ fontSize: 16 }} />
                                                         </ListItemIcon>
-                                                        {conn.name || conn.database}
+                                                        <Box sx={{ flex: 1 }}>
+                                                            {conn.name || conn.database}
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/connections/${conn.id}`);
+                                                                setDatabasesMenuAnchor(null);
+                                                            }}
+                                                            sx={{
+                                                                p: 0.5,
+                                                                ml: 1,
+                                                                color: 'text.disabled',
+                                                                '&:hover': {
+                                                                    color: 'primary.main',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <SettingsIcon sx={{ fontSize: 14 }} />
+                                                        </IconButton>
                                                     </MenuItem>
                                                 );
                                             })}
@@ -1157,6 +1215,7 @@ export function Layout() {
                                             sx={{
                                                 px: 2,
                                                 py: 1,
+                                                pt: 0,
                                                 display: 'block',
                                                 color: 'text.secondary',
                                             }}
