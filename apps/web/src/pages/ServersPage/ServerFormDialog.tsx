@@ -168,7 +168,7 @@ export function ServerFormDialog({ open, server, onClose }: ServerFormDialogProp
             <form onSubmit={handleSubmit}>
                 <DialogTitle>{server ? 'Edit Server' : 'New Server'}</DialogTitle>
                 <DialogContent>
-                    <Stack spacing={1} sx={{ mt: 1 }}>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField
                             label="Server Name"
                             value={formData.name}
