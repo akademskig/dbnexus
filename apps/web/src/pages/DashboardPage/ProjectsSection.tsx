@@ -33,7 +33,11 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DatabaseRow } from '../../components/DatabaseRow';
 import { useToastStore } from '../../stores/toastStore';
 import { projectsApi, connectionsApi, groupsApi } from '../../lib/api';
-import { ProjectFormDialog, GroupFormDialog } from '../../components/dialogs/ConnectionDialogs';
+import {
+    ProjectFormDialog,
+    GroupFormDialog,
+    EditConnectionDialog,
+} from '../../components/dialogs/ConnectionDialogs';
 import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
 interface ProjectsSectionProps {
@@ -50,6 +54,8 @@ function GroupSection({
     onDelete,
     onSyncSettings,
     onMoveConnection,
+    onEditConnection,
+    onDeleteConnection,
 }: {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
@@ -58,6 +64,8 @@ function GroupSection({
     onDelete: () => void;
     onSyncSettings: () => void;
     onMoveConnection: (connectionId: string, groupId: string) => void;
+    onEditConnection: (connection: ConnectionConfig) => void;
+    onDeleteConnection: (connection: ConnectionConfig) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -241,7 +249,14 @@ function GroupSection({
                 <Box sx={{ py: 0.5, bgcolor: 'background.default', borderRadius: '0 0 4px 4px' }}>
                     {groupConnections.length > 0 ? (
                         groupConnections.map((conn) => (
-                            <DatabaseRow key={conn.id} connection={conn} draggable indent={3} />
+                            <DatabaseRow
+                                key={conn.id}
+                                connection={conn}
+                                draggable
+                                indent={3}
+                                onEdit={onEditConnection}
+                                onDelete={onDeleteConnection}
+                            />
                         ))
                     ) : (
                         <Typography
@@ -271,6 +286,8 @@ function ProjectRow({
     onEditGroup,
     onDeleteGroup,
     onSyncSettings,
+    onEditConnection,
+    onDeleteConnection,
 }: {
     project: Project;
     connections: ConnectionConfig[];
@@ -284,6 +301,8 @@ function ProjectRow({
     onEditGroup: (group: DatabaseGroup) => void;
     onDeleteGroup: (groupId: string) => void;
     onSyncSettings: (group: DatabaseGroup) => void;
+    onEditConnection: (connection: ConnectionConfig) => void;
+    onDeleteConnection: (connection: ConnectionConfig) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -500,6 +519,8 @@ function ProjectRow({
                             onMoveConnection={(connId, groupId) =>
                                 onMoveConnectionToGroup(connId, project.id, groupId)
                             }
+                            onEditConnection={onEditConnection}
+                            onDeleteConnection={onDeleteConnection}
                         />
                     ))}
 
@@ -524,7 +545,13 @@ function ProjectRow({
                                 </Typography>
                             )}
                             {ungroupedProjectConnections.map((conn) => (
-                                <DatabaseRow key={conn.id} connection={conn} draggable />
+                                <DatabaseRow
+                                    key={conn.id}
+                                    connection={conn}
+                                    draggable
+                                    onEdit={onEditConnection}
+                                    onDelete={onDeleteConnection}
+                                />
                             ))}
                         </Box>
                     )}
@@ -560,6 +587,8 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
     const [isDragOver, setIsDragOver] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
+    const [connectionToDelete, setConnectionToDelete] = useState<ConnectionConfig | null>(null);
 
     const { data: groups = [] } = useQuery({
         queryKey: ['groups'],
@@ -612,6 +641,17 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
         },
         onError: () => {
             toast.error('Failed to move connection');
+        },
+    });
+
+    const deleteConnectionMutation = useMutation({
+        mutationFn: (connectionId: string) => connectionsApi.delete(connectionId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Database removed');
+        },
+        onError: () => {
+            toast.error('Failed to remove database');
         },
     });
 
@@ -756,6 +796,8 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                                 deleteGroupMutation.mutate({ projectId: project.id, groupId })
                             }
                             onSyncSettings={(group) => setSettingsGroup(group)}
+                            onEditConnection={setEditingConnection}
+                            onDeleteConnection={setConnectionToDelete}
                         />
                     ))
                 )}
@@ -788,7 +830,13 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             </Typography>
                         </Box>
                         {ungroupedConnections.slice(0, 5).map((conn) => (
-                            <DatabaseRow key={conn.id} connection={conn} draggable />
+                            <DatabaseRow
+                                key={conn.id}
+                                connection={conn}
+                                draggable
+                                onEdit={setEditingConnection}
+                                onDelete={setConnectionToDelete}
+                            />
                         ))}
                         {ungroupedConnections.length > 5 && (
                             <Typography
@@ -885,6 +933,29 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                     }
                     confirmLabel="Delete"
                     confirmColor="error"
+                />
+            )}
+
+            {editingConnection && (
+                <EditConnectionDialog
+                    open={Boolean(editingConnection)}
+                    connection={editingConnection}
+                    onClose={() => setEditingConnection(null)}
+                />
+            )}
+
+            {connectionToDelete && (
+                <ConfirmDialog
+                    open={Boolean(connectionToDelete)}
+                    title="Remove Database"
+                    message={`Are you sure you want to remove "${connectionToDelete.name || connectionToDelete.database}"? This will only remove the connection from DB Nexus, not the actual database.`}
+                    confirmLabel="Remove"
+                    confirmColor="error"
+                    onConfirm={() => {
+                        deleteConnectionMutation.mutate(connectionToDelete.id);
+                        setConnectionToDelete(null);
+                    }}
+                    onCancel={() => setConnectionToDelete(null)}
                 />
             )}
         </>

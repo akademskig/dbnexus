@@ -22,8 +22,8 @@ import {
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
 import PublicIcon from '@mui/icons-material/Public';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { connectionsApi, projectsApi } from '../../lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { connectionsApi, projectsApi, serversApi, groupsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 import type {
     ConnectionConfig,
@@ -942,5 +942,43 @@ export function ConnectionFormDialog({
                 </DialogActions>
             </form>
         </Dialog>
+    );
+}
+
+// Edit connection dialog - fetches required data internally
+interface EditConnectionDialogProps {
+    open: boolean;
+    connection: ConnectionConfig;
+    onClose: () => void;
+}
+
+export function EditConnectionDialog({ open, connection, onClose }: EditConnectionDialogProps) {
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: () => projectsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
+        enabled: open,
+    });
+
+    return (
+        <ConnectionFormDialog
+            open={open}
+            connection={connection}
+            projects={projects}
+            groups={groups}
+            servers={servers}
+            onClose={onClose}
+        />
     );
 }
