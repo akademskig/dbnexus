@@ -775,25 +775,6 @@ export function ConnectionFormDialog({
                                         sx={{ flex: 1 }}
                                     />
                                 </Box>
-
-                                {/* SSL option - shown when no server is selected */}
-                                {!hasServer && (
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={formData.ssl}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        ssl: e.target.checked,
-                                                    })
-                                                }
-                                                size="small"
-                                            />
-                                        }
-                                        label="Use SSL"
-                                    />
-                                )}
                             </>
                         )}
 
@@ -882,39 +863,57 @@ export function ConnectionFormDialog({
                             )}
                         </Box>
 
-                        <FormControlLabel
-                            sx={{ mt: 1 }}
-                            control={
-                                <Checkbox
-                                    checked={formData.readOnly}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, readOnly: e.target.checked })
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                            {/* SSL option - shown for non-SQLite when no server is selected */}
+                            {!isSqlite && !hasServer && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.ssl}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    ssl: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                        />
                                     }
-                                    size="small"
+                                    label="Use SSL"
                                 />
-                            }
-                            label="Read-only mode"
-                        />
-
-                        {connection && (
+                            )}
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={formData.isPublic || false}
+                                        checked={formData.readOnly}
                                         onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                isPublic: e.target.checked,
-                                            })
+                                            setFormData({ ...formData, readOnly: e.target.checked })
                                         }
                                         size="small"
-                                        icon={<PublicIcon />}
-                                        checkedIcon={<PublicIcon />}
                                     />
                                 }
-                                label="Make public (visible to all users)"
+                                label="Read-only mode"
                             />
-                        )}
+                            {connection && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.isPublic || false}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    isPublic: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                            icon={<PublicIcon />}
+                                            checkedIcon={<PublicIcon />}
+                                        />
+                                    }
+                                    label="Make public (visible to all users)"
+                                />
+                            )}
+                        </Box>
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>
