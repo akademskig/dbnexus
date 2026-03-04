@@ -299,7 +299,7 @@ export function ComparePage() {
     }
 
     return (
-        <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
+        <Box sx={{ p: 3, mx: 'auto', maxWidth: 1000, height: '100%', overflow: 'auto' }}>
             {/* Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" fontWeight={600} gutterBottom>

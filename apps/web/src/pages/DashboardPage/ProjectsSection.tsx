@@ -241,12 +241,7 @@ function GroupSection({
                 <Box sx={{ py: 0.5, bgcolor: 'background.default', borderRadius: '0 0 4px 4px' }}>
                     {groupConnections.length > 0 ? (
                         groupConnections.map((conn) => (
-                            <DatabaseRow
-                                key={conn.id}
-                                connection={conn}
-                                draggable
-                                indent={3}
-                            />
+                            <DatabaseRow key={conn.id} connection={conn} draggable indent={3} />
                         ))
                     ) : (
                         <Typography
@@ -529,11 +524,7 @@ function ProjectRow({
                                 </Typography>
                             )}
                             {ungroupedProjectConnections.map((conn) => (
-                                <DatabaseRow
-                                    key={conn.id}
-                                    connection={conn}
-                                    draggable
-                                />
+                                <DatabaseRow key={conn.id} connection={conn} draggable />
                             ))}
                         </Box>
                     )}
@@ -797,11 +788,7 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             </Typography>
                         </Box>
                         {ungroupedConnections.slice(0, 5).map((conn) => (
-                            <DatabaseRow
-                                key={conn.id}
-                                connection={conn}
-                                draggable
-                            />
+                            <DatabaseRow key={conn.id} connection={conn} draggable />
                         ))}
                         {ungroupedConnections.length > 5 && (
                             <Typography

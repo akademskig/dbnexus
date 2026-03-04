@@ -71,11 +71,7 @@ export function DatabaseRow({
     };
 
     return (
-        <StyledTooltip
-            title="Connection is offline"
-            placement="top"
-            disableHoverListener={online}
-        >
+        <StyledTooltip title="Connection is offline" placement="top" disableHoverListener={online}>
             <Box
                 draggable={draggable}
                 onDragStart={draggable ? handleDragStart : undefined}
