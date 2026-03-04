@@ -9,6 +9,8 @@ import {
     FormControlLabel,
     Checkbox,
     LinearProgress,
+    alpha,
+    Stack,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import {
@@ -785,21 +787,42 @@ export function DataDiffDisplay({
                 <Chip
                     label={`${outOfSyncTables.length} out of sync`}
                     size="small"
-                    color="warning"
+                    sx={{
+                        height: 22,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        bgcolor: 'rgba(245, 158, 11, 0.1)',
+                        color: '#f59e0b',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                    }}
                 />
                 <Chip
                     label={`${inSyncTables.length} in sync`}
                     size="small"
-                    color="success"
-                    variant="outlined"
+                    sx={{
+                        height: 22,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        bgcolor: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e',
+                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                    }}
                 />
                 <Box sx={{ flex: 1 }} />
                 {shouldFetch && (
                     <Button
                         size="small"
-                        startIcon={isFetching ? <CircularProgress size={14} /> : <RefreshIcon />}
+                        variant="text"
+                        startIcon={
+                            isFetching ? (
+                                <CircularProgress size={12} />
+                            ) : (
+                                <RefreshIcon sx={{ fontSize: 14 }} />
+                            )
+                        }
                         onClick={handleRefresh}
                         disabled={isFetching}
+                        sx={{ fontSize: 11 }}
                     >
                         Refresh
                     </Button>
@@ -808,50 +831,72 @@ export function DataDiffDisplay({
 
             {/* Tables grid */}
             {!compact && (
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" fontSize={12} fontWeight={600} sx={{ mb: 1 }}>
                     Tables with differences ({outOfSyncTables.length})
                 </Typography>
             )}
 
-            <DataGrid
-                rows={compact ? tableDiffs : outOfSyncTables}
-                columns={columns}
-                getRowId={(row) => row.table}
-                checkboxSelection={!compact}
-                disableRowSelectionOnClick={compact}
-                rowSelectionModel={selectedTables}
-                onRowSelectionModelChange={setSelectedTables}
-                pageSizeOptions={[10, 25, 50]}
-                initialState={{
-                    pagination: { paginationModel: { pageSize: 10 } },
-                }}
-                autoHeight
-                sx={{
-                    mb: compact ? 0 : 3,
-                    maxHeight: compact ? 300 : 400,
-                    border: 'none',
-                    '& .MuiDataGrid-cell': {
+            <Box sx={{ mb: compact ? 0 : 2, maxHeight: compact ? 300 : 400 }}>
+                <DataGrid
+                    rows={compact ? tableDiffs : outOfSyncTables}
+                    columns={columns}
+                    getRowId={(row) => row.table}
+                    checkboxSelection={!compact}
+                    disableRowSelectionOnClick={compact}
+                    rowSelectionModel={selectedTables}
+                    onRowSelectionModelChange={setSelectedTables}
+                    pageSizeOptions={[10, 25, 50]}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 10 } },
+                    }}
+                    autoHeight
+                    rowHeight={40}
+                    columnHeaderHeight={40}
+                    sx={{
+                        minWidth: 600,
+                        border: '1px solid',
                         borderColor: 'divider',
-                        display: 'flex',
-                        alignItems: 'center',
-                    },
-                    '& .MuiDataGrid-columnHeaders': {
-                        bgcolor: 'background.default',
-                        borderColor: 'divider',
-                    },
-                }}
-            />
+                        borderRadius: 1,
+                        '& .MuiDataGrid-cell': {
+                            borderColor: 'divider',
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontSize: 12,
+                        },
+                        '& .MuiDataGrid-columnHeaders': {
+                            bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                            borderColor: 'divider',
+                            fontSize: 11,
+                        },
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            fontWeight: 600,
+                        },
+                        '& .MuiDataGrid-footerContainer': {
+                            borderColor: 'divider',
+                        },
+                    }}
+                />
+            </Box>
 
             {/* Sync Options (only in non-compact mode) */}
             {!compact && (
-                <>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                <Box
+                    sx={{
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        bgcolor: (theme) => alpha(theme.palette.background.default, 0.3),
+                    }}
+                >
+                    <Typography variant="subtitle2" fontSize={12} fontWeight={600} sx={{ mb: 1.5 }}>
                         Sync Options
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+                    <Stack spacing={0.5} sx={{ mb: 2 }}>
                         <FormControlLabel
                             control={
                                 <Checkbox
+                                    size="small"
                                     checked={syncOptions.insertMissing}
                                     onChange={(e) =>
                                         setSyncOptions({
@@ -861,11 +906,16 @@ export function DataDiffDisplay({
                                     }
                                 />
                             }
-                            label="Insert missing rows (rows in source but not in target)"
+                            label={
+                                <Typography fontSize={12}>
+                                    Insert missing rows (rows in source but not in target)
+                                </Typography>
+                            }
                         />
                         <FormControlLabel
                             control={
                                 <Checkbox
+                                    size="small"
                                     checked={syncOptions.updateDifferent}
                                     onChange={(e) =>
                                         setSyncOptions({
@@ -875,11 +925,17 @@ export function DataDiffDisplay({
                                     }
                                 />
                             }
-                            label="Update different rows (rows that exist in both but have different values)"
+                            label={
+                                <Typography fontSize={12}>
+                                    Update different rows (rows that exist in both but have
+                                    different values)
+                                </Typography>
+                            }
                         />
                         <FormControlLabel
                             control={
                                 <Checkbox
+                                    size="small"
                                     checked={syncOptions.deleteExtra}
                                     onChange={(e) =>
                                         setSyncOptions({
@@ -891,49 +947,66 @@ export function DataDiffDisplay({
                             }
                             label={
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    Delete extra rows in target (rows in target but not in source)
-                                    <Chip label="Destructive" size="small" color="error" />
+                                    <Typography fontSize={12}>
+                                        Delete extra rows in target
+                                    </Typography>
+                                    <Chip
+                                        label="Destructive"
+                                        size="small"
+                                        sx={{
+                                            height: 18,
+                                            fontSize: 9,
+                                            fontWeight: 600,
+                                            bgcolor: 'rgba(239, 68, 68, 0.1)',
+                                            color: '#ef4444',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        }}
+                                    />
                                 </Box>
                             }
                         />
-                    </Box>
+                    </Stack>
 
                     {/* Sync Buttons */}
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                         <Button
+                            size="small"
                             variant="contained"
                             color="warning"
                             onClick={handleSync}
                             disabled={syncing || dumpRestoring || outOfSyncTables.length === 0}
                             startIcon={
                                 syncing ? (
-                                    <CircularProgress size={16} color="inherit" />
+                                    <CircularProgress size={14} color="inherit" />
                                 ) : (
-                                    <SyncIcon />
+                                    <SyncIcon sx={{ fontSize: 16 }} />
                                 )
                             }
+                            sx={{ fontSize: 12 }}
                         >
                             {syncing
                                 ? 'Syncing...'
                                 : `Sync ${selectedTables.length || outOfSyncTables.length} Table(s)`}
                         </Button>
 
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.disabled" fontSize={11}>
                             or
                         </Typography>
 
                         <Button
+                            size="small"
                             variant="contained"
                             color="primary"
                             onClick={handleDumpAndRestore}
                             disabled={syncing || dumpRestoring || tableDiffs.length === 0}
                             startIcon={
                                 dumpRestoring ? (
-                                    <CircularProgress size={16} color="inherit" />
+                                    <CircularProgress size={14} color="inherit" />
                                 ) : (
-                                    <CopyIcon />
+                                    <CopyIcon sx={{ fontSize: 16 }} />
                                 )
                             }
+                            sx={{ fontSize: 12 }}
                         >
                             {dumpRestoring ? 'Copying...' : 'Dump & Restore All'}
                         </Button>
@@ -941,24 +1014,15 @@ export function DataDiffDisplay({
                         <Chip
                             label="Handles FK constraints"
                             size="small"
-                            color="info"
                             variant="outlined"
+                            sx={{ height: 22, fontSize: 10 }}
                         />
                     </Box>
 
-                    <StatusAlert severity="info" sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                            <strong>Sync Tables:</strong> Incrementally sync selected tables (may
-                            fail with FK constraints).
-                        </Typography>
-                        <Typography variant="body2">
-                            <strong>Dump & Restore:</strong> Truncates target and copies all data in
-                            dependency order (handles FK constraints properly).
-                        </Typography>
-                    </StatusAlert>
-
-                    {(syncing || dumpRestoring) && <LinearProgress sx={{ mt: 2 }} />}
-                </>
+                    {(syncing || dumpRestoring) && (
+                        <LinearProgress sx={{ mt: 2, borderRadius: 1 }} />
+                    )}
+                </Box>
             )}
         </Box>
     );

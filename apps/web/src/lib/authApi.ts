@@ -123,6 +123,16 @@ export const authApi = {
             },
             accessToken
         ),
+
+    verifyPassword: (password: string, accessToken: string) =>
+        fetchAuthApi<{ valid: boolean }>(
+            '/auth/verify-password',
+            {
+                method: 'POST',
+                body: JSON.stringify({ password }),
+            },
+            accessToken
+        ),
 };
 
 export { AuthApiError };

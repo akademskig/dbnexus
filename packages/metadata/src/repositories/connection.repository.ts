@@ -34,6 +34,7 @@ interface ConnectionRow {
     project_id: string | null;
     group_id: string | null;
     created_by: string | null;
+    is_public: number;
     server_name?: string;
     project_name?: string;
     group_name?: string;
@@ -73,8 +74,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, is_public, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -94,6 +95,7 @@ export class ConnectionRepository {
                 input.serverId || null,
                 input.projectId || null,
                 input.groupId || null,
+                input.isPublic ? 1 : 0,
                 userId || null,
                 now,
                 now
@@ -167,7 +169,7 @@ export class ConnectionRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE c.created_by = ? OR c.created_by IS NULL`;
+            query += ` WHERE (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -197,7 +199,7 @@ export class ConnectionRepository {
         const params: unknown[] = [projectId];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -227,7 +229,7 @@ export class ConnectionRepository {
         const params: unknown[] = [groupId];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -257,7 +259,7 @@ export class ConnectionRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -286,7 +288,7 @@ export class ConnectionRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE c.created_by = ? OR c.created_by IS NULL`;
+            query += ` WHERE (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -366,6 +368,10 @@ export class ConnectionRepository {
         if (input.serverId !== undefined) {
             updates.push('server_id = ?');
             values.push(input.serverId);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length > 0) {
@@ -478,6 +484,7 @@ export class ConnectionRepository {
             projectId: row.project_id || undefined,
             groupId: row.group_id || undefined,
             createdBy: row.created_by || undefined,
+            isPublic: row.is_public === 1,
             serverName: row.server_name,
             projectName: row.project_name,
             groupName: row.group_name,
@@ -485,17 +492,20 @@ export class ConnectionRepository {
     }
 
     /**
-     * Check if user can access a connection
+     * Check if user can access (view) a connection
+     * Accessible if: owner, admin, not private, or created_by is null (legacy)
      */
     canAccess(connectionId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
         const row = this.db
-            .prepare('SELECT created_by FROM connections WHERE id = ?')
-            .get(connectionId) as { created_by: string | null } | undefined;
+            .prepare('SELECT created_by, is_public FROM connections WHERE id = ?')
+            .get(connectionId) as { created_by: string | null; is_public: number } | undefined;
 
         if (!row) return false;
-        return row.created_by === null || row.created_by === userContext.userId;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
     }
 
     /**
@@ -517,7 +527,7 @@ export class ConnectionRepository {
         const params: unknown[] = [serverId];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (c.created_by = ? OR c.created_by IS NULL)`;
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -525,5 +535,21 @@ export class ConnectionRepository {
 
         const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
+    }
+
+    /**
+     * Check if user can modify (update/delete) a connection
+     * Only owner or admin can modify
+     */
+    canModify(connectionId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by FROM connections WHERE id = ?')
+            .get(connectionId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 }

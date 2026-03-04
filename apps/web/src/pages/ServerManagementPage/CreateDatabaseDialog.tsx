@@ -131,7 +131,7 @@ export function CreateDatabaseDialog({ open, server, onClose }: CreateDatabaseDi
                 </Box>
             </DialogTitle>
             <DialogContent>
-                <Stack spacing={3} sx={{ mt: 1 }}>
+                <Stack spacing={1} sx={{ mt: 1 }}>
                     {!hasServerCredentials && (
                         <StatusAlert severity="warning">
                             <Typography variant="body2" fontWeight={500}>

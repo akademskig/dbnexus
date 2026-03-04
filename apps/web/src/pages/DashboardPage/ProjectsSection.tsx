@@ -21,122 +21,29 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LayersIcon from '@mui/icons-material/Layers';
 import SyncIcon from '@mui/icons-material/Sync';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { Project, ConnectionConfig, DatabaseGroup } from '@dbnexus/shared';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { GlassCard } from '../../components/GlassCard';
-import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { DatabaseRow } from '../../components/DatabaseRow';
 import { useToastStore } from '../../stores/toastStore';
 import { projectsApi, connectionsApi, groupsApi } from '../../lib/api';
-import { ProjectFormDialog, GroupFormDialog } from '../ProjectsPage/Dialogs';
+import {
+    ProjectFormDialog,
+    GroupFormDialog,
+    EditConnectionDialog,
+} from '../../components/dialogs/ConnectionDialogs';
 import { GroupSettingsDialog } from '../GroupSyncPage/GroupSettingsDialog';
 
 interface ProjectsSectionProps {
     projects: Project[];
     connections: ConnectionConfig[];
     loading?: boolean;
-}
-
-function ConnectionRow({
-    connection,
-    onNavigate,
-    indent,
-}: {
-    connection: ConnectionConfig;
-    onNavigate: (path: string) => void;
-    indent?: number;
-}) {
-    const { isOnline } = useConnectionHealthStore();
-    const online = isOnline(connection.id);
-
-    const handleDragStart = (e: React.DragEvent) => {
-        e.dataTransfer.setData(
-            'application/json',
-            JSON.stringify({
-                connectionId: connection.id,
-                connectionName: connection.name,
-                currentProjectId: connection.projectId || null,
-                currentGroupId: connection.groupId || null,
-            })
-        );
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    return (
-        <StyledTooltip title="Connection is offline" placement="top" disableHoverListener={online}>
-            <Box
-                draggable
-                onDragStart={handleDragStart}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    py: 0.75,
-                    px: 2,
-                    pl: indent || 5,
-                    cursor: 'grab',
-                    transition: 'background 0.15s, opacity 0.15s',
-                    '&:hover': {
-                        bgcolor: 'action.hover',
-                    },
-                    '&:active': {
-                        cursor: 'grabbing',
-                        opacity: 0.6,
-                    },
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: online ? 'success.main' : 'error.main',
-                        flexShrink: 0,
-                    }}
-                />
-                <StorageIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography
-                    variant="caption"
-                    sx={{
-                        flex: 1,
-                        fontWeight: 500,
-                        color: online ? 'text.primary' : 'text.disabled',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {connection.name}
-                </Typography>
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ flexShrink: 0, fontSize: 10 }}
-                >
-                    {connection.engine.toUpperCase()}
-                </Typography>
-                <StyledTooltip title="Query">
-                    <span>
-                        <IconButton
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onNavigate(`/query/${connection.id}`);
-                            }}
-                            disabled={!online}
-                            sx={{ p: 0.25 }}
-                        >
-                            <PlayArrowIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                    </span>
-                </StyledTooltip>
-            </Box>
-        </StyledTooltip>
-    );
 }
 
 function GroupSection({
@@ -147,6 +54,8 @@ function GroupSection({
     onDelete,
     onSyncSettings,
     onMoveConnection,
+    onEditConnection,
+    onDeleteConnection,
 }: {
     group: DatabaseGroup;
     connections: ConnectionConfig[];
@@ -155,6 +64,8 @@ function GroupSection({
     onDelete: () => void;
     onSyncSettings: () => void;
     onMoveConnection: (connectionId: string, groupId: string) => void;
+    onEditConnection: (connection: ConnectionConfig) => void;
+    onDeleteConnection: (connection: ConnectionConfig) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -230,6 +141,13 @@ function GroupSection({
                     },
                 }}
             >
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 14,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <LayersIcon
                     sx={{ fontSize: 14, color: isSyncEnabled ? 'success.main' : 'text.primary' }}
                 />
@@ -261,20 +179,6 @@ function GroupSection({
                         sx={{ height: 16, fontSize: 10, minWidth: 20, borderColor: 'divider' }}
                     />
                 </StyledTooltip>
-                <IconButton
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setExpanded(!expanded);
-                    }}
-                    sx={{
-                        p: 0.25,
-                        transition: 'transform 0.2s',
-                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                >
-                    <ExpandMoreIcon sx={{ fontSize: 14 }} />
-                </IconButton>
                 <IconButton
                     size="small"
                     onClick={(e) => {
@@ -345,11 +249,13 @@ function GroupSection({
                 <Box sx={{ py: 0.5, bgcolor: 'background.default', borderRadius: '0 0 4px 4px' }}>
                     {groupConnections.length > 0 ? (
                         groupConnections.map((conn) => (
-                            <ConnectionRow
+                            <DatabaseRow
                                 key={conn.id}
                                 connection={conn}
-                                onNavigate={onNavigate}
+                                draggable
                                 indent={3}
+                                onEdit={onEditConnection}
+                                onDelete={onDeleteConnection}
                             />
                         ))
                     ) : (
@@ -380,6 +286,8 @@ function ProjectRow({
     onEditGroup,
     onDeleteGroup,
     onSyncSettings,
+    onEditConnection,
+    onDeleteConnection,
 }: {
     project: Project;
     connections: ConnectionConfig[];
@@ -393,6 +301,8 @@ function ProjectRow({
     onEditGroup: (group: DatabaseGroup) => void;
     onDeleteGroup: (groupId: string) => void;
     onSyncSettings: (group: DatabaseGroup) => void;
+    onEditConnection: (connection: ConnectionConfig) => void;
+    onDeleteConnection: (connection: ConnectionConfig) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -464,6 +374,13 @@ function ProjectRow({
                     },
                 }}
             >
+                <ExpandMoreIcon
+                    sx={{
+                        fontSize: 18,
+                        transition: 'transform 0.2s',
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                />
                 <Box
                     sx={{
                         width: 26,
@@ -531,19 +448,6 @@ function ProjectRow({
                     size="small"
                     onClick={(e) => {
                         e.stopPropagation();
-                        setExpanded(!expanded);
-                    }}
-                    sx={{
-                        transition: 'transform 0.2s',
-                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                >
-                    <ExpandMoreIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-                <IconButton
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
                         setMenuAnchor(e.currentTarget);
                     }}
                     sx={{ color: 'text.secondary' }}
@@ -582,6 +486,7 @@ function ProjectRow({
                 <MenuItem
                     onClick={() => {
                         setMenuAnchor(null);
+
                         onDelete();
                     }}
                     sx={{ color: 'error.main' }}
@@ -614,6 +519,8 @@ function ProjectRow({
                             onMoveConnection={(connId, groupId) =>
                                 onMoveConnectionToGroup(connId, project.id, groupId)
                             }
+                            onEditConnection={onEditConnection}
+                            onDeleteConnection={onDeleteConnection}
                         />
                     ))}
 
@@ -638,10 +545,12 @@ function ProjectRow({
                                 </Typography>
                             )}
                             {ungroupedProjectConnections.map((conn) => (
-                                <ConnectionRow
+                                <DatabaseRow
                                     key={conn.id}
                                     connection={conn}
-                                    onNavigate={onNavigate}
+                                    draggable
+                                    onEdit={onEditConnection}
+                                    onDelete={onDeleteConnection}
                                 />
                             ))}
                         </Box>
@@ -676,6 +585,10 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
     const [editingGroup, setEditingGroup] = useState<DatabaseGroup | null>(null);
     const [settingsGroup, setSettingsGroup] = useState<DatabaseGroup | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [editingConnection, setEditingConnection] = useState<ConnectionConfig | null>(null);
+    const [connectionToDelete, setConnectionToDelete] = useState<ConnectionConfig | null>(null);
 
     const { data: groups = [] } = useQuery({
         queryKey: ['groups'],
@@ -728,6 +641,17 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
         },
         onError: () => {
             toast.error('Failed to move connection');
+        },
+    });
+
+    const deleteConnectionMutation = useMutation({
+        mutationFn: (connectionId: string) => connectionsApi.delete(connectionId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Database removed');
+        },
+        onError: () => {
+            toast.error('Failed to remove database');
         },
     });
 
@@ -859,7 +783,10 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             connections={connections}
                             groups={groups}
                             onEdit={() => handleEditProject(project)}
-                            onDelete={() => deleteProjectMutation.mutate(project.id)}
+                            onDelete={() => {
+                                setProjectToDelete(project);
+                                setDeleteDialogOpen(true);
+                            }}
                             onNavigate={(path) => navigate(path)}
                             onMoveConnection={handleMoveConnection}
                             onMoveConnectionToGroup={handleMoveConnectionToGroup}
@@ -869,6 +796,8 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                                 deleteGroupMutation.mutate({ projectId: project.id, groupId })
                             }
                             onSyncSettings={(group) => setSettingsGroup(group)}
+                            onEditConnection={setEditingConnection}
+                            onDeleteConnection={setConnectionToDelete}
                         />
                     ))
                 )}
@@ -901,10 +830,12 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                             </Typography>
                         </Box>
                         {ungroupedConnections.slice(0, 5).map((conn) => (
-                            <ConnectionRow
+                            <DatabaseRow
                                 key={conn.id}
                                 connection={conn}
-                                onNavigate={(path) => navigate(path)}
+                                draggable
+                                onEdit={setEditingConnection}
+                                onDelete={setConnectionToDelete}
                             />
                         ))}
                         {ungroupedConnections.length > 5 && (
@@ -939,6 +870,92 @@ export function ProjectsSection({ projects, connections, loading }: ProjectsSect
                     onClose={() => setSettingsGroup(null)}
                     group={settingsGroup}
                     connections={connections.filter((c) => c.groupId === settingsGroup.id)}
+                />
+            )}
+
+            {projectToDelete && (
+                <ConfirmDialog
+                    open={deleteDialogOpen}
+                    onCancel={() => {
+                        setDeleteDialogOpen(false);
+                        setProjectToDelete(null);
+                    }}
+                    onConfirm={() => {
+                        deleteProjectMutation.mutate(projectToDelete.id);
+                        setDeleteDialogOpen(false);
+                        setProjectToDelete(null);
+                    }}
+                    title="Delete Project"
+                    message={
+                        <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                <WarningAmberIcon sx={{ color: 'warning.main' }} />
+                                <Typography>
+                                    Are you sure you want to delete{' '}
+                                    <strong>{projectToDelete.name}</strong>?
+                                </Typography>
+                            </Box>
+                            {(() => {
+                                const projectConns = connections.filter(
+                                    (c) => c.projectId === projectToDelete.id
+                                );
+                                const projectGroups = groups.filter(
+                                    (g) => g.projectId === projectToDelete.id
+                                );
+                                if (projectConns.length > 0 || projectGroups.length > 0) {
+                                    return (
+                                        <Box
+                                            sx={{
+                                                p: 1.5,
+                                                bgcolor: (theme) =>
+                                                    alpha(theme.palette.warning.main, 0.1),
+                                                borderRadius: 1,
+                                                mb: 2,
+                                            }}
+                                        >
+                                            <Typography variant="body2" color="text.secondary">
+                                                This project contains {projectConns.length}{' '}
+                                                connection
+                                                {projectConns.length !== 1 ? 's' : ''} and{' '}
+                                                {projectGroups.length} group
+                                                {projectGroups.length !== 1 ? 's' : ''}. They will
+                                                be moved to ungrouped.
+                                            </Typography>
+                                        </Box>
+                                    );
+                                }
+                                return null;
+                            })()}
+                            <Typography variant="body2" color="text.secondary">
+                                This action cannot be undone.
+                            </Typography>
+                        </Box>
+                    }
+                    confirmLabel="Delete"
+                    confirmColor="error"
+                />
+            )}
+
+            {editingConnection && (
+                <EditConnectionDialog
+                    open={Boolean(editingConnection)}
+                    connection={editingConnection}
+                    onClose={() => setEditingConnection(null)}
+                />
+            )}
+
+            {connectionToDelete && (
+                <ConfirmDialog
+                    open={Boolean(connectionToDelete)}
+                    title="Remove Database"
+                    message={`Are you sure you want to remove "${connectionToDelete.name || connectionToDelete.database}"? This will only remove the connection from DB Nexus, not the actual database.`}
+                    confirmLabel="Remove"
+                    confirmColor="error"
+                    onConfirm={() => {
+                        deleteConnectionMutation.mutate(connectionToDelete.id);
+                        setConnectionToDelete(null);
+                    }}
+                    onCancel={() => setConnectionToDelete(null)}
                 />
             )}
         </>

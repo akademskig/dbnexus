@@ -7,6 +7,7 @@ import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
+import { useQueryTabsStore } from '../../stores/queryTabsStore';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useRecentDatabasesStore } from '../../stores/recentDatabasesStore';
@@ -35,6 +36,9 @@ export function QueryPage() {
     // Persisted state store
     const { lastState, saveState } = useQueryPageStore();
     const toast = useToastStore();
+
+    // Query tabs store
+    const { tabs, activeTabId, addTab, updateTab, getActiveTab } = useQueryTabsStore();
 
     // Shared connection store (for syncing with other pages like Schema Visualizer)
     const {
@@ -86,7 +90,28 @@ export function QueryPage() {
     const [tableSearch, setTableSearch] = useState('');
     const [tablesExpanded, setTablesExpanded] = useState(true);
     const [viewsExpanded, setViewsExpanded] = useState(true);
-    const [sql, setSql] = useState('');
+
+    // Initialize tabs if empty
+    useEffect(() => {
+        if (tabs.length === 0) {
+            addTab(routeConnectionId);
+        }
+    }, [tabs.length, addTab, routeConnectionId]);
+
+    // Get active query tab's SQL or empty string
+    const activeQueryTab = getActiveTab();
+    const sql = activeQueryTab?.sql ?? '';
+
+    // Update SQL in the active tab
+    const setSql = useCallback(
+        (newSql: string) => {
+            if (activeTabId) {
+                updateTab(activeTabId, { sql: newSql });
+            }
+        },
+        [activeTabId, updateTab]
+    );
+
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
@@ -196,7 +221,7 @@ export function QueryPage() {
             setError(null);
             setSql('');
         },
-        [navigate, activeTab]
+        [navigate, activeTab, setSql]
     );
 
     // Handle schema change
@@ -665,7 +690,7 @@ export function QueryPage() {
             setSql(query);
             executeMutation.mutate({ query });
         },
-        [selectedConnection?.engine, executeMutation]
+        [selectedConnection?.engine, executeMutation, setSql]
     );
 
     // Load table data when selecting a table
@@ -982,7 +1007,14 @@ export function QueryPage() {
                 `Querying ${info.referencedTable} where ${info.referencedColumn} = ${info.value}`
             );
         },
-        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, toast]
+        [
+            selectedConnectionId,
+            selectedConnection?.engine,
+            selectedSchema,
+            executeMutation,
+            toast,
+            setSql,
+        ]
     );
 
     // Redirect to dashboard if no connections after loading
@@ -1010,6 +1042,7 @@ export function QueryPage() {
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 <QueryPageSidebar
                     selectedConnectionId={selectedConnectionId}
+                    selectedSchema={selectedSchema}
                     tableSearch={tableSearch}
                     onTableSearchChange={setTableSearch}
                     filteredTables={filteredTables}
@@ -1101,6 +1134,7 @@ export function QueryPage() {
                                             onRefresh={
                                                 lastSuccessfulQuery ? rerunLastQuery : undefined
                                             }
+                                            onExecuteNoLimit={() => handleExecute(true)}
                                         />
                                     </Panel>
 
@@ -1143,6 +1177,29 @@ export function QueryPage() {
                                             explainLoading={explainMutation.isPending}
                                             result={result}
                                             error={error}
+                                            tables={tables}
+                                            columns={tableSchema?.columns.map((col) => ({
+                                                name: col.name,
+                                                dataType: col.dataType,
+                                                nullable: col.nullable,
+                                                tableName: tableSchema.name,
+                                            }))}
+                                            foreignKeys={tableSchema?.foreignKeys.flatMap((fk) => {
+                                                const cols = Array.isArray(fk.columns)
+                                                    ? fk.columns
+                                                    : [];
+                                                const refCols = Array.isArray(fk.referencedColumns)
+                                                    ? fk.referencedColumns
+                                                    : [];
+                                                return cols.map((col, i) => ({
+                                                    sourceTable: tableSchema.name,
+                                                    sourceColumn: col,
+                                                    targetTable: fk.referencedTable,
+                                                    targetSchema: fk.referencedSchema,
+                                                    targetColumn: refCols[i] || refCols[0] || col,
+                                                }));
+                                            })}
+                                            connectionId={selectedConnectionId}
                                         />
                                     </Panel>
                                 </Group>
@@ -1185,6 +1242,7 @@ export function QueryPage() {
                                     splitViewOpen={splitViewOpen}
                                     onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
                                     onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
+                                    onExecuteNoLimit={() => handleExecute(true)}
                                 />
                             )}
                         </>

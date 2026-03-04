@@ -31,6 +31,7 @@ interface ServerRow {
     start_command: string | null;
     stop_command: string | null;
     created_by: string | null;
+    is_public: number;
     created_at: string;
     updated_at: string;
     database_count?: number;
@@ -77,6 +78,7 @@ export class ServerRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by ?? undefined,
+            isPublic: row.is_public === 1,
             databaseCount: row.database_count,
         };
     }
@@ -167,7 +169,7 @@ export class ServerRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE s.created_by = ? OR s.created_by IS NULL`;
+            query += ` WHERE (s.created_by = ? OR s.created_by IS NULL OR s.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -191,7 +193,7 @@ export class ServerRepository {
         const params: unknown[] = [engine];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (s.created_by = ? OR s.created_by IS NULL)`;
+            query += ` AND (s.created_by = ? OR s.created_by IS NULL OR s.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -202,9 +204,25 @@ export class ServerRepository {
     }
 
     /**
-     * Check if user can access a server
+     * Check if user can access (view) a server
      */
     canAccess(serverId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by, is_public FROM servers WHERE id = ?')
+            .get(serverId) as { created_by: string | null; is_public: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
+    }
+
+    /**
+     * Check if user can modify (update/delete) a server
+     */
+    canModify(serverId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
         const row = this.db.prepare('SELECT created_by FROM servers WHERE id = ?').get(serverId) as
@@ -212,6 +230,7 @@ export class ServerRepository {
             | undefined;
 
         if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
         return row.created_by === null || row.created_by === userContext.userId;
     }
 
@@ -266,6 +285,10 @@ export class ServerRepository {
         if (input.stopCommand !== undefined) {
             updates.push('stop_command = ?');
             values.push(input.stopCommand || null);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length === 0) {

@@ -5,7 +5,7 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { MetadataService } from '../metadata/metadata.service.js';
 import type { User } from '@dbnexus/metadata';
@@ -210,6 +210,15 @@ export class AuthService {
         this.metadataService.userRepository.deleteUserRefreshTokens(userId);
 
         this.logAuthEvent('password_changed', userId);
+    }
+
+    async verifyPassword(userId: string, password: string): Promise<boolean> {
+        const user = this.metadataService.userRepository.findById(userId);
+        if (!user) {
+            return false;
+        }
+
+        return bcrypt.compare(password, user.passwordHash);
     }
 
     async updateProfile(

@@ -13,6 +13,7 @@ interface SavedQueryRow {
     connection_id: string | null;
     folder_id: string | null;
     created_by: string | null;
+    is_public: number;
     created_at: string;
     updated_at: string;
 }
@@ -94,7 +95,7 @@ export class QueryLogsRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ' WHERE created_by = ? OR created_by IS NULL';
+            query += ' WHERE (created_by = ? OR created_by IS NULL OR is_public = 1)';
             params.push(userContext.userId);
         }
 
@@ -116,7 +117,7 @@ export class QueryLogsRepository {
         }
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ' AND (created_by = ? OR created_by IS NULL)';
+            query += ' AND (created_by = ? OR created_by IS NULL OR is_public = 1)';
             params.push(userContext.userId);
         }
 
@@ -127,9 +128,25 @@ export class QueryLogsRepository {
     }
 
     /**
-     * Check if user can access a saved query
+     * Check if user can access (view) a saved query
      */
     canAccessSavedQuery(queryId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by, is_public FROM saved_queries WHERE id = ?')
+            .get(queryId) as { created_by: string | null; is_public: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
+    }
+
+    /**
+     * Check if user can modify (update/delete) a saved query
+     */
+    canModifySavedQuery(queryId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
         const row = this.db
@@ -137,12 +154,19 @@ export class QueryLogsRepository {
             .get(queryId) as { created_by: string | null } | undefined;
 
         if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
         return row.created_by === null || row.created_by === userContext.userId;
     }
 
     updateSavedQuery(
         id: string,
-        input: { name?: string; sql?: string; connectionId?: string; folderId?: string }
+        input: {
+            name?: string;
+            sql?: string;
+            connectionId?: string;
+            folderId?: string;
+            isPublic?: boolean;
+        }
     ): SavedQuery | null {
         const updates: string[] = [];
         const values: unknown[] = [];
@@ -162,6 +186,10 @@ export class QueryLogsRepository {
         if (input.folderId !== undefined) {
             updates.push('folder_id = ?');
             values.push(input.folderId);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length > 0) {
@@ -292,6 +320,7 @@ export class QueryLogsRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by ?? undefined,
+            isPublic: row.is_public === 1,
         };
     }
 

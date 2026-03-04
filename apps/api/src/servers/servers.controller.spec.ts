@@ -50,6 +50,7 @@ describe('ServersController', () => {
                 update: jest.fn(),
                 delete: jest.fn(),
                 getPassword: jest.fn(),
+                canModify: jest.fn().mockReturnValue(true),
             },
             connectionRepository: {
                 findByServerId: jest.fn(),
@@ -104,7 +105,8 @@ describe('ServersController', () => {
 
             expect(result).toEqual(postgresServers);
             expect(mockMetadataService.serverRepository.findByEngine).toHaveBeenCalledWith(
-                'postgres'
+                'postgres',
+                { userId: null, isAdmin: false }
             );
         });
     });
@@ -139,7 +141,8 @@ describe('ServersController', () => {
 
             expect(result).toEqual(connections);
             expect(mockMetadataService.connectionRepository.findByServerId).toHaveBeenCalledWith(
-                'server-123'
+                'server-123',
+                { userId: null, isAdmin: false }
             );
         });
 
@@ -191,7 +194,10 @@ describe('ServersController', () => {
             const result = controller.createServer(input);
 
             expect(result).toEqual(mockServer);
-            expect(mockMetadataService.serverRepository.create).toHaveBeenCalledWith(input);
+            expect(mockMetadataService.serverRepository.create).toHaveBeenCalledWith(
+                input,
+                undefined
+            );
             expect(mockMetadataService.auditLogRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
                     action: 'server_created',

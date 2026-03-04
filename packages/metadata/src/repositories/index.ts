@@ -38,8 +38,8 @@ export type {
 } from './backup-logs.repository.js';
 export { ServerRepository } from './server.repository.js';
 export type { ServerConfig, ServerCreateInput, ServerUpdateInput } from './server.repository.js';
-export { SettingsRepository } from './settings.repository.js';
-export type { Tag } from './settings.repository.js';
+export { UserPreferencesRepository } from './user-preferences.repository.js';
+export type { Tag, UserPreference } from './user-preferences.repository.js';
 export { UserRepository } from './user.repository.js';
 export type {
     User,

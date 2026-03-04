@@ -14,12 +14,18 @@ import {
     TableHead,
     TableRow,
     IconButton,
+    Breadcrumbs,
+    Link,
+    alpha,
+    Stack,
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
     Storage as DatabaseIcon,
     ArrowBack as BackIcon,
     Settings as SettingsIcon,
+    SyncAlt as SyncIcon,
+    Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { groupsApi, syncApi } from '../../lib/api';
 import { GlassCard } from '../../components/GlassCard';
@@ -147,53 +153,92 @@ export function GroupSyncPage() {
     }
 
     return (
-        <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                <IconButton onClick={() => navigate('/dashboard')}>
+        <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+            {/* Breadcrumbs */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <IconButton size="small" onClick={() => navigate('/dashboard')}>
                     <BackIcon />
                 </IconButton>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h4" fontWeight={600}>
+                <Breadcrumbs>
+                    <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => navigate('/dashboard')}
+                        sx={{ cursor: 'pointer' }}
+                        underline="hover"
+                    >
+                        Dashboard
+                    </Link>
+                    {group.projectName && (
+                        <Typography variant="body2" color="text.secondary">
+                            {group.projectName}
+                        </Typography>
+                    )}
+                    <Typography variant="body2" color="text.primary">
                         {group.name}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                </Breadcrumbs>
+            </Box>
+
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
+                <Box
+                    sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 1.5,
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <SyncIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h5" fontWeight={600}>
+                        {group.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
                         <Typography variant="body2" color="text.secondary">
-                            Instance Group Sync Status
-                            {group.projectName && ` • ${group.projectName}`}
+                            Instance Group Sync
                         </Typography>
                         {lastCheckedAt && (
-                            <Typography
-                                variant="caption"
-                                color="text.disabled"
-                                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                            >
-                                • Last checked: {formatRelativeTime(lastCheckedAt)}
-                            </Typography>
+                            <Chip
+                                icon={<ScheduleIcon sx={{ fontSize: 14 }} />}
+                                label={formatRelativeTime(lastCheckedAt)}
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 22, fontSize: 11 }}
+                            />
                         )}
                     </Box>
                 </Box>
-                <Button
-                    variant="outlined"
-                    startIcon={<SettingsIcon />}
-                    onClick={() => setSettingsOpen(true)}
-                >
-                    Settings
-                </Button>
-                <Button
-                    variant="contained"
-                    startIcon={
-                        loadingStatus || fetchingStatus ? (
-                            <CircularProgress size={16} />
-                        ) : (
-                            <RefreshIcon />
-                        )
-                    }
-                    onClick={handleRefresh}
-                    disabled={loadingStatus || fetchingStatus || !group.sourceConnectionId}
-                >
-                    {fetchingStatus ? 'Checking...' : 'Refresh Status'}
-                </Button>
+                <Stack direction="row" spacing={1}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<SettingsIcon />}
+                        onClick={() => setSettingsOpen(true)}
+                    >
+                        Settings
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={
+                            loadingStatus || fetchingStatus ? (
+                                <CircularProgress size={14} />
+                            ) : (
+                                <RefreshIcon />
+                            )
+                        }
+                        onClick={handleRefresh}
+                        disabled={loadingStatus || fetchingStatus || !group.sourceConnectionId}
+                    >
+                        {fetchingStatus ? 'Checking...' : 'Refresh'}
+                    </Button>
+                </Stack>
             </Box>
 
             {/* No source warning */}
@@ -213,31 +258,75 @@ export function GroupSyncPage() {
 
             {/* Source info */}
             {group.sourceConnectionId && (
-                <GlassCard>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
-                            Source (Reference)
-                        </Typography>
-                        <Chip
-                            label={group.sourceConnectionName || 'Unknown'}
-                            icon={<DatabaseIcon />}
-                            color="primary"
-                        />
-                        {group.syncSchema && <Chip label="Schema Sync" size="small" />}
-                        {group.syncData && <Chip label="Data Sync" size="small" />}
+                <GlassCard sx={{ p: 0 }}>
+                    {/* Source header */}
+                    <Box
+                        sx={{
+                            px: 2,
+                            py: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.03),
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <DatabaseIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                            <Typography variant="subtitle2" fontWeight={600}>
+                                {group.sourceConnectionName || 'Unknown'}
+                            </Typography>
+                            <Chip
+                                label="Source"
+                                size="small"
+                                color="primary"
+                                sx={{ height: 20, fontSize: 10, fontWeight: 600 }}
+                            />
+                        </Box>
+                        <Box sx={{ flex: 1 }} />
+                        <Stack direction="row" spacing={1}>
+                            {group.syncSchema && (
+                                <Chip
+                                    label="Schema"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ height: 22, fontSize: 11 }}
+                                />
+                            )}
+                            {group.syncData && (
+                                <Chip
+                                    label="Data"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ height: 22, fontSize: 11 }}
+                                />
+                            )}
+                        </Stack>
                     </Box>
 
                     {/* Targets table */}
                     {syncStatus && syncStatus.targets.length > 0 ? (
                         <TableContainer>
-                            <Table>
+                            <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell width={50} />
-                                        <TableCell>Target Connection</TableCell>
-                                        <TableCell>Schema Status</TableCell>
-                                        <TableCell>Data Status</TableCell>
-                                        <TableCell>Actions</TableCell>
+                                        <TableCell width={40} sx={{ pl: 1 }} />
+                                        <TableCell sx={{ fontWeight: 600, fontSize: 12 }}>
+                                            Target Connection
+                                        </TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: 12 }}>
+                                            Schema
+                                        </TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: 12 }}>
+                                            Data
+                                        </TableCell>
+                                        <TableCell
+                                            width={120}
+                                            sx={{ fontWeight: 600, fontSize: 12 }}
+                                        >
+                                            Actions
+                                        </TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -262,9 +351,11 @@ export function GroupSyncPage() {
                             </Typography>
                         </Box>
                     ) : (
-                        <Typography color="text.secondary" sx={{ py: 2 }}>
-                            No target connections in this group.
-                        </Typography>
+                        <Box sx={{ py: 3, px: 2, textAlign: 'center' }}>
+                            <Typography color="text.secondary" fontSize={13}>
+                                No target connections in this group.
+                            </Typography>
+                        </Box>
                     )}
                 </GlassCard>
             )}

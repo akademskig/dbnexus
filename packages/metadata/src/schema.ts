@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 21;
+export const SCHEMA_VERSION = 22;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -508,5 +508,50 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_backups_created_by ON backups(created_by);
 
   UPDATE schema_version SET version = 21;
+  `,
+
+    // Version 22: Add is_public to resources + rename settings to user_preferences with user_id
+    `
+  -- Create system user for storing system-wide preferences (if not exists)
+  INSERT OR IGNORE INTO users (id, email, password_hash, role, created_at, updated_at)
+  VALUES ('system', 'system@internal', '', 'admin', datetime('now'), datetime('now'));
+
+  -- Ensure settings table exists (even if empty) to avoid errors in migration
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Create user_preferences table (replaces settings)
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, key)
+  );
+
+  -- Migrate existing settings as system defaults (user_id = 'system')
+  INSERT OR IGNORE INTO user_preferences (id, user_id, key, value, updated_at)
+  SELECT hex(randomblob(16)), 'system', key, value, updated_at FROM settings;
+
+  -- Drop old settings table
+  DROP TABLE IF EXISTS settings;
+
+  -- Create index for user preferences
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_key ON user_preferences(user_id, key);
+
+  -- Add is_public to resources (default 0 = private, only owner can see)
+  ALTER TABLE connections ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE servers ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE projects ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE database_groups ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE saved_queries ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+
+  UPDATE schema_version SET version = 22;
   `,
 ];

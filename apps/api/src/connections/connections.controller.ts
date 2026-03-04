@@ -128,4 +128,17 @@ export class ConnectionsController {
         const result = await this.connectionsService.test(id);
         return { connected: result?.success ?? false };
     }
+
+    @Get(':id/password')
+    getPassword(
+        @Param('id') id: string,
+        @CurrentUser() user: User | null
+    ): { password: string | null } {
+        const userContext = this.getUserContext(user);
+        if (!this.connectionsService.canAccess(id, userContext)) {
+            throw new ForbiddenException('Access denied to this connection');
+        }
+        const password = this.connectionsService.getPassword(id);
+        return { password };
+    }
 }

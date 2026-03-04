@@ -11,6 +11,7 @@ interface ProjectRow {
     description: string | null;
     color: string | null;
     created_by: string | null;
+    is_public: number;
     created_at: string;
     updated_at: string;
 }
@@ -66,7 +67,7 @@ export class ProjectRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` WHERE created_by = ? OR created_by IS NULL`;
+            query += ` WHERE (created_by = ? OR created_by IS NULL OR is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -80,9 +81,26 @@ export class ProjectRepository {
     }
 
     /**
-     * Check if user can access a project
+     * Check if user can access (view) a project
      */
     canAccess(projectId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .getDb()
+            .prepare('SELECT created_by, is_public FROM projects WHERE id = ?')
+            .get(projectId) as { created_by: string | null; is_public: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
+    }
+
+    /**
+     * Check if user can modify (update/delete) a project
+     */
+    canModify(projectId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
         const row = this.db
@@ -91,6 +109,7 @@ export class ProjectRepository {
             .get(projectId) as { created_by: string | null } | undefined;
 
         if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
         return row.created_by === null || row.created_by === userContext.userId;
     }
 
@@ -112,6 +131,10 @@ export class ProjectRepository {
         if (input.color !== undefined) {
             updates.push('color = ?');
             values.push(input.color);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length === 0) {
@@ -157,6 +180,7 @@ export class ProjectRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by || undefined,
+            isPublic: row.is_public === 1,
         };
     }
 }

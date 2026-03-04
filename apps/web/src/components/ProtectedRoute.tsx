@@ -2,6 +2,9 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from '../stores/authStore';
+import { useFavoriteTablesStore } from '../stores/favoriteTablesStore';
+import { useThemeModeStore } from '../stores/themeModeStore';
+import { useColorSchemeStore } from '../stores/colorSchemeStore';
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -9,8 +12,12 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const location = useLocation();
-    const { isAuthenticated, authEnabled, checkAuthStatus } = useAuthStore();
+    const { isAuthenticated, authEnabled, checkAuthStatus, user } = useAuthStore();
     const [isChecking, setIsChecking] = useState(true);
+    const syncFavorites = useFavoriteTablesStore((state) => state.syncFromBackend);
+    const syncTheme = useThemeModeStore((state) => state.syncFromBackend);
+    const syncColorScheme = useColorSchemeStore((state) => state.syncFromBackend);
+    const setThemeUser = useThemeModeStore((state) => state.setCurrentUser);
 
     useEffect(() => {
         const check = async () => {
@@ -19,6 +26,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         };
         check();
     }, [checkAuthStatus]);
+
+    // Sync user preferences from backend when authenticated
+    useEffect(() => {
+        if (isAuthenticated && user?.id) {
+            setThemeUser(user.id);
+            syncFavorites();
+            syncTheme();
+            syncColorScheme();
+        }
+    }, [isAuthenticated, user?.id, setThemeUser, syncFavorites, syncTheme, syncColorScheme]);
 
     if (isChecking) {
         return (

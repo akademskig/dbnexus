@@ -28,7 +28,6 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SyncIcon from '@mui/icons-material/Sync';
 import LayersIcon from '@mui/icons-material/Layers';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import DnsIcon from '@mui/icons-material/Dns';
@@ -110,6 +109,7 @@ export function Layout() {
 
     const [syncMenuAnchor, setSyncMenuAnchor] = useState<null | HTMLElement>(null);
     const [serversMenuAnchor, setServersMenuAnchor] = useState<null | HTMLElement>(null);
+    const [databasesMenuAnchor, setDatabasesMenuAnchor] = useState<null | HTMLElement>(null);
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
     const [serverFormOpen, setServerFormOpen] = useState(false);
 
@@ -424,11 +424,16 @@ export function Layout() {
                                         fontWeight: 500,
                                     }}
                                 />
-                                {serversExpanded ? (
-                                    <ExpandLessIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                                ) : (
-                                    <ExpandMoreIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                                )}
+                                <ExpandMoreIcon
+                                    sx={{
+                                        fontSize: 16,
+                                        color: 'text.disabled',
+                                        transform: serversExpanded
+                                            ? 'rotate(180deg)'
+                                            : 'rotate(0deg)',
+                                        transition: 'transform 0.2s ease',
+                                    }}
+                                />
                             </ListItemButton>
 
                             <Collapse in={serversExpanded}>
@@ -520,21 +525,16 @@ export function Layout() {
                                                         >
                                                             <SettingsIcon sx={{ fontSize: 14 }} />
                                                         </IconButton>
-                                                        {isExpanded ? (
-                                                            <ExpandLessIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'text.disabled',
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <ExpandMoreIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'text.disabled',
-                                                                }}
-                                                            />
-                                                        )}
+                                                        <ExpandMoreIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                                color: 'text.disabled',
+                                                                transform: isExpanded
+                                                                    ? 'rotate(180deg)'
+                                                                    : 'rotate(0deg)',
+                                                                transition: 'transform 0.2s ease',
+                                                            }}
+                                                        />
                                                     </ListItemButton>
                                                     <Collapse in={isExpanded}>
                                                         <List disablePadding sx={{ pl: 1 }}>
@@ -603,6 +603,10 @@ export function Layout() {
                                                                                                             0.12
                                                                                                         ),
                                                                                             },
+                                                                                        '&:hover .db-settings':
+                                                                                            {
+                                                                                                opacity: 1,
+                                                                                            },
                                                                                     }}
                                                                                 >
                                                                                     <ListItemIcon
@@ -631,6 +635,33 @@ export function Layout() {
                                                                                                 : 'text.secondary',
                                                                                         }}
                                                                                     />
+                                                                                    <IconButton
+                                                                                        className="db-settings"
+                                                                                        size="small"
+                                                                                        onClick={(
+                                                                                            e
+                                                                                        ) => {
+                                                                                            e.stopPropagation();
+                                                                                            navigate(
+                                                                                                `/connections/${conn.id}`
+                                                                                            );
+                                                                                        }}
+                                                                                        sx={{
+                                                                                            opacity: 0,
+                                                                                            color: 'text.disabled',
+                                                                                            p: 0.25,
+                                                                                            '&:hover':
+                                                                                                {
+                                                                                                    color: 'primary.main',
+                                                                                                },
+                                                                                        }}
+                                                                                    >
+                                                                                        <SettingsIcon
+                                                                                            sx={{
+                                                                                                fontSize: 12,
+                                                                                            }}
+                                                                                        />
+                                                                                    </IconButton>
                                                                                 </ListItemButton>
                                                                             </StyledTooltip>
                                                                         );
@@ -679,15 +710,16 @@ export function Layout() {
                                                 fontWeight: 500,
                                             }}
                                         />
-                                        {databasesExpanded ? (
-                                            <ExpandLessIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        ) : (
-                                            <ExpandMoreIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        )}
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                fontSize: 16,
+                                                color: 'text.disabled',
+                                                transform: databasesExpanded
+                                                    ? 'rotate(180deg)'
+                                                    : 'rotate(0deg)',
+                                                transition: 'transform 0.2s ease',
+                                            }}
+                                        />
                                     </ListItemButton>
                                     <Collapse in={databasesExpanded}>
                                         <List disablePadding sx={{ pl: 1 }}>
@@ -717,6 +749,9 @@ export function Layout() {
                                                                     py: 0.25,
                                                                     minHeight: 28,
                                                                     borderRadius: 1,
+                                                                    '&:hover .db-settings': {
+                                                                        opacity: 1,
+                                                                    },
                                                                 }}
                                                             >
                                                                 <ListItemIcon sx={{ minWidth: 20 }}>
@@ -736,6 +771,28 @@ export function Layout() {
                                                                         noWrap: true,
                                                                     }}
                                                                 />
+                                                                <IconButton
+                                                                    className="db-settings"
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(
+                                                                            `/connections/${conn.id}`
+                                                                        );
+                                                                    }}
+                                                                    sx={{
+                                                                        opacity: 0,
+                                                                        color: 'text.disabled',
+                                                                        p: 0.25,
+                                                                        '&:hover': {
+                                                                            color: 'primary.main',
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <SettingsIcon
+                                                                        sx={{ fontSize: 12 }}
+                                                                    />
+                                                                </IconButton>
                                                             </ListItemButton>
                                                         </StyledTooltip>
                                                     );
@@ -777,15 +834,16 @@ export function Layout() {
                                                 fontWeight: 500,
                                             }}
                                         />
-                                        {syncExpanded ? (
-                                            <ExpandLessIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        ) : (
-                                            <ExpandMoreIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        )}
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                fontSize: 16,
+                                                color: 'text.disabled',
+                                                transform: syncExpanded
+                                                    ? 'rotate(180deg)'
+                                                    : 'rotate(0deg)',
+                                                transition: 'transform 0.2s ease',
+                                            }}
+                                        />
                                     </ListItemButton>
                                     <Collapse in={syncExpanded}>
                                         <List disablePadding>
@@ -905,12 +963,20 @@ export function Layout() {
                     ) : (
                         /* Collapsed servers menu */
                         <>
-                            <StyledTooltip title="Servers & Databases" placement="right" arrow>
+                            <StyledTooltip title="Servers" placement="right" arrow>
                                 <ListItemButton
                                     onClick={(e) => setServersMenuAnchor(e.currentTarget)}
+                                    selected={isServersChildActive}
                                     sx={{ justifyContent: 'center', py: 1.5 }}
                                 >
-                                    <DnsIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                                    <DnsIcon
+                                        sx={{
+                                            fontSize: 20,
+                                            color: isServersChildActive
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                        }}
+                                    />
                                 </ListItemButton>
                             </StyledTooltip>
                             <Menu
@@ -930,16 +996,19 @@ export function Layout() {
                                     sx={{
                                         px: 2,
                                         py: 1,
+                                        pt: 0,
                                         display: 'block',
                                         color: 'text.secondary',
                                     }}
                                 >
-                                    Servers & Databases
+                                    Servers
                                 </Typography>
                                 <Divider />
                                 {servers.map((server) => {
                                     const serverConnections =
                                         connectionsByServer.byServer[server.id] || [];
+                                    const isServerActive =
+                                        location.pathname === `/servers/${server.id}`;
                                     return (
                                         <Box key={server.id}>
                                             <MenuItem
@@ -947,32 +1016,168 @@ export function Layout() {
                                                     navigate(`/servers/${server.id}`);
                                                     setServersMenuAnchor(null);
                                                 }}
+                                                selected={isServerActive}
                                                 sx={{ fontWeight: 500, fontSize: 13 }}
                                             >
                                                 <ListItemIcon sx={{ minWidth: 28 }}>
                                                     <DnsIcon sx={{ fontSize: 16 }} />
                                                 </ListItemIcon>
-                                                {server.name}
-                                            </MenuItem>
-                                            {serverConnections.map((conn) => (
-                                                <MenuItem
-                                                    key={conn.id}
-                                                    onClick={() => {
-                                                        handleDatabaseClick(conn.id);
+                                                <Box sx={{ flex: 1 }}>{server.name}</Box>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/servers/${server.id}`);
                                                         setServersMenuAnchor(null);
                                                     }}
-                                                    sx={{ pl: 4, fontSize: 12 }}
+                                                    sx={{
+                                                        p: 0.5,
+                                                        ml: 1,
+                                                        color: 'text.disabled',
+                                                        '&:hover': { color: 'primary.main' },
+                                                    }}
                                                 >
-                                                    <ListItemIcon sx={{ minWidth: 24 }}>
-                                                        <StorageIcon sx={{ fontSize: 14 }} />
-                                                    </ListItemIcon>
-                                                    {conn.name || conn.database}
-                                                </MenuItem>
-                                            ))}
+                                                    <SettingsIcon sx={{ fontSize: 14 }} />
+                                                </IconButton>
+                                            </MenuItem>
+                                            {serverConnections.map((conn) => {
+                                                const isConnActive =
+                                                    location.pathname === `/query/${conn.id}` ||
+                                                    location.pathname === `/connections/${conn.id}`;
+                                                return (
+                                                    <MenuItem
+                                                        key={conn.id}
+                                                        onClick={() => {
+                                                            handleDatabaseClick(conn.id);
+                                                            setServersMenuAnchor(null);
+                                                        }}
+                                                        selected={isConnActive}
+                                                        sx={{ pl: 4, fontSize: 12 }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 24 }}>
+                                                            <StorageIcon sx={{ fontSize: 14 }} />
+                                                        </ListItemIcon>
+                                                        <Box sx={{ flex: 1 }}>
+                                                            {conn.name || conn.database}
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/connections/${conn.id}`);
+                                                                setServersMenuAnchor(null);
+                                                            }}
+                                                            sx={{
+                                                                p: 0.5,
+                                                                ml: 1,
+                                                                color: 'text.disabled',
+                                                                '&:hover': {
+                                                                    color: 'primary.main',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <SettingsIcon sx={{ fontSize: 12 }} />
+                                                        </IconButton>
+                                                    </MenuItem>
+                                                );
+                                            })}
                                         </Box>
                                     );
                                 })}
                             </Menu>
+
+                            {/* Collapsed databases menu (standalone) */}
+                            {connectionsByServer.standalone.filter((conn) =>
+                                isConnectionOnline(conn.id)
+                            ).length > 0 && (
+                                <>
+                                    <StyledTooltip title="Databases" placement="right" arrow>
+                                        <ListItemButton
+                                            onClick={(e) => setDatabasesMenuAnchor(e.currentTarget)}
+                                            selected={isDatabasesChildActive}
+                                            sx={{ justifyContent: 'center', py: 1.5 }}
+                                        >
+                                            <StorageIcon
+                                                sx={{
+                                                    fontSize: 20,
+                                                    color: isDatabasesChildActive
+                                                        ? 'primary.main'
+                                                        : 'text.secondary',
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </StyledTooltip>
+                                    <Menu
+                                        anchorEl={databasesMenuAnchor}
+                                        open={Boolean(databasesMenuAnchor)}
+                                        onClose={() => setDatabasesMenuAnchor(null)}
+                                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                                        slotProps={{
+                                            paper: {
+                                                sx: { maxHeight: 400, overflowY: 'auto' },
+                                            },
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                px: 2,
+                                                py: 1,
+                                                pt: 0,
+                                                display: 'block',
+                                                color: 'text.secondary',
+                                            }}
+                                        >
+                                            Databases
+                                        </Typography>
+                                        <Divider />
+                                        {connectionsByServer.standalone
+                                            .filter((conn) => isConnectionOnline(conn.id))
+                                            .map((conn) => {
+                                                const isActive =
+                                                    location.pathname === `/query/${conn.id}` ||
+                                                    location.pathname === `/connections/${conn.id}`;
+                                                return (
+                                                    <MenuItem
+                                                        key={conn.id}
+                                                        onClick={() => {
+                                                            handleDatabaseClick(conn.id);
+                                                            setDatabasesMenuAnchor(null);
+                                                        }}
+                                                        selected={isActive}
+                                                        sx={{ fontSize: 13 }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 28 }}>
+                                                            <StorageIcon sx={{ fontSize: 16 }} />
+                                                        </ListItemIcon>
+                                                        <Box sx={{ flex: 1 }}>
+                                                            {conn.name || conn.database}
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/connections/${conn.id}`);
+                                                                setDatabasesMenuAnchor(null);
+                                                            }}
+                                                            sx={{
+                                                                p: 0.5,
+                                                                ml: 1,
+                                                                color: 'text.disabled',
+                                                                '&:hover': {
+                                                                    color: 'primary.main',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <SettingsIcon sx={{ fontSize: 14 }} />
+                                                        </IconButton>
+                                                    </MenuItem>
+                                                );
+                                            })}
+                                    </Menu>
+                                </>
+                            )}
 
                             {/* Collapsed sync menu */}
                             {groups.length > 0 && (
@@ -1010,6 +1215,7 @@ export function Layout() {
                                             sx={{
                                                 px: 2,
                                                 py: 1,
+                                                pt: 0,
                                                 display: 'block',
                                                 color: 'text.secondary',
                                             }}

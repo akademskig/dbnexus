@@ -6,7 +6,7 @@ This document outlines planned features, improvements, and future directions for
 
 Core functionality is working:
 
-- ✅ Multi-database connections (PostgreSQL, MySQL, MariaDB, SQLite)
+- ✅ Multi-database connections (PostgreSQL, MySQL, SQLite)
 - ✅ Query editor with syntax highlighting
 - ✅ Schema browser and table data viewer
 - ✅ Schema comparison and sync between databases
@@ -117,7 +117,6 @@ Features to ship in subsequent versions after v1.0:
 
 - [x] PostgreSQL (full support)
 - [x] MySQL (full support)
-- [x] MariaDB (full support)
 - [x] SQLite (full support)
 
 ### Planned (Post-Release)

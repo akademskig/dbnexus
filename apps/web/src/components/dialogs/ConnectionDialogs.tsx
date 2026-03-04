@@ -21,8 +21,9 @@ import {
     Chip,
 } from '@mui/material';
 import ScienceIcon from '@mui/icons-material/Science';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { connectionsApi, projectsApi } from '../../lib/api';
+import PublicIcon from '@mui/icons-material/Public';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { connectionsApi, projectsApi, serversApi, groupsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 import type {
     ConnectionConfig,
@@ -33,7 +34,7 @@ import type {
 } from '@dbnexus/shared';
 import { useTagsStore } from '../../stores/tagsStore';
 import { PROJECT_COLORS } from './constants';
-import { StatusAlert } from '@/components/StatusAlert';
+import { StatusAlert } from '../StatusAlert';
 
 // Project form dialog
 interface ProjectFormDialogProps {
@@ -48,16 +49,19 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState(PROJECT_COLORS[0]);
+    const [isPublic, setIsPublic] = useState(false);
 
     const handleEnter = () => {
         if (project) {
             setName(project.name);
             setDescription(project.description || '');
             setColor(project.color || PROJECT_COLORS[0]);
+            setIsPublic(project.isPublic || false);
         } else {
             setName('');
             setDescription('');
             setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
+            setIsPublic(false);
         }
     };
 
@@ -76,7 +80,7 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
             data,
         }: {
             id: string;
-            data: { name: string; description?: string; color?: string };
+            data: { name: string; description?: string; color?: string; isPublic?: boolean };
         }) => projectsApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -88,7 +92,10 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (project) {
-            updateMutation.mutate({ id: project.id, data: { name, description, color } });
+            updateMutation.mutate({
+                id: project.id,
+                data: { name, description, color, isPublic },
+            });
         } else {
             createMutation.mutate({ name, description, color });
         }
@@ -146,6 +153,21 @@ export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogP
                                 ))}
                             </Box>
                         </Box>
+
+                        {project && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
+                                        size="small"
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
+                                    />
+                                }
+                                label="Make public (visible to all users)"
+                            />
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -179,16 +201,19 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     const [databaseEngine, setDatabaseEngine] = useState<'postgres' | 'mysql' | 'sqlite'>(
         'postgres'
     );
+    const [isPublic, setIsPublic] = useState(false);
 
     const handleEnter = () => {
         if (group) {
             setName(group.name);
             setDescription(group.description || '');
             setDatabaseEngine(group.databaseEngine);
+            setIsPublic(group.isPublic || false);
         } else {
             setName('');
             setDescription('');
             setDatabaseEngine('postgres');
+            setIsPublic(false);
         }
     };
 
@@ -203,7 +228,8 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
     });
 
     const updateMutation = useMutation({
-        mutationFn: () => projectsApi.updateGroup(projectId!, group!.id, { name, description }),
+        mutationFn: () =>
+            projectsApi.updateGroup(projectId!, group!.id, { name, description, isPublic }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             toast.success('Instance group updated');
@@ -296,6 +322,21 @@ export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDi
                                 helperText="Database engine cannot be changed after group creation"
                             />
                         )}
+
+                        {group && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
+                                        size="small"
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
+                                    />
+                                }
+                                label="Make public (visible to all users)"
+                            />
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -340,7 +381,7 @@ export function ConnectionFormDialog({
     const queryClient = useQueryClient();
     const toast = useToastStore();
     const { tags: availableTags } = useTagsStore();
-    const [formData, setFormData] = useState<ConnectionCreateInput>({
+    const [formData, setFormData] = useState<ConnectionCreateInput & { isPublic?: boolean }>({
         name: '',
         engine: 'postgres',
         host: 'localhost',
@@ -355,6 +396,7 @@ export function ConnectionFormDialog({
         serverId: undefined,
         projectId: undefined,
         groupId: undefined,
+        isPublic: false,
     });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
@@ -389,6 +431,7 @@ export function ConnectionFormDialog({
                 serverId: connection.serverId,
                 projectId: connection.projectId,
                 groupId: connection.groupId,
+                isPublic: connection.isPublic || false,
             });
         } else {
             // Determine engine from preselected server or initial group
@@ -415,6 +458,7 @@ export function ConnectionFormDialog({
                 serverId: preselectedServerId,
                 projectId: initialProjectId,
                 groupId: initialGroupId,
+                isPublic: false,
             });
         }
         setTestResult(null);
@@ -731,25 +775,6 @@ export function ConnectionFormDialog({
                                         sx={{ flex: 1 }}
                                     />
                                 </Box>
-
-                                {/* SSL option - shown when no server is selected */}
-                                {!hasServer && (
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={formData.ssl}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        ssl: e.target.checked,
-                                                    })
-                                                }
-                                                size="small"
-                                            />
-                                        }
-                                        label="Use SSL"
-                                    />
-                                )}
                             </>
                         )}
 
@@ -838,18 +863,57 @@ export function ConnectionFormDialog({
                             )}
                         </Box>
 
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={formData.readOnly}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, readOnly: e.target.checked })
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                            {/* SSL option - shown for non-SQLite when no server is selected */}
+                            {!isSqlite && !hasServer && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.ssl}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    ssl: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                        />
                                     }
-                                    size="small"
+                                    label="Use SSL"
                                 />
-                            }
-                            label="Read-only mode"
-                        />
+                            )}
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={formData.readOnly}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, readOnly: e.target.checked })
+                                        }
+                                        size="small"
+                                    />
+                                }
+                                label="Read-only mode"
+                            />
+                            {connection && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.isPublic || false}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    isPublic: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                            icon={<PublicIcon />}
+                                            checkedIcon={<PublicIcon />}
+                                        />
+                                    }
+                                    label="Make public (visible to all users)"
+                                />
+                            )}
+                        </Box>
 
                         {testResult && (
                             <StatusAlert severity={testResult.success ? 'success' : 'error'}>
@@ -877,5 +941,43 @@ export function ConnectionFormDialog({
                 </DialogActions>
             </form>
         </Dialog>
+    );
+}
+
+// Edit connection dialog - fetches required data internally
+interface EditConnectionDialogProps {
+    open: boolean;
+    connection: ConnectionConfig;
+    onClose: () => void;
+}
+
+export function EditConnectionDialog({ open, connection, onClose }: EditConnectionDialogProps) {
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: () => projectsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
+        enabled: open,
+    });
+
+    return (
+        <ConnectionFormDialog
+            open={open}
+            connection={connection}
+            projects={projects}
+            groups={groups}
+            servers={servers}
+            onClose={onClose}
+        />
     );
 }

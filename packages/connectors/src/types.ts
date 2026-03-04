@@ -9,7 +9,7 @@ export interface ConnectorConfig {
     port: number;
     database: string;
     username: string;
-    password: string;
+    password?: string;
     ssl?: boolean;
     /**
      * Whether to verify SSL certificates. Defaults to false for backwards compatibility

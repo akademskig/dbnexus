@@ -117,6 +117,9 @@ export const connectionsApi = {
         }),
 
     getStatus: (id: string) => fetchApi<{ connected: boolean }>(`/connections/${id}/status`),
+
+    getPassword: (id: string) =>
+        fetchApi<{ password: string | null }>(`/connections/${id}/password`),
 };
 
 // ============ Servers ============
@@ -228,10 +231,10 @@ export const serversApi = {
 // ============ Queries ============
 
 export const queriesApi = {
-    execute: (connectionId: string, sql: string, confirmed?: boolean) =>
+    execute: (connectionId: string, sql: string, confirmed?: boolean, noLimit?: boolean) =>
         fetchApi<QueryResult>('/queries/execute', {
             method: 'POST',
-            body: JSON.stringify({ connectionId, sql, confirmed }),
+            body: JSON.stringify({ connectionId, sql, confirmed, noLimit }),
         }),
 
     validate: (connectionId: string, sql: string) =>
@@ -373,7 +376,8 @@ export const schemaApi = {
         targetConnectionId: string,
         sourceSchema?: string,
         targetSchema?: string,
-        description?: string
+        description?: string,
+        tables?: string[]
     ) => {
         const params = new URLSearchParams();
         if (sourceSchema) params.set('sourceSchema', sourceSchema);
@@ -382,7 +386,7 @@ export const schemaApi = {
             `/schema/diff/${sourceConnectionId}/${targetConnectionId}/apply?${params}`,
             {
                 method: 'POST',
-                body: JSON.stringify({ description }),
+                body: JSON.stringify({ description, tables }),
             }
         );
     },
@@ -971,6 +975,31 @@ export const settingsApi = {
     resetTags: (): Promise<Tag[]> => {
         return fetchApi('/settings/tags/reset', {
             method: 'POST',
+        });
+    },
+};
+
+// ============ User Preferences ============
+
+export const preferencesApi = {
+    getAll: (): Promise<Record<string, unknown>> => {
+        return fetchApi('/preferences');
+    },
+
+    get: <T>(key: string): Promise<{ value: T | null }> => {
+        return fetchApi(`/preferences/${key}`);
+    },
+
+    set: <T>(key: string, value: T): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+        });
+    },
+
+    delete: (key: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'DELETE',
         });
     },
 };

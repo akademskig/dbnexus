@@ -12,4 +12,8 @@ export class ExecuteQueryDto {
     @IsOptional()
     @IsBoolean()
     confirmed?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    noLimit?: boolean;
 }

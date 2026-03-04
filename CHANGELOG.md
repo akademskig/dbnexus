@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-23
+
+### Added
+
+- **Password Verification for Server Credentials**: Added security check before viewing sensitive server passwords
+    - Users must enter their own password to verify identity before server credentials are revealed
+    - Improves security for sensitive database credentials
+- **Per-Table Schema Migration**: Apply schema migrations for individual tables instead of all at once
+    - Copy individual SQL statements to clipboard
+    - Apply migration per-table with dedicated action buttons
+    - Maintains "Apply All" option for bulk migration
+- **Database Row Actions in Projects Section**: Edit and Delete options now available on database rows
+    - Quick access to edit database connection settings
+    - Remove databases directly from the Projects & Groups section on Dashboard
+- **Navigation Improvements for Collapsed Sidebar**
+    - Management icons (settings) on server and database items in collapsed menu popups
+    - Quick access to management pages without expanding the sidebar
+
+### Changed
+
+- **Group Sync & Compare Pages**: Visual refresh with improved layout and styling
+    - Better organized schema diff display with copy/apply actions per table
+    - Enhanced data diff display with improved table scrolling
+- **Logs Page Tables**: More compact row height for better data density
+- **Database Form**: Reordered checkboxes with SSL option above Read-only mode
+- **Navigation Panel**: Smooth rotation animation on expand/collapse carets
+
+### Fixed
+
+- **Scanned Connections**: Password is now optional when adding connections from network scan
+- **Connection Form**: Proper support for isPublic field when updating connections
+
 ## [0.4.1] - 2026-03-02
 
 ### Changed

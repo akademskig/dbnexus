@@ -14,11 +14,15 @@ import {
     alpha,
     CircularProgress,
     Stack,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DnsIcon from '@mui/icons-material/Dns';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddIcon from '@mui/icons-material/Add';
@@ -40,13 +44,15 @@ import PeopleIcon from '@mui/icons-material/People';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useTagsStore } from '../../stores/tagsStore';
 import { serversApi, connectionsApi, projectsApi, groupsApi } from '../../lib/api';
+import { authApi } from '../../lib/authApi';
+import { useAuthStore } from '../../stores/authStore';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
-import { ConnectionCard } from '../ProjectsPage/ConnectionCard';
-import { ConnectionFormDialog } from '../ConnectionsPage/Dialogs';
+import { ConnectionCard } from '../../components/ConnectionCard';
+import { ConnectionFormDialog } from '../../components/dialogs/ConnectionDialogs';
 import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
 import { CreateDatabaseDialog } from './CreateDatabaseDialog';
 
@@ -96,7 +102,11 @@ function InfoBox({ label, value, copyable = true, onCopy, children }: InfoBoxPro
                 },
             }}
         >
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 0.5, textTransform: 'uppercase' }}
+            >
                 {label}
             </Typography>
             {children || (
@@ -164,8 +174,8 @@ function StatBox({ icon, value, label, color }: StatBoxProps) {
 }
 
 const TAB_ICONS = [
-    <DashboardIcon key="overview" fontSize="small" />,
-    <SettingsIcon key="settings" fontSize="small" />,
+    <SettingsIcon key="overview" fontSize="small" />,
+    <StorageIcon key="databases" fontSize="small" />,
 ];
 
 export function ServerManagementPage() {
@@ -177,7 +187,7 @@ export function ServerManagementPage() {
 
     const [activeTab, setActiveTab] = useState(() => {
         const tab = searchParams.get('tab');
-        return tab === 'settings' ? 1 : 0;
+        return tab === 'databases' ? 1 : 0;
     });
     const [dbDialogOpen, setDbDialogOpen] = useState(false);
     const [editingDatabase, setEditingDatabase] = useState<ConnectionConfig | null>(null);
@@ -193,6 +203,12 @@ export function ServerManagementPage() {
     const [loadingPassword, setLoadingPassword] = useState(false);
     const [dropDbDialogOpen, setDropDbDialogOpen] = useState(false);
     const [dbToDrop, setDbToDrop] = useState<string | null>(null);
+    const [verifyPasswordDialogOpen, setVerifyPasswordDialogOpen] = useState(false);
+    const [verifyPasswordInput, setVerifyPasswordInput] = useState('');
+    const [verifyPasswordError, setVerifyPasswordError] = useState<string | null>(null);
+    const [verifyingPassword, setVerifyingPassword] = useState(false);
+
+    const { accessToken } = useAuthStore();
 
     const { tags: availableTags } = useTagsStore();
 
@@ -264,7 +280,7 @@ export function ServerManagementPage() {
             if (result.success) {
                 queryClient.invalidateQueries({ queryKey: ['servers'] });
                 toast.success('Server deleted');
-                navigate('/servers');
+                navigate('/dashboard');
             } else {
                 toast.error(result.message || 'Failed to delete server');
             }
@@ -316,23 +332,50 @@ export function ServerManagementPage() {
             setShowPassword(false);
             setRevealedPassword(null);
         } else {
-            setLoadingPassword(true);
-            try {
-                const result = await serversApi.getPassword(serverId!);
-                setRevealedPassword(result.password);
-                setShowPassword(true);
-            } catch {
-                toast.error('Failed to retrieve password');
-            } finally {
-                setLoadingPassword(false);
+            setVerifyPasswordDialogOpen(true);
+            setVerifyPasswordInput('');
+            setVerifyPasswordError(null);
+        }
+    };
+
+    const handleVerifyAndShowPassword = async () => {
+        if (!verifyPasswordInput.trim()) {
+            setVerifyPasswordError('Please enter your password');
+            return;
+        }
+
+        setVerifyingPassword(true);
+        setVerifyPasswordError(null);
+
+        try {
+            const result = await authApi.verifyPassword(verifyPasswordInput, accessToken!);
+            if (result.valid) {
+                setVerifyPasswordDialogOpen(false);
+                setVerifyPasswordInput('');
+                setLoadingPassword(true);
+                try {
+                    const passwordResult = await serversApi.getPassword(serverId!);
+                    setRevealedPassword(passwordResult.password);
+                    setShowPassword(true);
+                } catch {
+                    toast.error('Failed to retrieve password');
+                } finally {
+                    setLoadingPassword(false);
+                }
+            } else {
+                setVerifyPasswordError('Incorrect password');
             }
+        } catch {
+            setVerifyPasswordError('Failed to verify password');
+        } finally {
+            setVerifyingPassword(false);
         }
     };
 
     const handleTabChange = useCallback(
         (_: unknown, newTab: number) => {
             setActiveTab(newTab);
-            setSearchParams({ tab: newTab === 1 ? 'settings' : 'overview' }, { replace: true });
+            setSearchParams({ tab: newTab === 1 ? 'databases' : 'overview' }, { replace: true });
         },
         [setSearchParams]
     );
@@ -375,8 +418,8 @@ export function ServerManagementPage() {
                         title="Server not found"
                         description="The requested server could not be found."
                         action={{
-                            label: 'Back to Servers',
-                            onClick: () => navigate('/servers'),
+                            label: 'Back to Dashboard',
+                            onClick: () => navigate('/dashboard'),
                         }}
                         size="large"
                     />
@@ -393,14 +436,14 @@ export function ServerManagementPage() {
             <Box sx={{ mb: 3 }}>
                 {/* Breadcrumbs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <IconButton size="small" onClick={() => navigate('/servers')}>
+                    <IconButton size="small" onClick={() => navigate('/dashboard')}>
                         <ArrowBackIcon />
                     </IconButton>
                     <Breadcrumbs>
                         <Link
                             component="button"
                             variant="body2"
-                            onClick={() => navigate('/servers')}
+                            onClick={() => navigate('/dashboard')}
                             sx={{ cursor: 'pointer' }}
                             underline="hover"
                         >
@@ -466,25 +509,41 @@ export function ServerManagementPage() {
             </Box>
 
             {/* Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs value={activeTab} onChange={handleTabChange}>
-                    <Tab
-                        icon={TAB_ICONS[0]}
-                        iconPosition="start"
-                        label="Databases"
-                        sx={{ minHeight: 48 }}
-                    />
-                    <Tab
-                        icon={TAB_ICONS[1]}
-                        iconPosition="start"
-                        label="Settings"
-                        sx={{ minHeight: 48 }}
-                    />
-                </Tabs>
-            </Box>
+            <GlassCard sx={{ mb: 3, p: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        sx={{
+                            flex: 1,
+                            px: 2,
+                            '& .MuiTabs-indicator': {
+                                bgcolor: 'primary.main',
+                            },
+                            '& .MuiTab-root': {
+                                color: 'text.secondary',
+                                textTransform: 'none',
+                                fontWeight: 500,
+                                minHeight: 56,
+                                gap: 1,
+                                '&.Mui-selected': {
+                                    color: 'primary.main',
+                                },
+                            },
+                        }}
+                    >
+                        <Tab icon={TAB_ICONS[0]} iconPosition="start" label="Overview" />
+                        <Tab
+                            icon={TAB_ICONS[1]}
+                            iconPosition="start"
+                            label={`Databases (${databases.length})`}
+                        />
+                    </Tabs>
+                </Box>
+            </GlassCard>
 
             {/* Tab Content */}
-            {activeTab === 0 && (
+            {activeTab === 1 && (
                 <Box>
                     {/* Actions */}
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
@@ -794,17 +853,17 @@ export function ServerManagementPage() {
                 </Box>
             )}
 
-            {activeTab === 1 && (
+            {activeTab === 0 && (
                 <Stack spacing={3}>
                     {/* Server Info Card */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box
                                 sx={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    mb: 3,
+                                    mb: 2,
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -893,18 +952,18 @@ export function ServerManagementPage() {
 
                     {/* Server Configuration Card */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box
                                 sx={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    mb: 3,
+                                    mb: 2,
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                     <DnsIcon sx={{ color: 'primary.main' }} />
-                                    <Typography variant="h6">Server Configuration</Typography>
+                                    <Typography variant="h6">Server Details</Typography>
                                 </Box>
                                 <Button
                                     variant="outlined"
@@ -915,12 +974,7 @@ export function ServerManagementPage() {
                                     Edit Server
                                 </Button>
                             </Box>
-
-                            {/* Connection Details */}
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-                                Connection
-                            </Typography>
-                            <Grid container spacing={2} sx={{ mb: 3, alignItems: 'stretch' }}>
+                            <Grid container spacing={2} sx={{ mb: 2, alignItems: 'stretch' }}>
                                 <Grid size={{ xs: 6, sm: 3 }}>
                                     <InfoBox label="Host" value={server.host} />
                                 </Grid>
@@ -1064,8 +1118,8 @@ export function ServerManagementPage() {
                             {/* Test Connection */}
                             <Box
                                 sx={{
-                                    mt: 3,
-                                    pt: 3,
+                                    mt: 2,
+                                    pt: 2,
                                     borderTop: 1,
                                     borderColor: 'divider',
                                     display: 'flex',
@@ -1145,7 +1199,7 @@ export function ServerManagementPage() {
 
                     {/* Danger Zone */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                                 <DeleteIcon sx={{ color: 'error.main' }} />
                                 <Typography variant="h6" color="error.main">
@@ -1238,6 +1292,46 @@ export function ServerManagementPage() {
                 confirmLabel="Drop Database"
                 confirmColor="error"
             />
+
+            <Dialog
+                open={verifyPasswordDialogOpen}
+                onClose={() => setVerifyPasswordDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Verify Your Identity</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Enter your password to view the server credentials.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        type="password"
+                        label="Your Password"
+                        value={verifyPasswordInput}
+                        onChange={(e) => setVerifyPasswordInput(e.target.value)}
+                        error={!!verifyPasswordError}
+                        helperText={verifyPasswordError}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleVerifyAndShowPassword();
+                            }
+                        }}
+                        size="small"
+                    />
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={() => setVerifyPasswordDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleVerifyAndShowPassword}
+                        disabled={verifyingPassword}
+                    >
+                        {verifyingPassword ? 'Verifying...' : 'Verify'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

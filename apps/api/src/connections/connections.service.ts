@@ -194,7 +194,7 @@ export class ConnectionsService {
             port: settings.port,
             database: settings.database,
             username: settings.username,
-            password: settings.password,
+            password: settings.password ?? '',
             ssl: settings.ssl,
         };
 
@@ -262,6 +262,14 @@ export class ConnectionsService {
     isConnected(id: string): boolean {
         const connector = this.connectors.get(id);
         return connector?.isConnected() ?? false;
+    }
+
+    /**
+     * Get the decrypted password for a connection
+     */
+    getPassword(id: string): string | null {
+        this.findById(id); // Verify connection exists
+        return this.metadataService.connectionRepository.getPassword(id);
     }
 
     /**

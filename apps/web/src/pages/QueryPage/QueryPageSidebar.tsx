@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Box,
     TextField,
@@ -9,26 +10,30 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import StarIcon from '@mui/icons-material/Star';
 import { TableListItem } from './TableListItem';
 import { SIDEBAR_WIDTH } from './utils';
+import { useFavoriteTablesStore } from '../../stores/favoriteTablesStore';
 import type { TableInfo } from '@dbnexus/shared';
 
 interface QueryPageSidebarProps {
-    selectedConnectionId: string | null;
-    tableSearch: string;
-    onTableSearchChange: (search: string) => void;
-    filteredTables: TableInfo[];
-    selectedTable: TableInfo | null;
-    onTableSelect: (table: TableInfo) => void;
-    tablesLoading: boolean;
-    tablesExpanded: boolean;
-    onToggleTablesExpanded: () => void;
-    viewsExpanded: boolean;
-    onToggleViewsExpanded: () => void;
+    readonly selectedConnectionId: string | null;
+    readonly selectedSchema: string;
+    readonly tableSearch: string;
+    readonly onTableSearchChange: (search: string) => void;
+    readonly filteredTables: TableInfo[];
+    readonly selectedTable: TableInfo | null;
+    readonly onTableSelect: (table: TableInfo) => void;
+    readonly tablesLoading: boolean;
+    readonly tablesExpanded: boolean;
+    readonly onToggleTablesExpanded: () => void;
+    readonly viewsExpanded: boolean;
+    readonly onToggleViewsExpanded: () => void;
 }
 
 export function QueryPageSidebar({
     selectedConnectionId,
+    selectedSchema,
     tableSearch,
     onTableSearchChange,
     filteredTables,
@@ -40,8 +45,22 @@ export function QueryPageSidebar({
     viewsExpanded,
     onToggleViewsExpanded,
 }: QueryPageSidebarProps) {
+    const { isFavorite, toggleFavorite } = useFavoriteTablesStore();
+    const [favoritesExpanded, setFavoritesExpanded] = useState(true);
+
     const tables = filteredTables.filter((t) => t.type === 'table');
     const views = filteredTables.filter((t) => t.type === 'view');
+
+    const favoriteTables = filteredTables.filter(
+        (t) =>
+            selectedConnectionId &&
+            isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
+    );
+    const nonFavoriteTables = tables.filter(
+        (t) =>
+            !selectedConnectionId ||
+            !isFavorite(selectedConnectionId, t.schema || selectedSchema, t.name)
+    );
 
     return (
         <Box
@@ -89,8 +108,62 @@ export function QueryPageSidebar({
                     </Box>
                 ) : (
                     <>
+                        {/* Favorites Section */}
+                        {favoriteTables.length > 0 && (
+                            <>
+                                <Box
+                                    onClick={() => setFavoritesExpanded(!favoritesExpanded)}
+                                    sx={{
+                                        px: 2,
+                                        py: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        '&:hover': { bgcolor: 'action.hover' },
+                                    }}
+                                >
+                                    <StarIcon
+                                        sx={{ fontSize: 14, color: 'warning.main', mr: 0.75 }}
+                                    />
+                                    <Typography
+                                        variant="caption"
+                                        fontWeight={600}
+                                        textTransform="uppercase"
+                                        color="text.secondary"
+                                        sx={{ flex: 1 }}
+                                    >
+                                        Favorites ({favoriteTables.length})
+                                    </Typography>
+                                    {favoritesExpanded ? (
+                                        <ExpandLessIcon fontSize="small" />
+                                    ) : (
+                                        <ExpandMoreIcon fontSize="small" />
+                                    )}
+                                </Box>
+                                <Collapse in={favoritesExpanded}>
+                                    {favoriteTables.map((table) => (
+                                        <TableListItem
+                                            key={`fav-${table.name}`}
+                                            table={table}
+                                            selected={selectedTable?.name === table.name}
+                                            onClick={() => onTableSelect(table)}
+                                            isFavorite={true}
+                                            onToggleFavorite={() =>
+                                                selectedConnectionId &&
+                                                toggleFavorite(
+                                                    selectedConnectionId,
+                                                    table.schema || selectedSchema,
+                                                    table.name
+                                                )
+                                            }
+                                        />
+                                    ))}
+                                </Collapse>
+                            </>
+                        )}
+
                         {/* Tables Section */}
-                        {tables.length > 0 && (
+                        {nonFavoriteTables.length > 0 && (
                             <>
                                 <Box
                                     onClick={onToggleTablesExpanded}
@@ -110,7 +183,7 @@ export function QueryPageSidebar({
                                         color="text.secondary"
                                         sx={{ flex: 1 }}
                                     >
-                                        Tables ({tables.length})
+                                        Tables ({nonFavoriteTables.length})
                                     </Typography>
                                     {tablesExpanded ? (
                                         <ExpandLessIcon fontSize="small" />
@@ -119,12 +192,21 @@ export function QueryPageSidebar({
                                     )}
                                 </Box>
                                 <Collapse in={tablesExpanded}>
-                                    {tables.map((table) => (
+                                    {nonFavoriteTables.map((table) => (
                                         <TableListItem
                                             key={table.name}
                                             table={table}
                                             selected={selectedTable?.name === table.name}
                                             onClick={() => onTableSelect(table)}
+                                            isFavorite={false}
+                                            onToggleFavorite={() =>
+                                                selectedConnectionId &&
+                                                toggleFavorite(
+                                                    selectedConnectionId,
+                                                    table.schema || selectedSchema,
+                                                    table.name
+                                                )
+                                            }
                                         />
                                     ))}
                                 </Collapse>

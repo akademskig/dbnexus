@@ -20,6 +20,7 @@ interface DatabaseGroupRow {
     sync_data: number;
     sync_target_schema: string | null;
     created_by: string | null;
+    is_public: number;
     created_at: string;
     updated_at: string;
     project_name?: string;
@@ -112,7 +113,7 @@ export class DatabaseGroupRepository {
         }
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            conditions.push('(dg.created_by = ? OR dg.created_by IS NULL)');
+            conditions.push('(dg.created_by = ? OR dg.created_by IS NULL OR dg.is_public = 1)');
             params.push(userContext.userId);
         }
 
@@ -149,7 +150,7 @@ export class DatabaseGroupRepository {
         const params: unknown[] = [];
 
         if (userContext && !userContext.isAdmin && userContext.userId) {
-            query += ` AND (dg.created_by = ? OR dg.created_by IS NULL)`;
+            query += ` AND (dg.created_by = ? OR dg.created_by IS NULL OR dg.is_public = 1)`;
             params.push(userContext.userId);
         }
 
@@ -164,9 +165,26 @@ export class DatabaseGroupRepository {
     }
 
     /**
-     * Check if user can access a database group
+     * Check if user can access (view) a database group
      */
     canAccess(groupId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .getDb()
+            .prepare('SELECT created_by, is_public FROM database_groups WHERE id = ?')
+            .get(groupId) as { created_by: string | null; is_public: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
+    }
+
+    /**
+     * Check if user can modify (update/delete) a database group
+     */
+    canModify(groupId: string, userContext: UserContext): boolean {
         if (userContext.isAdmin) return true;
 
         const row = this.db
@@ -175,6 +193,7 @@ export class DatabaseGroupRepository {
             .get(groupId) as { created_by: string | null } | undefined;
 
         if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
         return row.created_by === null || row.created_by === userContext.userId;
     }
 
@@ -208,6 +227,10 @@ export class DatabaseGroupRepository {
         if (input.syncTargetSchema !== undefined) {
             updates.push('sync_target_schema = ?');
             values.push(input.syncTargetSchema);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length === 0) {
@@ -258,6 +281,7 @@ export class DatabaseGroupRepository {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             createdBy: row.created_by || undefined,
+            isPublic: row.is_public === 1,
             projectName: row.project_name,
             sourceConnectionName: row.source_connection_name,
             connectionCount: row.connection_count,

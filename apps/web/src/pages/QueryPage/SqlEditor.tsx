@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -8,8 +8,9 @@ import {
     alpha,
     useTheme,
 } from '@mui/material';
-import { Editor } from '@monaco-editor/react';
+import { Editor, type Monaco, type OnMount } from '@monaco-editor/react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
+import { format as formatSql } from 'sql-formatter';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -18,10 +19,18 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { useThemeModeStore } from '../../stores/themeModeStore';
 import { useToastStore } from '../../stores/toastStore';
-import type { QueryResult } from '@dbnexus/shared';
+import {
+    registerSqlCompletionProvider,
+    type ColumnData,
+    type ForeignKeyData,
+} from './sqlAutocomplete';
+import { QueryTabBar } from './QueryTabBar';
+import type { QueryResult, TableInfo } from '@dbnexus/shared';
 
 interface SqlEditorProps {
     sql: string;
@@ -35,6 +44,10 @@ interface SqlEditorProps {
     explainLoading?: boolean;
     result?: QueryResult | null;
     error?: string | null;
+    tables?: TableInfo[];
+    columns?: ColumnData[];
+    foreignKeys?: ForeignKeyData[];
+    connectionId?: string;
 }
 
 export function SqlEditor({
@@ -49,15 +62,73 @@ export function SqlEditor({
     explainLoading,
     result,
     error,
+    tables = [],
+    columns = [],
+    foreignKeys = [],
+    connectionId,
 }: SqlEditorProps) {
     const mode = useThemeModeStore((state) => state.getMode());
     const toast = useToastStore();
     const [outputPanelOpen, setOutputPanelOpen] = useState(false);
     const theme = useTheme();
+    const monacoRef = useRef<Monaco | null>(null);
+    const completionProviderRef = useRef<{ dispose: () => void } | null>(null);
+
     const handleCopy = () => {
         navigator.clipboard.writeText(sql);
         toast.success('SQL copied to clipboard');
     };
+
+    const handleFormat = () => {
+        if (!sql.trim()) return;
+        try {
+            const formatted = formatSql(sql, {
+                language: 'postgresql',
+                tabWidth: 2,
+                keywordCase: 'upper',
+                linesBetweenQueries: 2,
+            });
+            onSqlChange(formatted);
+            toast.success('SQL formatted');
+        } catch {
+            toast.error('Failed to format SQL');
+        }
+    };
+
+    const handleEditorMount: OnMount = (_editor, monaco) => {
+        monacoRef.current = monaco;
+        if (completionProviderRef.current) {
+            completionProviderRef.current.dispose();
+        }
+        completionProviderRef.current = registerSqlCompletionProvider(
+            monaco,
+            tables,
+            columns,
+            foreignKeys
+        );
+    };
+
+    useEffect(() => {
+        if (monacoRef.current) {
+            if (completionProviderRef.current) {
+                completionProviderRef.current.dispose();
+            }
+            completionProviderRef.current = registerSqlCompletionProvider(
+                monacoRef.current,
+                tables,
+                columns,
+                foreignKeys
+            );
+        }
+    }, [tables, columns, foreignKeys]);
+
+    useEffect(() => {
+        return () => {
+            if (completionProviderRef.current) {
+                completionProviderRef.current.dispose();
+            }
+        };
+    }, []);
 
     // Auto-open output panel when there's a result or error
     const hasOutput = result !== null || error !== null;
@@ -72,6 +143,9 @@ export function SqlEditor({
                 overflow: 'hidden',
             }}
         >
+            {/* Query Tabs */}
+            <QueryTabBar connectionId={connectionId} />
+
             {/* Toolbar */}
             <Box
                 sx={{
@@ -132,6 +206,14 @@ export function SqlEditor({
                     </Button>
                 </StyledTooltip>
 
+                <StyledTooltip title="Format SQL (Shift+Alt+F)">
+                    <span>
+                        <IconButton size="small" onClick={handleFormat} disabled={!sql.trim()}>
+                            <AutoFixHighIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </StyledTooltip>
+
                 <Box sx={{ flex: 1 }} />
 
                 {/* Output Panel Toggle */}
@@ -182,6 +264,74 @@ export function SqlEditor({
                         <OpenInNewIcon fontSize="small" />
                     </IconButton>
                 </StyledTooltip>
+
+                <StyledTooltip
+                    title={
+                        <Box sx={{ p: 0.5 }}>
+                            <Typography
+                                variant="caption"
+                                fontWeight={600}
+                                sx={{ mb: 1, display: 'block' }}
+                            >
+                                Keyboard Shortcuts
+                            </Typography>
+                            <Box sx={{ display: 'grid', gap: 0.5, fontSize: 11 }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
+                                    <span>Run Query</span>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        ⌘/Ctrl+Enter
+                                    </Typography>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
+                                    <span>Save Query</span>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        ⌘/Ctrl+S
+                                    </Typography>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                    }}
+                                >
+                                    <span>Format SQL</span>
+                                    <Typography
+                                        component="span"
+                                        fontFamily="monospace"
+                                        fontSize={11}
+                                    >
+                                        Shift+Alt+F
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    }
+                >
+                    <IconButton size="small" sx={{ opacity: 0.6 }}>
+                        <KeyboardIcon fontSize="small" />
+                    </IconButton>
+                </StyledTooltip>
             </Box>
 
             {/* Editor with optional output panel */}
@@ -201,6 +351,7 @@ export function SqlEditor({
                                     value={sql}
                                     onChange={(value) => onSqlChange(value || '')}
                                     theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                                    onMount={handleEditorMount}
                                     options={{
                                         minimap: { enabled: false },
                                         fontSize: 14,
@@ -213,6 +364,8 @@ export function SqlEditor({
                                         wrappingIndent: 'indent',
                                         padding: { top: 12, bottom: 12 },
                                         lineNumbersMinChars: 3,
+                                        quickSuggestions: true,
+                                        suggestOnTriggerCharacters: true,
                                     }}
                                 />
                             </Box>
@@ -338,6 +491,7 @@ export function SqlEditor({
                             value={sql}
                             onChange={(value) => onSqlChange(value || '')}
                             theme={mode === 'dark' ? 'vs-dark' : 'light'}
+                            onMount={handleEditorMount}
                             options={{
                                 minimap: { enabled: false },
                                 fontSize: 14,
@@ -350,6 +504,8 @@ export function SqlEditor({
                                 wrappingIndent: 'indent',
                                 padding: { top: 12, bottom: 12 },
                                 lineNumbersMinChars: 3,
+                                quickSuggestions: true,
+                                suggestOnTriggerCharacters: true,
                             }}
                         />
                     </Box>

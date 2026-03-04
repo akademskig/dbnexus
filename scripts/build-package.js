@@ -159,13 +159,9 @@ fs.writeFileSync(path.join(distPackage, 'package.json'), JSON.stringify(packageJ
 
 // Copy README and LICENSE
 console.log('📝 Copying documentation...');
-const readmeSrc = path.join(rootDir, 'apps/cli/README.md');
+const readmeSrc = path.join(rootDir, 'README.md');
 const readmeDest = path.join(distPackage, 'README.md');
-if (fs.existsSync(readmeSrc)) {
-    fs.copyFileSync(readmeSrc, readmeDest);
-} else {
-    fs.writeFileSync(readmeDest, '# DB Nexus\n\nDatabase management tool with web UI.\n');
-}
+fs.copyFileSync(readmeSrc, readmeDest);
 
 const licenseSrc = path.join(rootDir, 'LICENSE');
 const licenseDest = path.join(distPackage, 'LICENSE');

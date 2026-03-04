@@ -7,7 +7,6 @@ import {
     Button,
     CircularProgress,
     Chip,
-    Paper,
     IconButton,
     Tabs,
     Tab,
@@ -15,6 +14,7 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    alpha,
 } from '@mui/material';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import {
@@ -25,8 +25,9 @@ import {
 } from '@mui/icons-material';
 import { connectionsApi, schemaApi, groupsApi, projectsApi } from '../../lib/api';
 import { ConnectionSelector } from './ConnectionSelector';
-import { SchemaDiffDisplay } from './SchemaDiffDisplay';
-import { DataDiffDisplay } from './DataDiffDisplay';
+import { SchemaDiffDisplay } from '../GroupSyncPage/SchemaDiffDisplay';
+import { DataDiffDisplay } from '../../components/DataDiffDisplay';
+import { GlassCard } from '../../components/GlassCard';
 import { getDefaultSchema } from './utils';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingState } from '../../components/LoadingState';
@@ -59,6 +60,7 @@ export function ComparePage() {
     const [targetSchema, setTargetSchema] = useState<string>(urlTargetSchema || '');
     const [hasCompared, setHasCompared] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [applyingTables, setApplyingTables] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<CompareTab>(urlTab || 'schema');
 
     // Fetch connections
@@ -247,17 +249,27 @@ export function ComparePage() {
         // Don't reset hasCompared - let cached results show if available
     };
 
-    const handleApplyMigration = async () => {
+    const handleApplyMigration = async (tables?: string[]) => {
         if (!sourceConnectionId || !targetConnectionId || !sourceSchema || !targetSchema) return;
 
-        setApplying(true);
+        const isTableMigration = tables && tables.length > 0;
+        if (isTableMigration) {
+            setApplyingTables((prev) => [...prev, ...tables]);
+        } else {
+            setApplying(true);
+        }
+
         try {
+            const description = isTableMigration
+                ? `Applied for table(s): ${tables.join(', ')}`
+                : 'Applied from Compare page';
             const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 targetConnectionId,
                 sourceSchema,
                 targetSchema,
-                'Applied from Compare page'
+                description,
+                tables
             );
             // Check if migration actually succeeded
             if (!result.success) {
@@ -269,12 +281,20 @@ export function ComparePage() {
             queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
             queryClient.invalidateQueries({ queryKey: ['migrationSql'] });
             refetchDiff();
-            toast.success('Migration applied successfully');
+            toast.success(
+                isTableMigration
+                    ? `Migration applied for ${tables.join(', ')}`
+                    : 'Migration applied successfully'
+            );
         } catch (error) {
             console.error('Failed to apply migration:', error);
             toast.error('Failed to apply migration');
         } finally {
-            setApplying(false);
+            if (isTableMigration) {
+                setApplyingTables((prev) => prev.filter((t) => !tables.includes(t)));
+            } else {
+                setApplying(false);
+            }
         }
     };
 
@@ -299,34 +319,49 @@ export function ComparePage() {
     }
 
     return (
-        <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
+        <Box sx={{ p: 3, mx: 'auto', maxWidth: 1200, height: '100%', overflow: 'auto' }}>
             {/* Header */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                    Compare Databases
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Compare schemas and data between connections within the same instance group.
-                </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
+                <Box
+                    sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 1.5,
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <CompareIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                </Box>
+                <Box>
+                    <Typography variant="h5" fontWeight={600}>
+                        Compare Databases
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Compare schemas and data between connections within the same instance group.
+                    </Typography>
+                </Box>
             </Box>
 
             {/* Group Selection */}
-            <Paper sx={{ p: 3, mb: 3 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                    Select Instance Group
+            <GlassCard sx={{ p: 2, mb: 2 }}>
+                <Typography variant="subtitle2" fontSize={12} fontWeight={600} sx={{ mb: 1 }}>
+                    Instance Group
                 </Typography>
                 {groups.length === 0 ? (
-                    <StatusAlert severity="info" sx={{ mt: 2 }}>
+                    <StatusAlert severity="info">
                         No instance groups found. Create groups in the Projects page to compare
                         connections.
                     </StatusAlert>
                 ) : (
-                    <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-                        <InputLabel>Instance Group</InputLabel>
+                    <FormControl fullWidth size="small">
+                        <InputLabel>Select Group</InputLabel>
                         <Select
                             value={selectedGroupId}
                             onChange={(e) => setSelectedGroupId(e.target.value)}
-                            label="Instance Group"
+                            label="Select Group"
                         >
                             {groups.map((group) => {
                                 const project = projects.find((p) => p.id === group.projectId);
@@ -346,8 +381,8 @@ export function ComparePage() {
                                                     label={project.name}
                                                     size="small"
                                                     sx={{
-                                                        height: 20,
-                                                        fontSize: 11,
+                                                        height: 18,
+                                                        fontSize: 10,
                                                         bgcolor: `${project.color}20`,
                                                         color: project.color,
                                                     }}
@@ -356,23 +391,24 @@ export function ComparePage() {
                                             <Chip
                                                 label={
                                                     group.databaseEngine === 'postgres'
-                                                        ? 'PostgreSQL'
+                                                        ? 'PG'
                                                         : group.databaseEngine === 'mysql'
                                                           ? 'MySQL'
                                                           : 'SQLite'
                                                 }
                                                 size="small"
                                                 sx={{
-                                                    height: 20,
-                                                    fontSize: 11,
+                                                    height: 18,
+                                                    fontSize: 10,
+                                                    fontWeight: 600,
                                                     bgcolor: 'primary.main',
                                                     color: 'primary.contrastText',
                                                 }}
                                             />
                                             <Typography
                                                 variant="caption"
-                                                color="text.secondary"
-                                                sx={{ ml: 'auto' }}
+                                                color="text.disabled"
+                                                sx={{ ml: 'auto', fontSize: 11 }}
                                             >
                                                 {
                                                     connections.filter(
@@ -388,11 +424,11 @@ export function ComparePage() {
                         </Select>
                     </FormControl>
                 )}
-            </Paper>
+            </GlassCard>
 
             {/* Connection Selection */}
             {selectedGroupId && groupedConnections.length >= 2 && (
-                <Paper sx={{ p: 3, mb: 3 }}>
+                <GlassCard sx={{ p: 2, mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                         {/* Source */}
                         <ConnectionSelector
@@ -406,7 +442,6 @@ export function ComparePage() {
                             onConnectionChange={(id) => {
                                 setSourceConnectionId(id);
                                 setSourceSchema('');
-                                // Check if we have cached results for new selection
                             }}
                             onSchemaChange={(s) => {
                                 setSourceSchema(s);
@@ -418,9 +453,16 @@ export function ComparePage() {
                             <IconButton
                                 onClick={handleSwap}
                                 disabled={!sourceConnectionId || !targetConnectionId}
-                                sx={{ mt: 2 }}
+                                size="small"
+                                sx={{
+                                    mt: 2,
+                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                    '&:hover': {
+                                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                                    },
+                                }}
                             >
-                                <SwapIcon />
+                                <SwapIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </StyledTooltip>
 
@@ -445,12 +487,13 @@ export function ComparePage() {
                         {/* Compare Button */}
                         <Button
                             variant="contained"
+                            size="small"
                             data-tour="compare-button"
                             startIcon={
                                 isComparing ? (
-                                    <CircularProgress size={16} color="inherit" />
+                                    <CircularProgress size={14} color="inherit" />
                                 ) : (
-                                    <CompareIcon />
+                                    <CompareIcon sx={{ fontSize: 16 }} />
                                 )
                             }
                             onClick={handleCompare}
@@ -462,7 +505,7 @@ export function ComparePage() {
                             {!isComparing && !hasCachedResults && !schemaDiff && 'Compare'}
                         </Button>
                     </Box>
-                </Paper>
+                </GlassCard>
             )}
 
             {/* Not enough connections message */}
@@ -476,22 +519,42 @@ export function ComparePage() {
 
             {/* Results */}
             {hasCompared && (
-                <Paper sx={{ p: 0 }}>
+                <GlassCard sx={{ p: 0 }}>
                     {/* Tabs */}
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Tabs value={activeTab} onChange={handleTabChange}>
+                    <Box
+                        sx={{
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                            px: 2,
+                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.03),
+                        }}
+                    >
+                        <Tabs
+                            value={activeTab}
+                            onChange={handleTabChange}
+                            sx={{
+                                minHeight: 44,
+                                '& .MuiTab-root': { minHeight: 44, py: 0 },
+                            }}
+                        >
                             <Tab
                                 value="schema"
                                 label={
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <SchemaIcon fontSize="small" />
-                                        Schema
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        <SchemaIcon sx={{ fontSize: 16 }} />
+                                        <Typography fontSize={12}>Schema</Typography>
                                         {schemaDiff && schemaDiff.items.length > 0 && (
                                             <Chip
                                                 label={schemaDiff.items.length}
                                                 size="small"
-                                                color="warning"
-                                                sx={{ height: 20, fontSize: 11 }}
+                                                sx={{
+                                                    height: 18,
+                                                    fontSize: 10,
+                                                    fontWeight: 600,
+                                                    bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                                    color: '#f59e0b',
+                                                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                }}
                                             />
                                         )}
                                     </Box>
@@ -500,9 +563,9 @@ export function ComparePage() {
                             <Tab
                                 value="data"
                                 label={
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <DataIcon fontSize="small" />
-                                        Data
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        <DataIcon sx={{ fontSize: 16 }} />
+                                        <Typography fontSize={12}>Data</Typography>
                                     </Box>
                                 }
                             />
@@ -510,24 +573,39 @@ export function ComparePage() {
                     </Box>
 
                     {/* Tab Content */}
-                    <Box sx={{ p: 3 }}>
+                    <Box sx={{ p: 2 }}>
                         {/* Header with connection info */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                            <Typography variant="h6">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <Typography variant="subtitle2" fontSize={13} fontWeight={600}>
                                 {activeTab === 'schema' ? 'Schema Differences' : 'Data Differences'}
                             </Typography>
                             <Chip
                                 label={`${sourceConnection?.name || 'Source'}.${sourceSchema}`}
                                 size="small"
-                                color="primary"
-                                variant="outlined"
+                                sx={{
+                                    height: 22,
+                                    fontSize: 11,
+                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                    color: 'primary.main',
+                                    border: '1px solid',
+                                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                                }}
                             />
-                            <Typography color="text.secondary">→</Typography>
+                            <Typography color="text.disabled" fontSize={12}>
+                                →
+                            </Typography>
                             <Chip
                                 label={`${targetConnection?.name || 'Target'}.${targetSchema}`}
                                 size="small"
-                                color="secondary"
-                                variant="outlined"
+                                sx={{
+                                    height: 22,
+                                    fontSize: 11,
+                                    bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1),
+                                    color: 'secondary.main',
+                                    border: '1px solid',
+                                    borderColor: (theme) =>
+                                        alpha(theme.palette.secondary.main, 0.3),
+                                }}
                             />
                         </Box>
 
@@ -541,6 +619,7 @@ export function ComparePage() {
                                 migrationSql={migrationSqlData?.sql || []}
                                 onApplyMigration={handleApplyMigration}
                                 applying={applying}
+                                applyingTables={applyingTables}
                             />
                         )}
                         {activeTab === 'schema' && !isComparing && !schemaDiff && (
@@ -561,19 +640,19 @@ export function ComparePage() {
                             />
                         )}
                     </Box>
-                </Paper>
+                </GlassCard>
             )}
 
             {/* Empty state */}
             {!hasCompared && (
-                <Paper sx={{ p: 3 }}>
+                <GlassCard sx={{ p: 3 }}>
                     <EmptyState
                         icon={<CompareIcon />}
                         title="Select connections to compare"
                         description="Choose a source and target database connection above, then click Compare to see schema and data differences."
                         size="large"
                     />
-                </Paper>
+                </GlassCard>
             )}
         </Box>
     );

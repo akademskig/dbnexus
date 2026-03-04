@@ -74,6 +74,16 @@ export class AuthController {
         return { message: 'Password changed successfully. Please log in again.' };
     }
 
+    @Post('verify-password')
+    @HttpCode(HttpStatus.OK)
+    async verifyPassword(
+        @CurrentUser('id') userId: string,
+        @Body() dto: { password: string }
+    ): Promise<{ valid: boolean }> {
+        const valid = await this.authService.verifyPassword(userId, dto.password);
+        return { valid };
+    }
+
     @Post('update-profile')
     @HttpCode(HttpStatus.OK)
     async updateProfile(

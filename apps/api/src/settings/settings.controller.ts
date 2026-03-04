@@ -7,55 +7,55 @@ import { SetSettingDto, CreateTagDto, UpdateTagDto } from './dto/index.js';
 export class SettingsController {
     constructor(private readonly metadataService: MetadataService) {}
 
-    // ============ Generic Settings ============
+    // ============ System Settings (system-wide defaults) ============
 
     @Get()
     getAllSettings(): Record<string, unknown> {
-        return this.metadataService.settingsRepository.getAll();
+        return this.metadataService.userPreferencesRepository.getAllForUser('system');
     }
 
     @Get(':key')
     getSetting(@Param('key') key: string): unknown {
-        return this.metadataService.settingsRepository.get(key);
+        return this.metadataService.userPreferencesRepository.getSystemDefault(key);
     }
 
     @Put(':key')
     setSetting(@Param('key') key: string, @Body() body: SetSettingDto): { success: boolean } {
-        this.metadataService.settingsRepository.set(key, body.value);
+        this.metadataService.userPreferencesRepository.setSystemDefault(key, body.value);
         return { success: true };
     }
 
     @Delete(':key')
     deleteSetting(@Param('key') key: string): { success: boolean } {
-        const success = this.metadataService.settingsRepository.delete(key);
+        const success = this.metadataService.userPreferencesRepository.delete('system', key);
         return { success };
     }
 
-    // ============ Tags ============
+    // ============ Tags (system-wide) ============
 
     @Get('tags/all')
     getTags(): Tag[] {
-        return this.metadataService.settingsRepository.getTags();
+        return this.metadataService.userPreferencesRepository.getTags();
     }
 
     @Post('tags')
     createTag(@Body() input: CreateTagDto): Tag {
-        return this.metadataService.settingsRepository.addTag(input);
+        return this.metadataService.userPreferencesRepository.addTag(input);
     }
 
     @Put('tags/:id')
     updateTag(@Param('id') id: string, @Body() input: UpdateTagDto): Tag | null {
-        return this.metadataService.settingsRepository.updateTag(id, input);
+        return this.metadataService.userPreferencesRepository.updateTag(id, input);
     }
 
     @Delete('tags/:id')
     deleteTag(@Param('id') id: string): { success: boolean } {
-        const success = this.metadataService.settingsRepository.deleteTag(id);
+        const success = this.metadataService.userPreferencesRepository.deleteTag(id);
         return { success };
     }
 
     @Post('tags/reset')
     resetTags(): Tag[] {
-        return this.metadataService.settingsRepository.resetTags();
+        return this.metadataService.userPreferencesRepository.resetTags();
     }
 }

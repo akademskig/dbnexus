@@ -38,6 +38,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -87,6 +88,7 @@ interface DataTabProps {
     readonly connectionDatabase?: string;
     readonly tableName?: string;
     readonly onRefresh?: () => void;
+    readonly onExecuteNoLimit?: () => void;
 }
 
 export function DataTab({
@@ -118,6 +120,7 @@ export function DataTab({
     connectionDatabase,
     tableName,
     onRefresh,
+    onExecuteNoLimit,
 }: DataTabProps) {
     const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -697,6 +700,22 @@ export function DataTab({
                                         {result.executionTimeMs}ms
                                     </Typography>
                                 </Box>
+                                {result.limitApplied && (
+                                    <Chip
+                                        icon={<WarningAmberIcon />}
+                                        label={`Limited to ${result.limitApplied} rows`}
+                                        size="small"
+                                        color="warning"
+                                        variant="outlined"
+                                        onClick={onExecuteNoLimit}
+                                        sx={{ cursor: onExecuteNoLimit ? 'pointer' : 'default' }}
+                                        title={
+                                            onExecuteNoLimit
+                                                ? 'Click to fetch all rows (may be slow)'
+                                                : undefined
+                                        }
+                                    />
+                                )}
                             </>
                         )}
 

@@ -33,7 +33,7 @@ export class MysqlConnector implements DatabaseConnector {
                 port: this.config.port,
                 database: this.config.database,
                 user: this.config.username,
-                password: this.config.password,
+                password: this.config.password ?? '',
                 ssl: this.config.ssl
                     ? { rejectUnauthorized: this.config.sslVerify ?? false }
                     : undefined,
@@ -67,7 +67,7 @@ export class MysqlConnector implements DatabaseConnector {
             port: this.config.port,
             database: this.config.database,
             user: this.config.username,
-            password: this.config.password,
+            password: this.config.password ?? '',
             ssl: this.config.ssl
                 ? { rejectUnauthorized: this.config.sslVerify ?? false }
                 : undefined,

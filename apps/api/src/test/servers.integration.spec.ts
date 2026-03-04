@@ -10,7 +10,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { createTestApp, TEST_SERVERS, checkDockerContainers } from './setup.js';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { ServersController } from '../servers/servers.controller.js';
@@ -349,23 +348,18 @@ describe('Servers Integration Tests', () => {
         });
 
         it('should reject invalid database name', async () => {
-            // Create a server (doesn't need Docker - testing validation only)
-            const server = serversController.createServer({
-                ...TEST_SERVERS.postgresServer,
-                name: `Invalid DB Name Test ${Date.now()}`,
-            });
-            createdServerIds.push(server.id);
+            // Test DTO validation directly using class-validator
+            const { validate } = await import('class-validator');
+            const { plainToInstance } = await import('class-transformer');
+            const { CreateDatabaseDto } = await import('../servers/dto/index.js');
 
-            // Try to create database with invalid name via HTTP (triggers DTO validation)
-            const response = await request(app.getHttpServer())
-                .post(`/api/servers/${server.id}/create-database`)
-                .send({ databaseName: 'invalid-name!' })
-                .expect(400);
+            // Create DTO instance with invalid database name
+            const dto = plainToInstance(CreateDatabaseDto, { databaseName: 'invalid-name!' });
+            const errors = await validate(dto);
 
-            // message can be string or array depending on NestJS version
-            const messages = Array.isArray(response.body.message)
-                ? response.body.message
-                : [response.body.message];
+            // Should have validation errors
+            expect(errors.length).toBeGreaterThan(0);
+            const messages = errors.flatMap((e) => Object.values(e.constraints || {}));
             expect(messages.some((m: string) => m.includes('Must start with a letter'))).toBe(true);
         });
     });

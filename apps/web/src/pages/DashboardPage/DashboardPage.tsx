@@ -29,7 +29,7 @@ import { useConnectionHealthStore } from '../../stores/connectionHealthStore';
 import { ScanConnectionsDialog } from '../../components/ScanConnectionsDialog';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { ServerFormDialog } from '../ServersPage/ServerFormDialog';
-import { ConnectionFormDialog, GroupFormDialog } from '../ConnectionsPage/Dialogs';
+import { ConnectionFormDialog, GroupFormDialog } from '../../components/dialogs/ConnectionDialogs';
 
 export function DashboardPage() {
     const queryClient = useQueryClient();

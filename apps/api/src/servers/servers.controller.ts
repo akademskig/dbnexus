@@ -1,10 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Param,
+    Body,
+    Query,
+    ForbiddenException,
+} from '@nestjs/common';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { MetadataService } from '../metadata/metadata.service.js';
 import { PostgresConnector, MysqlConnector, type ConnectorConfig } from '@dbnexus/connectors';
 import type { ServerConfig, DatabaseEngine, ConnectionConfig } from '@dbnexus/shared';
 import { CreateServerDto, UpdateServerDto, CreateDatabaseDto } from './dto/index.js';
+import { CurrentUser } from '../auth/decorators/index.js';
+import type { UserContext, User } from '@dbnexus/metadata';
 
 const execAsync = promisify(exec);
 
@@ -13,11 +25,18 @@ export class ServersController {
     constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
-    getServers(@Query('engine') engine?: DatabaseEngine): ServerConfig[] {
+    getServers(
+        @Query('engine') engine?: DatabaseEngine,
+        @CurrentUser() user?: User
+    ): ServerConfig[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
         if (engine) {
-            return this.metadataService.serverRepository.findByEngine(engine);
+            return this.metadataService.serverRepository.findByEngine(engine, userContext);
         }
-        return this.metadataService.serverRepository.findAll();
+        return this.metadataService.serverRepository.findAll(userContext);
     }
 
     @Get(':id')
@@ -26,8 +45,12 @@ export class ServersController {
     }
 
     @Get(':id/databases')
-    getServerDatabases(@Param('id') id: string): ConnectionConfig[] {
-        return this.metadataService.connectionRepository.findByServerId(id);
+    getServerDatabases(@Param('id') id: string, @CurrentUser() user?: User): ConnectionConfig[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.connectionRepository.findByServerId(id, userContext);
     }
 
     @Get(':id/password')
@@ -37,8 +60,8 @@ export class ServersController {
     }
 
     @Post()
-    createServer(@Body() input: CreateServerDto): ServerConfig {
-        const server = this.metadataService.serverRepository.create(input);
+    createServer(@Body() input: CreateServerDto, @CurrentUser() user?: User): ServerConfig {
+        const server = this.metadataService.serverRepository.create(input, user?.id);
 
         // Audit log
         this.metadataService.auditLogRepository.create({
@@ -57,7 +80,21 @@ export class ServersController {
     }
 
     @Put(':id')
-    updateServer(@Param('id') id: string, @Body() input: UpdateServerDto): ServerConfig | null {
+    updateServer(
+        @Param('id') id: string,
+        @Body() input: UpdateServerDto,
+        @CurrentUser() user?: User
+    ): ServerConfig | null {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+
+        // Check if user can modify this server
+        if (!this.metadataService.serverRepository.canModify(id, userContext)) {
+            throw new ForbiddenException('You do not have permission to modify this server');
+        }
+
         const server = this.metadataService.serverRepository.update(id, input);
 
         if (server) {
@@ -77,8 +114,20 @@ export class ServersController {
     }
 
     @Delete(':id')
-    deleteServer(@Param('id') id: string): { success: boolean; message?: string } {
+    deleteServer(
+        @Param('id') id: string,
+        @CurrentUser() user?: User
+    ): { success: boolean; message?: string } {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
         const server = this.metadataService.serverRepository.findById(id);
+
+        // Check if user can modify this server
+        if (!this.metadataService.serverRepository.canModify(id, userContext)) {
+            throw new ForbiddenException('You do not have permission to delete this server');
+        }
 
         // Check if server has linked databases
         const linkedDatabases = this.metadataService.connectionRepository.findByServerId(id);

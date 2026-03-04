@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Matches, IsArray } from 'class-validator';
 import { IDENTIFIER_PATTERN, IDENTIFIER_MESSAGE } from '../../servers/dto/constants.js';
 
 export class CreateSchemaDto {
@@ -12,4 +12,9 @@ export class ApplyMigrationDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    tables?: string[];
 }
