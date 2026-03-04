@@ -604,6 +604,10 @@ export function Layout() {
                                                                                                             0.12
                                                                                                         ),
                                                                                             },
+                                                                                        '&:hover .db-settings':
+                                                                                            {
+                                                                                                opacity: 1,
+                                                                                            },
                                                                                     }}
                                                                                 >
                                                                                     <ListItemIcon
@@ -632,6 +636,33 @@ export function Layout() {
                                                                                                 : 'text.secondary',
                                                                                         }}
                                                                                     />
+                                                                                    <IconButton
+                                                                                        className="db-settings"
+                                                                                        size="small"
+                                                                                        onClick={(
+                                                                                            e
+                                                                                        ) => {
+                                                                                            e.stopPropagation();
+                                                                                            navigate(
+                                                                                                `/connections/${conn.id}`
+                                                                                            );
+                                                                                        }}
+                                                                                        sx={{
+                                                                                            opacity: 0,
+                                                                                            color: 'text.disabled',
+                                                                                            p: 0.25,
+                                                                                            '&:hover':
+                                                                                                {
+                                                                                                    color: 'primary.main',
+                                                                                                },
+                                                                                        }}
+                                                                                    >
+                                                                                        <SettingsIcon
+                                                                                            sx={{
+                                                                                                fontSize: 12,
+                                                                                            }}
+                                                                                        />
+                                                                                    </IconButton>
                                                                                 </ListItemButton>
                                                                             </StyledTooltip>
                                                                         );
@@ -718,6 +749,9 @@ export function Layout() {
                                                                     py: 0.25,
                                                                     minHeight: 28,
                                                                     borderRadius: 1,
+                                                                    '&:hover .db-settings': {
+                                                                        opacity: 1,
+                                                                    },
                                                                 }}
                                                             >
                                                                 <ListItemIcon sx={{ minWidth: 20 }}>
@@ -737,6 +771,28 @@ export function Layout() {
                                                                         noWrap: true,
                                                                     }}
                                                                 />
+                                                                <IconButton
+                                                                    className="db-settings"
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(
+                                                                            `/connections/${conn.id}`
+                                                                        );
+                                                                    }}
+                                                                    sx={{
+                                                                        opacity: 0,
+                                                                        color: 'text.disabled',
+                                                                        p: 0.25,
+                                                                        '&:hover': {
+                                                                            color: 'primary.main',
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <SettingsIcon
+                                                                        sx={{ fontSize: 12 }}
+                                                                    />
+                                                                </IconButton>
                                                             </ListItemButton>
                                                         </StyledTooltip>
                                                     );

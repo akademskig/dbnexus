@@ -798,13 +798,13 @@ export function ServerManagementPage() {
                 <Stack spacing={3}>
                     {/* Server Info Card */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box
                                 sx={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    mb: 3,
+                                    mb: 2,
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -893,13 +893,13 @@ export function ServerManagementPage() {
 
                     {/* Server Configuration Card */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box
                                 sx={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    mb: 3,
+                                    mb: 2,
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -920,7 +920,7 @@ export function ServerManagementPage() {
                             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
                                 Connection
                             </Typography>
-                            <Grid container spacing={2} sx={{ mb: 3, alignItems: 'stretch' }}>
+                            <Grid container spacing={2} sx={{ mb: 2, alignItems: 'stretch' }}>
                                 <Grid size={{ xs: 6, sm: 3 }}>
                                     <InfoBox label="Host" value={server.host} />
                                 </Grid>
@@ -1064,8 +1064,8 @@ export function ServerManagementPage() {
                             {/* Test Connection */}
                             <Box
                                 sx={{
-                                    mt: 3,
-                                    pt: 3,
+                                    mt: 2,
+                                    pt: 2,
                                     borderTop: 1,
                                     borderColor: 'divider',
                                     display: 'flex',
