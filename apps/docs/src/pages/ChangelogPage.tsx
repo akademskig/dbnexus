@@ -98,9 +98,43 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.4.1',
+        version: '0.5.0',
         date: 'March 2026',
         latest: true,
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Password verification before viewing server credentials - improved security for sensitive data',
+            },
+            {
+                type: 'added' as const,
+                text: 'Per-table schema migration - apply migrations individually with copy/apply actions per table',
+            },
+            {
+                type: 'added' as const,
+                text: 'Edit and Delete options on database rows in Projects & Groups section',
+            },
+            {
+                type: 'added' as const,
+                text: 'Management icons in collapsed navigation popups for quick access to settings',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Visual refresh for Group Sync and Compare pages with improved layout',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Compact row height in Logs page tables for better data density',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Password now optional when adding connections from network scan',
+            },
+        ],
+    },
+    {
+        version: '0.4.1',
+        date: 'March 2026',
         changes: [
             {
                 type: 'changed' as const,
