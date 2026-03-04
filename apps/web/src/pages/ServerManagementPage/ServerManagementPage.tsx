@@ -1145,7 +1145,7 @@ export function ServerManagementPage() {
 
                     {/* Danger Zone */}
                     <GlassCard>
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: 0 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                                 <DeleteIcon sx={{ color: 'error.main' }} />
                                 <Typography variant="h6" color="error.main">
