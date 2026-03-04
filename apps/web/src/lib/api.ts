@@ -117,6 +117,9 @@ export const connectionsApi = {
         }),
 
     getStatus: (id: string) => fetchApi<{ connected: boolean }>(`/connections/${id}/status`),
+
+    getPassword: (id: string) =>
+        fetchApi<{ password: string | null }>(`/connections/${id}/password`),
 };
 
 // ============ Servers ============

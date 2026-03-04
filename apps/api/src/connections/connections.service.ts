@@ -265,6 +265,14 @@ export class ConnectionsService {
     }
 
     /**
+     * Get the decrypted password for a connection
+     */
+    getPassword(id: string): string | null {
+        this.findById(id); // Verify connection exists
+        return this.metadataService.connectionRepository.getPassword(id);
+    }
+
+    /**
      * Create a connector instance
      */
     private createConnector(connection: ConnectionConfig, password: string): DatabaseConnector {
