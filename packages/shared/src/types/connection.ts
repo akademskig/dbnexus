@@ -156,7 +156,7 @@ export interface ConnectionCreateInput {
     port: number;
     database: string;
     username: string;
-    password: string;
+    password?: string;
     ssl?: boolean;
     defaultSchema?: string;
     tags?: ConnectionTag[];

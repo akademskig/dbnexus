@@ -35,7 +35,7 @@ export class PostgresConnector implements DatabaseConnector {
                 port: this.config.port,
                 database: this.config.database,
                 user: this.config.username,
-                password: this.config.password,
+                password: this.config.password ?? '',
                 ssl: this.config.ssl
                     ? { rejectUnauthorized: this.config.sslVerify ?? false }
                     : false,
@@ -72,7 +72,7 @@ export class PostgresConnector implements DatabaseConnector {
             port: this.config.port,
             database: this.config.database,
             user: this.config.username,
-            password: this.config.password,
+            password: this.config.password ?? '',
             ssl: this.config.ssl ? { rejectUnauthorized: this.config.sslVerify ?? false } : false,
             max: 10,
             idleTimeoutMillis: 30000,

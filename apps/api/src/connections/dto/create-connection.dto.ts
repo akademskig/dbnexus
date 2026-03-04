@@ -43,9 +43,9 @@ export class CreateConnectionDto {
     @IsNotEmpty({ message: 'Username is required' })
     username!: string;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty({ message: 'Password is required' })
-    password!: string;
+    password?: string;
 
     @IsOptional()
     @IsBoolean()

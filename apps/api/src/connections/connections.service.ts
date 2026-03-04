@@ -194,7 +194,7 @@ export class ConnectionsService {
             port: settings.port,
             database: settings.database,
             username: settings.username,
-            password: settings.password,
+            password: settings.password ?? '',
             ssl: settings.ssl,
         };
 
