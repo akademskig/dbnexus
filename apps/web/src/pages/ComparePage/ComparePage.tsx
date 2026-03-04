@@ -60,6 +60,7 @@ export function ComparePage() {
     const [targetSchema, setTargetSchema] = useState<string>(urlTargetSchema || '');
     const [hasCompared, setHasCompared] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [applyingTables, setApplyingTables] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<CompareTab>(urlTab || 'schema');
 
     // Fetch connections
@@ -248,17 +249,27 @@ export function ComparePage() {
         // Don't reset hasCompared - let cached results show if available
     };
 
-    const handleApplyMigration = async () => {
+    const handleApplyMigration = async (tables?: string[]) => {
         if (!sourceConnectionId || !targetConnectionId || !sourceSchema || !targetSchema) return;
 
-        setApplying(true);
+        const isTableMigration = tables && tables.length > 0;
+        if (isTableMigration) {
+            setApplyingTables((prev) => [...prev, ...tables]);
+        } else {
+            setApplying(true);
+        }
+
         try {
+            const description = isTableMigration
+                ? `Applied for table(s): ${tables.join(', ')}`
+                : 'Applied from Compare page';
             const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 targetConnectionId,
                 sourceSchema,
                 targetSchema,
-                'Applied from Compare page'
+                description,
+                tables
             );
             // Check if migration actually succeeded
             if (!result.success) {
@@ -270,12 +281,20 @@ export function ComparePage() {
             queryClient.invalidateQueries({ queryKey: ['schemaDiff'] });
             queryClient.invalidateQueries({ queryKey: ['migrationSql'] });
             refetchDiff();
-            toast.success('Migration applied successfully');
+            toast.success(
+                isTableMigration
+                    ? `Migration applied for ${tables.join(', ')}`
+                    : 'Migration applied successfully'
+            );
         } catch (error) {
             console.error('Failed to apply migration:', error);
             toast.error('Failed to apply migration');
         } finally {
-            setApplying(false);
+            if (isTableMigration) {
+                setApplyingTables((prev) => prev.filter((t) => !tables.includes(t)));
+            } else {
+                setApplying(false);
+            }
         }
     };
 
@@ -600,6 +619,7 @@ export function ComparePage() {
                                 migrationSql={migrationSqlData?.sql || []}
                                 onApplyMigration={handleApplyMigration}
                                 applying={applying}
+                                applyingTables={applyingTables}
                             />
                         )}
                         {activeTab === 'schema' && !isComparing && !schemaDiff && (

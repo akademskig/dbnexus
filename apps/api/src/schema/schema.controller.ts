@@ -119,14 +119,14 @@ export class SchemaController {
         const srcSchema = sourceSchema || 'public';
         const tgtSchema = targetSchema || 'public';
 
-        // Get the diff and migration SQL
+        // Get the diff and migration SQL (optionally filtered by tables)
         const diff = await this.schemaDiffService.compareSchemas(
             sourceConnectionId,
             targetConnectionId,
             srcSchema,
             tgtSchema
         );
-        const sqlStatements = this.schemaDiffService.getMigrationSql(diff);
+        const sqlStatements = this.schemaDiffService.getMigrationSql(diff, body?.tables);
 
         if (sqlStatements.length === 0) {
             throw new Error('No migration statements to apply - schemas are already in sync');

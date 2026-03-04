@@ -373,7 +373,8 @@ export const schemaApi = {
         targetConnectionId: string,
         sourceSchema?: string,
         targetSchema?: string,
-        description?: string
+        description?: string,
+        tables?: string[]
     ) => {
         const params = new URLSearchParams();
         if (sourceSchema) params.set('sourceSchema', sourceSchema);
@@ -382,7 +383,7 @@ export const schemaApi = {
             `/schema/diff/${sourceConnectionId}/${targetConnectionId}/apply?${params}`,
             {
                 method: 'POST',
-                body: JSON.stringify({ description }),
+                body: JSON.stringify({ description, tables }),
             }
         );
     },

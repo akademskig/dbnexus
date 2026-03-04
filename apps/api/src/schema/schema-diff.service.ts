@@ -423,7 +423,7 @@ export class SchemaDiffService {
     /**
      * Get all migration SQL from a diff
      */
-    getMigrationSql(diff: SchemaDiff): string[] {
+    getMigrationSql(diff: SchemaDiff, tables?: string[]): string[] {
         const sql: string[] = [];
 
         // Order: drop FKs first, then drop indexes, then modify tables, then add tables, then add indexes, then add FKs
@@ -443,6 +443,9 @@ export class SchemaDiffService {
 
         for (const type of orderedTypes) {
             for (const item of diff.items.filter((i) => i.type === type)) {
+                if (tables && tables.length > 0 && item.table && !tables.includes(item.table)) {
+                    continue;
+                }
                 if (item.migrationSql) {
                     sql.push(...item.migrationSql);
                 }

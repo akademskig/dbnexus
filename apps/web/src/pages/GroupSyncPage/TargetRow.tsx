@@ -46,6 +46,7 @@ export function TargetRow({
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState(0); // 0 = Schema, 1 = Data
     const [applying, setApplying] = useState(false);
+    const [applyingTables, setApplyingTables] = useState<string[]>([]);
     const [currentTarget, setCurrentTarget] = useState<InstanceGroupTargetStatus>(target);
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -81,15 +82,25 @@ export function TargetRow({
         },
     });
 
-    const handleApplyMigration = async () => {
-        setApplying(true);
+    const handleApplyMigration = async (tables?: string[]) => {
+        const isTableMigration = tables && tables.length > 0;
+        if (isTableMigration) {
+            setApplyingTables((prev) => [...prev, ...tables]);
+        } else {
+            setApplying(true);
+        }
+
         try {
+            const description = isTableMigration
+                ? `Applied for table(s): ${tables.join(', ')}`
+                : 'Applied from Instance Group Sync';
             const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 target.connectionId,
                 sourceSchema,
                 targetSchema,
-                'Applied from Instance Group Sync'
+                description,
+                tables
             );
             // Check if migration actually succeeded
             if (!result.success) {
@@ -99,14 +110,24 @@ export function TargetRow({
             }
             // Recheck after applying migration
             recheckMutation.mutate();
-            toast.success('Migration applied successfully');
-            // Collapse after successful migration
-            setExpanded(false);
+            toast.success(
+                isTableMigration
+                    ? `Migration applied for ${tables.join(', ')}`
+                    : 'Migration applied successfully'
+            );
+            // Only collapse after full migration, not table-specific
+            if (!isTableMigration) {
+                setExpanded(false);
+            }
         } catch (error) {
             console.error('Failed to apply migration:', error);
             toast.error('Failed to apply migration');
         } finally {
-            setApplying(false);
+            if (isTableMigration) {
+                setApplyingTables((prev) => prev.filter((t) => !tables.includes(t)));
+            } else {
+                setApplying(false);
+            }
         }
     };
 
@@ -251,6 +272,7 @@ export function TargetRow({
                                             migrationSql={migrationSql}
                                             onApplyMigration={handleApplyMigration}
                                             applying={applying}
+                                            applyingTables={applyingTables}
                                         />
                                     ) : currentTarget.schemaStatus === 'in_sync' ? (
                                         <StatusAlert severity="success">

@@ -27,8 +27,9 @@ import { StatusAlert } from '@/components/StatusAlert';
 interface SchemaDiffDisplayProps {
     readonly diff: SchemaDiff;
     readonly migrationSql: string[];
-    readonly onApplyMigration: () => void;
+    readonly onApplyMigration: (tables?: string[]) => void;
     readonly applying: boolean;
+    readonly applyingTables?: string[];
 }
 
 export function SchemaDiffDisplay({
@@ -36,14 +37,33 @@ export function SchemaDiffDisplay({
     migrationSql,
     onApplyMigration,
     applying,
+    applyingTables = [],
 }: SchemaDiffDisplayProps) {
     const [copied, setCopied] = useState(false);
+    const [copiedTable, setCopiedTable] = useState<string | null>(null);
+    const [copiedStatement, setCopiedStatement] = useState<string | null>(null);
     const sqlText = migrationSql.join('\n\n');
 
     const handleCopy = () => {
         navigator.clipboard.writeText(sqlText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleCopyTable = (tableName: string, sql: string) => {
+        navigator.clipboard.writeText(sql);
+        setCopiedTable(tableName);
+        setTimeout(() => setCopiedTable(null), 2000);
+    };
+
+    const handleCopyStatement = (statementKey: string, sql: string) => {
+        navigator.clipboard.writeText(sql);
+        setCopiedStatement(statementKey);
+        setTimeout(() => setCopiedStatement(null), 2000);
+    };
+
+    const getTableSql = (_tableName: string, items: SchemaDiffItem[]) => {
+        return items.flatMap((item) => item.migrationSql || []).join('\n');
     };
 
     // Group items by table
@@ -129,104 +149,211 @@ export function SchemaDiffDisplay({
             </Box>
 
             {/* Grouped diff items */}
-            {Object.entries(groupedItems).map(([tableName, items]) => (
-                <Accordion
-                    key={tableName}
-                    defaultExpanded
-                    disableGutters
-                    sx={{
-                        mb: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        '&:before': { display: 'none' },
-                        '&.Mui-expanded': { margin: 0, mb: 1 },
-                        boxShadow: 'none',
-                    }}
-                >
-                    <AccordionSummary
-                        expandIcon={
-                            <ExpandIcon
-                                sx={{
-                                    fontSize: 18,
-                                    color: 'text.disabled',
-                                    transition: 'transform 0.2s ease',
-                                }}
-                            />
-                        }
+            {Object.entries(groupedItems).map(([tableName, items]) => {
+                const tableSql = getTableSql(tableName, items);
+                const isApplyingTable = applyingTables.includes(tableName);
+                const isCopiedTable = copiedTable === tableName;
+
+                return (
+                    <Accordion
+                        key={tableName}
+                        defaultExpanded
+                        disableGutters
                         sx={{
-                            px: 1.5,
-                            minHeight: 36,
-                            '&.Mui-expanded': { minHeight: 36 },
-                            '& .MuiAccordionSummary-content': { my: 0.5, alignItems: 'center' },
-                            '& .MuiAccordionSummary-content.Mui-expanded': { my: 0.5 },
-                            '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-                                transform: 'rotate(180deg)',
-                            },
+                            mb: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            '&:before': { display: 'none' },
+                            '&.Mui-expanded': { margin: 0, mb: 1 },
+                            boxShadow: 'none',
                         }}
                     >
-                        <Typography fontSize={13} fontWeight={600} fontFamily="monospace">
-                            {tableName}
-                        </Typography>
-                        <Box sx={{ ml: 'auto', mr: 1, display: 'flex', gap: 0.5 }}>
-                            {items.map((item) => (
-                                <DiffTypeBadge key={`${item.type}-${item.name}`} type={item.type} />
-                            ))}
-                        </Box>
-                    </AccordionSummary>
-                    <AccordionDetails
-                        sx={{
-                            px: 1.5,
-                            py: 1,
-                            bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
-                        }}
-                    >
-                        {items.map((item) => (
+                        <AccordionSummary
+                            expandIcon={
+                                <ExpandIcon
+                                    sx={{
+                                        fontSize: 18,
+                                        color: 'text.disabled',
+                                        transition: 'transform 0.2s ease',
+                                    }}
+                                />
+                            }
+                            sx={{
+                                px: 1.5,
+                                minHeight: 36,
+                                '&.Mui-expanded': { minHeight: 36 },
+                                '& .MuiAccordionSummary-content': { my: 0.5, alignItems: 'center' },
+                                '& .MuiAccordionSummary-content.Mui-expanded': { my: 0.5 },
+                                '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
+                                    transform: 'rotate(180deg)',
+                                },
+                            }}
+                        >
+                            <Typography fontSize={13} fontWeight={600} fontFamily="monospace">
+                                {tableName}
+                            </Typography>
                             <Box
-                                key={`${item.type}-${item.name}-${item.table}`}
                                 sx={{
-                                    p: 1,
-                                    mb: 0.5,
-                                    bgcolor: 'background.paper',
-                                    borderRadius: 0.5,
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    '&:last-child': { mb: 0 },
+                                    ml: 'auto',
+                                    mr: 1,
+                                    display: 'flex',
+                                    gap: 0.5,
+                                    alignItems: 'center',
                                 }}
                             >
-                                <Box
-                                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
-                                >
-                                    <DiffTypeBadge type={item.type} />
-                                    <Typography variant="body2" fontSize={12} fontWeight={500}>
-                                        {item.type.replaceAll('_', ' ')}: {item.name || item.table}
-                                    </Typography>
-                                </Box>
-                                {item.migrationSql && item.migrationSql.length > 0 && (
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        component="pre"
-                                        sx={{
-                                            whiteSpace: 'pre-wrap',
-                                            fontFamily: 'monospace',
-                                            fontSize: 11,
-                                            m: 0,
-                                            mt: 0.5,
-                                            p: 1,
-                                            bgcolor: (theme) =>
-                                                alpha(theme.palette.background.default, 0.8),
-                                            borderRadius: 0.5,
-                                        }}
-                                    >
-                                        {item.migrationSql.join('\n')}
-                                    </Typography>
+                                {items.map((item) => (
+                                    <DiffTypeBadge
+                                        key={`${item.type}-${item.name}`}
+                                        type={item.type}
+                                    />
+                                ))}
+                                {tableSql && (
+                                    <>
+                                        <Button
+                                            size="small"
+                                            variant="text"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCopyTable(tableName, tableSql);
+                                            }}
+                                            sx={{
+                                                ml: 1,
+                                                minWidth: 'auto',
+                                                px: 0.75,
+                                                py: 0.25,
+                                                fontSize: 10,
+                                            }}
+                                        >
+                                            {isCopiedTable ? (
+                                                <CheckIcon sx={{ fontSize: 12 }} />
+                                            ) : (
+                                                <CopyIcon sx={{ fontSize: 12 }} />
+                                            )}
+                                        </Button>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            color="warning"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onApplyMigration([tableName]);
+                                            }}
+                                            disabled={applying || isApplyingTable}
+                                            sx={{
+                                                minWidth: 'auto',
+                                                px: 1,
+                                                py: 0.25,
+                                                fontSize: 10,
+                                            }}
+                                        >
+                                            {isApplyingTable ? (
+                                                <CircularProgress size={10} />
+                                            ) : (
+                                                'Apply'
+                                            )}
+                                        </Button>
+                                    </>
                                 )}
                             </Box>
-                        ))}
-                    </AccordionDetails>
-                </Accordion>
-            ))}
+                        </AccordionSummary>
+                        <AccordionDetails
+                            sx={{
+                                px: 1.5,
+                                py: 1,
+                                bgcolor: (theme) => alpha(theme.palette.background.default, 0.5),
+                            }}
+                        >
+                            {items.map((item) => {
+                                const itemKey = `${item.type}-${item.name}-${item.table}`;
+                                const itemSql = item.migrationSql?.join('\n') || '';
+                                const isCopiedStatement = copiedStatement === itemKey;
+
+                                return (
+                                    <Box
+                                        key={itemKey}
+                                        sx={{
+                                            p: 1,
+                                            mb: 0.5,
+                                            bgcolor: 'background.paper',
+                                            borderRadius: 0.5,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            '&:last-child': { mb: 0 },
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                                mb: 0.5,
+                                            }}
+                                        >
+                                            <DiffTypeBadge type={item.type} />
+                                            <Typography
+                                                variant="body2"
+                                                fontSize={12}
+                                                fontWeight={500}
+                                            >
+                                                {item.type.replaceAll('_', ' ')}:{' '}
+                                                {item.name || item.table}
+                                            </Typography>
+                                            {itemSql && (
+                                                <Button
+                                                    size="small"
+                                                    variant="text"
+                                                    onClick={() =>
+                                                        handleCopyStatement(itemKey, itemSql)
+                                                    }
+                                                    sx={{
+                                                        ml: 'auto',
+                                                        minWidth: 'auto',
+                                                        px: 0.5,
+                                                        py: 0,
+                                                        fontSize: 10,
+                                                        color: 'text.secondary',
+                                                        '&:hover': { color: 'primary.main' },
+                                                    }}
+                                                >
+                                                    {isCopiedStatement ? (
+                                                        <CheckIcon sx={{ fontSize: 12 }} />
+                                                    ) : (
+                                                        <CopyIcon sx={{ fontSize: 12 }} />
+                                                    )}
+                                                </Button>
+                                            )}
+                                        </Box>
+                                        {item.migrationSql && item.migrationSql.length > 0 && (
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                component="pre"
+                                                sx={{
+                                                    whiteSpace: 'pre-wrap',
+                                                    fontFamily: 'monospace',
+                                                    fontSize: 11,
+                                                    m: 0,
+                                                    mt: 0.5,
+                                                    p: 1,
+                                                    bgcolor: (theme) =>
+                                                        alpha(
+                                                            theme.palette.background.default,
+                                                            0.8
+                                                        ),
+                                                    borderRadius: 0.5,
+                                                }}
+                                            >
+                                                {item.migrationSql.join('\n')}
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                );
+                            })}
+                        </AccordionDetails>
+                    </Accordion>
+                );
+            })}
 
             {/* Migration SQL */}
             {migrationSql.length > 0 && (
@@ -278,11 +405,11 @@ export function SchemaDiffDisplay({
                                         <SyncIcon sx={{ fontSize: 14 }} />
                                     )
                                 }
-                                onClick={onApplyMigration}
+                                onClick={() => onApplyMigration()}
                                 disabled={applying}
                                 sx={{ fontSize: 11 }}
                             >
-                                Apply
+                                Apply All
                             </Button>
                         </Box>
                     </Box>
