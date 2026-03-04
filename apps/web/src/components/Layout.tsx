@@ -28,7 +28,6 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SyncIcon from '@mui/icons-material/Sync';
 import LayersIcon from '@mui/icons-material/Layers';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
 import DnsIcon from '@mui/icons-material/Dns';
@@ -425,11 +424,16 @@ export function Layout() {
                                         fontWeight: 500,
                                     }}
                                 />
-                                {serversExpanded ? (
-                                    <ExpandLessIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                                ) : (
-                                    <ExpandMoreIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                                )}
+                                <ExpandMoreIcon
+                                    sx={{
+                                        fontSize: 16,
+                                        color: 'text.disabled',
+                                        transform: serversExpanded
+                                            ? 'rotate(180deg)'
+                                            : 'rotate(0deg)',
+                                        transition: 'transform 0.2s ease',
+                                    }}
+                                />
                             </ListItemButton>
 
                             <Collapse in={serversExpanded}>
@@ -521,21 +525,16 @@ export function Layout() {
                                                         >
                                                             <SettingsIcon sx={{ fontSize: 14 }} />
                                                         </IconButton>
-                                                        {isExpanded ? (
-                                                            <ExpandLessIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'text.disabled',
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <ExpandMoreIcon
-                                                                sx={{
-                                                                    fontSize: 16,
-                                                                    color: 'text.disabled',
-                                                                }}
-                                                            />
-                                                        )}
+                                                        <ExpandMoreIcon
+                                                            sx={{
+                                                                fontSize: 16,
+                                                                color: 'text.disabled',
+                                                                transform: isExpanded
+                                                                    ? 'rotate(180deg)'
+                                                                    : 'rotate(0deg)',
+                                                                transition: 'transform 0.2s ease',
+                                                            }}
+                                                        />
                                                     </ListItemButton>
                                                     <Collapse in={isExpanded}>
                                                         <List disablePadding sx={{ pl: 1 }}>
@@ -711,15 +710,16 @@ export function Layout() {
                                                 fontWeight: 500,
                                             }}
                                         />
-                                        {databasesExpanded ? (
-                                            <ExpandLessIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        ) : (
-                                            <ExpandMoreIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        )}
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                fontSize: 16,
+                                                color: 'text.disabled',
+                                                transform: databasesExpanded
+                                                    ? 'rotate(180deg)'
+                                                    : 'rotate(0deg)',
+                                                transition: 'transform 0.2s ease',
+                                            }}
+                                        />
                                     </ListItemButton>
                                     <Collapse in={databasesExpanded}>
                                         <List disablePadding sx={{ pl: 1 }}>
@@ -834,15 +834,16 @@ export function Layout() {
                                                 fontWeight: 500,
                                             }}
                                         />
-                                        {syncExpanded ? (
-                                            <ExpandLessIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        ) : (
-                                            <ExpandMoreIcon
-                                                sx={{ fontSize: 16, color: 'text.disabled' }}
-                                            />
-                                        )}
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                fontSize: 16,
+                                                color: 'text.disabled',
+                                                transform: syncExpanded
+                                                    ? 'rotate(180deg)'
+                                                    : 'rotate(0deg)',
+                                                transition: 'transform 0.2s ease',
+                                            }}
+                                        />
                                     </ListItemButton>
                                     <Collapse in={syncExpanded}>
                                         <List disablePadding>
