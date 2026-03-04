@@ -14,6 +14,11 @@ import {
     alpha,
     CircularProgress,
     Stack,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -40,6 +45,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useTagsStore } from '../../stores/tagsStore';
 import { serversApi, connectionsApi, projectsApi, groupsApi } from '../../lib/api';
+import { authApi } from '../../lib/authApi';
+import { useAuthStore } from '../../stores/authStore';
 import type { ConnectionConfig } from '@dbnexus/shared';
 import { GlassCard } from '../../components/GlassCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -193,6 +200,12 @@ export function ServerManagementPage() {
     const [loadingPassword, setLoadingPassword] = useState(false);
     const [dropDbDialogOpen, setDropDbDialogOpen] = useState(false);
     const [dbToDrop, setDbToDrop] = useState<string | null>(null);
+    const [verifyPasswordDialogOpen, setVerifyPasswordDialogOpen] = useState(false);
+    const [verifyPasswordInput, setVerifyPasswordInput] = useState('');
+    const [verifyPasswordError, setVerifyPasswordError] = useState<string | null>(null);
+    const [verifyingPassword, setVerifyingPassword] = useState(false);
+
+    const { accessToken } = useAuthStore();
 
     const { tags: availableTags } = useTagsStore();
 
@@ -316,16 +329,43 @@ export function ServerManagementPage() {
             setShowPassword(false);
             setRevealedPassword(null);
         } else {
-            setLoadingPassword(true);
-            try {
-                const result = await serversApi.getPassword(serverId!);
-                setRevealedPassword(result.password);
-                setShowPassword(true);
-            } catch {
-                toast.error('Failed to retrieve password');
-            } finally {
-                setLoadingPassword(false);
+            setVerifyPasswordDialogOpen(true);
+            setVerifyPasswordInput('');
+            setVerifyPasswordError(null);
+        }
+    };
+
+    const handleVerifyAndShowPassword = async () => {
+        if (!verifyPasswordInput.trim()) {
+            setVerifyPasswordError('Please enter your password');
+            return;
+        }
+
+        setVerifyingPassword(true);
+        setVerifyPasswordError(null);
+
+        try {
+            const result = await authApi.verifyPassword(verifyPasswordInput, accessToken!);
+            if (result.valid) {
+                setVerifyPasswordDialogOpen(false);
+                setVerifyPasswordInput('');
+                setLoadingPassword(true);
+                try {
+                    const passwordResult = await serversApi.getPassword(serverId!);
+                    setRevealedPassword(passwordResult.password);
+                    setShowPassword(true);
+                } catch {
+                    toast.error('Failed to retrieve password');
+                } finally {
+                    setLoadingPassword(false);
+                }
+            } else {
+                setVerifyPasswordError('Incorrect password');
             }
+        } catch {
+            setVerifyPasswordError('Failed to verify password');
+        } finally {
+            setVerifyingPassword(false);
         }
     };
 
@@ -1238,6 +1278,46 @@ export function ServerManagementPage() {
                 confirmLabel="Drop Database"
                 confirmColor="error"
             />
+
+            <Dialog
+                open={verifyPasswordDialogOpen}
+                onClose={() => setVerifyPasswordDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Verify Your Identity</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Enter your password to view the server credentials.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        type="password"
+                        label="Your Password"
+                        value={verifyPasswordInput}
+                        onChange={(e) => setVerifyPasswordInput(e.target.value)}
+                        error={!!verifyPasswordError}
+                        helperText={verifyPasswordError}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleVerifyAndShowPassword();
+                            }
+                        }}
+                        size="small"
+                    />
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={() => setVerifyPasswordDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleVerifyAndShowPassword}
+                        disabled={verifyingPassword}
+                    >
+                        {verifyingPassword ? 'Verifying...' : 'Verify'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

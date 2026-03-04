@@ -212,6 +212,15 @@ export class AuthService {
         this.logAuthEvent('password_changed', userId);
     }
 
+    async verifyPassword(userId: string, password: string): Promise<boolean> {
+        const user = this.metadataService.userRepository.findById(userId);
+        if (!user) {
+            return false;
+        }
+
+        return bcrypt.compare(password, user.passwordHash);
+    }
+
     async updateProfile(
         userId: string,
         updates: { name?: string }
