@@ -126,7 +126,7 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                                 alignItems: 'center',
                                 gap: 0.5,
                                 pl: 1.5,
-                                pr: 3.5,
+                                pr: tab.id === activeTabId ? 3.5 : 1.5,
                                 py: 0.75,
                                 cursor: 'pointer',
                                 borderRadius: '6px 6px 0 0',
@@ -139,6 +139,7 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                                         ? `2px solid ${theme.palette.primary.main}`
                                         : '2px solid transparent',
                                 '&:hover': {
+                                    pr: 3.5,
                                     bgcolor:
                                         tab.id === activeTabId
                                             ? alpha(theme.palette.primary.main, 0.15)
