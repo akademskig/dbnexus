@@ -979,6 +979,68 @@ export const settingsApi = {
     },
 };
 
+// ============ Data Import ============
+
+export interface ImportPreviewResult {
+    columns: string[];
+    rows: Record<string, unknown>[];
+    totalRows: number;
+    format: 'csv' | 'json';
+}
+
+export interface ImportExecuteResult {
+    inserted: number;
+    updated: number;
+    errors: string[];
+}
+
+export const importApi = {
+    preview: async (
+        file: File,
+        options?: { format?: 'csv' | 'json'; delimiter?: string; hasHeader?: boolean }
+    ): Promise<ImportPreviewResult> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (options?.format) formData.append('format', options.format);
+        if (options?.delimiter) formData.append('delimiter', options.delimiter);
+        if (options?.hasHeader !== undefined)
+            formData.append('hasHeader', String(options.hasHeader));
+
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/import/preview`, {
+            method: 'POST',
+            body: formData,
+            headers,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+            throw new Error(error.message || 'Upload failed');
+        }
+
+        return response.json();
+    },
+
+    execute: (data: {
+        connectionId: string;
+        schema: string;
+        table: string;
+        columnMapping: Record<string, string>;
+        rows: Record<string, unknown>[];
+        mode?: 'insert' | 'upsert';
+    }): Promise<ImportExecuteResult> => {
+        return fetchApi('/import/execute', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+};
+
 // ============ User Preferences ============
 
 export const preferencesApi = {

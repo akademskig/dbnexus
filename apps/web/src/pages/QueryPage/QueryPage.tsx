@@ -1150,6 +1150,8 @@ export function QueryPage() {
                                                 lastSuccessfulQuery ? rerunLastQuery : undefined
                                             }
                                             onExecuteNoLimit={() => handleExecute(true)}
+                                            connectionId={selectedConnectionId}
+                                            selectedSchema={selectedSchema}
                                         />
                                     </Panel>
 
@@ -1258,6 +1260,8 @@ export function QueryPage() {
                                     onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
                                     onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
                                     onExecuteNoLimit={() => handleExecute(true)}
+                                    connectionId={selectedConnectionId}
+                                    selectedSchema={selectedSchema}
                                 />
                             )}
                         </>
