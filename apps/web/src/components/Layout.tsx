@@ -615,9 +615,7 @@ export function Layout() {
                                                                                         primaryTypographyProps={{
                                                                                             fontSize: 12,
                                                                                             noWrap: true,
-                                                                                            color: isActive
-                                                                                                ? 'primary.main'
-                                                                                                : 'text.secondary',
+                                                                                            color: 'text.primary',
                                                                                         }}
                                                                                     />
                                                                                     <IconButton
