@@ -836,7 +836,7 @@ export function DataDiffDisplay({
                 </Typography>
             )}
 
-            <Box sx={{ mb: compact ? 0 : 2, maxHeight: compact ? 300 : 400 }}>
+            <Box sx={{ mb: compact ? 0 : 2 }}>
                 <DataGrid
                     rows={compact ? tableDiffs : outOfSyncTables}
                     columns={columns}
@@ -849,11 +849,11 @@ export function DataDiffDisplay({
                     initialState={{
                         pagination: { paginationModel: { pageSize: 10 } },
                     }}
-                    autoHeight
                     rowHeight={40}
                     columnHeaderHeight={40}
                     sx={{
                         minWidth: 600,
+                        maxHeight: compact ? 300 : 400,
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 1,
@@ -873,6 +873,17 @@ export function DataDiffDisplay({
                         },
                         '& .MuiDataGrid-footerContainer': {
                             borderColor: 'divider',
+                            justifyContent: 'flex-end',
+                        },
+                        '& .MuiTablePagination-root': {
+                            overflow: 'visible',
+                        },
+                        '& .MuiTablePagination-toolbar': {
+                            alignItems: 'center',
+                            minHeight: 40,
+                        },
+                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                            fontSize: 12,
                         },
                     }}
                 />
