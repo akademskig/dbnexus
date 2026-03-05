@@ -46,6 +46,7 @@ import { useAuthStore } from '../stores/authStore';
 import { StyledTooltip } from './StyledTooltip';
 import { OnboardingTour } from './OnboardingTour';
 import { ServerFormDialog } from '../pages/ServersPage/ServerFormDialog';
+import { KeyboardShortcutsOverlay, useKeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay';
 
 const DRAWER_WIDTH = 220;
 const DRAWER_WIDTH_COLLAPSED = 56;
@@ -123,6 +124,7 @@ export function Layout() {
     }, [fetchTags]);
 
     useNavigationShortcuts(navigate);
+    const keyboardShortcuts = useKeyboardShortcutsOverlay();
 
     const queryClient = useQueryClient();
 
@@ -258,6 +260,7 @@ export function Layout() {
     const isConnectionRelatedPage = useMemo(() => {
         const path = location.pathname;
         return (
+            path === '/query' ||
             path.startsWith('/query/') ||
             path.startsWith('/connections/') ||
             path.startsWith('/schema/') ||
@@ -1509,6 +1512,11 @@ export function Layout() {
                 open={serverFormOpen}
                 server={null}
                 onClose={() => setServerFormOpen(false)}
+            />
+
+            <KeyboardShortcutsOverlay
+                open={keyboardShortcuts.open}
+                onClose={keyboardShortcuts.onClose}
             />
         </Box>
     );

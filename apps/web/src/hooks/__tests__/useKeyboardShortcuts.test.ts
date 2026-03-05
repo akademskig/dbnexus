@@ -63,10 +63,15 @@ describe('KEYBOARD_SHORTCUTS', () => {
         expect(generalShortcuts.length).toBeGreaterThan(0);
     });
 
-    it('should have Ctrl+Enter for running query', () => {
+    it('should have Ctrl+Enter for executing query', () => {
         const runQuery = KEYBOARD_SHORTCUTS.find((s) => s.key === 'Enter' && s.ctrl && !s.shift);
         expect(runQuery).toBeDefined();
-        expect(runQuery?.description).toContain('Run');
+        expect(runQuery?.description).toContain('Execute');
+    });
+
+    it('should have data grid shortcuts', () => {
+        const dataShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'data');
+        expect(dataShortcuts.length).toBeGreaterThan(0);
     });
 
     it('should have navigation shortcuts for all main pages', () => {
@@ -74,7 +79,6 @@ describe('KEYBOARD_SHORTCUTS', () => {
         const descriptions = navShortcuts.map((s) => s.description.toLowerCase());
 
         expect(descriptions.some((d) => d.includes('dashboard'))).toBe(true);
-        expect(descriptions.some((d) => d.includes('projects'))).toBe(true);
         expect(descriptions.some((d) => d.includes('query'))).toBe(true);
         expect(descriptions.some((d) => d.includes('settings'))).toBe(true);
     });

@@ -819,9 +819,10 @@ function AboutTab() {
 
 // Keyboard Shortcuts Tab Content
 function KeyboardShortcutsTab() {
-    const queryShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'query');
-    const navigationShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'navigation');
     const generalShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'general');
+    const navigationShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'navigation');
+    const queryShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'query');
+    const dataShortcuts = KEYBOARD_SHORTCUTS.filter((s) => s.category === 'data');
 
     const ShortcutTable = ({
         title,
@@ -909,12 +910,13 @@ function KeyboardShortcutsTab() {
 
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4 }}>
                 Use these keyboard shortcuts to navigate and work faster. On Mac, use ⌘ (Command)
-                instead of Ctrl.
+                instead of Ctrl. Press <strong>?</strong> anytime to show the shortcuts overlay.
             </Typography>
 
-            <ShortcutTable title="Query Editor" shortcuts={queryShortcuts} />
-            <ShortcutTable title="Navigation" shortcuts={navigationShortcuts} />
             <ShortcutTable title="General" shortcuts={generalShortcuts} />
+            <ShortcutTable title="Navigation" shortcuts={navigationShortcuts} />
+            <ShortcutTable title="Query Editor" shortcuts={queryShortcuts} />
+            <ShortcutTable title="Data Grid" shortcuts={dataShortcuts} />
         </GlassCard>
     );
 }

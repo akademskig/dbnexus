@@ -7,6 +7,8 @@ export interface QueryTab {
     name: string;
     sql: string;
     connectionId?: string;
+    tableName?: string;
+    schemaName?: string;
     result?: QueryResult | null;
     error?: string | null;
     lastExecutedAt?: number;

@@ -8,6 +8,7 @@ import {
     ListItemIcon,
     ListItemText,
     TextField,
+    Divider,
     alpha,
     useTheme,
 } from '@mui/material';
@@ -107,114 +108,152 @@ export function QueryTabBar({ connectionId }: QueryTabBarProps) {
                     },
                 }}
             >
-                {tabs.map((tab) => (
-                    <Box
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        onContextMenu={(e) => handleContextMenu(e, tab.id)}
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            px: 1.5,
-                            py: 0.75,
-                            cursor: 'pointer',
-                            borderRadius: '6px 6px 0 0',
-                            bgcolor:
-                                tab.id === activeTabId
-                                    ? alpha(theme.palette.primary.main, 0.1)
-                                    : 'transparent',
-                            borderBottom:
-                                tab.id === activeTabId
-                                    ? `2px solid ${theme.palette.primary.main}`
-                                    : '2px solid transparent',
-                            '&:hover': {
+                {tabs.map((tab, index) => (
+                    <Box key={tab.id} sx={{ display: 'flex', alignItems: 'center' }}>
+                        {index > 0 && (
+                            <Divider
+                                orientation="vertical"
+                                flexItem
+                                sx={{ mx: 0.25, height: 20, alignSelf: 'center' }}
+                            />
+                        )}
+                        <Box
+                            onClick={() => setActiveTab(tab.id)}
+                            onContextMenu={(e) => handleContextMenu(e, tab.id)}
+                            sx={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                pl: 1.5,
+                                pr: 3.5,
+                                py: 0.75,
+                                cursor: 'pointer',
+                                borderRadius: '6px 6px 0 0',
                                 bgcolor:
                                     tab.id === activeTabId
-                                        ? alpha(theme.palette.primary.main, 0.15)
-                                        : 'action.hover',
-                            },
-                            transition: 'background-color 0.15s, border-color 0.15s',
-                            minWidth: 100,
-                            maxWidth: 180,
-                        }}
-                    >
-                        <CodeIcon
-                            sx={{
-                                fontSize: 14,
-                                color: tab.id === activeTabId ? 'primary.main' : 'text.secondary',
+                                        ? alpha(theme.palette.primary.main, 0.1)
+                                        : 'transparent',
+                                borderBottom:
+                                    tab.id === activeTabId
+                                        ? `2px solid ${theme.palette.primary.main}`
+                                        : '2px solid transparent',
+                                '&:hover': {
+                                    bgcolor:
+                                        tab.id === activeTabId
+                                            ? alpha(theme.palette.primary.main, 0.15)
+                                            : 'action.hover',
+                                    '& .tab-close-btn': {
+                                        opacity: 0.7,
+                                    },
+                                },
+                                transition: 'background-color 0.15s, border-color 0.15s',
+                                width: 120,
+                                flexShrink: 0,
                             }}
-                        />
-                        {editingTabId === tab.id ? (
-                            <TextField
-                                inputRef={inputRef}
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                onBlur={handleFinishRename}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleFinishRename();
-                                    if (e.key === 'Escape') {
-                                        setEditingTabId(null);
-                                        setEditingName('');
-                                    }
-                                }}
-                                size="small"
-                                variant="standard"
-                                autoFocus
+                        >
+                            <CodeIcon
                                 sx={{
-                                    '& .MuiInputBase-input': {
-                                        fontSize: 12,
-                                        py: 0,
-                                        px: 0.5,
-                                    },
-                                    '& .MuiInput-underline:before': {
-                                        borderBottom: 'none',
-                                    },
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                            />
-                        ) : (
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    fontSize: 12,
-                                    fontWeight: tab.id === activeTabId ? 600 : 400,
+                                    fontSize: 14,
                                     color:
-                                        tab.id === activeTabId ? 'text.primary' : 'text.secondary',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    flex: 1,
+                                        tab.id === activeTabId ? 'primary.main' : 'text.secondary',
                                 }}
-                                onDoubleClick={() => handleStartRename(tab)}
-                            >
-                                {tab.name}
-                            </Typography>
-                        )}
-                        {tabs.length > 1 && (
-                            <IconButton
-                                size="small"
-                                onClick={(e) => handleCloseTab(e, tab.id)}
-                                sx={{
-                                    p: 0.25,
-                                    ml: 0.5,
-                                    opacity: tab.id === activeTabId ? 0.7 : 0,
-                                    '&:hover': { opacity: 1 },
-                                    transition: 'opacity 0.15s',
-                                }}
-                            >
-                                <CloseIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                        )}
+                            />
+                            {editingTabId === tab.id ? (
+                                <TextField
+                                    inputRef={inputRef}
+                                    value={editingName}
+                                    onChange={(e) => setEditingName(e.target.value)}
+                                    onBlur={handleFinishRename}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleFinishRename();
+                                        if (e.key === 'Escape') {
+                                            setEditingTabId(null);
+                                            setEditingName('');
+                                        }
+                                    }}
+                                    size="small"
+                                    variant="standard"
+                                    autoFocus
+                                    sx={{
+                                        '& .MuiInputBase-input': {
+                                            fontSize: 12,
+                                            py: 0,
+                                            px: 0.5,
+                                        },
+                                        '& .MuiInput-underline:before': {
+                                            borderBottom: 'none',
+                                        },
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            ) : (
+                                <StyledTooltip
+                                    title={
+                                        tab.tableName
+                                            ? tab.schemaName
+                                                ? `${tab.schemaName}.${tab.tableName}`
+                                                : tab.tableName
+                                            : tab.name
+                                    }
+                                    placement="bottom"
+                                >
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            fontSize: 12,
+                                            fontWeight: tab.id === activeTabId ? 600 : 400,
+                                            color:
+                                                tab.id === activeTabId
+                                                    ? 'text.primary'
+                                                    : 'text.secondary',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                        onDoubleClick={() => handleStartRename(tab)}
+                                    >
+                                        {tab.tableName || tab.name}
+                                    </Typography>
+                                </StyledTooltip>
+                            )}
+                            {tabs.length > 1 && (
+                                <IconButton
+                                    className="tab-close-btn"
+                                    size="small"
+                                    onClick={(e) => handleCloseTab(e, tab.id)}
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 4,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        p: 0.25,
+                                        opacity: tab.id === activeTabId ? 0.7 : 0,
+                                        '&:hover': { opacity: 1 },
+                                        transition: 'opacity 0.15s',
+                                    }}
+                                >
+                                    <CloseIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            )}
+                        </Box>
                     </Box>
                 ))}
-            </Box>
 
-            <StyledTooltip title="New Query Tab">
-                <IconButton size="small" onClick={handleAddTab} sx={{ ml: 0.5 }}>
-                    <AddIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-            </StyledTooltip>
+                <StyledTooltip title="New Query Tab">
+                    <IconButton
+                        size="small"
+                        onClick={handleAddTab}
+                        sx={{
+                            ml: 0.5,
+                            flexShrink: 0,
+                            '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                    >
+                        <AddIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                </StyledTooltip>
+            </Box>
 
             <Menu
                 open={contextMenu !== null}

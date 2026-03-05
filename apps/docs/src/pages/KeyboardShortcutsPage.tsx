@@ -77,41 +77,29 @@ const Key = styled.kbd`
 
 const shortcuts = {
     global: [
-        { keys: ['Ctrl', 'K'], description: 'Open command palette' },
-        { keys: ['Ctrl', '/'], description: 'Toggle sidebar' },
-        { keys: ['Ctrl', ','], description: 'Open settings' },
-        { keys: ['Ctrl', 'Shift', 'P'], description: 'Open projects' },
-        { keys: ['Ctrl', 'Shift', 'Q'], description: 'Open query page' },
-        { keys: ['Ctrl', 'Shift', 'D'], description: 'Open schema diagram' },
+        { keys: ['?'], description: 'Show keyboard shortcuts overlay' },
         { keys: ['Escape'], description: 'Close dialogs / Cancel' },
+    ],
+    navigation: [
+        { keys: ['Ctrl', '1'], description: 'Go to Dashboard' },
+        { keys: ['Ctrl', '2'], description: 'Go to Query' },
+        { keys: ['Ctrl', '3'], description: 'Go to Schema Diagram' },
+        { keys: ['Ctrl', '4'], description: 'Go to Compare' },
+        { keys: ['Ctrl', '5'], description: 'Go to Logs' },
+        { keys: ['Ctrl', '6'], description: 'Go to Settings' },
     ],
     query: [
         { keys: ['Ctrl', 'Enter'], description: 'Execute query' },
-        { keys: ['Ctrl', 'Shift', 'Enter'], description: 'Execute selected text' },
+        { keys: ['Ctrl', 'Shift', 'Enter'], description: 'Execute query (force dangerous)' },
+        { keys: ['Ctrl', '/'], description: 'Toggle comment' },
+        { keys: ['Ctrl', 'Shift', 'F'], description: 'Format SQL' },
         { keys: ['Ctrl', 'S'], description: 'Save query' },
-        { keys: ['Ctrl', 'L'], description: 'Clear editor' },
         { keys: ['Ctrl', 'Space'], description: 'Trigger autocomplete' },
-        { keys: ['Ctrl', 'F'], description: 'Find in editor' },
-        { keys: ['Ctrl', 'H'], description: 'Find and replace' },
-        { keys: ['Ctrl', 'Z'], description: 'Undo' },
-        { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo' },
     ],
     dataGrid: [
         { keys: ['Enter'], description: 'Edit selected cell' },
-        { keys: ['Escape'], description: 'Cancel editing' },
-        { keys: ['Tab'], description: 'Move to next cell' },
-        { keys: ['Shift', 'Tab'], description: 'Move to previous cell' },
         { keys: ['Ctrl', 'C'], description: 'Copy cell value' },
-        { keys: ['Delete'], description: 'Delete selected rows' },
         { keys: ['Ctrl', 'A'], description: 'Select all rows' },
-    ],
-    diagram: [
-        { keys: ['Ctrl', '+'], description: 'Zoom in' },
-        { keys: ['Ctrl', '-'], description: 'Zoom out' },
-        { keys: ['Ctrl', '0'], description: 'Reset zoom' },
-        { keys: ['Ctrl', 'F'], description: 'Fit to screen' },
-        { keys: ['Delete'], description: 'Delete selected table' },
-        { keys: ['Escape'], description: 'Deselect all' },
     ],
 };
 
@@ -124,7 +112,7 @@ export function KeyboardShortcutsPage() {
             <Section>
                 <SectionTitle>
                     <span className="material-symbols-outlined">keyboard</span>
-                    Global
+                    General
                 </SectionTitle>
                 <ShortcutGrid>
                     {shortcuts.global.map((shortcut, i) => (
@@ -133,6 +121,30 @@ export function KeyboardShortcutsPage() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: i * 0.03 }}
+                        >
+                            <ShortcutDescription>{shortcut.description}</ShortcutDescription>
+                            <KeyCombo>
+                                {shortcut.keys.map((key, j) => (
+                                    <Key key={j}>{key}</Key>
+                                ))}
+                            </KeyCombo>
+                        </ShortcutRow>
+                    ))}
+                </ShortcutGrid>
+            </Section>
+
+            <Section>
+                <SectionTitle>
+                    <span className="material-symbols-outlined">near_me</span>
+                    Navigation
+                </SectionTitle>
+                <ShortcutGrid>
+                    {shortcuts.navigation.map((shortcut, i) => (
+                        <ShortcutRow
+                            key={shortcut.description}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 + i * 0.03 }}
                         >
                             <ShortcutDescription>{shortcut.description}</ShortcutDescription>
                             <KeyCombo>
@@ -156,7 +168,7 @@ export function KeyboardShortcutsPage() {
                             key={shortcut.description}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 + i * 0.03 }}
+                            transition={{ delay: 0.3 + i * 0.03 }}
                         >
                             <ShortcutDescription>{shortcut.description}</ShortcutDescription>
                             <KeyCombo>
@@ -180,31 +192,7 @@ export function KeyboardShortcutsPage() {
                             key={shortcut.description}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.4 + i * 0.03 }}
-                        >
-                            <ShortcutDescription>{shortcut.description}</ShortcutDescription>
-                            <KeyCombo>
-                                {shortcut.keys.map((key, j) => (
-                                    <Key key={j}>{key}</Key>
-                                ))}
-                            </KeyCombo>
-                        </ShortcutRow>
-                    ))}
-                </ShortcutGrid>
-            </Section>
-
-            <Section>
-                <SectionTitle>
-                    <span className="material-symbols-outlined">schema</span>
-                    Schema Diagram
-                </SectionTitle>
-                <ShortcutGrid>
-                    {shortcuts.diagram.map((shortcut, i) => (
-                        <ShortcutRow
-                            key={shortcut.description}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.6 + i * 0.03 }}
+                            transition={{ delay: 0.5 + i * 0.03 }}
                         >
                             <ShortcutDescription>{shortcut.description}</ShortcutDescription>
                             <KeyCombo>
