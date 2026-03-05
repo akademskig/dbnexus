@@ -8,6 +8,19 @@
 
 **[Documentation](https://akademskig.github.io/dbnexus/)** • **[Installation](#-quick-start)** • **[Features](#-features)** • **[CLI Usage](#-cli-usage)**
 
+---
+
+- **Visual Schema Diagrams** - Interactive ER diagrams with drag-and-drop editing
+- **Schema & Data Sync** - Compare and synchronize schemas and data between databases
+- **Data Import/Export** - Import CSV/JSON files with column mapping, export query results
+- **Backup & Restore** - Full database backups with compression and one-click restore
+- **Production Safety** - Blocks dangerous queries (UPDATE/DELETE without WHERE) on production
+- **Foreign Key Navigation** - Click FK values to instantly jump to referenced rows
+- **Auto-Discovery** - Scan for databases via Docker, ports, env files, and SQLite files
+- **Inline Data Editing** - Edit table rows directly in the results grid
+
+---
+
 ## 📸 Screenshots
 
 <div align="center">
