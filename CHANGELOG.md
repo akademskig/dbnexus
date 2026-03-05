@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-01-23
+## [0.5.1] - 2026-03-05
+
+### Added
+
+- **Keyboard Shortcuts Overlay**: Press `?` anywhere to view all available keyboard shortcuts
+- **Query Tab Improvements**: Browser-style tabs with table name display
+    - Tab shows selected table name with full schema.table tooltip
+    - Fixed-width tabs with separators between them
+    - Add tab button positioned next to tabs
+
+### Changed
+
+- **Navigation Shortcuts**: Updated Ctrl+1 through Ctrl+6 for main pages (removed Projects)
+
+### Fixed
+
+- **Connection Display**: Fixed connection string not showing in header when navigating to Query page via keyboard shortcut
+
+## [0.5.0] - 2026-03-04
 
 ### Added
 

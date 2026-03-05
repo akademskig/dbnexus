@@ -236,7 +236,7 @@ export function GroupSyncPage() {
                         onClick={handleRefresh}
                         disabled={loadingStatus || fetchingStatus || !group.sourceConnectionId}
                     >
-                        {fetchingStatus ? 'Checking...' : 'Refresh'}
+                        {fetchingStatus ? 'Checking...' : 'Recheck'}
                     </Button>
                 </Stack>
             </Box>

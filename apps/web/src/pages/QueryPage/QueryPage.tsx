@@ -704,6 +704,14 @@ export function QueryPage() {
             setSearchQuery('');
             updateUrl({ table: table.name });
 
+            // Update active tab with table info
+            if (activeTabId) {
+                updateTab(activeTabId, {
+                    tableName: table.name,
+                    schemaName: table.schema,
+                });
+            }
+
             try {
                 const { count } = await schemaApi.getTableRowCount(
                     selectedConnectionId,
@@ -719,7 +727,14 @@ export function QueryPage() {
             setFilterModel({ items: [] });
             fetchTableData(table, 0, paginationModel.pageSize, '', null, [], { items: [] });
         },
-        [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
+        [
+            selectedConnectionId,
+            updateUrl,
+            fetchTableData,
+            paginationModel.pageSize,
+            activeTabId,
+            updateTab,
+        ]
     );
 
     // Handle pagination change

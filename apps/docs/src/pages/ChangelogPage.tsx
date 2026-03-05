@@ -98,9 +98,31 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.5.0',
+        version: '0.5.1',
         date: 'March 2026',
         latest: true,
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Keyboard shortcuts overlay - press ? anywhere to view all available shortcuts',
+            },
+            {
+                type: 'added' as const,
+                text: 'Query tab improvements - browser-style tabs showing table names with tooltips',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Updated navigation shortcuts (Ctrl+1 through Ctrl+6)',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Connection string now displays correctly when navigating via keyboard shortcut',
+            },
+        ],
+    },
+    {
+        version: '0.5.0',
+        date: 'March 2026',
         changes: [
             {
                 type: 'added' as const,
