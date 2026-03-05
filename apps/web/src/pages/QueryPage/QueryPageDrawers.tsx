@@ -75,12 +75,18 @@ export function QueryPageDrawers({
                 anchor="right"
                 open={templatesOpen}
                 onClose={onTemplatesClose}
+                ModalProps={{
+                    keepMounted: false,
+                }}
                 PaperProps={{
                     sx: { width: 420, bgcolor: 'background.default' },
                 }}
             >
                 <TemplatesPanel
-                    onTemplateSelect={onTemplateSelect}
+                    onTemplateSelect={(sql) => {
+                        onTemplatesClose();
+                        setTimeout(() => onTemplateSelect(sql), 0);
+                    }}
                     selectedTable={selectedTable}
                     tableSchema={tableSchema}
                     engine={engine}
