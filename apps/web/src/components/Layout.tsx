@@ -19,7 +19,6 @@ import {
     AppBar,
     Toolbar,
     Chip,
-    alpha,
 } from '@mui/material';
 import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -584,28 +583,11 @@ export function Layout() {
                                                                                             conn.id
                                                                                         )
                                                                                     }
-                                                                                    selected={
-                                                                                        isActive
-                                                                                    }
                                                                                     sx={{
                                                                                         py: 0.25,
                                                                                         minHeight: 28,
                                                                                         borderRadius: 1,
                                                                                         mx: 1,
-                                                                                        '&.Mui-selected':
-                                                                                            {
-                                                                                                bgcolor:
-                                                                                                    (
-                                                                                                        theme
-                                                                                                    ) =>
-                                                                                                        alpha(
-                                                                                                            theme
-                                                                                                                .palette
-                                                                                                                .primary
-                                                                                                                .main,
-                                                                                                            0.12
-                                                                                                        ),
-                                                                                            },
                                                                                         '&:hover .db-settings':
                                                                                             {
                                                                                                 opacity: 1,
@@ -633,9 +615,7 @@ export function Layout() {
                                                                                         primaryTypographyProps={{
                                                                                             fontSize: 12,
                                                                                             noWrap: true,
-                                                                                            color: isActive
-                                                                                                ? 'primary.main'
-                                                                                                : 'text.secondary',
+                                                                                            color: 'text.primary',
                                                                                         }}
                                                                                     />
                                                                                     <IconButton
@@ -747,7 +727,6 @@ export function Layout() {
                                                                 onClick={() =>
                                                                     handleDatabaseClick(conn.id)
                                                                 }
-                                                                selected={isActive}
                                                                 sx={{
                                                                     py: 0.25,
                                                                     minHeight: 28,
@@ -1054,11 +1033,17 @@ export function Layout() {
                                                             handleDatabaseClick(conn.id);
                                                             setServersMenuAnchor(null);
                                                         }}
-                                                        selected={isConnActive}
                                                         sx={{ pl: 4, fontSize: 12 }}
                                                     >
                                                         <ListItemIcon sx={{ minWidth: 24 }}>
-                                                            <StorageIcon sx={{ fontSize: 14 }} />
+                                                            <StorageIcon
+                                                                sx={{
+                                                                    fontSize: 14,
+                                                                    color: isConnActive
+                                                                        ? 'primary.main'
+                                                                        : 'inherit',
+                                                                }}
+                                                            />
                                                         </ListItemIcon>
                                                         <Box sx={{ flex: 1 }}>
                                                             {conn.name || conn.database}
@@ -1148,11 +1133,17 @@ export function Layout() {
                                                             handleDatabaseClick(conn.id);
                                                             setDatabasesMenuAnchor(null);
                                                         }}
-                                                        selected={isActive}
                                                         sx={{ fontSize: 13 }}
                                                     >
                                                         <ListItemIcon sx={{ minWidth: 28 }}>
-                                                            <StorageIcon sx={{ fontSize: 16 }} />
+                                                            <StorageIcon
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: isActive
+                                                                        ? 'primary.main'
+                                                                        : 'inherit',
+                                                                }}
+                                                            />
                                                         </ListItemIcon>
                                                         <Box sx={{ flex: 1 }}>
                                                             {conn.name || conn.database}

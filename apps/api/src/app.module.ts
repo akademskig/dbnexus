@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module.js';
 import { ScannerModule } from './scanner/scanner.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { BackupModule } from './backup/backup.module.js';
+import { ImportModule } from './import/import.module.js';
 import { ServersModule } from './servers/servers.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { PreferencesModule } from './preferences/preferences.module.js';
@@ -43,6 +44,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         ScannerModule,
         AuditModule,
         BackupModule,
+        ImportModule,
         ServersModule,
         SettingsModule,
         PreferencesModule,

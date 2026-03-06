@@ -55,6 +55,8 @@ interface QueryPageTabsProps {
     readonly onToggleSplitView?: () => void;
     readonly onRefresh?: () => void;
     readonly onExecuteNoLimit?: () => void;
+    readonly connectionId?: string;
+    readonly selectedSchema?: string;
 }
 
 export function QueryPageTabs({
@@ -92,6 +94,8 @@ export function QueryPageTabs({
     onToggleSplitView,
     onRefresh,
     onExecuteNoLimit,
+    connectionId,
+    selectedSchema,
 }: QueryPageTabsProps) {
     return (
         <Box
@@ -256,6 +260,8 @@ export function QueryPageTabs({
                         tableName={tableName}
                         onRefresh={onRefresh}
                         onExecuteNoLimit={onExecuteNoLimit}
+                        connectionId={connectionId}
+                        selectedSchema={selectedSchema}
                     />
                 )}
 

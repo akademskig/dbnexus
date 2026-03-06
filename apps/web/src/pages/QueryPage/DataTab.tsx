@@ -48,6 +48,8 @@ import { EditRowDialog } from './EditRowDialog';
 import { FilterPanel } from './FilterPanel';
 import { ActiveFilters } from './ActiveFilters';
 import { CloseOutlined } from '@mui/icons-material';
+import UploadIcon from '@mui/icons-material/Upload';
+import { ImportDialog } from './ImportDialog';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -89,6 +91,9 @@ interface DataTabProps {
     readonly tableName?: string;
     readonly onRefresh?: () => void;
     readonly onExecuteNoLimit?: () => void;
+    // For import
+    readonly connectionId?: string;
+    readonly selectedSchema?: string;
 }
 
 export function DataTab({
@@ -121,6 +126,8 @@ export function DataTab({
     tableName,
     onRefresh,
     onExecuteNoLimit,
+    connectionId,
+    selectedSchema,
 }: DataTabProps) {
     const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -128,6 +135,7 @@ export function DataTab({
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     // Use external state if provided, otherwise use local state
     const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
     const filterModel = externalFilterModel || internalFilterModel;
@@ -869,6 +877,15 @@ export function DataTab({
                                 </Menu>
                             </>
                         )}
+
+                        {/* Import button */}
+                        {hasTableSelected && connectionId && selectedSchema && tableName && (
+                            <StyledTooltip title="Import data from CSV or JSON">
+                                <IconButton size="small" onClick={() => setImportDialogOpen(true)}>
+                                    <UploadIcon fontSize="small" />
+                                </IconButton>
+                            </StyledTooltip>
+                        )}
                     </Box>
 
                     {/* Active Filters Display */}
@@ -1025,6 +1042,19 @@ export function DataTab({
                 onClose={handleEditDialogClose}
                 onSave={handleEditDialogSave}
             />
+
+            {/* Import Dialog */}
+            {connectionId && selectedSchema && tableName && (
+                <ImportDialog
+                    open={importDialogOpen}
+                    onClose={() => setImportDialogOpen(false)}
+                    connectionId={connectionId}
+                    schema={selectedSchema}
+                    tableName={tableName}
+                    tableSchema={tableSchema}
+                    onSuccess={onRefresh}
+                />
+            )}
         </Box>
     );
 }

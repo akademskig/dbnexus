@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-03-06
+
+### Fixed
+
+- **Sidebar Selection**: Only highlight icon (not full row) when selecting database in navigation
+
+### Added
+
+- **Data Import**: Import CSV and JSON files directly into database tables
+    - Drag-and-drop file upload with format auto-detection
+    - Column mapping with auto-match by name and manual override
+    - Preview data before importing with row count display
+    - Support for both CSV (with configurable delimiter) and JSON formats
+
+## [0.5.2] - 2026-03-05
+
+### Fixed
+
+- **Query Templates**: Fixed backdrop persistence when selecting query template with favorite table selected
+
 ## [0.5.1] - 2026-03-05
 
 ### Added
