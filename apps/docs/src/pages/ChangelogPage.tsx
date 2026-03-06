@@ -98,9 +98,33 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
-        version: '0.5.1',
+        version: '0.5.3',
         date: 'March 2026',
         latest: true,
+        changes: [
+            {
+                type: 'fixed' as const,
+                text: 'Sidebar selection now only highlights the icon instead of the full row',
+            },
+            {
+                type: 'added' as const,
+                text: 'Data import - import CSV and JSON files directly into database tables with column mapping',
+            },
+        ],
+    },
+    {
+        version: '0.5.2',
+        date: 'March 2026',
+        changes: [
+            {
+                type: 'fixed' as const,
+                text: 'Query templates backdrop no longer persists when selecting with favorite table active',
+            },
+        ],
+    },
+    {
+        version: '0.5.1',
+        date: 'March 2026',
         changes: [
             {
                 type: 'added' as const,
