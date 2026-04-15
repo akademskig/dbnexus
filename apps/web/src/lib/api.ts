@@ -804,8 +804,60 @@ export const backupsApi = {
         return fetchApi(`/backups/${id}`);
     },
 
-    download: (id: string): string => {
-        return `${API_BASE}/backups/${id}/download`;
+    /**
+     * Download backup file with the same auth as other API calls (navigation would omit Bearer token).
+     */
+    downloadFile: async (id: string, filenameHint: string): Promise<void> => {
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/backups/${id}/download`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (response.status === 401) {
+            const authEnabled = useAuthStore.getState().authEnabled;
+            if (authEnabled) {
+                useAuthStore.getState().logout();
+                window.location.href = '/login';
+            }
+            throw new Error('Unauthorized');
+        }
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Download failed' }));
+            throw new Error(error.message || `HTTP ${response.status}`);
+        }
+
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = filenameHint;
+        const quotedMatch = contentDisposition?.match(/filename="([^"]+)"/);
+        const unquotedMatch = contentDisposition?.match(/filename=([^;\s]+)/);
+        const extracted = quotedMatch?.[1] ?? unquotedMatch?.[1];
+        if (extracted) {
+            try {
+                filename = decodeURIComponent(extracted.trim());
+            } catch {
+                filename = extracted.trim();
+            }
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+        }
     },
 
     upload: async (connectionId: string, file: File): Promise<Backup> => {
@@ -813,9 +865,16 @@ export const backupsApi = {
         formData.append('file', file);
         formData.append('connectionId', connectionId);
 
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE}/backups/upload`, {
             method: 'POST',
             body: formData,
+            headers,
         });
 
         if (!response.ok) {
@@ -829,11 +888,16 @@ export const backupsApi = {
     restore: (
         backupId: string,
         connectionId: string,
-        method?: 'native' | 'sql'
+        method?: 'native' | 'sql',
+        skipPreClean?: boolean
     ): Promise<{ success: boolean; message: string }> => {
         return fetchApi(`/backups/${backupId}/restore`, {
             method: 'POST',
-            body: JSON.stringify({ connectionId, method }),
+            body: JSON.stringify({
+                connectionId,
+                method: method ?? 'native',
+                skipPreClean: skipPreClean ?? false,
+            }),
         });
     },
 

@@ -98,6 +98,7 @@ export class BackupController {
             connectionId: body.connectionId,
             backupId: id,
             method: body.method,
+            skipPreClean: body.skipPreClean,
         });
     }
 

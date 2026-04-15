@@ -61,6 +61,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
     const [installDialogOpen, setInstallDialogOpen] = useState(false);
     const [selectedBackupIds, setSelectedBackupIds] = useState<Set<string>>(new Set());
     const [deleteMultipleDialogOpen, setDeleteMultipleDialogOpen] = useState(false);
+    const [skipPreClean, setSkipPreClean] = useState(false);
 
     // Fetch backups
     const { data: backups = [], isLoading } = useQuery({
@@ -144,10 +145,17 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
     // Restore backup mutation
     const restoreMutation = useMutation({
-        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId, 'native'),
+        mutationFn: ({
+            backupId,
+            skipPreClean: skipClean,
+        }: {
+            backupId: string;
+            skipPreClean: boolean;
+        }) => backupsApi.restore(backupId, connectionId, 'native', skipClean),
         onSuccess: () => {
             setRestoreDialogOpen(false);
             setSelectedBackup(null);
+            setSkipPreClean(false);
             toast.success('Backup restored successfully');
             // Invalidate all queries related to this connection to refresh data
             queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
@@ -211,19 +219,34 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         }
     };
 
-    const handleDownload = (backup: Backup) => {
-        window.location.href = backupsApi.download(backup.id);
+    const handleDownload = async (backup: Backup) => {
+        try {
+            await backupsApi.downloadFile(backup.id, backup.filename);
+        } catch (error) {
+            toast.error(
+                `Download failed: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
     };
 
     const handleRestoreClick = (backup: Backup) => {
         setSelectedBackup(backup);
+        setSkipPreClean(false);
         setRestoreDialogOpen(true);
     };
 
     const handleRestoreBackup = () => {
         if (selectedBackup) {
-            restoreMutation.mutate(selectedBackup.id);
+            restoreMutation.mutate({
+                backupId: selectedBackup.id,
+                skipPreClean,
+            });
         }
+    };
+
+    const closeRestoreDialog = () => {
+        setRestoreDialogOpen(false);
+        setSkipPreClean(false);
     };
 
     const handleDeleteClick = (backup: Backup) => {
@@ -603,12 +626,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
             </Dialog>
 
             {/* Restore Backup Dialog */}
-            <Dialog
-                open={restoreDialogOpen}
-                onClose={() => setRestoreDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
+            <Dialog open={restoreDialogOpen} onClose={closeRestoreDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>Restore Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
@@ -627,12 +645,41 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     Created: {formatDate(selectedBackup.createdAt)}
                                 </Typography>
+                                <FormControlLabel
+                                    sx={{ mt: 2, alignItems: 'flex-start' }}
+                                    control={
+                                        <Checkbox
+                                            checked={skipPreClean}
+                                            onChange={(_, checked) => setSkipPreClean(checked)}
+                                            color="warning"
+                                        />
+                                    }
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2" component="span">
+                                                Skip clearing the database before restore (native
+                                                Postgres/MySQL)
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                component="p"
+                                                sx={{ mt: 0.5, pr: 1 }}
+                                            >
+                                                Use when you cannot drop schemas (for example
+                                                permission errors) or your backup already removes or
+                                                replaces objects. Leaving this off is safer for a
+                                                full replace.
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
                             </Box>
                         )}
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ pb: 2, px: 2 }}>
-                    <Button onClick={() => setRestoreDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={closeRestoreDialog}>Cancel</Button>
                     <Button
                         variant="contained"
                         color="warning"
