@@ -35,6 +35,24 @@ import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = '/api';
 
+function getApiErrorMessage(body: unknown): string {
+    if (!body || typeof body !== 'object') {
+        return 'Request failed';
+    }
+    const o = body as Record<string, unknown>;
+    const msg = o['message'];
+    if (typeof msg === 'string' && msg.length > 0) {
+        return msg;
+    }
+    if (Array.isArray(msg) && msg.length > 0) {
+        return msg.map(String).join('; ');
+    }
+    if (typeof o['error'] === 'string' && o['error'].length > 0) {
+        return o['error'];
+    }
+    return 'Request failed';
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const token = await useAuthStore.getState().getValidToken();
 
@@ -62,10 +80,16 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        if (error.requiresConfirmation) {
+        if (
+            error &&
+            typeof error === 'object' &&
+            'requiresConfirmation' in error &&
+            error.requiresConfirmation
+        ) {
             throw new Error(JSON.stringify(error));
         }
-        throw new Error(error.message || `HTTP ${response.status}`);
+        const message = getApiErrorMessage(error);
+        throw new Error(message === 'Request failed' ? `HTTP ${response.status}` : message);
     }
 
     return response.json();
@@ -879,7 +903,8 @@ export const backupsApi = {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-            throw new Error(error.message || `HTTP ${response.status}`);
+            const message = getApiErrorMessage(error);
+            throw new Error(message === 'Request failed' ? `HTTP ${response.status}` : message);
         }
 
         return response.json();
