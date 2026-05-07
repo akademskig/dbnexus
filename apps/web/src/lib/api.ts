@@ -811,12 +811,23 @@ export const backupsApi = {
         tools: Array<{ name: string; command: string; installed: boolean; version?: string }>;
         allInstalled: boolean;
         instructions: { platform: string; instructions: string[]; canAutoInstall: boolean };
+        compatibilityNotes: string[];
     }> => {
         return fetchApi('/backups/tools/status');
     },
 
-    installTools: (): Promise<{ success: boolean; message: string; output?: string }> => {
-        return fetchApi('/backups/tools/install', { method: 'POST' });
+    installTools: (opts?: {
+        mode?: 'install' | 'upgrade_latest';
+        includePostgresqlTools?: boolean;
+        includeMysqlTools?: boolean;
+        postgresqlClientMajor?: number;
+        mysqlClientPackage?: 'default' | '8.0';
+        sudoPassword?: string;
+    }): Promise<{ success: boolean; message: string; output?: string }> => {
+        return fetchApi('/backups/tools/install', {
+            method: 'POST',
+            body: JSON.stringify(opts ?? {}),
+        });
     },
 
     getAll: (connectionId?: string): Promise<Backup[]> => {

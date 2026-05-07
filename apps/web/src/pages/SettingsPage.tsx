@@ -51,6 +51,11 @@ import { useToastStore } from '../stores/toastStore';
 import { backupsApi } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusAlert } from '../components/StatusAlert';
+import { BackupToolCompatibilityNotes } from '../components/BackupToolCompatibilityNotes';
+import {
+    InstallBackupToolsDialog,
+    type InstallBackupToolsPayload,
+} from '../components/InstallBackupToolsDialog';
 
 // Color picker for tag colors only
 function ColorPicker({
@@ -926,6 +931,9 @@ function SystemToolsTab() {
     const toast = useToastStore();
     const queryClient = useQueryClient();
     const [installDialogOpen, setInstallDialogOpen] = useState(false);
+    const [installInitialMode, setInstallInitialMode] = useState<'install' | 'upgrade_latest'>(
+        'install'
+    );
 
     const { data: toolsStatus, isLoading } = useQuery({
         queryKey: ['backup-tools-status'],
@@ -933,8 +941,9 @@ function SystemToolsTab() {
     });
 
     const installMutation = useMutation({
-        mutationFn: () => backupsApi.installTools(),
+        mutationFn: (payload: InstallBackupToolsPayload) => backupsApi.installTools(payload),
         onSuccess: (result) => {
+            setInstallDialogOpen(false);
             if (result.success) {
                 toast.success(result.message);
                 queryClient.invalidateQueries({ queryKey: ['backup-tools-status'] });
@@ -956,11 +965,6 @@ function SystemToolsTab() {
 
         navigator.clipboard.writeText(commands);
         toast.success('Installation commands copied to clipboard');
-    };
-
-    const handleAutoInstall = () => {
-        setInstallDialogOpen(false);
-        installMutation.mutate();
     };
 
     if (isLoading) {
@@ -1030,6 +1034,8 @@ function SystemToolsTab() {
                 </Table>
             </TableContainer>
 
+            <BackupToolCompatibilityNotes notes={toolsStatus?.compatibilityNotes} />
+
             {/* Installation Instructions */}
             {toolsStatus && !toolsStatus.allInstalled && toolsStatus.instructions && (
                 <Box>
@@ -1064,11 +1070,14 @@ function SystemToolsTab() {
                                             <BuildIcon />
                                         )
                                     }
-                                    onClick={() => setInstallDialogOpen(true)}
+                                    onClick={() => {
+                                        setInstallInitialMode('install');
+                                        setInstallDialogOpen(true);
+                                    }}
                                     disabled={installMutation.isPending}
                                     sx={{ textTransform: 'none' }}
                                 >
-                                    {installMutation.isPending ? 'Installing...' : 'Auto Install'}
+                                    {installMutation.isPending ? 'Working…' : 'Auto install…'}
                                 </Button>
                             )}
                         </Box>
@@ -1104,8 +1113,8 @@ function SystemToolsTab() {
                     <StatusAlert severity="info" sx={{ mt: 2 }}>
                         {toolsStatus.instructions.canAutoInstall ? (
                             <>
-                                Click <strong>Auto Install</strong> to automatically install the
-                                tools, or copy the commands and run them manually in your terminal.
+                                Click <strong>Auto install…</strong> to choose install vs upgrade
+                                and optional PostgreSQL client version, or copy the commands below.
                                 Administrator privileges are required.
                             </>
                         ) : (
@@ -1120,69 +1129,36 @@ function SystemToolsTab() {
 
             {/* All tools installed message */}
             {toolsStatus?.allInstalled && (
-                <StatusAlert severity="success">
-                    All database tools are installed and ready to use!
-                </StatusAlert>
+                <Box>
+                    <StatusAlert severity="success">
+                        All database tools are installed and ready to use!
+                    </StatusAlert>
+                    {toolsStatus.instructions?.canAutoInstall && (
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            sx={{ mt: 2, textTransform: 'none' }}
+                            startIcon={<BuildIcon />}
+                            onClick={() => {
+                                setInstallInitialMode('upgrade_latest');
+                                setInstallDialogOpen(true);
+                            }}
+                            disabled={installMutation.isPending}
+                        >
+                            Upgrade or change PostgreSQL client…
+                        </Button>
+                    )}
+                </Box>
             )}
 
-            {/* Install Confirmation Dialog */}
-            <Dialog
+            <InstallBackupToolsDialog
                 open={installDialogOpen}
-                onClose={() => setInstallDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Install Database Tools</DialogTitle>
-                <DialogContent>
-                    <StatusAlert severity="warning" sx={{ mb: 2 }}>
-                        This will prompt for your sudo/administrator password to install system
-                        packages.
-                    </StatusAlert>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                        The following tools will be installed:
-                    </Typography>
-                    <Box
-                        component="ul"
-                        sx={{ pl: 2, mb: 2, color: 'text.secondary', fontSize: 14 }}
-                    >
-                        {toolsStatus?.tools
-                            .filter((tool) => !tool.installed)
-                            .map((tool) => (
-                                <li key={tool.name}>{tool.name}</li>
-                            ))}
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                        Commands to be executed:
-                    </Typography>
-                    <Box
-                        sx={{
-                            mt: 1,
-                            p: 1.5,
-                            borderRadius: 1,
-                            border: 1,
-                            borderColor: 'primary.main',
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                        }}
-                    >
-                        {toolsStatus?.instructions.instructions.map((line, i) => (
-                            <Typography
-                                key={i}
-                                variant="body2"
-                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
-                            >
-                                {line}
-                            </Typography>
-                        ))}
-                    </Box>
-                </DialogContent>
-                <DialogActions sx={{ px: 2, pb: 2 }}>
-                    <Button onClick={() => setInstallDialogOpen(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleAutoInstall} autoFocus>
-                        Install
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onClose={() => !installMutation.isPending && setInstallDialogOpen(false)}
+                onConfirm={(payload) => installMutation.mutate(payload)}
+                isPending={installMutation.isPending}
+                platformLabel={toolsStatus?.instructions.platform}
+                initialMode={installInitialMode}
+            />
         </GlassCard>
     );
 }
