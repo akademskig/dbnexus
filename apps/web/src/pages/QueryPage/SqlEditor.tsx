@@ -471,10 +471,10 @@ export function SqlEditor({
                                                 <strong>Execution Time:</strong>{' '}
                                                 {result.executionTimeMs}ms
                                             </Typography>
-                                            {result.columns.length > 0 && (
+                                            {(result.columns ?? []).length > 0 && (
                                                 <Typography variant="body2" color="text.secondary">
                                                     <strong>Columns:</strong>{' '}
-                                                    {result.columns.length}
+                                                    {(result.columns ?? []).length}
                                                 </Typography>
                                             )}
                                         </Box>
