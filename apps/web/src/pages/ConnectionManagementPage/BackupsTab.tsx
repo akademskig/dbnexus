@@ -36,6 +36,11 @@ import { LoadingState } from '../../components/LoadingState';
 import { useToastStore } from '../../stores/toastStore';
 import { StyledTooltip } from '../../components/StyledTooltip';
 import { StatusAlert } from '@/components/StatusAlert';
+import { BackupToolCompatibilityNotes } from '@/components/BackupToolCompatibilityNotes';
+import {
+    InstallBackupToolsDialog,
+    type InstallBackupToolsPayload,
+} from '@/components/InstallBackupToolsDialog';
 
 interface BackupsTabProps {
     connectionId: string;
@@ -59,8 +64,12 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [showToolsSetup, setShowToolsSetup] = useState(false);
     const [installDialogOpen, setInstallDialogOpen] = useState(false);
+    const [installInitialMode, setInstallInitialMode] = useState<'install' | 'upgrade_latest'>(
+        'install'
+    );
     const [selectedBackupIds, setSelectedBackupIds] = useState<Set<string>>(new Set());
     const [deleteMultipleDialogOpen, setDeleteMultipleDialogOpen] = useState(false);
+    const [skipPreClean, setSkipPreClean] = useState(false);
 
     // Fetch backups
     const { data: backups = [], isLoading } = useQuery({
@@ -113,11 +122,12 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
     // Install tools mutation
     const installToolsMutation = useMutation({
-        mutationFn: () => backupsApi.installTools(),
+        mutationFn: (payload: InstallBackupToolsPayload) => backupsApi.installTools(payload),
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['backup-tools-status'] });
+            setInstallDialogOpen(false);
             if (result.success) {
-                toast.success('Database tools installed successfully');
+                toast.success(result.message);
                 setShowToolsSetup(false);
             } else {
                 toast.error(`Installation failed: ${result.message}`);
@@ -144,10 +154,17 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
     // Restore backup mutation
     const restoreMutation = useMutation({
-        mutationFn: (backupId: string) => backupsApi.restore(backupId, connectionId, 'native'),
+        mutationFn: ({
+            backupId,
+            skipPreClean: skipClean,
+        }: {
+            backupId: string;
+            skipPreClean: boolean;
+        }) => backupsApi.restore(backupId, connectionId, 'native', skipClean),
         onSuccess: () => {
             setRestoreDialogOpen(false);
             setSelectedBackup(null);
+            setSkipPreClean(false);
             toast.success('Backup restored successfully');
             // Invalidate all queries related to this connection to refresh data
             queryClient.invalidateQueries({ queryKey: ['tables', connectionId] });
@@ -211,19 +228,34 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
         }
     };
 
-    const handleDownload = (backup: Backup) => {
-        window.location.href = backupsApi.download(backup.id);
+    const handleDownload = async (backup: Backup) => {
+        try {
+            await backupsApi.downloadFile(backup.id, backup.filename);
+        } catch (error) {
+            toast.error(
+                `Download failed: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
     };
 
     const handleRestoreClick = (backup: Backup) => {
         setSelectedBackup(backup);
+        setSkipPreClean(false);
         setRestoreDialogOpen(true);
     };
 
     const handleRestoreBackup = () => {
         if (selectedBackup) {
-            restoreMutation.mutate(selectedBackup.id);
+            restoreMutation.mutate({
+                backupId: selectedBackup.id,
+                skipPreClean,
+            });
         }
+    };
+
+    const closeRestoreDialog = () => {
+        setRestoreDialogOpen(false);
+        setSkipPreClean(false);
     };
 
     const handleDeleteClick = (backup: Backup) => {
@@ -603,12 +635,7 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
             </Dialog>
 
             {/* Restore Backup Dialog */}
-            <Dialog
-                open={restoreDialogOpen}
-                onClose={() => setRestoreDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
+            <Dialog open={restoreDialogOpen} onClose={closeRestoreDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>Restore Database Backup</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
@@ -627,12 +654,41 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     Created: {formatDate(selectedBackup.createdAt)}
                                 </Typography>
+                                <FormControlLabel
+                                    sx={{ mt: 2, alignItems: 'flex-start' }}
+                                    control={
+                                        <Checkbox
+                                            checked={skipPreClean}
+                                            onChange={(_, checked) => setSkipPreClean(checked)}
+                                            color="warning"
+                                        />
+                                    }
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2" component="span">
+                                                Skip clearing the database before restore (native
+                                                Postgres/MySQL)
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                component="p"
+                                                sx={{ mt: 0.5, pr: 1 }}
+                                            >
+                                                Use when you cannot drop schemas (for example
+                                                permission errors) or your backup already removes or
+                                                replaces objects. Leaving this off is safer for a
+                                                full replace.
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
                             </Box>
                         )}
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ pb: 2, px: 2 }}>
-                    <Button onClick={() => setRestoreDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={closeRestoreDialog}>Cancel</Button>
                     <Button
                         variant="contained"
                         color="warning"
@@ -799,6 +855,10 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                                     </Table>
                                 </TableContainer>
 
+                                <BackupToolCompatibilityNotes
+                                    notes={toolsStatus.compatibilityNotes}
+                                />
+
                                 {/* Installation Instructions */}
                                 {!toolsStatus.allInstalled && (
                                     <>
@@ -859,9 +919,10 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
 
                                         {toolsStatus.instructions.canAutoInstall && (
                                             <StatusAlert severity="info" sx={{ mb: 2 }}>
-                                                Click &quot;Auto Install&quot; to automatically
-                                                install the required tools. You will be prompted for
-                                                your sudo/administrator password.
+                                                Click &quot;Auto install…&quot; to choose install or
+                                                upgrade and optional PostgreSQL client version. You
+                                                will be prompted for your sudo/administrator
+                                                password.
                                             </StatusAlert>
                                         )}
                                     </>
@@ -875,83 +936,42 @@ export function BackupsTab({ connectionId, connectionName, engine }: BackupsTabP
                     {toolsStatus?.instructions.canAutoInstall && !toolsStatus.allInstalled && (
                         <Button
                             variant="contained"
-                            onClick={() => setInstallDialogOpen(true)}
+                            onClick={() => {
+                                setInstallInitialMode('install');
+                                setInstallDialogOpen(true);
+                            }}
                             disabled={installToolsMutation.isPending}
                             startIcon={
                                 installToolsMutation.isPending && <CircularProgress size={16} />
                             }
                         >
-                            {installToolsMutation.isPending ? 'Installing...' : 'Auto Install'}
+                            {installToolsMutation.isPending ? 'Working…' : 'Auto install…'}
+                        </Button>
+                    )}
+                    {toolsStatus?.instructions.canAutoInstall && toolsStatus.allInstalled && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setInstallInitialMode('upgrade_latest');
+                                setInstallDialogOpen(true);
+                            }}
+                            disabled={installToolsMutation.isPending}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Upgrade or change client…
                         </Button>
                     )}
                 </DialogActions>
             </Dialog>
 
-            {/* Install Confirmation Dialog */}
-            <Dialog
+            <InstallBackupToolsDialog
                 open={installDialogOpen}
-                onClose={() => setInstallDialogOpen(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Install Database Tools</DialogTitle>
-                <DialogContent>
-                    <StatusAlert severity="warning" sx={{ mb: 2 }}>
-                        This will prompt for your sudo/administrator password to install system
-                        packages.
-                    </StatusAlert>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                        The following tools will be installed:
-                    </Typography>
-                    <Box
-                        component="ul"
-                        sx={{ pl: 2, mb: 2, color: 'text.secondary', fontSize: 14 }}
-                    >
-                        {toolsStatus?.tools
-                            .filter((tool) => !tool.installed)
-                            .map((tool) => (
-                                <li key={tool.name}>{tool.name}</li>
-                            ))}
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                        Commands to be executed:
-                    </Typography>
-                    <Box
-                        sx={{
-                            mt: 1,
-                            p: 1.5,
-                            borderRadius: 1,
-                            border: 1,
-                            borderColor: 'primary.main',
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                        }}
-                    >
-                        {toolsStatus?.instructions.instructions.map((line, i) => (
-                            <Typography
-                                key={i}
-                                variant="body2"
-                                sx={{ fontFamily: 'monospace', fontSize: 11 }}
-                            >
-                                {line}
-                            </Typography>
-                        ))}
-                    </Box>
-                </DialogContent>
-                <DialogActions sx={{ px: 2, pb: 2 }}>
-                    <Button onClick={() => setInstallDialogOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            setInstallDialogOpen(false);
-                            installToolsMutation.mutate();
-                        }}
-                        autoFocus
-                    >
-                        Install
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onClose={() => !installToolsMutation.isPending && setInstallDialogOpen(false)}
+                onConfirm={(payload) => installToolsMutation.mutate(payload)}
+                isPending={installToolsMutation.isPending}
+                platformLabel={toolsStatus?.instructions.platform}
+                initialMode={installInitialMode}
+            />
         </>
     );
 }

@@ -18,7 +18,7 @@ import { BackupService } from './backup.service.js';
 import { RestoreService } from './restore.service.js';
 import { BackupToolsSetup } from './setup-tools.js';
 import { MetadataService } from '../metadata/metadata.service.js';
-import { CreateBackupDto, RestoreBackupDto } from './dto/index.js';
+import { CreateBackupDto, RestoreBackupDto, InstallBackupToolsDto } from './dto/index.js';
 
 @Controller('backups')
 export class BackupController {
@@ -98,6 +98,7 @@ export class BackupController {
             connectionId: body.connectionId,
             backupId: id,
             method: body.method,
+            skipPreClean: body.skipPreClean,
         });
     }
 
@@ -111,17 +112,26 @@ export class BackupController {
     async getToolsStatus() {
         const tools = await BackupToolsSetup.checkTools();
         const instructions = BackupToolsSetup.getInstallInstructions();
+        const compatibilityNotes = BackupToolsSetup.getToolCompatibilityNotes(tools);
 
         return {
             tools,
             allInstalled: tools.every((t) => t.installed),
             instructions,
+            compatibilityNotes,
         };
     }
 
     @Post('tools/install')
     @HttpCode(HttpStatus.OK)
-    async installTools() {
-        return BackupToolsSetup.autoInstall();
+    async installTools(@Body() body: InstallBackupToolsDto) {
+        return BackupToolsSetup.autoInstall({
+            mode: body.mode ?? 'install',
+            includePostgresqlTools: body.includePostgresqlTools,
+            includeMysqlTools: body.includeMysqlTools,
+            postgresqlClientMajor: body.postgresqlClientMajor,
+            mysqlClientPackage: body.mysqlClientPackage,
+            sudoPassword: body.sudoPassword,
+        });
     }
 }

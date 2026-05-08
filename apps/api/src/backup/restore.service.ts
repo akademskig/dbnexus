@@ -12,6 +12,8 @@ export interface RestoreBackupOptions {
     connectionId: string;
     backupId: string;
     method?: 'native' | 'sql';
+    /** When true, native Postgres/MySQL restore skips the wipe step (see DTO). */
+    skipPreClean?: boolean;
 }
 
 @Injectable()
@@ -24,7 +26,7 @@ export class RestoreService {
     ) {}
 
     async restoreBackup(options: RestoreBackupOptions) {
-        const { connectionId, backupId, method = 'native' } = options;
+        const { connectionId, backupId, method = 'native', skipPreClean } = options;
         const startTime = Date.now();
 
         // Get backup details
@@ -82,7 +84,9 @@ export class RestoreService {
             if (method === 'sql') {
                 await this.performSQLRestore(connectionId, backup.filePath);
             } else {
-                await this.performRestore({ ...connection, password }, backup.filePath);
+                await this.performRestore({ ...connection, password }, backup.filePath, {
+                    skipPreClean,
+                });
             }
 
             const duration = Date.now() - startTime;
@@ -133,13 +137,14 @@ export class RestoreService {
             password?: string;
             defaultSchema?: string;
         },
-        filePath: string
+        filePath: string,
+        opts: { skipPreClean?: boolean } = {}
     ): Promise<void> {
         switch (connection.engine) {
             case 'postgres':
-                return this.performPostgresRestore(connection, filePath);
+                return this.performPostgresRestore(connection, filePath, opts);
             case 'mysql':
-                return this.performMySQLRestore(connection, filePath);
+                return this.performMySQLRestore(connection, filePath, opts);
             case 'sqlite':
                 return this.performSQLiteRestore(connection, filePath);
             default:
@@ -156,7 +161,8 @@ export class RestoreService {
             password?: string;
             defaultSchema?: string;
         },
-        filePath: string
+        filePath: string,
+        opts: { skipPreClean?: boolean } = {}
     ): Promise<void> {
         // Check if file is actually compressed by reading magic bytes
         const isCompressed = await this.isGzipCompressed(filePath);
@@ -169,8 +175,11 @@ export class RestoreService {
             await this.decompressFile(filePath, actualFilePath);
         }
 
-        // First, clean the database
-        await this.cleanPostgresDatabase(connection);
+        if (opts.skipPreClean) {
+            this.logger.warn('Skipping Postgres pre-restore clean (skipPreClean=true)');
+        } else {
+            await this.cleanPostgresDatabase(connection);
+        }
 
         const args = [
             '-h',
@@ -363,7 +372,10 @@ export class RestoreService {
                         resolve();
                     } else {
                         this.logger.error(`Clean stderr: ${stderr}`);
-                        reject(new Error(`Failed to clean database: ${stderr}`));
+                        const message =
+                            this.formatPostgresSchemaOwnerError(stderr, schemasToClean) ??
+                            `Failed to clean database: ${stderr}`;
+                        reject(new Error(message));
                     }
                 });
 
@@ -376,6 +388,25 @@ export class RestoreService {
         }
     }
 
+    /**
+     * Turns opaque Postgres privilege errors into actionable guidance.
+     */
+    private formatPostgresSchemaOwnerError(
+        stderr: string,
+        schemasToClean: string[]
+    ): string | null {
+        if (!stderr.includes('must be owner of schema')) {
+            return null;
+        }
+        const quoted = schemasToClean.map((s) => `"${s.replaceAll('"', '""')}"`).join(', ');
+        return (
+            `Failed to clean database before restore: DROP SCHEMA requires the connection user to own the schema(s) ${quoted} (or be a superuser). ` +
+            `Fix: connect as the schema owner or a superuser, or run (as a privileged role) ALTER SCHEMA schema_name OWNER TO your_user for each schema. ` +
+            `Advanced: POST /backups/:id/restore with { "connectionId": "...", "skipPreClean": true } only if your dump is safe without a wipe (e.g. includes DROP/CLEAN or targets an empty DB). ` +
+            `PostgreSQL said: ${stderr.trim()}`
+        );
+    }
+
     private async performMySQLRestore(
         connection: {
             host: string;
@@ -384,10 +415,14 @@ export class RestoreService {
             username: string;
             password?: string;
         },
-        filePath: string
+        filePath: string,
+        opts: { skipPreClean?: boolean } = {}
     ): Promise<void> {
-        // First, drop all tables to clean the database
-        await this.cleanMySQLDatabase(connection);
+        if (opts.skipPreClean) {
+            this.logger.warn('Skipping MySQL pre-restore clean (skipPreClean=true)');
+        } else {
+            await this.cleanMySQLDatabase(connection);
+        }
 
         // Check if file is compressed
         const isCompressed = await this.isGzipCompressed(filePath);

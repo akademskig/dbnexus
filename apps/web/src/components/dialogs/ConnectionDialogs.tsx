@@ -622,7 +622,7 @@ export function ConnectionFormDialog({
                             </FormControl>
                         </Box>
 
-                        {/* Engine Selection */}
+                        {/* Engine Selection — cannot change for existing connections */}
                         <Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                 Database Engine
@@ -631,7 +631,7 @@ export function ConnectionFormDialog({
                                 value={formData.engine}
                                 exclusive
                                 onChange={(_, value) => {
-                                    if (value) {
+                                    if (value && !connection) {
                                         setFormData({
                                             ...formData,
                                             engine: value,
@@ -642,12 +642,22 @@ export function ConnectionFormDialog({
                                     }
                                 }}
                                 size="small"
+                                disabled={!!connection}
                                 sx={{ flexWrap: 'wrap' }}
                             >
                                 <ToggleButton value="postgres">PostgreSQL</ToggleButton>
                                 <ToggleButton value="mysql">MySQL</ToggleButton>
                                 <ToggleButton value="sqlite">SQLite</ToggleButton>
                             </ToggleButtonGroup>
+                            {connection && (
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mt: 0.5, display: 'block' }}
+                                >
+                                    Database engine cannot be changed after creation
+                                </Typography>
+                            )}
                         </Box>
 
                         {/* Server Selection - optional for non-SQLite engines */}

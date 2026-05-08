@@ -251,8 +251,9 @@ export function DataTab({
     }
 
     // Convert result to DataGrid format
+    const resultColumns = result?.columns ?? [];
     const dataColumns: GridColDef[] = result
-        ? result.columns.map((col, colIndex) => {
+        ? resultColumns.map((col, colIndex) => {
               const isPrimaryKey = primaryKeyColumns.includes(col.name);
               const isJson = isJsonColumn(col.dataType);
               // JSON columns are edited via dialog, not inline; PK columns are not editable
@@ -366,7 +367,7 @@ export function DataTab({
                       };
 
                       // Map each column value to its indexed field name
-                      result.columns.forEach((col, colIndex) => {
+                      (result.columns ?? []).forEach((col, colIndex) => {
                           const fieldName = `${col.name}_${colIndex}`;
                           transformedRow[fieldName] = row[col.name];
                       });
@@ -463,7 +464,7 @@ export function DataTab({
         const rowsToExport = getRowsToExport();
         if (rowsToExport.length === 0) return;
 
-        const headers = result.columns.map((c) => c.name);
+        const headers = (result.columns ?? []).map((c) => c.name);
         const csvRows = [
             headers.join(','),
             ...rowsToExport.map((row) =>

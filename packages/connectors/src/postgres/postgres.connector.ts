@@ -98,23 +98,64 @@ export class PostgresConnector implements DatabaseConnector {
         return this.pool !== null;
     }
 
+    /**
+     * node-pg returns an array of Result objects when the SQL string contains multiple
+     * statements (simple query protocol). Callers expect a single Result shape.
+     */
+    private static normalizePoolQueryResults(raw: unknown): pg.QueryResult[] {
+        if (Array.isArray(raw)) {
+            return raw as pg.QueryResult[];
+        }
+        if (raw != null && typeof raw === 'object') {
+            return [raw as pg.QueryResult];
+        }
+        return [];
+    }
+
+    private static emptyPgQueryResult(): pg.QueryResult {
+        return {
+            rows: [],
+            fields: [],
+            rowCount: 0,
+            command: '',
+            oid: 0,
+        } as pg.QueryResult;
+    }
+
+    /** Last statement wins (matches common SQL client behavior). */
+    private static pickLastPgQueryResult(results: pg.QueryResult[]): pg.QueryResult {
+        if (results.length === 0) {
+            return PostgresConnector.emptyPgQueryResult();
+        }
+        return results[results.length - 1]!;
+    }
+
+    private static fieldPackets(result: pg.QueryResult): pg.FieldDef[] {
+        const f = result.fields;
+        return Array.isArray(f) ? f : [];
+    }
+
     async query(sql: string, params?: unknown[]): Promise<QueryResult> {
         if (!this.pool) {
             throw new Error('Not connected to database');
         }
 
         const startTime = Date.now();
-        const result = await this.pool.query(sql, params);
+        const raw: unknown = await this.pool.query(sql, params);
         const executionTimeMs = Date.now() - startTime;
 
-        const columns: QueryColumn[] = result.fields.map((field) => ({
+        const results = PostgresConnector.normalizePoolQueryResults(raw);
+        const result = PostgresConnector.pickLastPgQueryResult(results);
+        const fields = PostgresConnector.fieldPackets(result);
+
+        const columns: QueryColumn[] = fields.map((field) => ({
             name: field.name,
             dataType: this.pgTypeToString(field.dataTypeID),
         }));
 
         return {
             columns,
-            rows: result.rows as Record<string, unknown>[],
+            rows: (result.rows ?? []) as Record<string, unknown>[],
             rowCount: result.rowCount ?? 0,
             executionTimeMs,
             truncated: false,
@@ -126,8 +167,10 @@ export class PostgresConnector implements DatabaseConnector {
             throw new Error('Not connected to database');
         }
 
-        const result = await this.pool.query(sql, params);
-        return { rowsAffected: result.rowCount ?? 0 };
+        const raw: unknown = await this.pool.query(sql, params);
+        const results = PostgresConnector.normalizePoolQueryResults(raw);
+        const rowsAffected = results.reduce((acc, r) => acc + (r.rowCount ?? 0), 0);
+        return { rowsAffected };
     }
 
     async getTables(schema: string = 'public'): Promise<TableInfo[]> {

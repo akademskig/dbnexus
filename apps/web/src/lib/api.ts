@@ -35,6 +35,24 @@ import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = '/api';
 
+function getApiErrorMessage(body: unknown): string {
+    if (!body || typeof body !== 'object') {
+        return 'Request failed';
+    }
+    const o = body as Record<string, unknown>;
+    const msg = o['message'];
+    if (typeof msg === 'string' && msg.length > 0) {
+        return msg;
+    }
+    if (Array.isArray(msg) && msg.length > 0) {
+        return msg.map(String).join('; ');
+    }
+    if (typeof o['error'] === 'string' && o['error'].length > 0) {
+        return o['error'];
+    }
+    return 'Request failed';
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const token = await useAuthStore.getState().getValidToken();
 
@@ -62,10 +80,16 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        if (error.requiresConfirmation) {
+        if (
+            error &&
+            typeof error === 'object' &&
+            'requiresConfirmation' in error &&
+            error.requiresConfirmation
+        ) {
             throw new Error(JSON.stringify(error));
         }
-        throw new Error(error.message || `HTTP ${response.status}`);
+        const message = getApiErrorMessage(error);
+        throw new Error(message === 'Request failed' ? `HTTP ${response.status}` : message);
     }
 
     return response.json();
@@ -787,12 +811,23 @@ export const backupsApi = {
         tools: Array<{ name: string; command: string; installed: boolean; version?: string }>;
         allInstalled: boolean;
         instructions: { platform: string; instructions: string[]; canAutoInstall: boolean };
+        compatibilityNotes: string[];
     }> => {
         return fetchApi('/backups/tools/status');
     },
 
-    installTools: (): Promise<{ success: boolean; message: string; output?: string }> => {
-        return fetchApi('/backups/tools/install', { method: 'POST' });
+    installTools: (opts?: {
+        mode?: 'install' | 'upgrade_latest';
+        includePostgresqlTools?: boolean;
+        includeMysqlTools?: boolean;
+        postgresqlClientMajor?: number;
+        mysqlClientPackage?: 'default' | '8.0';
+        sudoPassword?: string;
+    }): Promise<{ success: boolean; message: string; output?: string }> => {
+        return fetchApi('/backups/tools/install', {
+            method: 'POST',
+            body: JSON.stringify(opts ?? {}),
+        });
     },
 
     getAll: (connectionId?: string): Promise<Backup[]> => {
@@ -804,8 +839,60 @@ export const backupsApi = {
         return fetchApi(`/backups/${id}`);
     },
 
-    download: (id: string): string => {
-        return `${API_BASE}/backups/${id}/download`;
+    /**
+     * Download backup file with the same auth as other API calls (navigation would omit Bearer token).
+     */
+    downloadFile: async (id: string, filenameHint: string): Promise<void> => {
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/backups/${id}/download`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (response.status === 401) {
+            const authEnabled = useAuthStore.getState().authEnabled;
+            if (authEnabled) {
+                useAuthStore.getState().logout();
+                window.location.href = '/login';
+            }
+            throw new Error('Unauthorized');
+        }
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Download failed' }));
+            throw new Error(error.message || `HTTP ${response.status}`);
+        }
+
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = filenameHint;
+        const quotedMatch = contentDisposition?.match(/filename="([^"]+)"/);
+        const unquotedMatch = contentDisposition?.match(/filename=([^;\s]+)/);
+        const extracted = quotedMatch?.[1] ?? unquotedMatch?.[1];
+        if (extracted) {
+            try {
+                filename = decodeURIComponent(extracted.trim());
+            } catch {
+                filename = extracted.trim();
+            }
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+        }
     },
 
     upload: async (connectionId: string, file: File): Promise<Backup> => {
@@ -813,14 +900,22 @@ export const backupsApi = {
         formData.append('file', file);
         formData.append('connectionId', connectionId);
 
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE}/backups/upload`, {
             method: 'POST',
             body: formData,
+            headers,
         });
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-            throw new Error(error.message || `HTTP ${response.status}`);
+            const message = getApiErrorMessage(error);
+            throw new Error(message === 'Request failed' ? `HTTP ${response.status}` : message);
         }
 
         return response.json();
@@ -829,11 +924,16 @@ export const backupsApi = {
     restore: (
         backupId: string,
         connectionId: string,
-        method?: 'native' | 'sql'
+        method?: 'native' | 'sql',
+        skipPreClean?: boolean
     ): Promise<{ success: boolean; message: string }> => {
         return fetchApi(`/backups/${backupId}/restore`, {
             method: 'POST',
-            body: JSON.stringify({ connectionId, method }),
+            body: JSON.stringify({
+                connectionId,
+                method: method ?? 'native',
+                skipPreClean: skipPreClean ?? false,
+            }),
         });
     },
 

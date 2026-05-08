@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    BadRequestException,
+    HttpException,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -50,7 +56,7 @@ export class BackupService {
         // Get connection details
         const connection = this.connectionsService.findById(connectionId);
         if (!connection) {
-            throw new Error('Connection not found');
+            throw new NotFoundException('Connection not found');
         }
 
         // Get decrypted password
@@ -143,7 +149,14 @@ export class BackupService {
                 error: errorMessage,
             });
 
-            throw error;
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            let clientMessage = errorMessage;
+            if (errorMessage.includes('server version mismatch')) {
+                clientMessage = `${errorMessage} Install PostgreSQL client tools (pg_dump) with a major version that matches or exceeds the server, or run the API on a host that has them.`;
+            }
+            throw new BadRequestException(clientMessage);
         }
     }
 
