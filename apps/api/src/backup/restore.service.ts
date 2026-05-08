@@ -139,7 +139,6 @@ export class RestoreService {
             case 'postgres':
                 return this.performPostgresRestore(connection, filePath);
             case 'mysql':
-            case 'mariadb':
                 return this.performMySQLRestore(connection, filePath);
             case 'sqlite':
                 return this.performSQLiteRestore(connection, filePath);

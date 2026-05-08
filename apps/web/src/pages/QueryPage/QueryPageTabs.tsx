@@ -54,6 +54,9 @@ interface QueryPageTabsProps {
     readonly splitViewOpen?: boolean;
     readonly onToggleSplitView?: () => void;
     readonly onRefresh?: () => void;
+    readonly onExecuteNoLimit?: () => void;
+    readonly connectionId?: string;
+    readonly selectedSchema?: string;
 }
 
 export function QueryPageTabs({
@@ -90,6 +93,9 @@ export function QueryPageTabs({
     splitViewOpen = false,
     onToggleSplitView,
     onRefresh,
+    onExecuteNoLimit,
+    connectionId,
+    selectedSchema,
 }: QueryPageTabsProps) {
     return (
         <Box
@@ -243,6 +249,7 @@ export function QueryPageTabs({
                         onSearch={onSearch}
                         searchQuery={searchQuery}
                         tableSchema={tableSchema}
+                        hasTableSelected={!!selectedTable}
                         onUpdateRow={onUpdateRow}
                         onDeleteRow={onDeleteRow}
                         onDeleteRows={onDeleteRows}
@@ -252,6 +259,9 @@ export function QueryPageTabs({
                         connectionDatabase={connectionDatabase}
                         tableName={tableName}
                         onRefresh={onRefresh}
+                        onExecuteNoLimit={onExecuteNoLimit}
+                        connectionId={connectionId}
+                        selectedSchema={selectedSchema}
                     />
                 )}
 

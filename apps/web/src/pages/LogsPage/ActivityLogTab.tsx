@@ -513,6 +513,8 @@ export function ActivityLogTab() {
                     rows={filteredActivities}
                     columns={columns}
                     loading={isLoading}
+                    rowHeight={40}
+                    columnHeaderHeight={40}
                     filterModel={filterModel}
                     onFilterModelChange={setFilterModel}
                     pageSizeOptions={[25, 50, 100]}
@@ -528,6 +530,9 @@ export function ActivityLogTab() {
                             display: 'flex',
                             alignItems: 'center',
                             borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-columnHeaders': {
+                            fontSize: 12,
                         },
                         '& .MuiDataGrid-row': {
                             '&:hover': {

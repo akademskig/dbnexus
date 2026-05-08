@@ -2,6 +2,7 @@ import { Controller, Get, Post, Param, Query, Body, NotFoundException } from '@n
 import { SyncService, TableDataDiff, DataSyncResult } from './sync.service.js';
 import { MetadataService } from '../metadata/metadata.service.js';
 import type { InstanceGroupSyncStatus, InstanceGroupTargetStatus } from '@dbnexus/shared';
+import { SyncTableDto, SyncRowsDto, SyncAllDto, DumpRestoreDto } from './dto/index.js';
 
 @Controller('sync')
 export class SyncController {
@@ -91,13 +92,7 @@ export class SyncController {
         @Param('targetConnectionId') targetConnectionId: string,
         @Param('schema') schema: string,
         @Param('table') table: string,
-        @Body()
-        body: {
-            primaryKeys: string[];
-            insertMissing?: boolean;
-            updateDifferent?: boolean;
-            deleteExtra?: boolean;
-        }
+        @Body() body: SyncTableDto
     ): Promise<DataSyncResult> {
         return this.syncService.syncTableData(
             sourceConnectionId,
@@ -121,14 +116,7 @@ export class SyncController {
         @Param('targetConnectionId') targetConnectionId: string,
         @Param('targetSchema') targetSchema: string,
         @Param('table') table: string,
-        @Body()
-        body: {
-            sourceConnectionId: string;
-            sourceSchema: string;
-            rowIds: Record<string, unknown>[]; // Array of primary key value objects
-            primaryKeys: string[];
-            mode?: 'insert' | 'upsert';
-        }
+        @Body() body: SyncRowsDto
     ): Promise<{ inserted: number; updated: number; errors: string[] }> {
         return this.syncService.syncRows(
             body.sourceConnectionId,
@@ -150,12 +138,7 @@ export class SyncController {
         @Param('groupId') groupId: string,
         @Query('targetConnectionId') targetConnectionId: string,
         @Query('schema') schema: string = 'public',
-        @Body()
-        body?: {
-            insertMissing?: boolean;
-            updateDifferent?: boolean;
-            deleteExtra?: boolean;
-        }
+        @Body() body?: SyncAllDto
     ): Promise<DataSyncResult[]> {
         // Get group and source
         const status = await this.syncService.getGroupSyncStatus(groupId);
@@ -214,11 +197,7 @@ export class SyncController {
         @Param('sourceConnectionId') sourceConnectionId: string,
         @Param('targetConnectionId') targetConnectionId: string,
         @Query('schema') schema: string = 'public',
-        @Body()
-        body?: {
-            truncateTarget?: boolean;
-            tables?: string[];
-        }
+        @Body() body?: DumpRestoreDto
     ): Promise<{
         success: boolean;
         tablesProcessed: number;

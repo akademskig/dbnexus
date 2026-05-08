@@ -1,14 +1,24 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Param,
+    Body,
+    Query,
+    ForbiddenException,
+} from '@nestjs/common';
 import { MetadataService } from '../metadata/metadata.service.js';
-import type {
-    Project,
-    ProjectCreateInput,
-    ProjectUpdateInput,
-    DatabaseGroup,
-    DatabaseGroupCreateInput,
-    DatabaseGroupUpdateInput,
-    ConnectionConfig,
-} from '@dbnexus/shared';
+import type { Project, DatabaseGroup, ConnectionConfig } from '@dbnexus/shared';
+import {
+    CreateProjectDto,
+    UpdateProjectDto,
+    CreateDatabaseGroupDto,
+    UpdateDatabaseGroupDto,
+} from './dto/index.js';
+import { CurrentUser } from '../auth/decorators/index.js';
+import type { UserContext, User } from '@dbnexus/metadata';
 
 @Controller('projects')
 export class ProjectsController {
@@ -17,8 +27,12 @@ export class ProjectsController {
     // ============ Projects ============
 
     @Get()
-    getProjects(): Project[] {
-        return this.metadataService.projectRepository.findAll();
+    getProjects(@CurrentUser() user?: User): Project[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.projectRepository.findAll(userContext);
     }
 
     @Get(':id')
@@ -27,8 +41,8 @@ export class ProjectsController {
     }
 
     @Post()
-    createProject(@Body() input: ProjectCreateInput): Project {
-        const project = this.metadataService.projectRepository.create(input);
+    createProject(@Body() input: CreateProjectDto, @CurrentUser() user?: User): Project {
+        const project = this.metadataService.projectRepository.create(input, user?.id);
 
         // Audit log
         this.metadataService.auditLogRepository.create({
@@ -45,7 +59,21 @@ export class ProjectsController {
     }
 
     @Put(':id')
-    updateProject(@Param('id') id: string, @Body() input: ProjectUpdateInput): Project | null {
+    updateProject(
+        @Param('id') id: string,
+        @Body() input: UpdateProjectDto,
+        @CurrentUser() user?: User
+    ): Project | null {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+
+        // Check if user can modify this project
+        if (!this.metadataService.projectRepository.canModify(id, userContext)) {
+            throw new ForbiddenException('You do not have permission to modify this project');
+        }
+
         const project = this.metadataService.projectRepository.update(id, input);
 
         if (project) {
@@ -65,7 +93,17 @@ export class ProjectsController {
     }
 
     @Delete(':id')
-    deleteProject(@Param('id') id: string): { success: boolean } {
+    deleteProject(@Param('id') id: string, @CurrentUser() user?: User): { success: boolean } {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+
+        // Check if user can modify this project
+        if (!this.metadataService.projectRepository.canModify(id, userContext)) {
+            throw new ForbiddenException('You do not have permission to delete this project');
+        }
+
         const project = this.metadataService.projectRepository.findById(id);
         const success = this.metadataService.projectRepository.delete(id);
 
@@ -87,8 +125,12 @@ export class ProjectsController {
     // ============ Database Groups ============
 
     @Get(':projectId/groups')
-    getGroups(@Param('projectId') projectId: string): DatabaseGroup[] {
-        return this.metadataService.databaseGroupRepository.findAll(projectId);
+    getGroups(@Param('projectId') projectId: string, @CurrentUser() user?: User): DatabaseGroup[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.databaseGroupRepository.findAll(projectId, userContext);
     }
 
     @Get(':projectId/groups/:groupId')
@@ -102,12 +144,16 @@ export class ProjectsController {
     @Post(':projectId/groups')
     createGroup(
         @Param('projectId') projectId: string,
-        @Body() input: Omit<DatabaseGroupCreateInput, 'projectId'>
+        @Body() input: CreateDatabaseGroupDto,
+        @CurrentUser() user?: User
     ): DatabaseGroup {
-        const group = this.metadataService.databaseGroupRepository.create({
-            ...input,
-            projectId,
-        });
+        const group = this.metadataService.databaseGroupRepository.create(
+            {
+                ...input,
+                projectId,
+            },
+            user?.id
+        );
 
         // Audit log
         this.metadataService.auditLogRepository.create({
@@ -127,8 +173,19 @@ export class ProjectsController {
     updateGroup(
         @Param('projectId') _projectId: string,
         @Param('groupId') groupId: string,
-        @Body() input: DatabaseGroupUpdateInput
+        @Body() input: UpdateDatabaseGroupDto,
+        @CurrentUser() user?: User
     ): DatabaseGroup | null {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+
+        // Check if user can modify this group
+        if (!this.metadataService.databaseGroupRepository.canModify(groupId, userContext)) {
+            throw new ForbiddenException('You do not have permission to modify this group');
+        }
+
         const group = this.metadataService.databaseGroupRepository.update(groupId, input);
 
         if (group) {
@@ -150,8 +207,19 @@ export class ProjectsController {
     @Delete(':projectId/groups/:groupId')
     deleteGroup(
         @Param('projectId') _projectId: string,
-        @Param('groupId') groupId: string
+        @Param('groupId') groupId: string,
+        @CurrentUser() user?: User
     ): { success: boolean } {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+
+        // Check if user can modify this group
+        if (!this.metadataService.databaseGroupRepository.canModify(groupId, userContext)) {
+            throw new ForbiddenException('You do not have permission to delete this group');
+        }
+
         const group = this.metadataService.databaseGroupRepository.findById(groupId);
         const success = this.metadataService.databaseGroupRepository.delete(groupId);
 
@@ -173,16 +241,28 @@ export class ProjectsController {
     // ============ Connections in Project/Group ============
 
     @Get(':projectId/connections')
-    getProjectConnections(@Param('projectId') projectId: string): ConnectionConfig[] {
-        return this.metadataService.connectionRepository.findByProject(projectId);
+    getProjectConnections(
+        @Param('projectId') projectId: string,
+        @CurrentUser() user?: User
+    ): ConnectionConfig[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.connectionRepository.findByProject(projectId, userContext);
     }
 
     @Get(':projectId/groups/:groupId/connections')
     getGroupConnections(
         @Param('projectId') _projectId: string,
-        @Param('groupId') groupId: string
+        @Param('groupId') groupId: string,
+        @CurrentUser() user?: User
     ): ConnectionConfig[] {
-        return this.metadataService.connectionRepository.findByGroup(groupId);
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.connectionRepository.findByGroup(groupId, userContext);
     }
 }
 
@@ -192,8 +272,15 @@ export class GroupsController {
     constructor(private readonly metadataService: MetadataService) {}
 
     @Get()
-    getAllGroups(@Query('projectId') projectId?: string): DatabaseGroup[] {
-        return this.metadataService.databaseGroupRepository.findAll(projectId);
+    getAllGroups(
+        @Query('projectId') projectId?: string,
+        @CurrentUser() user?: User
+    ): DatabaseGroup[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.databaseGroupRepository.findAll(projectId, userContext);
     }
 
     @Get(':id')
@@ -202,7 +289,14 @@ export class GroupsController {
     }
 
     @Get(':id/connections')
-    getGroupConnections(@Param('id') groupId: string): ConnectionConfig[] {
-        return this.metadataService.connectionRepository.findByGroup(groupId);
+    getGroupConnections(
+        @Param('id') groupId: string,
+        @CurrentUser() user?: User
+    ): ConnectionConfig[] {
+        const userContext: UserContext = {
+            userId: user?.id ?? null,
+            isAdmin: user?.role === 'admin',
+        };
+        return this.metadataService.connectionRepository.findByGroup(groupId, userContext);
     }
 }

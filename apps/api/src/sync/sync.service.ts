@@ -13,7 +13,7 @@ import type {
 
 // Helper to quote identifiers based on database engine
 function quoteIdentifier(name: string, engine: DatabaseEngine): string {
-    if (engine === 'mysql' || engine === 'mariadb') {
+    if (engine === 'mysql') {
         return `\`${name}\``;
     }
     return `"${name}"`;
@@ -28,7 +28,7 @@ function quoteTableRef(schema: string, table: string, engine: DatabaseEngine): s
 
 // Helper to get placeholder syntax for parameterized queries
 function getPlaceholder(index: number, engine: DatabaseEngine): string {
-    if (engine === 'mysql' || engine === 'mariadb') {
+    if (engine === 'mysql') {
         return '?';
     }
     return `$${index}`;
@@ -69,7 +69,7 @@ function formatValueForSql(value: unknown): string {
 function buildReadableSql(template: string, values: unknown[], engine: DatabaseEngine): string {
     let sql = template;
     // Replace placeholders with actual values
-    if (engine === 'mysql' || engine === 'mariadb') {
+    if (engine === 'mysql') {
         // MySQL uses ? placeholders
         for (const value of values) {
             sql = sql.replace('?', formatValueForSql(value));
@@ -248,9 +248,9 @@ export class SyncService {
         };
 
         // Use group's syncTargetSchema if set, otherwise fall back to connection's defaultSchema
-        // For MySQL/MariaDB, the database name is the schema
+        // For MySQL, the database name is the schema
         const getDefaultSchema = (conn: ConnectionConfig) => {
-            if (conn.engine === 'mysql' || conn.engine === 'mariadb') {
+            if (conn.engine === 'mysql') {
                 return conn.database;
             }
             return conn.defaultSchema || 'public';
@@ -1098,7 +1098,7 @@ export class SyncService {
                         ? "SET session_replication_role = 'origin'"
                         : "SET session_replication_role = 'replica'"
                 );
-            } else if (engine === 'mysql' || engine === 'mariadb') {
+            } else if (engine === 'mysql') {
                 await connector.execute(`SET FOREIGN_KEY_CHECKS = ${enabled ? 1 : 0}`);
             } else if (engine === 'sqlite') {
                 await connector.execute(`PRAGMA foreign_keys = ${enabled ? 'ON' : 'OFF'}`);

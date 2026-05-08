@@ -134,7 +134,6 @@ export function AuditLogsTab() {
                             width: 28,
                             height: 28,
                             borderRadius: '50%',
-                            bgcolor: `${getActionColor(params.value)}20`,
                             color: getActionColor(params.value),
                         }}
                     >
@@ -345,6 +344,8 @@ export function AuditLogsTab() {
                         rows={filteredLogs}
                         columns={columns}
                         loading={isLoading}
+                        rowHeight={40}
+                        columnHeaderHeight={40}
                         pageSizeOptions={[25, 50, 100]}
                         initialState={{
                             pagination: { paginationModel: { pageSize: 25 } },
@@ -359,6 +360,9 @@ export function AuditLogsTab() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 borderColor: 'divider',
+                            },
+                            '& .MuiDataGrid-columnHeaders': {
+                                fontSize: 12,
                             },
                             '& .MuiDataGrid-row': {
                                 '&:hover': {

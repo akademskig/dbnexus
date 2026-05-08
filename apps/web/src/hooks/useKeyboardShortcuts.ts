@@ -6,23 +6,71 @@ export interface KeyboardShortcut {
     shift?: boolean;
     alt?: boolean;
     description: string;
-    category: 'query' | 'navigation' | 'general';
+    category: 'query' | 'navigation' | 'general' | 'data';
 }
 
 // Define all keyboard shortcuts
 export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
+    // General shortcuts
+    {
+        key: '?',
+        description: 'Show keyboard shortcuts',
+        category: 'general',
+    },
+    {
+        key: 'Escape',
+        description: 'Close dialog / Cancel',
+        category: 'general',
+    },
+    // Navigation shortcuts
+    {
+        key: '1',
+        ctrl: true,
+        description: 'Go to Dashboard',
+        category: 'navigation',
+    },
+    {
+        key: '2',
+        ctrl: true,
+        description: 'Go to Query',
+        category: 'navigation',
+    },
+    {
+        key: '3',
+        ctrl: true,
+        description: 'Go to Schema Diagram',
+        category: 'navigation',
+    },
+    {
+        key: '4',
+        ctrl: true,
+        description: 'Go to Compare',
+        category: 'navigation',
+    },
+    {
+        key: '5',
+        ctrl: true,
+        description: 'Go to Logs',
+        category: 'navigation',
+    },
+    {
+        key: '6',
+        ctrl: true,
+        description: 'Go to Settings',
+        category: 'navigation',
+    },
     // Query shortcuts
     {
         key: 'Enter',
         ctrl: true,
-        description: 'Run query',
+        description: 'Execute query',
         category: 'query',
     },
     {
         key: 'Enter',
         ctrl: true,
         shift: true,
-        description: 'Run query (force)',
+        description: 'Execute query (force dangerous)',
         category: 'query',
     },
     {
@@ -38,60 +86,35 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
         description: 'Format SQL',
         category: 'query',
     },
-    // Navigation shortcuts
     {
-        key: '1',
+        key: 's',
         ctrl: true,
-        description: 'Go to Dashboard',
-        category: 'navigation',
+        description: 'Save query',
+        category: 'query',
     },
     {
-        key: '2',
+        key: 'Space',
         ctrl: true,
-        description: 'Go to Projects',
-        category: 'navigation',
+        description: 'Trigger autocomplete',
+        category: 'query',
+    },
+    // Data grid shortcuts
+    {
+        key: 'Enter',
+        description: 'Edit selected cell',
+        category: 'data',
     },
     {
-        key: '3',
+        key: 'c',
         ctrl: true,
-        description: 'Go to Query',
-        category: 'navigation',
+        description: 'Copy cell value',
+        category: 'data',
     },
     {
-        key: '4',
+        key: 'a',
         ctrl: true,
-        description: 'Go to Schema Diagram',
-        category: 'navigation',
-    },
-    {
-        key: '5',
-        ctrl: true,
-        description: 'Go to Compare',
-        category: 'navigation',
-    },
-    {
-        key: '6',
-        ctrl: true,
-        description: 'Go to Logs',
-        category: 'navigation',
-    },
-    {
-        key: '7',
-        ctrl: true,
-        description: 'Go to Settings',
-        category: 'navigation',
-    },
-    // General shortcuts
-    {
-        key: 'k',
-        ctrl: true,
-        description: 'Quick search (coming soon)',
-        category: 'general',
-    },
-    {
-        key: 'Escape',
-        description: 'Close dialog / Cancel',
-        category: 'general',
+        description: 'Select all rows',
+        category: 'data',
     },
 ];
 
@@ -178,11 +201,10 @@ export function useKeyboardShortcuts(
 export function useNavigationShortcuts(navigate: (path: string) => void) {
     useKeyboardShortcuts([
         { key: '1', ctrl: true, handler: () => navigate('/dashboard') },
-        { key: '2', ctrl: true, handler: () => navigate('/projects') },
-        { key: '3', ctrl: true, handler: () => navigate('/query') },
-        { key: '4', ctrl: true, handler: () => navigate('/schema-diagram') },
-        { key: '5', ctrl: true, handler: () => navigate('/compare') },
-        { key: '6', ctrl: true, handler: () => navigate('/logs') },
-        { key: '7', ctrl: true, handler: () => navigate('/settings') },
+        { key: '2', ctrl: true, handler: () => navigate('/query') },
+        { key: '3', ctrl: true, handler: () => navigate('/schema-diagram') },
+        { key: '4', ctrl: true, handler: () => navigate('/compare') },
+        { key: '5', ctrl: true, handler: () => navigate('/logs') },
+        { key: '6', ctrl: true, handler: () => navigate('/settings') },
     ]);
 }

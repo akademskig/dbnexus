@@ -9,8 +9,14 @@ export interface ConnectorConfig {
     port: number;
     database: string;
     username: string;
-    password: string;
+    password?: string;
     ssl?: boolean;
+    /**
+     * Whether to verify SSL certificates. Defaults to false for backwards compatibility
+     * with self-signed certificates common in development environments.
+     * Set to true for production environments with valid certificates.
+     */
+    sslVerify?: boolean;
 }
 
 export interface SqliteConnectorConfig {

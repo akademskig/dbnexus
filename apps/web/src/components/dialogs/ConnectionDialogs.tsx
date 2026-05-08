@@ -1,0 +1,983 @@
+import { useState } from 'react';
+import {
+    Box,
+    Typography,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    FormControlLabel,
+    Checkbox,
+    CircularProgress,
+    Stack,
+    ToggleButton,
+    ToggleButtonGroup,
+    Select,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Chip,
+} from '@mui/material';
+import ScienceIcon from '@mui/icons-material/Science';
+import PublicIcon from '@mui/icons-material/Public';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { connectionsApi, projectsApi, serversApi, groupsApi } from '../../lib/api';
+import { useToastStore } from '../../stores/toastStore';
+import type {
+    ConnectionConfig,
+    ConnectionCreateInput,
+    Project,
+    DatabaseGroup,
+    ServerConfig,
+} from '@dbnexus/shared';
+import { useTagsStore } from '../../stores/tagsStore';
+import { PROJECT_COLORS } from './constants';
+import { StatusAlert } from '../StatusAlert';
+
+// Project form dialog
+interface ProjectFormDialogProps {
+    open: boolean;
+    project: Project | null;
+    onClose: () => void;
+}
+
+export function ProjectFormDialog({ open, project, onClose }: ProjectFormDialogProps) {
+    const queryClient = useQueryClient();
+    const toast = useToastStore();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [color, setColor] = useState(PROJECT_COLORS[0]);
+    const [isPublic, setIsPublic] = useState(false);
+
+    const handleEnter = () => {
+        if (project) {
+            setName(project.name);
+            setDescription(project.description || '');
+            setColor(project.color || PROJECT_COLORS[0]);
+            setIsPublic(project.isPublic || false);
+        } else {
+            setName('');
+            setDescription('');
+            setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
+            setIsPublic(false);
+        }
+    };
+
+    const createMutation = useMutation({
+        mutationFn: projectsApi.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            toast.success('Project created');
+            onClose();
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({
+            id,
+            data,
+        }: {
+            id: string;
+            data: { name: string; description?: string; color?: string; isPublic?: boolean };
+        }) => projectsApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            toast.success('Project updated');
+            onClose();
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (project) {
+            updateMutation.mutate({
+                id: project.id,
+                data: { name, description, color, isPublic },
+            });
+        } else {
+            createMutation.mutate({ name, description, color });
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            TransitionProps={{ onEnter: handleEnter }}
+        >
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{project ? 'Edit Project' : 'New Project'}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Project Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="My Project"
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Optional description"
+                            multiline
+                            rows={2}
+                            fullWidth
+                        />
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Color
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {PROJECT_COLORS.map((c) => (
+                                    <Box
+                                        key={c}
+                                        onClick={() => setColor(c)}
+                                        sx={{
+                                            width: 32,
+                                            height: 32,
+                                            bgcolor: c,
+                                            cursor: 'pointer',
+                                            border: color === c ? '3px solid' : '1px solid',
+                                            borderColor:
+                                                color === c ? 'common.white' : 'transparent',
+                                            '&:hover': { opacity: 0.8 },
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+
+                        {project && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
+                                        size="small"
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
+                                    />
+                                }
+                                label="Make public (visible to all users)"
+                            />
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                        {project ? 'Save Changes' : 'Create Project'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
+    );
+}
+
+// Database group form dialog
+interface GroupFormDialogProps {
+    open: boolean;
+    group: DatabaseGroup | null;
+    projectId: string | null;
+    onClose: () => void;
+}
+
+export function GroupFormDialog({ open, group, projectId, onClose }: GroupFormDialogProps) {
+    const queryClient = useQueryClient();
+    const toast = useToastStore();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [databaseEngine, setDatabaseEngine] = useState<'postgres' | 'mysql' | 'sqlite'>(
+        'postgres'
+    );
+    const [isPublic, setIsPublic] = useState(false);
+
+    const handleEnter = () => {
+        if (group) {
+            setName(group.name);
+            setDescription(group.description || '');
+            setDatabaseEngine(group.databaseEngine);
+            setIsPublic(group.isPublic || false);
+        } else {
+            setName('');
+            setDescription('');
+            setDatabaseEngine('postgres');
+            setIsPublic(false);
+        }
+    };
+
+    const createMutation = useMutation({
+        mutationFn: () =>
+            projectsApi.createGroup(projectId!, { name, description, databaseEngine }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            toast.success('Instance group created');
+            onClose();
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: () =>
+            projectsApi.updateGroup(projectId!, group!.id, { name, description, isPublic }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            toast.success('Instance group updated');
+            onClose();
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (group) {
+            updateMutation.mutate();
+        } else {
+            createMutation.mutate();
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            TransitionProps={{ onEnter: handleEnter }}
+        >
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{group ? 'Edit Instance Group' : 'New Instance Group'}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Group Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="e.g., Users Database"
+                            helperText="Group instances of the same database (local/dev/staging/prod)"
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Optional description"
+                            multiline
+                            rows={2}
+                            fullWidth
+                        />
+
+                        {/* Database Engine - Only for new groups */}
+                        {!group && (
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Database Engine
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mb: 1, display: 'block' }}
+                                >
+                                    All connections in this group must use the same database engine
+                                </Typography>
+                                <ToggleButtonGroup
+                                    value={databaseEngine}
+                                    exclusive
+                                    onChange={(_, value) => {
+                                        if (value) setDatabaseEngine(value);
+                                    }}
+                                    size="small"
+                                    sx={{ flexWrap: 'wrap' }}
+                                >
+                                    <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                    <ToggleButton value="mysql">MySQL</ToggleButton>
+                                    <ToggleButton value="sqlite">SQLite</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+                        )}
+
+                        {/* Engine Display - For editing groups */}
+                        {group && (
+                            <TextField
+                                label="Database Engine"
+                                value={
+                                    group.databaseEngine === 'postgres'
+                                        ? 'PostgreSQL'
+                                        : group.databaseEngine === 'mysql'
+                                          ? 'MySQL'
+                                          : 'SQLite'
+                                }
+                                disabled
+                                fullWidth
+                                helperText="Database engine cannot be changed after group creation"
+                            />
+                        )}
+
+                        {group && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
+                                        size="small"
+                                        icon={<PublicIcon />}
+                                        checkedIcon={<PublicIcon />}
+                                    />
+                                }
+                                label="Make public (visible to all users)"
+                            />
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                        {group ? 'Save Changes' : 'Create Group'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
+    );
+}
+
+// Connection form dialog with project/group selection
+interface ConnectionFormDialogProps {
+    open: boolean;
+    connection: ConnectionConfig | null;
+    projects: Project[];
+    groups: DatabaseGroup[];
+    servers: ServerConfig[];
+    preselectedServerId?: string;
+    initialProjectId?: string;
+    initialGroupId?: string;
+    onClose: () => void;
+}
+
+export function ConnectionFormDialog({
+    open,
+    connection,
+    projects,
+    groups,
+    servers,
+    preselectedServerId,
+    initialProjectId,
+    initialGroupId,
+    onClose,
+}: ConnectionFormDialogProps) {
+    const queryClient = useQueryClient();
+    const toast = useToastStore();
+    const { tags: availableTags } = useTagsStore();
+    const [formData, setFormData] = useState<ConnectionCreateInput & { isPublic?: boolean }>({
+        name: '',
+        engine: 'postgres',
+        host: 'localhost',
+        port: 5432,
+        database: '',
+        username: '',
+        password: '',
+        ssl: false,
+        defaultSchema: '',
+        tags: [],
+        readOnly: false,
+        serverId: undefined,
+        projectId: undefined,
+        groupId: undefined,
+        isPublic: false,
+    });
+    const [testing, setTesting] = useState(false);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(
+        null
+    );
+
+    const getDefaultPort = (engine: string) => {
+        switch (engine) {
+            case 'postgres':
+                return 5432;
+            case 'mysql':
+                return 3306;
+            default:
+                return 0;
+        }
+    };
+
+    const handleEnter = () => {
+        if (connection) {
+            setFormData({
+                name: connection.name,
+                engine: connection.engine,
+                host: connection.host,
+                port: connection.port,
+                database: connection.database,
+                username: connection.username,
+                password: '',
+                ssl: connection.ssl,
+                defaultSchema: connection.defaultSchema || '',
+                tags: connection.tags,
+                readOnly: connection.readOnly,
+                serverId: connection.serverId,
+                projectId: connection.projectId,
+                groupId: connection.groupId,
+                isPublic: connection.isPublic || false,
+            });
+        } else {
+            // Determine engine from preselected server or initial group
+            const preselectedServer = preselectedServerId
+                ? servers.find((s) => s.id === preselectedServerId)
+                : undefined;
+            const initialGroup = initialGroupId
+                ? groups.find((g) => g.id === initialGroupId)
+                : undefined;
+            const engine = preselectedServer?.engine || initialGroup?.databaseEngine || 'postgres';
+
+            setFormData({
+                name: '',
+                engine,
+                host: preselectedServer?.host || 'localhost',
+                port: preselectedServer?.port || getDefaultPort(engine),
+                database: '',
+                username: '',
+                password: '',
+                ssl: preselectedServer?.ssl || false,
+                defaultSchema: '',
+                tags: [],
+                readOnly: false,
+                serverId: preselectedServerId,
+                projectId: initialProjectId,
+                groupId: initialGroupId,
+                isPublic: false,
+            });
+        }
+        setTestResult(null);
+    };
+
+    const isSqlite = formData.engine === 'sqlite';
+    const isMysql = formData.engine === 'mysql';
+    const hasServer = !!formData.serverId;
+    // Filter groups by project AND database engine
+    const availableGroups = groups.filter(
+        (g) => g.projectId === formData.projectId && g.databaseEngine === formData.engine
+    );
+    // Filter servers by database engine (SQLite doesn't use servers)
+    const availableServers = isSqlite ? [] : servers.filter((s) => s.engine === formData.engine);
+
+    const createMutation = useMutation({
+        mutationFn: connectionsApi.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Database added');
+            onClose();
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: ConnectionCreateInput }) =>
+            connectionsApi.update(id, {
+                ...data,
+                // Convert undefined to null for clearing server/project/group
+                serverId: data.serverId === undefined ? null : data.serverId,
+                projectId: data.projectId === undefined ? null : data.projectId,
+                groupId: data.groupId === undefined ? null : data.groupId,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            toast.success('Database updated');
+            onClose();
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (connection?.id) {
+            updateMutation.mutate({ id: connection.id, data: formData });
+        } else {
+            createMutation.mutate(formData);
+        }
+    };
+
+    const handleTest = async () => {
+        setTesting(true);
+        setTestResult(null);
+        try {
+            let result;
+            // When editing and password is empty, use stored credentials
+            if (connection && !formData.password) {
+                result = await connectionsApi.test(connection.id);
+            } else {
+                result = await connectionsApi.testSettings(formData);
+            }
+            setTestResult(result);
+        } catch (error) {
+            setTestResult({
+                success: false,
+                message: error instanceof Error ? error.message : 'Test failed',
+            });
+        } finally {
+            setTesting(false);
+        }
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            TransitionProps={{ onEnter: handleEnter }}
+        >
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{connection ? 'Edit Database' : 'Add Database'}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Display Name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            placeholder="My Database"
+                            helperText="A friendly name to identify this database connection"
+                            required
+                            fullWidth
+                            size="small"
+                        />
+
+                        {/* Project & Group selection */}
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Project</InputLabel>
+                                <Select
+                                    value={formData.projectId || ''}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            projectId: e.target.value || undefined,
+                                            groupId: undefined, // Reset group when project changes
+                                        })
+                                    }
+                                    label="Project"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {projects.map((p) => (
+                                        <MenuItem key={p.id} value={p.id}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        width: 12,
+                                                        height: 12,
+                                                        bgcolor: p.color || PROJECT_COLORS[0],
+                                                    }}
+                                                />
+                                                {p.name}
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl fullWidth size="small" disabled={!formData.projectId}>
+                                <InputLabel>Instance Group</InputLabel>
+                                <Select
+                                    value={formData.groupId || ''}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            groupId: e.target.value || undefined,
+                                        })
+                                    }
+                                    label="Instance Group"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {availableGroups.length === 0 && formData.projectId && (
+                                        <MenuItem disabled>
+                                            <em>No groups for {formData.engine} in this project</em>
+                                        </MenuItem>
+                                    )}
+                                    {availableGroups.map((g) => (
+                                        <MenuItem key={g.id} value={g.id}>
+                                            {g.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+
+                        {/* Engine Selection */}
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Database Engine
+                            </Typography>
+                            <ToggleButtonGroup
+                                value={formData.engine}
+                                exclusive
+                                onChange={(_, value) => {
+                                    if (value) {
+                                        setFormData({
+                                            ...formData,
+                                            engine: value,
+                                            port: getDefaultPort(value),
+                                            groupId: undefined, // Reset group when engine changes
+                                            serverId: undefined, // Reset server when engine changes
+                                        });
+                                    }
+                                }}
+                                size="small"
+                                sx={{ flexWrap: 'wrap' }}
+                            >
+                                <ToggleButton value="postgres">PostgreSQL</ToggleButton>
+                                <ToggleButton value="mysql">MySQL</ToggleButton>
+                                <ToggleButton value="sqlite">SQLite</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+
+                        {/* Server Selection - optional for non-SQLite engines */}
+                        {!isSqlite && (
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Server (Optional)</InputLabel>
+                                <Select
+                                    value={formData.serverId || ''}
+                                    onChange={(e) => {
+                                        const selectedServer = servers.find(
+                                            (s) => s.id === e.target.value
+                                        );
+                                        setFormData({
+                                            ...formData,
+                                            serverId: e.target.value || undefined,
+                                            host: selectedServer?.host || formData.host,
+                                            port: selectedServer?.port || formData.port,
+                                            ssl: selectedServer?.ssl ?? formData.ssl,
+                                        });
+                                    }}
+                                    label="Server (Optional)"
+                                >
+                                    <MenuItem value="">
+                                        <em>None - enter connection details manually</em>
+                                    </MenuItem>
+                                    {availableServers.map((s) => (
+                                        <MenuItem key={s.id} value={s.id}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 1,
+                                                }}
+                                            >
+                                                {s.name}
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                >
+                                                    ({s.host}:{s.port})
+                                                </Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
+
+                        {/* Connection details - shown for non-SQLite */}
+                        {!isSqlite && (
+                            <>
+                                {/* Host/Port - shown when no server is selected */}
+                                {!hasServer && (
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
+                                        <TextField
+                                            label="Host"
+                                            value={formData.host}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, host: e.target.value })
+                                            }
+                                            placeholder="localhost"
+                                            required
+                                            size="small"
+                                            sx={{ flex: 2 }}
+                                        />
+                                        <TextField
+                                            label="Port"
+                                            type="number"
+                                            value={formData.port || ''}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    port: Number.parseInt(e.target.value) || 0,
+                                                })
+                                            }
+                                            placeholder={
+                                                formData.engine === 'postgres' ? '5432' : '3306'
+                                            }
+                                            required
+                                            size="small"
+                                            sx={{ flex: 1 }}
+                                        />
+                                    </Box>
+                                )}
+
+                                <TextField
+                                    label="Database Name"
+                                    value={formData.database}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, database: e.target.value })
+                                    }
+                                    placeholder="mydb"
+                                    helperText={
+                                        hasServer
+                                            ? 'The database to connect to on this server'
+                                            : undefined
+                                    }
+                                    required
+                                    fullWidth
+                                    size="small"
+                                />
+
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField
+                                        label="Username"
+                                        value={formData.username}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, username: e.target.value })
+                                        }
+                                        placeholder="db_user"
+                                        required
+                                        size="small"
+                                        sx={{ flex: 1 }}
+                                    />
+                                    <TextField
+                                        label="Password"
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, password: e.target.value })
+                                        }
+                                        placeholder={connection ? '••••••••' : ''}
+                                        required={!connection}
+                                        size="small"
+                                        sx={{ flex: 1 }}
+                                    />
+                                </Box>
+                            </>
+                        )}
+
+                        {/* SQLite fields */}
+                        {isSqlite && (
+                            <TextField
+                                label="Database File Path"
+                                value={formData.database}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, database: e.target.value })
+                                }
+                                placeholder="/path/to/database.db"
+                                helperText="Absolute path to the SQLite database file"
+                                required
+                                fullWidth
+                                size="small"
+                            />
+                        )}
+
+                        {/* Default Schema - for Postgres */}
+                        {!isSqlite && !isMysql && (
+                            <TextField
+                                label="Default Schema"
+                                value={formData.defaultSchema || ''}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, defaultSchema: e.target.value })
+                                }
+                                placeholder="public"
+                                helperText="Default schema to use (leave empty for 'public')"
+                                fullWidth
+                                size="small"
+                            />
+                        )}
+
+                        <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Tags
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                {availableTags.map((tag) => {
+                                    const currentTags = formData.tags ?? [];
+                                    const isSelected = currentTags.includes(tag.name);
+                                    return (
+                                        <Chip
+                                            key={tag.id}
+                                            label={tag.name}
+                                            size="small"
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        tags: currentTags.filter(
+                                                            (t) => t !== tag.name
+                                                        ),
+                                                    });
+                                                } else {
+                                                    setFormData({
+                                                        ...formData,
+                                                        tags: [...currentTags, tag.name],
+                                                    });
+                                                }
+                                            }}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                borderRadius: '16px',
+                                                fontWeight: 500,
+                                                bgcolor: isSelected
+                                                    ? `rgba(${tag.color}, 0.25)`
+                                                    : `rgba(${tag.color}, 0.08)`,
+                                                color: `rgb(${tag.color})`,
+                                                border: isSelected
+                                                    ? `2px solid rgba(${tag.color}, 0.6)`
+                                                    : `1px solid rgba(${tag.color}, 0.3)`,
+                                                '&:hover': {
+                                                    bgcolor: `rgba(${tag.color}, 0.2)`,
+                                                },
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </Box>
+                            {availableTags.length === 0 && (
+                                <Typography variant="caption" color="text.secondary">
+                                    No tags available. Create tags in Settings.
+                                </Typography>
+                            )}
+                        </Box>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                            {/* SSL option - shown for non-SQLite when no server is selected */}
+                            {!isSqlite && !hasServer && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.ssl}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    ssl: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                        />
+                                    }
+                                    label="Use SSL"
+                                />
+                            )}
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={formData.readOnly}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, readOnly: e.target.checked })
+                                        }
+                                        size="small"
+                                    />
+                                }
+                                label="Read-only mode"
+                            />
+                            {connection && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.isPublic || false}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    isPublic: e.target.checked,
+                                                })
+                                            }
+                                            size="small"
+                                            icon={<PublicIcon />}
+                                            checkedIcon={<PublicIcon />}
+                                        />
+                                    }
+                                    label="Make public (visible to all users)"
+                                />
+                            )}
+                        </Box>
+
+                        {testResult && (
+                            <StatusAlert severity={testResult.success ? 'success' : 'error'}>
+                                {testResult.message}
+                            </StatusAlert>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button
+                        onClick={handleTest}
+                        disabled={testing}
+                        startIcon={testing ? <CircularProgress size={16} /> : <ScienceIcon />}
+                    >
+                        Test
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                        {connection ? 'Save Changes' : 'Add Database'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
+    );
+}
+
+// Edit connection dialog - fetches required data internally
+interface EditConnectionDialogProps {
+    open: boolean;
+    connection: ConnectionConfig;
+    onClose: () => void;
+}
+
+export function EditConnectionDialog({ open, connection, onClose }: EditConnectionDialogProps) {
+    const { data: projects = [] } = useQuery({
+        queryKey: ['projects'],
+        queryFn: () => projectsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: groups = [] } = useQuery({
+        queryKey: ['groups'],
+        queryFn: () => groupsApi.getAll(),
+        enabled: open,
+    });
+
+    const { data: servers = [] } = useQuery({
+        queryKey: ['servers'],
+        queryFn: () => serversApi.getAll(),
+        enabled: open,
+    });
+
+    return (
+        <ConnectionFormDialog
+            open={open}
+            connection={connection}
+            projects={projects}
+            groups={groups}
+            servers={servers}
+            onClose={onClose}
+        />
+    );
+}

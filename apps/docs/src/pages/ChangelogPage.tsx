@@ -98,9 +98,167 @@ const ChangeItem = styled.li<{ type: 'added' | 'changed' | 'fixed' | 'removed' }
 
 const changelog = [
     {
+        version: '0.5.3',
+        date: 'March 2026',
+        latest: true,
+        changes: [
+            {
+                type: 'fixed' as const,
+                text: 'Sidebar selection now only highlights the icon instead of the full row',
+            },
+            {
+                type: 'added' as const,
+                text: 'Data import - import CSV and JSON files directly into database tables with column mapping',
+            },
+        ],
+    },
+    {
+        version: '0.5.2',
+        date: 'March 2026',
+        changes: [
+            {
+                type: 'fixed' as const,
+                text: 'Query templates backdrop no longer persists when selecting with favorite table active',
+            },
+        ],
+    },
+    {
+        version: '0.5.1',
+        date: 'March 2026',
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Keyboard shortcuts overlay - press ? anywhere to view all available shortcuts',
+            },
+            {
+                type: 'added' as const,
+                text: 'Query tab improvements - browser-style tabs showing table names with tooltips',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Updated navigation shortcuts (Ctrl+1 through Ctrl+6)',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Connection string now displays correctly when navigating via keyboard shortcut',
+            },
+        ],
+    },
+    {
+        version: '0.5.0',
+        date: 'March 2026',
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Password verification before viewing server credentials - improved security for sensitive data',
+            },
+            {
+                type: 'added' as const,
+                text: 'Per-table schema migration - apply migrations individually with copy/apply actions per table',
+            },
+            {
+                type: 'added' as const,
+                text: 'Edit and Delete options on database rows in Projects & Groups section',
+            },
+            {
+                type: 'added' as const,
+                text: 'Management icons in collapsed navigation popups for quick access to settings',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Visual refresh for Group Sync and Compare pages with improved layout',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Compact row height in Logs page tables for better data density',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Password now optional when adding connections from network scan',
+            },
+        ],
+    },
+    {
+        version: '0.4.1',
+        date: 'March 2026',
+        changes: [
+            {
+                type: 'changed' as const,
+                text: 'Updated documentation with new screenshots and Settings & System Tools section',
+            },
+            {
+                type: 'changed' as const,
+                text: 'Added data comparison feature documentation to Compare & Sync',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Improved checkbox alignment in scan dialog',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Fixed ESM compatibility issue when running globally installed npm package',
+            },
+        ],
+    },
+    {
+        version: '0.3.1',
+        date: 'February 2026',
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Server Startup/Shutdown Commands - control Docker containers and local database instances directly from the UI',
+            },
+            {
+                type: 'added' as const,
+                text: 'CLI Configuration File (dbnexus.config.yaml) - declarative server and database configuration with environment variable support',
+            },
+            {
+                type: 'added' as const,
+                text: 'Config export command (dbnexus config export) - export current configuration to YAML',
+            },
+            {
+                type: 'added' as const,
+                text: 'PostgreSQL 15+ schema permissions - auto-grant CREATE on public schema when creating databases',
+            },
+            {
+                type: 'fixed' as const,
+                text: 'Row sync validation error when syncing rows between databases',
+            },
+        ],
+    },
+    {
+        version: '0.3.0',
+        date: 'January 2026',
+        changes: [
+            {
+                type: 'added' as const,
+                text: 'Server Management page - manage database servers separately from connections',
+            },
+            {
+                type: 'added' as const,
+                text: 'Create databases on servers with optional user creation',
+            },
+            {
+                type: 'added' as const,
+                text: 'Drop databases with confirmation dialog',
+            },
+            {
+                type: 'added' as const,
+                text: 'Import existing databases as connections',
+            },
+            {
+                type: 'added' as const,
+                text: 'Connection Type labels (Docker, Local, Environment, Remote)',
+            },
+            {
+                type: 'added' as const,
+                text: 'Server health monitoring with version and uptime display',
+            },
+        ],
+    },
+    {
         version: '0.2.0',
         date: 'January 2026',
-        latest: true,
         changes: [
             {
                 type: 'added' as const,

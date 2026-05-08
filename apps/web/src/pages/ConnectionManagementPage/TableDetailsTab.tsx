@@ -401,7 +401,7 @@ export function TableDetailsTab({
                 }
             }
         } else {
-            // MySQL/MariaDB uses MODIFY COLUMN
+            // MySQL uses MODIFY COLUMN
             let sql = `ALTER TABLE ${fullTableName} MODIFY COLUMN ${quotedColumn} ${newColumn.dataType || columnToEdit.dataType}`;
             if (!newColumn.nullable) {
                 sql += ' NOT NULL';
@@ -576,7 +576,7 @@ export function TableDetailsTab({
         if (indexToEdit.isPrimary) {
             if (connection?.engine === 'postgres') {
                 sqlStatements.push(`ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quotedOldName}`);
-            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+            } else if (connection?.engine === 'mysql') {
                 sqlStatements.push(`ALTER TABLE ${fullTableName} DROP PRIMARY KEY`);
             } else {
                 toast.error('SQLite does not support dropping primary keys');
@@ -587,7 +587,7 @@ export function TableDetailsTab({
                 sqlStatements.push(
                     `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedOldName}`
                 );
-            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+            } else if (connection?.engine === 'mysql') {
                 sqlStatements.push(`DROP INDEX ${quotedOldName} ON ${fullTableName}`);
             } else {
                 sqlStatements.push(`DROP INDEX ${quotedOldName}`);
@@ -644,7 +644,7 @@ export function TableDetailsTab({
             // Primary key constraint - use ALTER TABLE DROP CONSTRAINT
             if (connection?.engine === 'postgres') {
                 sql = `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quotedIndexName}`;
-            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+            } else if (connection?.engine === 'mysql') {
                 sql = `ALTER TABLE ${fullTableName} DROP PRIMARY KEY`;
             } else {
                 // SQLite doesn't support dropping primary keys
@@ -655,7 +655,7 @@ export function TableDetailsTab({
             // Regular index
             if (connection?.engine === 'postgres') {
                 sql = `DROP INDEX ${quoteIdentifierForEngine(selectedSchema)}.${quotedIndexName}`;
-            } else if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+            } else if (connection?.engine === 'mysql') {
                 sql = `DROP INDEX ${quotedIndexName} ON ${fullTableName}`;
             } else {
                 sql = `DROP INDEX ${quotedIndexName}`;
@@ -726,7 +726,7 @@ export function TableDetailsTab({
         const quotedFkName = quoteIdentifierForEngine(fkToDelete.name);
 
         let sql: string;
-        if (connection?.engine === 'mysql' || connection?.engine === 'mariadb') {
+        if (connection?.engine === 'mysql') {
             sql = `ALTER TABLE ${fullTableName} DROP FOREIGN KEY ${quotedFkName}`;
         } else {
             sql = `ALTER TABLE ${fullTableName} DROP CONSTRAINT ${quotedFkName}`;

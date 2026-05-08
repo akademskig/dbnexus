@@ -111,13 +111,14 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                 <Paragraph>Once the UI is open, you have two options:</Paragraph>
                 <List>
                     <li>
-                        <strong>Scan for Databases:</strong> Click "Scan for Connections" to
-                        automatically discover databases running on your machine, in Docker
-                        containers, or configured in environment files.
+                        <strong>Scan for Databases:</strong> Click "Scan" to automatically discover
+                        databases running on your machine, in Docker containers, or configured in
+                        environment files.
                     </li>
                     <li>
-                        <strong>Add Manually:</strong> Click "Add Connection" and enter your
-                        database credentials.
+                        <strong>Add Manually:</strong> Click "Add" and enter your database
+                        credentials. You can add a connection directly or associate it with a server
+                        for additional management capabilities.
                     </li>
                 </List>
                 <Note>
@@ -138,16 +139,26 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                 </Paragraph>
                 <List>
                     <li>
-                        <code>connections.db</code> - SQLite database storing your connections
-                        (credentials are encrypted)
+                        <code>metadata.db</code> - SQLite database storing your connections,
+                        servers, and settings (credentials are encrypted)
                     </li>
                     <li>
-                        <code>queries.db</code> - Query history and saved queries
+                        <code>logs/</code> - Query history and audit logs
                     </li>
                 </List>
                 <Paragraph>
-                    You can customize the theme (dark/light) and keyboard shortcuts from the
-                    Settings page in the UI.
+                    You can also use a YAML configuration file to define your servers and databases
+                    declaratively:
+                </Paragraph>
+                <CodeBlock language="bash">{`# Initialize workspace and create config template
+dbnexus init
+
+# Edit dbnexus.config.yaml, then import
+dbnexus init`}</CodeBlock>
+                <Paragraph>
+                    Create a <code>.env</code> file for sensitive values like passwords. See the{' '}
+                    <InlineLink to="/docs/cli">CLI Reference</InlineLink> for the full config file
+                    format.
                 </Paragraph>
             </Section>
 
@@ -158,7 +169,9 @@ dbnexus query --conn mydb --sql "SELECT * FROM users"`}</CodeBlock>
                     <li>Write and execute queries with syntax highlighting</li>
                     <li>Visualize your schema with the interactive diagram</li>
                     <li>Compare schemas between environments</li>
-                    <li>Organize connections into projects and groups</li>
+                    <li>Organize connections into projects and sync groups</li>
+                    <li>Manage servers and control Docker containers</li>
+                    <li>Create and restore database backups</li>
                 </List>
             </Section>
         </DocsLayout>

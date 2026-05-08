@@ -9,7 +9,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../app.module.js';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -71,6 +71,33 @@ export const TEST_CONNECTIONS = {
     },
 };
 
+// Docker container server configs (for server-level operations)
+export const TEST_SERVERS = {
+    postgresServer: {
+        name: 'Test Postgres Server',
+        engine: 'postgres' as const,
+        host: 'localhost',
+        port: 5450,
+        connectionType: 'local' as const,
+        ssl: false,
+        username: 'demo',
+        password: 'demo123',
+        tags: ['test'],
+    },
+    mysqlServer: {
+        name: 'Test MySQL Server',
+        engine: 'mysql' as const,
+        host: 'localhost',
+        port: 3350,
+        connectionType: 'local' as const,
+        ssl: false,
+        // Use root credentials for server-level operations (create/drop databases)
+        username: 'root',
+        password: 'root123',
+        tags: ['test'],
+    },
+};
+
 // Create NestJS app for integration tests
 export async function createTestApp(): Promise<INestApplication> {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -78,6 +105,22 @@ export async function createTestApp(): Promise<INestApplication> {
     }).compile();
 
     const app = moduleFixture.createNestApplication();
+
+    // Configure validation pipe (same as main.ts)
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+            transformOptions: {
+                enableImplicitConversion: true,
+            },
+        })
+    );
+
+    // Set global prefix (same as main.ts)
+    app.setGlobalPrefix('api');
+
     await app.init();
     return app;
 }

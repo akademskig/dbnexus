@@ -1,6 +1,7 @@
 export { DashboardPage } from './DashboardPage';
-export { StatCard } from './StatCard';
-export { ConnectionRow } from './ConnectionRow';
-export { ActivityItem } from './ActivityItem';
 export { SyncGroupRow } from './SyncGroupRow';
+export { SyncGroupsSection } from './SyncGroupsSection';
+export { QuickAccessSection } from './QuickAccessSection';
+export { ServerDatabaseTable } from './ServerDatabaseTable';
+export { ProjectsSection } from './ProjectsSection';
 export { getTimeAgo } from './utils';

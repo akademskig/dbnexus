@@ -7,8 +7,10 @@ import type { GridSortModel, GridFilterModel } from '@mui/x-data-grid';
 import type { TableInfo, TableSchema, QueryResult } from '@dbnexus/shared';
 import { connectionsApi, queriesApi, schemaApi } from '../../lib/api';
 import { useQueryPageStore } from '../../stores/queryPageStore';
+import { useQueryTabsStore } from '../../stores/queryTabsStore';
 import { useToastStore } from '../../stores/toastStore';
 import { useConnectionStore } from '../../stores/connectionStore';
+import { useRecentDatabasesStore } from '../../stores/recentDatabasesStore';
 import { QueryPageSidebar } from './QueryPageSidebar';
 import { QueryPageHeader } from './QueryPageHeader';
 import { QueryPageTabs } from './QueryPageTabs';
@@ -35,6 +37,9 @@ export function QueryPage() {
     const { lastState, saveState } = useQueryPageStore();
     const toast = useToastStore();
 
+    // Query tabs store
+    const { tabs, activeTabId, addTab, updateTab, getActiveTab } = useQueryTabsStore();
+
     // Shared connection store (for syncing with other pages like Schema Visualizer)
     const {
         selectedConnectionId: sharedConnectionId,
@@ -60,6 +65,12 @@ export function QueryPage() {
     useEffect(() => {
         if (routeConnectionId && routeConnectionId !== selectedConnectionId) {
             setSelectedConnectionId(routeConnectionId);
+            // Reset all state when connection changes
+            setSelectedSchema('');
+            setSelectedTable(null);
+            setResult(null);
+            setError(null);
+            setSql('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [routeConnectionId]); // Only react to URL changes, not state changes
@@ -79,7 +90,28 @@ export function QueryPage() {
     const [tableSearch, setTableSearch] = useState('');
     const [tablesExpanded, setTablesExpanded] = useState(true);
     const [viewsExpanded, setViewsExpanded] = useState(true);
-    const [sql, setSql] = useState('');
+
+    // Initialize tabs if empty
+    useEffect(() => {
+        if (tabs.length === 0) {
+            addTab(routeConnectionId);
+        }
+    }, [tabs.length, addTab, routeConnectionId]);
+
+    // Get active query tab's SQL or empty string
+    const activeQueryTab = getActiveTab();
+    const sql = activeQueryTab?.sql ?? '';
+
+    // Update SQL in the active tab
+    const setSql = useCallback(
+        (newSql: string) => {
+            if (activeTabId) {
+                updateTab(activeTabId, { sql: newSql });
+            }
+        },
+        [activeTabId, updateTab]
+    );
+
     const [result, setResult] = useState<QueryResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [totalRowCount, setTotalRowCount] = useState<number | null>(null);
@@ -189,7 +221,7 @@ export function QueryPage() {
             setError(null);
             setSql('');
         },
-        [navigate, activeTab]
+        [navigate, activeTab, setSql]
     );
 
     // Handle schema change
@@ -240,8 +272,21 @@ export function QueryPage() {
 
     const selectedConnection = connections.find((c) => c.id === selectedConnectionId);
 
+    // Track recent database access
+    const { addRecentDatabase } = useRecentDatabasesStore();
+    useEffect(() => {
+        if (selectedConnection) {
+            addRecentDatabase({
+                connectionId: selectedConnection.id,
+                name: selectedConnection.name || selectedConnection.database,
+                engine: selectedConnection.engine,
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedConnection?.id, addRecentDatabase]);
+
     // Schemas query
-    const { data: schemas = [], refetch: refetchSchemas } = useQuery({
+    const { data: schemas = [] } = useQuery({
         queryKey: ['schemas', selectedConnectionId],
         queryFn: () => schemaApi.getSchemas(selectedConnectionId),
         enabled: !!selectedConnectionId,
@@ -251,6 +296,7 @@ export function QueryPage() {
     const {
         data: tables = [],
         isLoading: tablesLoading,
+        isFetching: tablesFetching,
         refetch: refetchTables,
     } = useQuery({
         queryKey: ['tables', selectedConnectionId, selectedSchema],
@@ -325,7 +371,7 @@ export function QueryPage() {
                 const engine = selectedConnection?.engine;
                 let defaultSchema: string | undefined;
 
-                if (engine === 'mysql' || engine === 'mariadb') {
+                if (engine === 'mysql') {
                     defaultSchema =
                         selectedConnection?.database &&
                         schemas.includes(selectedConnection.database)
@@ -360,7 +406,7 @@ export function QueryPage() {
 
     // Execute mutation
 
-    // Restore table selection from URL
+    // Restore table selection from URL or auto-select first table
     useEffect(() => {
         // Skip restoration if we just did a FK query
         if (skipTableRestoreRef.current) {
@@ -391,7 +437,7 @@ export function QueryPage() {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tables, urlTable, urlSchema, selectedTable]);
+    }, [tables, tablesLoading, tablesFetching, urlTable, urlSchema, selectedTable]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -621,9 +667,7 @@ export function QueryPage() {
                 if (searchableColumns.length > 0) {
                     const searchConditions = searchableColumns.map((col) => {
                         const quotedCol = quoteIdentifier(col.name, engine);
-                        if (engine === 'sqlite') {
-                            return `${quotedCol} LIKE '%${searchTerm}%'`;
-                        } else if (engine === 'mysql' || engine === 'mariadb') {
+                        if (engine === 'sqlite' || engine === 'mysql') {
                             return `${quotedCol} LIKE '%${searchTerm}%'`;
                         } else {
                             return `${quotedCol}::text ILIKE '%${searchTerm}%'`;
@@ -646,17 +690,27 @@ export function QueryPage() {
             setSql(query);
             executeMutation.mutate({ query });
         },
-        [selectedConnection?.engine, executeMutation]
+        [selectedConnection?.engine, executeMutation, setSql]
     );
 
     // Load table data when selecting a table
     const handleTableSelect = useCallback(
         async (table: TableInfo) => {
             setSelectedTable(table);
+            setResult(null);
+            setError(null);
             setTotalRowCount(null);
             setPaginationModel({ page: 0, pageSize: paginationModel.pageSize });
             setSearchQuery('');
             updateUrl({ table: table.name });
+
+            // Update active tab with table info
+            if (activeTabId) {
+                updateTab(activeTabId, {
+                    tableName: table.name,
+                    schemaName: table.schema,
+                });
+            }
 
             try {
                 const { count } = await schemaApi.getTableRowCount(
@@ -673,7 +727,14 @@ export function QueryPage() {
             setFilterModel({ items: [] });
             fetchTableData(table, 0, paginationModel.pageSize, '', null, [], { items: [] });
         },
-        [selectedConnectionId, updateUrl, fetchTableData, paginationModel.pageSize]
+        [
+            selectedConnectionId,
+            updateUrl,
+            fetchTableData,
+            paginationModel.pageSize,
+            activeTabId,
+            updateTab,
+        ]
     );
 
     // Handle pagination change
@@ -866,13 +927,6 @@ export function QueryPage() {
         }
     }, [selectedTable, selectedConnectionId, refetchTables]);
 
-    // Group tables by schema
-    const handleRefresh = () => {
-        refetchSchemas();
-        refetchTables();
-        refetchRowCount();
-    };
-
     // Row operations hook
     const {
         addRowOpen,
@@ -968,7 +1022,14 @@ export function QueryPage() {
                 `Querying ${info.referencedTable} where ${info.referencedColumn} = ${info.value}`
             );
         },
-        [selectedConnectionId, selectedConnection?.engine, selectedSchema, executeMutation, toast]
+        [
+            selectedConnectionId,
+            selectedConnection?.engine,
+            selectedSchema,
+            executeMutation,
+            toast,
+            setSql,
+        ]
     );
 
     // Redirect to dashboard if no connections after loading
@@ -981,24 +1042,22 @@ export function QueryPage() {
             {/* Top Toolbar */}
             <QueryPageToolbar
                 selectedConnectionId={selectedConnectionId}
-                selectedConnection={selectedConnection}
+                schemas={schemas}
+                selectedSchema={selectedSchema}
+                onSchemaChange={handleSchemaChange}
                 templatesOpen={templatesOpen}
                 savedQueriesOpen={savedQueriesOpen}
                 historyOpen={historyOpen}
-                onConnectionChange={handleConnectionChange}
                 onTemplatesToggle={() => setTemplatesOpen(true)}
                 onSavedQueriesToggle={() => setSavedQueriesOpen(true)}
                 onHistoryToggle={() => setHistoryOpen(true)}
-                onRefresh={handleRefresh}
             />
 
             {/* Main Content */}
             <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 <QueryPageSidebar
                     selectedConnectionId={selectedConnectionId}
-                    schemas={schemas}
                     selectedSchema={selectedSchema}
-                    onSchemaChange={handleSchemaChange}
                     tableSearch={tableSearch}
                     onTableSearchChange={setTableSearch}
                     filteredTables={filteredTables}
@@ -1027,8 +1086,6 @@ export function QueryPage() {
                                         );
                                     }}
                                     onAddRow={() => setAddRowOpen(true)}
-                                    onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
-                                    refreshing={executeMutation.isPending}
                                 />
                             )}
                             {splitViewOpen ? (
@@ -1051,6 +1108,7 @@ export function QueryPage() {
                                         }}
                                     >
                                         <QueryPageTabs
+                                            key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                             activeTab={activeTab}
                                             onTabChange={handleTabChange}
                                             result={result}
@@ -1091,6 +1149,9 @@ export function QueryPage() {
                                             onRefresh={
                                                 lastSuccessfulQuery ? rerunLastQuery : undefined
                                             }
+                                            onExecuteNoLimit={() => handleExecute(true)}
+                                            connectionId={selectedConnectionId}
+                                            selectedSchema={selectedSchema}
                                         />
                                     </Panel>
 
@@ -1133,11 +1194,35 @@ export function QueryPage() {
                                             explainLoading={explainMutation.isPending}
                                             result={result}
                                             error={error}
+                                            tables={tables}
+                                            columns={tableSchema?.columns.map((col) => ({
+                                                name: col.name,
+                                                dataType: col.dataType,
+                                                nullable: col.nullable,
+                                                tableName: tableSchema.name,
+                                            }))}
+                                            foreignKeys={tableSchema?.foreignKeys.flatMap((fk) => {
+                                                const cols = Array.isArray(fk.columns)
+                                                    ? fk.columns
+                                                    : [];
+                                                const refCols = Array.isArray(fk.referencedColumns)
+                                                    ? fk.referencedColumns
+                                                    : [];
+                                                return cols.map((col, i) => ({
+                                                    sourceTable: tableSchema.name,
+                                                    sourceColumn: col,
+                                                    targetTable: fk.referencedTable,
+                                                    targetSchema: fk.referencedSchema,
+                                                    targetColumn: refCols[i] || refCols[0] || col,
+                                                }));
+                                            })}
+                                            connectionId={selectedConnectionId}
                                         />
                                     </Panel>
                                 </Group>
                             ) : (
                                 <QueryPageTabs
+                                    key={`tabs-${selectedConnectionId}-${selectedTable?.name}`}
                                     activeTab={activeTab}
                                     onTabChange={handleTabChange}
                                     result={result}
@@ -1174,6 +1259,9 @@ export function QueryPage() {
                                     splitViewOpen={splitViewOpen}
                                     onToggleSplitView={() => setSplitViewOpen(!splitViewOpen)}
                                     onRefresh={lastSuccessfulQuery ? rerunLastQuery : undefined}
+                                    onExecuteNoLimit={() => handleExecute(true)}
+                                    connectionId={selectedConnectionId}
+                                    selectedSchema={selectedSchema}
                                 />
                             )}
                         </>

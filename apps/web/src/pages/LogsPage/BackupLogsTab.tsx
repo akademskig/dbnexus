@@ -153,10 +153,16 @@ export function BackupLogsTab() {
             valueGetter: (_value, row) => getOperationLabel(row.operation),
             renderCell: (params: GridRenderCellParams<BackupLog>) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ color: getOperationColor(params.row.operation) }}>
+                    <Box
+                        sx={{
+                            color: getOperationColor(params.row.operation),
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
                         {getOperationIcon(params.row.operation)}
                     </Box>
-                    <Typography variant="body2" sx={{ fontSize: 12 }}>
+                    <Typography variant="body2" sx={{ fontSize: 12, lineHeight: 1 }}>
                         {params.value}
                     </Typography>
                 </Box>
@@ -400,6 +406,8 @@ export function BackupLogsTab() {
                     filterModel={filterModel}
                     onFilterModelChange={setFilterModel}
                     loading={isLoading}
+                    rowHeight={40}
+                    columnHeaderHeight={40}
                     pageSizeOptions={[25, 50, 100]}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 25 } },
@@ -413,7 +421,6 @@ export function BackupLogsTab() {
                             fontSize: 12,
                             display: 'flex',
                             alignItems: 'center',
-                            borderBottom: '1px solid',
                             borderColor: 'divider',
                         },
                         '& .MuiDataGrid-row': {
@@ -422,7 +429,7 @@ export function BackupLogsTab() {
                             },
                         },
                         '& .MuiDataGrid-columnHeaders': {
-                            borderBottom: '1px solid',
+                            fontSize: 12,
                             borderColor: 'divider',
                         },
                     }}

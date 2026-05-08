@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -7,6 +7,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { createAppTheme } from './theme';
 import { useThemeModeStore } from './stores/themeModeStore';
 import { useColorSchemeStore } from './stores/colorSchemeStore';
+import { useAuthStore } from './stores/authStore';
 import { ToastProvider } from './components/ToastProvider';
 import App from './App';
 import './index.css';
@@ -21,8 +22,15 @@ const queryClient = new QueryClient({
 });
 
 function ThemedApp() {
-    const mode = useThemeModeStore((state) => state.mode);
+    const user = useAuthStore((state) => state.user);
+    const { getMode, setCurrentUser } = useThemeModeStore();
     const colorScheme = useColorSchemeStore((state) => state.colorScheme);
+
+    useEffect(() => {
+        setCurrentUser(user?.id ?? null);
+    }, [user?.id, setCurrentUser]);
+
+    const mode = getMode();
     const theme = createAppTheme(mode, colorScheme);
 
     return (

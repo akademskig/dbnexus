@@ -3,11 +3,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConnectionsController } from './connections.controller.js';
 import { ConnectionsService } from './connections.service.js';
 import type { ConnectionConfig, ConnectionTestResult } from '@dbnexus/shared';
+import type { User } from '@dbnexus/metadata';
 
 describe('ConnectionsController', () => {
     let controller: ConnectionsController;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mockConnectionsService: any;
+
+    const mockUser: User = {
+        id: 'user-123',
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'admin',
+        passwordHash: 'hash',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
 
     const mockConnection: ConnectionConfig = {
         id: 'test-id-123',
@@ -36,6 +47,7 @@ describe('ConnectionsController', () => {
             testSettings: jest.fn(),
             getConnector: jest.fn(),
             disconnect: jest.fn(),
+            canAccess: jest.fn().mockReturnValue(true),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -60,7 +72,7 @@ describe('ConnectionsController', () => {
             const connections = [mockConnection];
             mockConnectionsService.findAll.mockReturnValue(connections);
 
-            const result = controller.findAll();
+            const result = controller.findAll(mockUser);
 
             expect(result).toEqual(connections);
             expect(mockConnectionsService.findAll).toHaveBeenCalled();
@@ -69,7 +81,7 @@ describe('ConnectionsController', () => {
         it('should return empty array when no connections', () => {
             mockConnectionsService.findAll.mockReturnValue([]);
 
-            const result = controller.findAll();
+            const result = controller.findAll(mockUser);
 
             expect(result).toEqual([]);
         });
@@ -79,7 +91,7 @@ describe('ConnectionsController', () => {
         it('should return a connection by id', () => {
             mockConnectionsService.findById.mockReturnValue(mockConnection);
 
-            const result = controller.findById('test-id-123');
+            const result = controller.findById('test-id-123', mockUser);
 
             expect(result).toEqual(mockConnection);
             expect(mockConnectionsService.findById).toHaveBeenCalledWith('test-id-123');
@@ -102,10 +114,10 @@ describe('ConnectionsController', () => {
             };
             mockConnectionsService.create.mockResolvedValue(mockConnection);
 
-            const result = await controller.create(input);
+            const result = await controller.create(input, mockUser);
 
             expect(result).toEqual(mockConnection);
-            expect(mockConnectionsService.create).toHaveBeenCalledWith(input);
+            expect(mockConnectionsService.create).toHaveBeenCalledWith(input, mockUser.id);
         });
     });
 
@@ -115,7 +127,7 @@ describe('ConnectionsController', () => {
             const updatedConnection = { ...mockConnection, name: 'Updated Name' };
             mockConnectionsService.update.mockResolvedValue(updatedConnection);
 
-            const result = await controller.update('test-id-123', input);
+            const result = await controller.update('test-id-123', input, mockUser);
 
             expect(result).toEqual(updatedConnection);
             expect(mockConnectionsService.update).toHaveBeenCalledWith('test-id-123', input);
@@ -126,7 +138,7 @@ describe('ConnectionsController', () => {
         it('should delete a connection', async () => {
             mockConnectionsService.delete.mockResolvedValue(undefined);
 
-            const result = await controller.delete('test-id-123');
+            const result = await controller.delete('test-id-123', mockUser);
 
             expect(result).toEqual({ success: true });
             expect(mockConnectionsService.delete).toHaveBeenCalledWith('test-id-123');
@@ -143,7 +155,7 @@ describe('ConnectionsController', () => {
             };
             mockConnectionsService.test.mockResolvedValue(testResult);
 
-            const result = await controller.test('test-id-123');
+            const result = await controller.test('test-id-123', mockUser);
 
             expect(result).toEqual(testResult);
             expect(mockConnectionsService.test).toHaveBeenCalledWith('test-id-123');
@@ -156,7 +168,7 @@ describe('ConnectionsController', () => {
             };
             mockConnectionsService.test.mockResolvedValue(testResult);
 
-            const result = await controller.test('test-id-123');
+            const result = await controller.test('test-id-123', mockUser);
 
             expect(result.success).toBe(false);
         });
@@ -194,7 +206,7 @@ describe('ConnectionsController', () => {
         it('should connect to a database', async () => {
             mockConnectionsService.getConnector.mockResolvedValue({});
 
-            const result = await controller.connect('test-id-123');
+            const result = await controller.connect('test-id-123', mockUser);
 
             expect(result).toEqual({ success: true });
             expect(mockConnectionsService.getConnector).toHaveBeenCalledWith('test-id-123');
@@ -205,7 +217,7 @@ describe('ConnectionsController', () => {
         it('should disconnect from a database', async () => {
             mockConnectionsService.disconnect.mockResolvedValue(undefined);
 
-            const result = await controller.disconnect('test-id-123');
+            const result = await controller.disconnect('test-id-123', mockUser);
 
             expect(result).toEqual({ success: true });
             expect(mockConnectionsService.disconnect).toHaveBeenCalledWith('test-id-123');
@@ -216,7 +228,7 @@ describe('ConnectionsController', () => {
         it('should return connected status when connection is active', async () => {
             mockConnectionsService.test.mockResolvedValue({ success: true });
 
-            const result = await controller.getStatus('test-id-123');
+            const result = await controller.getStatus('test-id-123', mockUser);
 
             expect(result).toEqual({ connected: true });
         });
@@ -224,7 +236,7 @@ describe('ConnectionsController', () => {
         it('should return disconnected status when connection is inactive', async () => {
             mockConnectionsService.test.mockResolvedValue({ success: false });
 
-            const result = await controller.getStatus('test-id-123');
+            const result = await controller.getStatus('test-id-123', mockUser);
 
             expect(result).toEqual({ connected: false });
         });

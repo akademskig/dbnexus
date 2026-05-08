@@ -5,6 +5,149 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-03-06
+
+### Fixed
+
+- **Sidebar Selection**: Only highlight icon (not full row) when selecting database in navigation
+
+### Added
+
+- **Data Import**: Import CSV and JSON files directly into database tables
+    - Drag-and-drop file upload with format auto-detection
+    - Column mapping with auto-match by name and manual override
+    - Preview data before importing with row count display
+    - Support for both CSV (with configurable delimiter) and JSON formats
+
+## [0.5.2] - 2026-03-05
+
+### Fixed
+
+- **Query Templates**: Fixed backdrop persistence when selecting query template with favorite table selected
+
+## [0.5.1] - 2026-03-05
+
+### Added
+
+- **Keyboard Shortcuts Overlay**: Press `?` anywhere to view all available keyboard shortcuts
+- **Query Tab Improvements**: Browser-style tabs with table name display
+    - Tab shows selected table name with full schema.table tooltip
+    - Fixed-width tabs with separators between them
+    - Add tab button positioned next to tabs
+
+### Changed
+
+- **Navigation Shortcuts**: Updated Ctrl+1 through Ctrl+6 for main pages (removed Projects)
+
+### Fixed
+
+- **Connection Display**: Fixed connection string not showing in header when navigating to Query page via keyboard shortcut
+
+## [0.5.0] - 2026-03-04
+
+### Added
+
+- **Password Verification for Server Credentials**: Added security check before viewing sensitive server passwords
+    - Users must enter their own password to verify identity before server credentials are revealed
+    - Improves security for sensitive database credentials
+- **Per-Table Schema Migration**: Apply schema migrations for individual tables instead of all at once
+    - Copy individual SQL statements to clipboard
+    - Apply migration per-table with dedicated action buttons
+    - Maintains "Apply All" option for bulk migration
+- **Database Row Actions in Projects Section**: Edit and Delete options now available on database rows
+    - Quick access to edit database connection settings
+    - Remove databases directly from the Projects & Groups section on Dashboard
+- **Navigation Improvements for Collapsed Sidebar**
+    - Management icons (settings) on server and database items in collapsed menu popups
+    - Quick access to management pages without expanding the sidebar
+
+### Changed
+
+- **Group Sync & Compare Pages**: Visual refresh with improved layout and styling
+    - Better organized schema diff display with copy/apply actions per table
+    - Enhanced data diff display with improved table scrolling
+- **Logs Page Tables**: More compact row height for better data density
+- **Database Form**: Reordered checkboxes with SSL option above Read-only mode
+- **Navigation Panel**: Smooth rotation animation on expand/collapse carets
+
+### Fixed
+
+- **Scanned Connections**: Password is now optional when adding connections from network scan
+- **Connection Form**: Proper support for isPublic field when updating connections
+
+## [0.4.1] - 2026-03-02
+
+### Changed
+
+- **Documentation**: Updated feature screenshots and documentation
+    - New Settings & System Tools documentation with screenshot
+    - Added data comparison feature to Compare & Sync documentation
+    - Refreshed all feature screenshots with latest UI
+
+### Fixed
+
+- **Scan Dialog**: Improved checkbox alignment for better visual consistency
+- **NPM Package**: Fixed ESM compatibility issue when running globally installed package
+
+## [0.3.1] - 2026-01-23
+
+### Added
+
+- **Server Startup/Shutdown Commands**: Control database servers directly from the UI
+    - Configure start and stop commands for each server (Docker, local, or custom scripts)
+    - Execute commands with confirmation dialog showing the command to be run
+    - Audit logging for server start/stop operations
+- **CLI Configuration File**: Declarative server and database configuration via YAML
+    - Generate `dbnexus.config.yaml` template with `dbnexus init`
+    - Import servers and databases from config file on subsequent runs
+    - Export current configuration with `dbnexus config export`
+    - Support for environment variable placeholders for passwords (`${POSTGRES_PASSWORD}`)
+    - Automatic `.env` file loading for sensitive credentials
+- **PostgreSQL 15+ Schema Permissions**: Auto-grant CREATE on public schema
+    - New checkbox in Create Database dialog for granting schema access
+    - Automatically grants USAGE, CREATE on public schema to new users
+    - Sets default privileges for tables and sequences
+    - Fixes "permission denied for schema public" error on PostgreSQL 15+
+
+### Fixed
+
+- **Row Sync Validation**: Fixed validation error when syncing rows between databases
+
+## [0.3.0] - 2026-01-23
+
+### Added
+
+- **Server Management**: New feature to manage database servers separately from individual connections
+    - Add and configure PostgreSQL and MySQL servers with admin credentials
+    - Server Management page with connection details, server info, and database operations
+    - View server version, uptime, and active connections
+    - Test server connectivity directly from the UI
+- **Database Operations**: Create and drop databases directly on servers
+    - Create new databases with custom names on any managed server
+    - Import existing server databases as tracked connections
+    - Drop databases with confirmation dialog (supports both tracked and untracked)
+    - View all databases on a server with size, owner, and tracking status
+- **Server Navigation**: Quick access to servers from the sidebar
+    - Expandable servers list in navigation panel (similar to databases)
+    - Direct navigation to Server Management page for any server
+    - Collapsed view with popup menu for compact layouts
+- **Servers Page**: Dedicated page to view and manage all configured servers
+    - Server cards showing engine, host, port, and database count
+    - Quick actions for testing connection and managing server
+- **Persistent Settings**: User preferences now stored in database instead of browser localStorage
+    - Tags persist across browsers and devices
+    - Extensible settings system for future preferences
+    - Settings API with REST endpoints
+
+### Changed
+
+- **Connection Cards**: Now display full width for better readability across all pages
+- **CI/CD Pipeline**: Publish workflow now triggers automatically on version change in master branch
+
+### Fixed
+
+- **Backup Deletion**: Fixed error when deleting backups that were already removed from disk
+
 ## [0.2.0] - 2026-01-25
 
 ### Added

@@ -2,7 +2,7 @@
  * SQLite schema for DB Nexus metadata
  */
 
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 22;
 
 export const MIGRATIONS: string[] = [
     // Version 1: Initial schema
@@ -364,5 +364,194 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX IF NOT EXISTS idx_backup_logs_created_at ON backup_logs(created_at DESC);
 
   UPDATE schema_version SET version = 15;
+  `,
+
+    // Version 16: Add servers table for grouping connections by database server
+    `
+  -- Servers table to store database server credentials
+  CREATE TABLE IF NOT EXISTS servers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    engine TEXT NOT NULL CHECK(engine IN ('postgres', 'mysql', 'mariadb')),
+    connection_type TEXT NOT NULL DEFAULT 'local' CHECK(connection_type IN ('local', 'docker', 'remote')),
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    encrypted_password TEXT,
+    ssl INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Add server_id to connections (nullable - SQLite connections don't have a server)
+  ALTER TABLE connections ADD COLUMN server_id TEXT REFERENCES servers(id) ON DELETE SET NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_connections_server ON connections(server_id);
+  CREATE INDEX IF NOT EXISTS idx_servers_engine ON servers(engine);
+
+  UPDATE schema_version SET version = 16;
+  `,
+
+    // Version 17: Add tags to servers
+    `
+  ALTER TABLE servers ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
+
+  UPDATE schema_version SET version = 17;
+  `,
+
+    // Version 18: Add settings table for user preferences (tags, theme, etc.)
+    `
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Insert default tags
+  INSERT INTO settings (key, value) VALUES (
+    'tags',
+    '[{"id":"production","name":"production","color":"239, 68, 68"},{"id":"staging","name":"staging","color":"245, 158, 11"},{"id":"development","name":"development","color":"16, 185, 129"},{"id":"read-only","name":"read-only","color":"139, 92, 246"}]'
+  );
+
+  UPDATE schema_version SET version = 18;
+  `,
+
+    // Version 19: Add start/stop commands to servers
+    `
+  ALTER TABLE servers ADD COLUMN start_command TEXT;
+  ALTER TABLE servers ADD COLUMN stop_command TEXT;
+
+  UPDATE schema_version SET version = 19;
+  `,
+
+    // Version 20: Add authentication tables (users, api_keys, user_permissions, refresh_tokens)
+    `
+  -- Users table for authentication
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT,
+    role TEXT NOT NULL DEFAULT 'viewer' CHECK(role IN ('admin', 'editor', 'viewer')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- API Keys for CLI/programmatic access
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    last_used_at TEXT,
+    expires_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  -- User permissions for per-database access control
+  CREATE TABLE IF NOT EXISTS user_permissions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    connection_id TEXT NOT NULL,
+    permission TEXT NOT NULL DEFAULT 'read' CHECK(permission IN ('read', 'write', 'admin')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
+    UNIQUE(user_id, connection_id)
+  );
+
+  -- Refresh tokens for JWT authentication
+  CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_permissions_user ON user_permissions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_permissions_connection ON user_permissions(connection_id);
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
+
+  UPDATE schema_version SET version = 20;
+  `,
+
+    // Version 21: Add created_by column to resources for multi-user ownership
+    `
+  -- Add created_by to connections
+  ALTER TABLE connections ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_connections_created_by ON connections(created_by);
+
+  -- Add created_by to servers
+  ALTER TABLE servers ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_servers_created_by ON servers(created_by);
+
+  -- Add created_by to projects
+  ALTER TABLE projects ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects(created_by);
+
+  -- Add created_by to database_groups
+  ALTER TABLE database_groups ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_database_groups_created_by ON database_groups(created_by);
+
+  -- Add created_by to saved_queries
+  ALTER TABLE saved_queries ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_saved_queries_created_by ON saved_queries(created_by);
+
+  -- Add created_by to backups
+  ALTER TABLE backups ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_backups_created_by ON backups(created_by);
+
+  UPDATE schema_version SET version = 21;
+  `,
+
+    // Version 22: Add is_public to resources + rename settings to user_preferences with user_id
+    `
+  -- Create system user for storing system-wide preferences (if not exists)
+  INSERT OR IGNORE INTO users (id, email, password_hash, role, created_at, updated_at)
+  VALUES ('system', 'system@internal', '', 'admin', datetime('now'), datetime('now'));
+
+  -- Ensure settings table exists (even if empty) to avoid errors in migration
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Create user_preferences table (replaces settings)
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, key)
+  );
+
+  -- Migrate existing settings as system defaults (user_id = 'system')
+  INSERT OR IGNORE INTO user_preferences (id, user_id, key, value, updated_at)
+  SELECT hex(randomblob(16)), 'system', key, value, updated_at FROM settings;
+
+  -- Drop old settings table
+  DROP TABLE IF EXISTS settings;
+
+  -- Create index for user preferences
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_preferences_key ON user_preferences(user_id, key);
+
+  -- Add is_public to resources (default 0 = private, only owner can see)
+  ALTER TABLE connections ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE servers ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE projects ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE database_groups ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE saved_queries ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;
+
+  UPDATE schema_version SET version = 22;
   `,
 ];

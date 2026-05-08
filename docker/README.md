@@ -26,7 +26,6 @@ docker compose down -v
 | postgres-secondary | PostgreSQL 16 | 5433 | admin    | admin123 | testdb   |
 | postgres-14        | PostgreSQL 14 | 5434 | admin    | admin123 | testdb   |
 | mysql              | MySQL 8.0     | 3306 | admin    | admin123 | testdb   |
-| mariadb            | MariaDB 11    | 3307 | admin    | admin123 | testdb   |
 
 ## Schema Diff Testing
 
@@ -96,12 +95,6 @@ postgresql://admin:admin123@localhost:5433/testdb
 mysql://admin:admin123@localhost:3306/testdb
 ```
 
-### MariaDB
-
-```
-mysql://admin:admin123@localhost:3307/testdb
-```
-
 ## Schemas
 
 ### PostgreSQL
@@ -110,10 +103,6 @@ Both PostgreSQL instances have two schemas:
 
 - `app` - Main application tables (users, products, orders, etc.)
 - `analytics` - Analytics and tracking tables
-
-### MySQL/MariaDB
-
-MySQL uses a single database (`testdb`) with all tables in the default schema.
 
 ## Resetting Data
 

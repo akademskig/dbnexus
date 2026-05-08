@@ -30,10 +30,19 @@ interface ConnectionRow {
     read_only: number;
     created_at: string;
     updated_at: string;
+    server_id: string | null;
     project_id: string | null;
     group_id: string | null;
+    created_by: string | null;
+    is_public: number;
+    server_name?: string;
     project_name?: string;
     group_name?: string;
+}
+
+export interface UserContext {
+    userId: string | null;
+    isAdmin: boolean;
 }
 
 export class ConnectionRepository {
@@ -56,7 +65,7 @@ export class ConnectionRepository {
     /**
      * Create a new connection with password
      */
-    create(input: ConnectionCreateInput): ConnectionConfig {
+    create(input: ConnectionCreateInput, userId?: string): ConnectionConfig {
         const id = MetadataDatabase.generateId();
         const now = new Date().toISOString();
         const encryptedPwd = input.password ? encryptPassword(input.password) : null;
@@ -65,8 +74,8 @@ export class ConnectionRepository {
         this.db
             .prepare(
                 `
-      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, project_id, group_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO connections (id, name, engine, connection_type, host, port, database, username, encrypted_password, ssl, default_schema, tags, read_only, server_id, project_id, group_id, is_public, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
             )
             .run(
@@ -83,8 +92,11 @@ export class ConnectionRepository {
                 input.defaultSchema || null,
                 JSON.stringify(input.tags ?? []),
                 input.readOnly ? 1 : 0,
+                input.serverId || null,
                 input.projectId || null,
                 input.groupId || null,
+                input.isPublic ? 1 : 0,
+                userId || null,
                 now,
                 now
             );
@@ -101,9 +113,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.id = ?
@@ -122,9 +136,11 @@ export class ConnectionRepository {
                 `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.name = ?
@@ -135,99 +151,150 @@ export class ConnectionRepository {
     }
 
     /**
-     * Get all connections
+     * Get all connections (filtered by user unless admin)
      */
-    findAll(): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findAll(userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
-            ORDER BY p.name, dg.name, c.name
-        `
-            )
-            .all() as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY p.name, dg.name, c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by project
+     * Find connections by project (filtered by user unless admin)
      */
-    findByProject(projectId: string): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findByProject(projectId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id = ?
-            ORDER BY dg.name, c.name
-        `
-            )
-            .all(projectId) as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [projectId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY dg.name, c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by database group
+     * Find connections by database group (filtered by user unless admin)
      */
-    findByGroup(groupId: string): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findByGroup(groupId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.group_id = ?
-            ORDER BY c.name
-        `
-            )
-            .all(groupId) as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [groupId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find ungrouped connections (no project assigned)
+     * Find ungrouped connections (no project assigned, filtered by user unless admin)
      */
-    findUngrouped(): ConnectionConfig[] {
-        const rows = this.db
-            .prepare(
-                `
+    findUngrouped(userContext?: UserContext): ConnectionConfig[] {
+        let query = `
             SELECT 
                 c.*,
+                s.name as server_name,
                 p.name as project_name,
                 dg.name as group_name
             FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
             LEFT JOIN projects p ON c.project_id = p.id
             LEFT JOIN database_groups dg ON c.group_id = dg.id
             WHERE c.project_id IS NULL
-            ORDER BY c.name
-        `
-            )
-            .all() as ConnectionRow[];
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows.map((row) => this.rowToConnection(row));
     }
 
     /**
-     * Find connections by tag
+     * Find connections by tag (filtered by user unless admin)
      */
-    findByTag(tag: ConnectionTag): ConnectionConfig[] {
-        const rows = this.db
-            .prepare('SELECT * FROM connections ORDER BY name')
-            .all() as ConnectionRow[];
+    findByTag(tag: ConnectionTag, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
+            SELECT 
+                c.*,
+                s.name as server_name,
+                p.name as project_name,
+                dg.name as group_name
+            FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups dg ON c.group_id = dg.id
+        `;
+
+        const params: unknown[] = [];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` WHERE (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
         return rows
             .filter((row) => {
                 const tags = JSON.parse(row.tags) as string[];
@@ -297,6 +364,14 @@ export class ConnectionRepository {
         if (input.connectionType !== undefined) {
             updates.push('connection_type = ?');
             values.push(input.connectionType);
+        }
+        if (input.serverId !== undefined) {
+            updates.push('server_id = ?');
+            values.push(input.serverId);
+        }
+        if (input.isPublic !== undefined) {
+            updates.push('is_public = ?');
+            values.push(input.isPublic ? 1 : 0);
         }
 
         if (updates.length > 0) {
@@ -405,10 +480,76 @@ export class ConnectionRepository {
             readOnly: row.read_only === 1,
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
+            serverId: row.server_id || undefined,
             projectId: row.project_id || undefined,
             groupId: row.group_id || undefined,
+            createdBy: row.created_by || undefined,
+            isPublic: row.is_public === 1,
+            serverName: row.server_name,
             projectName: row.project_name,
             groupName: row.group_name,
         };
+    }
+
+    /**
+     * Check if user can access (view) a connection
+     * Accessible if: owner, admin, not private, or created_by is null (legacy)
+     */
+    canAccess(connectionId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by, is_public FROM connections WHERE id = ?')
+            .get(connectionId) as { created_by: string | null; is_public: number } | undefined;
+
+        if (!row) return false;
+        return (
+            row.created_by === null || row.created_by === userContext.userId || row.is_public === 1
+        );
+    }
+
+    /**
+     * Find connections by server ID (filtered by user unless admin)
+     */
+    findByServerId(serverId: string, userContext?: UserContext): ConnectionConfig[] {
+        let query = `
+            SELECT c.*,
+                s.name as server_name,
+                p.name as project_name,
+                g.name as group_name
+            FROM connections c
+            LEFT JOIN servers s ON c.server_id = s.id
+            LEFT JOIN projects p ON c.project_id = p.id
+            LEFT JOIN database_groups g ON c.group_id = g.id
+            WHERE c.server_id = ?
+        `;
+
+        const params: unknown[] = [serverId];
+
+        if (userContext && !userContext.isAdmin && userContext.userId) {
+            query += ` AND (c.created_by = ? OR c.created_by IS NULL OR c.is_public = 1)`;
+            params.push(userContext.userId);
+        }
+
+        query += ` ORDER BY c.name`;
+
+        const rows = this.db.prepare(query).all(...params) as ConnectionRow[];
+        return rows.map((row) => this.rowToConnection(row));
+    }
+
+    /**
+     * Check if user can modify (update/delete) a connection
+     * Only owner or admin can modify
+     */
+    canModify(connectionId: string, userContext: UserContext): boolean {
+        if (userContext.isAdmin) return true;
+
+        const row = this.db
+            .prepare('SELECT created_by FROM connections WHERE id = ?')
+            .get(connectionId) as { created_by: string | null } | undefined;
+
+        if (!row) return false;
+        // Allow modification if created_by is null (legacy/unowned) or matches user
+        return row.created_by === null || row.created_by === userContext.userId;
     }
 }

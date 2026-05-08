@@ -6,7 +6,9 @@
  * Release helper:
  * - Bumps version (patch/minor/major or explicit semver)
  * - Updates root and apps/cli package.json
- * - Commits and tags by default
+ * - Commits the version bump
+ *
+ * Tags are created automatically by CI after merge to master.
  */
 
 import fs from 'node:fs';
@@ -53,13 +55,14 @@ const bumpVersion = (version, bump) => {
 const usage = () => {
     console.log(`
 Usage:
-  node scripts/release.js <patch|minor|major|version> [--no-commit] [--no-tag]
+  node scripts/release.js <patch|minor|major|version> [--no-commit]
 
 Examples:
   node scripts/release.js patch
   node scripts/release.js minor
   node scripts/release.js 0.2.0
-  node scripts/release.js patch --no-tag
+
+Note: Tags are created automatically by CI after merge to master.
 `);
 };
 
@@ -98,11 +101,8 @@ if (!flags.has('--no-commit')) {
         cwd: rootDir,
         stdio: 'inherit',
     });
-}
-
-if (!flags.has('--no-tag')) {
-    execSync(`git tag -a v${nextVersion} -m "Release v${nextVersion}"`, {
-        cwd: rootDir,
-        stdio: 'inherit',
-    });
+    console.log('\nNext steps:');
+    console.log('  1. Push to your branch: git push');
+    console.log('  2. Merge PR to master');
+    console.log('  3. CI will automatically publish and create the tag');
 }

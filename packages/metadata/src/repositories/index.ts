@@ -1,4 +1,5 @@
 export { ConnectionRepository } from './connection.repository.js';
+export type { UserContext } from './connection.repository.js';
 export { QueryLogsRepository } from './query.repository.js';
 export { MigrationLogsRepository } from './migration-logs.repository.js';
 export { ProjectRepository } from './project.repository.js';
@@ -35,3 +36,15 @@ export type {
     BackupLogOperation,
     BackupLogStatus,
 } from './backup-logs.repository.js';
+export { ServerRepository } from './server.repository.js';
+export type { ServerConfig, ServerCreateInput, ServerUpdateInput } from './server.repository.js';
+export { UserPreferencesRepository } from './user-preferences.repository.js';
+export type { Tag, UserPreference } from './user-preferences.repository.js';
+export { UserRepository } from './user.repository.js';
+export type {
+    User,
+    CreateUserInput,
+    RefreshToken,
+    ApiKey,
+    UserPermission,
+} from './user.repository.js';

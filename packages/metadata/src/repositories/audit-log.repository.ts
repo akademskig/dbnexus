@@ -8,6 +8,13 @@ export type AuditAction =
     | 'connection_created'
     | 'connection_updated'
     | 'connection_deleted'
+    | 'server_created'
+    | 'server_updated'
+    | 'server_deleted'
+    | 'server_started'
+    | 'server_stopped'
+    | 'database_created'
+    | 'database_deleted'
     | 'project_created'
     | 'project_updated'
     | 'project_deleted'
@@ -27,10 +34,18 @@ export type AuditAction =
     | 'column_dropped'
     | 'rows_inserted'
     | 'rows_updated'
-    | 'rows_deleted';
+    | 'rows_deleted'
+    | 'user_registered'
+    | 'user_logged_in'
+    | 'login_failed'
+    | 'password_changed'
+    | 'password_change_failed'
+    | 'api_key_created'
+    | 'api_key_deleted';
 
 export type AuditEntityType =
     | 'connection'
+    | 'server'
     | 'project'
     | 'database_group'
     | 'query'
@@ -40,7 +55,9 @@ export type AuditEntityType =
     | 'schema_snapshot'
     | 'table'
     | 'column'
-    | 'row';
+    | 'row'
+    | 'user'
+    | 'api_key';
 
 export interface AuditLogEntry {
     id: string;

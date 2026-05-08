@@ -1,6 +1,6 @@
 {
     "name": "dbnexus",
-    "version": "0.2.0",
+    "version": "0.5.4",
     "private": false,
     "type": "module",
     "description": "Local-first database management tool with modern web UI, CLI, and production safety guardrails for PostgreSQL, MySQL, and SQLite",
@@ -63,10 +63,13 @@
         "@dbnexus/shared": "workspace:*",
         "chalk": "^5.3.0",
         "commander": "^12.1.0",
+        "dotenv": "^17.2.4",
+        "js-yaml": "^4.1.1",
         "open": "^10.1.0",
         "ora": "^8.1.1"
     },
     "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.19.5",
         "tsx": "^4.21.0",
         "typescript": "^5.3.3",

@@ -7,7 +7,7 @@ import { execSync } from 'child_process';
 
 export interface DiscoveredConnection {
     name: string;
-    engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    engine: 'postgres' | 'mysql' | 'sqlite';
     host?: string;
     port?: number;
     database?: string;
@@ -33,7 +33,7 @@ interface DockerContainer {
     status: string;
 }
 
-const DATABASE_PORTS: Record<number, { engine: 'postgres' | 'mysql' | 'mariadb'; name: string }> = {
+const DATABASE_PORTS: Record<number, { engine: 'postgres' | 'mysql'; name: string }> = {
     // PostgreSQL ports (5432-5437)
     5432: { engine: 'postgres', name: 'PostgreSQL' },
     5433: { engine: 'postgres', name: 'PostgreSQL (alt)' },
@@ -41,13 +41,13 @@ const DATABASE_PORTS: Record<number, { engine: 'postgres' | 'mysql' | 'mariadb';
     5435: { engine: 'postgres', name: 'PostgreSQL (alt)' },
     5436: { engine: 'postgres', name: 'PostgreSQL (alt)' },
     5437: { engine: 'postgres', name: 'PostgreSQL (alt)' },
-    // MySQL/MariaDB ports (3306-3311)
-    3306: { engine: 'mysql', name: 'MySQL/MariaDB' },
-    3307: { engine: 'mysql', name: 'MySQL/MariaDB (alt)' },
-    3308: { engine: 'mysql', name: 'MySQL/MariaDB (alt)' },
-    3309: { engine: 'mysql', name: 'MySQL/MariaDB (alt)' },
-    3310: { engine: 'mysql', name: 'MySQL/MariaDB (alt)' },
-    3311: { engine: 'mysql', name: 'MySQL/MariaDB (alt)' },
+    // MySQL ports (3306-3311)
+    3306: { engine: 'mysql', name: 'MySQL' },
+    3307: { engine: 'mysql', name: 'MySQL (alt)' },
+    3308: { engine: 'mysql', name: 'MySQL (alt)' },
+    3309: { engine: 'mysql', name: 'MySQL (alt)' },
+    3310: { engine: 'mysql', name: 'MySQL (alt)' },
+    3311: { engine: 'mysql', name: 'MySQL (alt)' },
 };
 
 @Injectable()
@@ -181,12 +181,10 @@ export class ScannerService {
                 const lowerImage = container.image.toLowerCase();
                 const lowerName = container.name.toLowerCase();
 
-                let engine: 'postgres' | 'mysql' | 'mariadb' | null = null;
+                let engine: 'postgres' | 'mysql' | null = null;
 
                 if (lowerImage.includes('postgres') || lowerName.includes('postgres')) {
                     engine = 'postgres';
-                } else if (lowerImage.includes('mariadb') || lowerName.includes('mariadb')) {
-                    engine = 'mariadb';
                 } else if (lowerImage.includes('mysql') || lowerName.includes('mysql')) {
                     engine = 'mysql';
                 }
@@ -232,16 +230,11 @@ export class ScannerService {
                         connection.database = envVars['POSTGRES_DB'] || 'postgres';
                         connection.username = envVars['POSTGRES_USER'] || 'postgres';
                         connection.password = envVars['POSTGRES_PASSWORD'];
-                    } else if (engine === 'mysql' || engine === 'mariadb') {
-                        connection.database =
-                            envVars['MYSQL_DATABASE'] || envVars['MARIADB_DATABASE'];
-                        connection.username =
-                            envVars['MYSQL_USER'] || envVars['MARIADB_USER'] || 'root';
+                    } else if (engine === 'mysql') {
+                        connection.database = envVars['MYSQL_DATABASE'];
+                        connection.username = envVars['MYSQL_USER'] || 'root';
                         connection.password =
-                            envVars['MYSQL_PASSWORD'] ||
-                            envVars['MARIADB_PASSWORD'] ||
-                            envVars['MYSQL_ROOT_PASSWORD'] ||
-                            envVars['MARIADB_ROOT_PASSWORD'];
+                            envVars['MYSQL_PASSWORD'] || envVars['MYSQL_ROOT_PASSWORD'];
                     }
 
                     connections.push(connection);
@@ -344,11 +337,9 @@ export class ScannerService {
             const username = env[`${prefix}_USER`] || env[`${prefix}_USERNAME`];
             const password = env[`${prefix}_PASSWORD`] || env[`${prefix}_PASS`];
 
-            let engine: 'postgres' | 'mysql' | 'mariadb' = 'postgres';
+            let engine: 'postgres' | 'mysql' = 'postgres';
             if (prefix.toLowerCase().includes('mysql')) {
                 engine = 'mysql';
-            } else if (prefix.toLowerCase().includes('mariadb')) {
-                engine = 'mariadb';
             }
 
             connections.push({
@@ -375,9 +366,9 @@ export class ScannerService {
         'engine' | 'host' | 'port' | 'database' | 'username' | 'password'
     > | null {
         try {
-            // Handle postgres:// mysql:// mariadb:// etc.
+            // Handle postgres:// mysql:// etc.
             const match = url.match(
-                /^(postgres(?:ql)?|mysql|mariadb):\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:/]+)(?::(\d+))?(?:\/([^?]+))?/i
+                /^(postgres(?:ql)?|mysql):\/\/(?:([^:@]+)(?::([^@]*))?@)?([^:/]+)(?::(\d+))?(?:\/([^?]+))?/i
             );
 
             if (!match) return null;
@@ -386,11 +377,9 @@ export class ScannerService {
 
             if (!protocol || !host) return null;
 
-            let engine: 'postgres' | 'mysql' | 'mariadb' = 'postgres';
+            let engine: 'postgres' | 'mysql' = 'postgres';
             if (protocol.toLowerCase().startsWith('mysql')) {
                 engine = 'mysql';
-            } else if (protocol.toLowerCase().startsWith('mariadb')) {
-                engine = 'mariadb';
             }
 
             return {
@@ -439,11 +428,11 @@ export class ScannerService {
         const connections: DiscoveredConnection[] = [];
 
         // Simple YAML parsing for common patterns
-        // Look for image: postgres, mysql, mariadb
+        // Look for image: postgres, mysql
         const serviceBlocks = content.split(/^ {2}\w+:/m);
 
         for (const block of serviceBlocks) {
-            let engine: 'postgres' | 'mysql' | 'mariadb' | null = null;
+            let engine: 'postgres' | 'mysql' | null = null;
             let port: number | undefined;
             let database: string | undefined;
             let username: string | undefined;
@@ -454,8 +443,6 @@ export class ScannerService {
                 const image = imageMatch[1].toLowerCase();
                 if (image.includes('postgres')) {
                     engine = 'postgres';
-                } else if (image.includes('mariadb')) {
-                    engine = 'mariadb';
                 } else if (image.includes('mysql')) {
                     engine = 'mysql';
                 }

@@ -5,7 +5,7 @@
 // Tags are now dynamic strings (managed in Settings)
 export type ConnectionTag = string;
 
-export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql' | 'mariadb';
+export type DatabaseEngine = 'postgres' | 'sqlite' | 'mysql';
 
 export type ConnectionType = 'local' | 'docker' | 'remote';
 
@@ -19,6 +19,8 @@ export interface Project {
     color?: string;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
 }
 
 export interface ProjectCreateInput {
@@ -31,6 +33,7 @@ export interface ProjectUpdateInput {
     name?: string;
     description?: string;
     color?: string;
+    isPublic?: boolean;
 }
 
 /**
@@ -49,6 +52,8 @@ export interface InstanceGroup {
     syncTargetSchema?: string; // Schema to sync (overrides connection defaultSchema)
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
     // Populated from joins
     projectName?: string;
     sourceConnectionName?: string;
@@ -73,6 +78,7 @@ export interface InstanceGroupUpdateInput {
     syncSchema?: boolean;
     syncData?: boolean;
     syncTargetSchema?: string | null;
+    isPublic?: boolean;
 }
 
 /**
@@ -129,10 +135,15 @@ export interface ConnectionConfig {
     readOnly: boolean;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
+    // Server reference (for PostgreSQL/MySQL - SQLite doesn't use servers)
+    serverId?: string;
     // Organization
     projectId?: string;
     groupId?: string;
     // Populated from joins
+    serverName?: string;
     projectName?: string;
     groupName?: string;
 }
@@ -145,13 +156,15 @@ export interface ConnectionCreateInput {
     port: number;
     database: string;
     username: string;
-    password: string;
+    password?: string;
     ssl?: boolean;
     defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
+    serverId?: string; // Link to a server (for PostgreSQL/MySQL)
     projectId?: string;
     groupId?: string;
+    isPublic?: boolean;
 }
 
 export interface ConnectionUpdateInput {
@@ -166,6 +179,8 @@ export interface ConnectionUpdateInput {
     defaultSchema?: string;
     tags?: ConnectionTag[];
     readOnly?: boolean;
+    isPublic?: boolean;
+    serverId?: string | null; // Link to a server (null to unlink)
     projectId?: string | null;
     groupId?: string | null;
 }
@@ -175,4 +190,56 @@ export interface ConnectionTestResult {
     message: string;
     latencyMs?: number;
     serverVersion?: string;
+}
+
+/**
+ * Server - database server credentials (PostgreSQL, MySQL)
+ * SQLite connections don't use servers (file-based)
+ */
+export interface ServerConfig {
+    id: string;
+    name: string;
+    engine: DatabaseEngine;
+    connectionType: ConnectionType;
+    host: string;
+    port: number;
+    username: string;
+    ssl: boolean;
+    tags: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
+    // Populated from queries
+    databaseCount?: number;
+}
+
+export interface ServerCreateInput {
+    name: string;
+    engine: DatabaseEngine;
+    connectionType?: ConnectionType;
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    ssl?: boolean;
+    tags?: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
+}
+
+export interface ServerUpdateInput {
+    name?: string;
+    connectionType?: ConnectionType;
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    ssl?: boolean;
+    tags?: ConnectionTag[];
+    startCommand?: string;
+    stopCommand?: string;
+    isPublic?: boolean;
 }

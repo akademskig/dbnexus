@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -12,6 +13,12 @@ import { HealthModule } from './health/health.module.js';
 import { ScannerModule } from './scanner/scanner.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { BackupModule } from './backup/backup.module.js';
+import { ImportModule } from './import/import.module.js';
+import { ServersModule } from './servers/servers.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { PreferencesModule } from './preferences/preferences.module.js';
+import { AuthModule, CombinedAuthGuard, RolesGuard } from './auth/index.js';
+import { UsersModule } from './users/users.module.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -27,6 +34,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
               ]
             : []),
         MetadataModule,
+        AuthModule,
         ConnectionsModule,
         QueriesModule,
         SchemaModule,
@@ -36,6 +44,21 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
         ScannerModule,
         AuditModule,
         BackupModule,
+        ImportModule,
+        ServersModule,
+        SettingsModule,
+        PreferencesModule,
+        UsersModule,
+    ],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: CombinedAuthGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: RolesGuard,
+        },
     ],
 })
 export class AppModule {}

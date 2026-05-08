@@ -183,10 +183,10 @@ export function ConnectionManagementPage() {
                 <EmptyState
                     icon={<StorageIcon />}
                     title="No connection selected"
-                    description="Please select a connection from the connections page."
+                    description="Please select a connection from the dashboard."
                     action={{
-                        label: 'Go to Connections',
-                        onClick: () => navigate('/connections'),
+                        label: 'Go to Dashboard',
+                        onClick: () => navigate('/dashboard'),
                     }}
                 />
             </Box>
@@ -234,33 +234,28 @@ export function ConnectionManagementPage() {
             {/* Header */}
             <Box sx={{ mb: 4 }}>
                 {/* Breadcrumbs */}
-                <Breadcrumbs sx={{ mb: 2 }}>
-                    <Link
-                        component="button"
-                        variant="body2"
-                        onClick={() => navigate('/connections')}
-                        sx={{
-                            color: 'text.secondary',
-                            textDecoration: 'none',
-                            '&:hover': { color: 'primary.main' },
-                        }}
-                    >
-                        Connections
-                    </Link>
-                    <Typography variant="body2" color="text.primary">
-                        {loadingConnection ? <Skeleton width={100} /> : connection?.name}
-                    </Typography>
-                </Breadcrumbs>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <IconButton size="small" onClick={() => navigate('/dashboard')}>
+                        <ArrowBackIcon />
+                    </IconButton>
+                    <Breadcrumbs>
+                        <Link
+                            component="button"
+                            variant="body2"
+                            onClick={() => navigate('/dashboard')}
+                            sx={{ cursor: 'pointer' }}
+                            underline="hover"
+                        >
+                            Databases
+                        </Link>
+                        <Typography variant="body2" color="text.primary">
+                            {loadingConnection ? <Skeleton width={100} /> : connection?.name}
+                        </Typography>
+                    </Breadcrumbs>
+                </Box>
 
                 {/* Title row */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton
-                        onClick={() => navigate('/connections')}
-                        sx={{ color: 'text.secondary' }}
-                    >
-                        <ArrowBackIcon />
-                    </IconButton>
-
                     <StorageIcon sx={{ fontSize: 32, color: 'primary.main' }} />
 
                     <Box sx={{ flex: 1 }}>

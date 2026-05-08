@@ -1,6 +1,6 @@
 # DB Nexus
 
-> A **local-first database management tool** with a modern web UI, CLI, and production safety guardrails for PostgreSQL, MySQL, MariaDB, and SQLite.
+> A **local-first database management tool** with a modern web UI, CLI, and production safety guardrails for PostgreSQL, MySQL, and SQLite.
 
 [![npm version](https://img.shields.io/npm/v/dbnexus.svg)](https://www.npmjs.com/package/dbnexus)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
@@ -8,44 +8,53 @@
 
 **[Documentation](https://akademskig.github.io/dbnexus/)** • **[Installation](#-quick-start)** • **[Features](#-features)** • **[CLI Usage](#-cli-usage)**
 
+---
+
+- **Visual Schema Diagrams** - Interactive ER diagrams with drag-and-drop editing
+- **Schema & Data Sync** - Compare and synchronize schemas and data between databases
+- **Data Import/Export** - Import CSV/JSON files with column mapping, export query results
+- **Backup & Restore** - Full database backups with compression and one-click restore
+- **Production Safety** - Blocks dangerous queries (UPDATE/DELETE without WHERE) on production
+- **Foreign Key Navigation** - Click FK values to instantly jump to referenced rows
+- **Auto-Discovery** - Scan for databases via Docker, ports, env files, and SQLite files
+- **Inline Data Editing** - Edit table rows directly in the results grid
+
+---
+
 ## 📸 Screenshots
 
 <div align="center">
 
 ### Query Editor
 
-![Query Page](https://akademskig.github.io/dbnexus/screenshots/querypage.png)
+![Query Page](https://akademskig.github.io/dbnexus/screenshots/query.png)
 
 ### Schema Diagram
 
-![Schema Diagram](https://akademskig.github.io/dbnexus/screenshots/schemadiagrampage.png)
+![Schema Diagram](https://akademskig.github.io/dbnexus/screenshots/schemadiagram.png)
 
 ### Compare & Sync
 
-![Compare Schema](https://akademskig.github.io/dbnexus/screenshots/comparepage-schema.png)
+![Compare Data](https://akademskig.github.io/dbnexus/screenshots/compare-data.png)
 
 <details>
 <summary>📷 More Screenshots</summary>
 
-### Data Comparison
-
-![Compare Data](https://akademskig.github.io/dbnexus/screenshots/comparepage-data.png)
-
-### Projects & Groups
-
-![Projects Page](https://akademskig.github.io/dbnexus/screenshots/projectspage.png)
-
 ### Connection Management
 
-![Connection Management](https://akademskig.github.io/dbnexus/screenshots/connectionmanagement.png)
+![Connection Management](https://akademskig.github.io/dbnexus/screenshots/dbmanagement.png)
 
-### Query Logs
+### Activity Logs
 
-![Logs Page](https://akademskig.github.io/dbnexus/screenshots/logspage-query.png)
+![Logs Page](https://akademskig.github.io/dbnexus/screenshots/logs.png)
 
-### Connection Scanner
+### Database Scanner
 
-![Scan Connections](https://akademskig.github.io/dbnexus/screenshots/scanconnections.png)
+![Scan Databases](https://akademskig.github.io/dbnexus/screenshots/scandbs.png)
+
+### Settings
+
+![Settings](https://akademskig.github.io/dbnexus/screenshots/settings.png)
 
 </details>
 
@@ -59,6 +68,7 @@
 - 🔌 **Multiple Connections** - Manage and switch between multiple database connections
 - 🔒 **Encrypted Credentials** - Passwords stored securely with AES-256-GCM encryption
 - 🛡️ **Safety Guardrails** - Blocks dangerous queries (UPDATE/DELETE without WHERE) on production databases
+- 🔐 **Identity Verification** - Password confirmation required before viewing sensitive server credentials
 
 ### Query & Data
 
@@ -72,11 +82,19 @@
 - 📊 **Schema Browser** - Explore tables, columns, indexes, and relationships
 - 🗺️ **Schema Diagram** - Visual database schema editor with drag-and-drop
 - 🔄 **Schema Sync** - Compare and sync database schemas between connections
+- 🎯 **Per-Table Migration** - Apply schema changes table-by-table with copy/apply actions
 
 ### Data Management
 
 - 📦 **Data Sync** - Sync table data between databases with conflict resolution
 - 🔎 **Connection Scanning** - Auto-discover databases via ports, Docker, env files, and SQLite
+- 💾 **Backup & Restore** - Full database backups with optional compression and restore capability
+
+### Server Management
+
+- 🖧 **Server Configuration** - Manage PostgreSQL and MySQL servers with admin credentials
+- 📊 **Server Monitoring** - View server version, uptime, and active connections
+- 🗄️ **Database Operations** - Create, drop, and import databases directly on servers
 
 ### Organization
 
@@ -127,7 +145,6 @@ dbnexus --help                # Show all options
 
 - PostgreSQL
 - MySQL
-- MariaDB
 - SQLite
 
 ---
@@ -138,7 +155,7 @@ dbnexus --help                # Show all options
 
 - Node.js 18+
 - pnpm
-- PostgreSQL/MySQL/MariaDB (for target databases)
+- PostgreSQL/MySQL (for target databases)
 
 ### Installation
 

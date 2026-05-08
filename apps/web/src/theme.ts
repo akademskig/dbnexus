@@ -32,12 +32,6 @@ export const colorSchemes = {
         primaryDark: '#0284c7',
         primaryRgb: '14, 165, 233',
     },
-    lime: {
-        primary: '#84cc16',
-        primaryLight: '#bef264',
-        primaryDark: '#65a30d',
-        primaryRgb: '132, 204, 22',
-    },
     orange: {
         primary: '#f97316',
         primaryLight: '#fb923c',

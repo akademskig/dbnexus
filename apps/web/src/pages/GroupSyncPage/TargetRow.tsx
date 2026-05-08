@@ -11,10 +11,10 @@ import {
     Tabs,
     Tab,
     CircularProgress,
+    alpha,
 } from '@mui/material';
 import {
     ExpandMore as ExpandIcon,
-    ExpandLess as CollapseIcon,
     Storage as DatabaseIcon,
     Refresh as RefreshIcon,
     Schema as SchemaIcon,
@@ -46,6 +46,7 @@ export function TargetRow({
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState(0); // 0 = Schema, 1 = Data
     const [applying, setApplying] = useState(false);
+    const [applyingTables, setApplyingTables] = useState<string[]>([]);
     const [currentTarget, setCurrentTarget] = useState<InstanceGroupTargetStatus>(target);
     const queryClient = useQueryClient();
     const toast = useToastStore();
@@ -81,15 +82,25 @@ export function TargetRow({
         },
     });
 
-    const handleApplyMigration = async () => {
-        setApplying(true);
+    const handleApplyMigration = async (tables?: string[]) => {
+        const isTableMigration = tables && tables.length > 0;
+        if (isTableMigration) {
+            setApplyingTables((prev) => [...prev, ...tables]);
+        } else {
+            setApplying(true);
+        }
+
         try {
+            const description = isTableMigration
+                ? `Applied for table(s): ${tables.join(', ')}`
+                : 'Applied from Instance Group Sync';
             const result = await schemaApi.applyMigration(
                 sourceConnectionId,
                 target.connectionId,
                 sourceSchema,
                 targetSchema,
-                'Applied from Instance Group Sync'
+                description,
+                tables
             );
             // Check if migration actually succeeded
             if (!result.success) {
@@ -99,14 +110,24 @@ export function TargetRow({
             }
             // Recheck after applying migration
             recheckMutation.mutate();
-            toast.success('Migration applied successfully');
-            // Collapse after successful migration
-            setExpanded(false);
+            toast.success(
+                isTableMigration
+                    ? `Migration applied for ${tables.join(', ')}`
+                    : 'Migration applied successfully'
+            );
+            // Only collapse after full migration, not table-specific
+            if (!isTableMigration) {
+                setExpanded(false);
+            }
         } catch (error) {
             console.error('Failed to apply migration:', error);
             toast.error('Failed to apply migration');
         } finally {
-            setApplying(false);
+            if (isTableMigration) {
+                setApplyingTables((prev) => prev.filter((t) => !tables.includes(t)));
+            } else {
+                setApplying(false);
+            }
         }
     };
 
@@ -125,69 +146,92 @@ export function TargetRow({
     return (
         <>
             <TableRow
-                sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+                sx={{
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                    ...(expanded && {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                    }),
+                }}
                 onClick={() => setExpanded(!expanded)}
             >
-                <TableCell>
-                    <IconButton size="small">
-                        {expanded ? <CollapseIcon /> : <ExpandIcon />}
+                <TableCell sx={{ pl: 1, py: 1 }}>
+                    <IconButton size="small" sx={{ p: 0.5 }}>
+                        <ExpandIcon
+                            sx={{
+                                fontSize: 18,
+                                color: 'text.disabled',
+                                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease',
+                            }}
+                        />
                     </IconButton>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ py: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <DatabaseIcon sx={{ color: 'primary.main' }} />
-                        <Typography fontWeight={500}>{target.connectionName}</Typography>
+                        <DatabaseIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                        <Typography fontSize={13} fontWeight={500}>
+                            {target.connectionName}
+                        </Typography>
                     </Box>
                 </TableCell>
-                <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TableCell sx={{ py: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <StatusIcon status={currentTarget.schemaStatus} />
                         <StatusChip status={currentTarget.schemaStatus} />
                         {currentTarget.schemaDiffCount !== undefined &&
                             currentTarget.schemaDiffCount > 0 && (
-                                <Typography variant="caption" color="text.secondary">
-                                    ({currentTarget.schemaDiffCount} differences)
+                                <Typography variant="caption" color="text.disabled" fontSize={11}>
+                                    ({currentTarget.schemaDiffCount})
                                 </Typography>
                             )}
                     </Box>
                 </TableCell>
-                <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TableCell sx={{ py: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <StatusIcon status={currentTarget.dataStatus} />
                         <StatusChip status={currentTarget.dataStatus} />
                         {currentTarget.dataDiffSummary && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.disabled" fontSize={11}>
                                 {currentTarget.dataDiffSummary}
                             </Typography>
                         )}
                     </Box>
                 </TableCell>
-                <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={
-                                recheckMutation.isPending ? (
-                                    <CircularProgress size={16} />
-                                ) : (
-                                    <RefreshIcon />
-                                )
-                            }
-                            onClick={handleRecheck}
-                            disabled={recheckMutation.isPending}
-                        >
-                            {recheckMutation.isPending ? 'Checking...' : 'Recheck'}
-                        </Button>
-                    </Box>
+                <TableCell sx={{ py: 1 }}>
+                    <Button
+                        size="small"
+                        variant="text"
+                        startIcon={
+                            recheckMutation.isPending ? (
+                                <CircularProgress size={14} />
+                            ) : (
+                                <RefreshIcon sx={{ fontSize: 16 }} />
+                            )
+                        }
+                        onClick={handleRecheck}
+                        disabled={recheckMutation.isPending}
+                        sx={{ fontSize: 12, minWidth: 'auto' }}
+                    >
+                        {recheckMutation.isPending ? 'Checking' : 'Recheck'}
+                    </Button>
                 </TableCell>
             </TableRow>
             <TableRow>
-                <TableCell colSpan={5} sx={{ py: 0, borderBottom: expanded ? undefined : 'none' }}>
+                <TableCell
+                    colSpan={5}
+                    sx={{
+                        py: 0,
+                        borderBottom: expanded ? undefined : 'none',
+                        bgcolor: expanded
+                            ? (theme) => alpha(theme.palette.background.default, 0.5)
+                            : 'transparent',
+                    }}
+                >
                     <Collapse in={expanded}>
-                        <Box sx={{ py: 1 }}>
+                        <Box sx={{ py: 2, px: 1 }}>
                             {currentTarget.error && (
-                                <StatusAlert severity="error" sx={{ mb: 1 }}>
+                                <StatusAlert severity="error" sx={{ mb: 2 }}>
                                     {currentTarget.error}
                                 </StatusAlert>
                             )}
@@ -196,33 +240,39 @@ export function TargetRow({
                             <Tabs
                                 value={activeTab}
                                 onChange={(_, v) => setActiveTab(v)}
-                                sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 48 }}
+                                sx={{
+                                    borderBottom: 1,
+                                    borderColor: 'divider',
+                                    minHeight: 40,
+                                    '& .MuiTab-root': { minHeight: 40, py: 0 },
+                                }}
                             >
                                 <Tab
-                                    icon={<SchemaIcon fontSize="small" />}
+                                    icon={<SchemaIcon sx={{ fontSize: 16 }} />}
                                     iconPosition="start"
                                     label={`Schema ${currentTarget.schemaDiffCount ? `(${currentTarget.schemaDiffCount})` : ''}`}
-                                    sx={{ minHeight: 48 }}
+                                    sx={{ fontSize: 12 }}
                                     disabled={!group.syncSchema}
                                 />
                                 <Tab
-                                    icon={<DataIcon fontSize="small" />}
+                                    icon={<DataIcon sx={{ fontSize: 16 }} />}
                                     iconPosition="start"
                                     label={`Data ${dataDiff.length > 0 ? `(${dataDiff.filter((d) => d.sourceCount !== d.targetCount || d.missingInTarget > 0).length} tables)` : ''}`}
-                                    sx={{ minHeight: 48 }}
+                                    sx={{ fontSize: 12 }}
                                     disabled={!group.syncData}
                                 />
                             </Tabs>
 
                             {/* Schema Tab */}
                             {activeTab === 0 && group.syncSchema && (
-                                <Box sx={{ pt: 1 }}>
+                                <Box sx={{ pt: 2 }}>
                                     {schemaDiff ? (
                                         <SchemaDiffDisplay
                                             diff={schemaDiff}
                                             migrationSql={migrationSql}
                                             onApplyMigration={handleApplyMigration}
                                             applying={applying}
+                                            applyingTables={applyingTables}
                                         />
                                     ) : currentTarget.schemaStatus === 'in_sync' ? (
                                         <StatusAlert severity="success">
@@ -238,7 +288,7 @@ export function TargetRow({
 
                             {/* Data Tab with shared DataDiffDisplay */}
                             {activeTab === 1 && group.syncData && (
-                                <Box sx={{ pt: 1 }}>
+                                <Box sx={{ pt: 2 }}>
                                     {dataDiff.length > 0 ? (
                                         <DataDiffDisplay
                                             sourceConnectionId={sourceConnectionId}
@@ -249,11 +299,11 @@ export function TargetRow({
                                             onSyncComplete={handleDataSyncComplete}
                                         />
                                     ) : currentTarget.dataStatus === 'in_sync' ? (
-                                        <StatusAlert severity="success" sx={{ mt: 1 }}>
+                                        <StatusAlert severity="success">
                                             All tables are in sync
                                         </StatusAlert>
                                     ) : (
-                                        <StatusAlert severity="info" sx={{ mt: 1 }}>
+                                        <StatusAlert severity="info">
                                             Click &quot;Recheck&quot; to load data diff
                                         </StatusAlert>
                                     )}

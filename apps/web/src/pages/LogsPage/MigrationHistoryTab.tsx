@@ -436,6 +436,8 @@ export function MigrationHistoryTab() {
                     rows={filteredMigrations}
                     columns={columns}
                     loading={isLoading}
+                    rowHeight={40}
+                    columnHeaderHeight={40}
                     pageSizeOptions={[25, 50, 100]}
                     initialState={{
                         pagination: { paginationModel: { pageSize: 25 } },
@@ -451,6 +453,9 @@ export function MigrationHistoryTab() {
                             display: 'flex',
                             alignItems: 'center',
                             borderColor: 'divider',
+                        },
+                        '& .MuiDataGrid-columnHeaders': {
+                            fontSize: 12,
                         },
                         '& .MuiDataGrid-row': {
                             '&:hover': {

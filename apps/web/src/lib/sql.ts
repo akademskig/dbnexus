@@ -1,7 +1,7 @@
 import type { DatabaseEngine } from '@dbnexus/shared';
 
 export const quoteIdentifier = (name: string, engine?: DatabaseEngine) => {
-    if (engine === 'mysql' || engine === 'mariadb') {
+    if (engine === 'mysql') {
         return `\`${name}\``;
     }
     return `"${name}"`;

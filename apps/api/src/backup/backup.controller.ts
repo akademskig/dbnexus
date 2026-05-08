@@ -14,11 +14,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import type { BackupType } from '@dbnexus/shared';
 import { BackupService } from './backup.service.js';
 import { RestoreService } from './restore.service.js';
 import { BackupToolsSetup } from './setup-tools.js';
 import { MetadataService } from '../metadata/metadata.service.js';
+import { CreateBackupDto, RestoreBackupDto } from './dto/index.js';
 
 @Controller('backups')
 export class BackupController {
@@ -29,14 +29,7 @@ export class BackupController {
     ) {}
 
     @Post()
-    async createBackup(
-        @Body()
-        body: {
-            connectionId: string;
-            backupType?: BackupType;
-            compression?: boolean;
-        }
-    ) {
+    async createBackup(@Body() body: CreateBackupDto) {
         return this.backupService.createBackup(body);
     }
 
@@ -100,15 +93,11 @@ export class BackupController {
 
     @Post(':id/restore')
     @HttpCode(HttpStatus.OK)
-    async restoreBackup(
-        @Param('id') id: string,
-        @Body('connectionId') connectionId: string,
-        @Body('method') method?: 'native' | 'sql'
-    ) {
+    async restoreBackup(@Param('id') id: string, @Body() body: RestoreBackupDto) {
         return this.restoreService.restoreBackup({
-            connectionId,
+            connectionId: body.connectionId,
             backupId: id,
-            method,
+            method: body.method,
         });
     }
 

@@ -8,6 +8,7 @@ export interface QueryResult {
     rowCount: number;
     executionTimeMs: number;
     truncated: boolean;
+    limitApplied?: number;
 }
 
 export interface QueryColumn {
@@ -23,6 +24,8 @@ export interface SavedQuery {
     folderId?: string;
     createdAt: Date;
     updatedAt: Date;
+    createdBy?: string; // User ID who created this resource
+    isPublic?: boolean; // If true, visible to all users (default: false = private)
 }
 
 export interface QueryFolder {

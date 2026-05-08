@@ -7,6 +7,9 @@ import type {
     ConnectionCreateInput,
     ConnectionUpdateInput,
     ConnectionTestResult,
+    ServerConfig,
+    ServerCreateInput,
+    ServerUpdateInput,
     QueryResult,
     QueryValidationResult,
     SavedQuery,
@@ -25,22 +28,40 @@ import type {
     InstanceGroupSyncStatus,
     InstanceGroupTargetStatus,
     BackupType,
+    DatabaseEngine,
 } from '@dbnexus/shared';
+
+import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = '/api';
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const token = await useAuthStore.getState().getValidToken();
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string>),
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers,
-        },
+        headers,
     });
+
+    if (response.status === 401) {
+        const authEnabled = useAuthStore.getState().authEnabled;
+        if (authEnabled) {
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+        }
+    }
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        // If the error has requiresConfirmation, serialize the whole object so it can be parsed
         if (error.requiresConfirmation) {
             throw new Error(JSON.stringify(error));
         }
@@ -96,15 +117,124 @@ export const connectionsApi = {
         }),
 
     getStatus: (id: string) => fetchApi<{ connected: boolean }>(`/connections/${id}/status`),
+
+    getPassword: (id: string) =>
+        fetchApi<{ password: string | null }>(`/connections/${id}/password`),
+};
+
+// ============ Servers ============
+
+export const serversApi = {
+    getAll: (engine?: DatabaseEngine) => {
+        const params = engine ? `?engine=${engine}` : '';
+        return fetchApi<ServerConfig[]>(`/servers${params}`);
+    },
+
+    getById: (id: string) => fetchApi<ServerConfig>(`/servers/${id}`),
+
+    getDatabases: (id: string) => fetchApi<ConnectionConfig[]>(`/servers/${id}/databases`),
+
+    create: (input: ServerCreateInput) =>
+        fetchApi<ServerConfig>('/servers', {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    update: (id: string, input: ServerUpdateInput) =>
+        fetchApi<ServerConfig>(`/servers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(input),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message?: string }>(`/servers/${id}`, {
+            method: 'DELETE',
+        }),
+
+    test: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/test`, {
+            method: 'POST',
+        }),
+
+    getPassword: (id: string) => fetchApi<{ password: string | null }>(`/servers/${id}/password`),
+
+    createDatabase: (
+        id: string,
+        input: {
+            databaseName: string;
+            username?: string;
+            password?: string;
+            grantSchemaAccess?: boolean;
+        }
+    ) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/create-database`, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        }),
+
+    listDatabases: (id: string) =>
+        fetchApi<{
+            success: boolean;
+            databases?: Array<{
+                name: string;
+                size: string;
+                owner?: string;
+                tracked: boolean;
+                connectionId?: string;
+            }>;
+            message?: string;
+        }>(`/servers/${id}/list-databases`),
+
+    getInfo: (id: string) =>
+        fetchApi<{
+            success: boolean;
+            info?: {
+                version: string;
+                uptime: string;
+                activeConnections: number;
+                maxConnections: number;
+                currentDatabase: string;
+            };
+            message?: string;
+        }>(`/servers/${id}/info`),
+
+    dropDatabase: (id: string, dbName: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/servers/${id}/databases/${dbName}`, {
+            method: 'DELETE',
+        }),
+
+    start: (id: string, confirmed?: boolean) =>
+        fetchApi<{
+            success: boolean;
+            message: string;
+            output?: string;
+            requiresConfirmation?: boolean;
+            command?: string;
+            serverName?: string;
+        }>(`/servers/${id}/start${confirmed ? '?confirmed=true' : ''}`, {
+            method: 'POST',
+        }),
+
+    stop: (id: string, confirmed?: boolean) =>
+        fetchApi<{
+            success: boolean;
+            message: string;
+            output?: string;
+            requiresConfirmation?: boolean;
+            command?: string;
+            serverName?: string;
+        }>(`/servers/${id}/stop${confirmed ? '?confirmed=true' : ''}`, {
+            method: 'POST',
+        }),
 };
 
 // ============ Queries ============
 
 export const queriesApi = {
-    execute: (connectionId: string, sql: string, confirmed?: boolean) =>
+    execute: (connectionId: string, sql: string, confirmed?: boolean, noLimit?: boolean) =>
         fetchApi<QueryResult>('/queries/execute', {
             method: 'POST',
-            body: JSON.stringify({ connectionId, sql, confirmed }),
+            body: JSON.stringify({ connectionId, sql, confirmed, noLimit }),
         }),
 
     validate: (connectionId: string, sql: string) =>
@@ -246,7 +376,8 @@ export const schemaApi = {
         targetConnectionId: string,
         sourceSchema?: string,
         targetSchema?: string,
-        description?: string
+        description?: string,
+        tables?: string[]
     ) => {
         const params = new URLSearchParams();
         if (sourceSchema) params.set('sourceSchema', sourceSchema);
@@ -255,7 +386,7 @@ export const schemaApi = {
             `/schema/diff/${sourceConnectionId}/${targetConnectionId}/apply?${params}`,
             {
                 method: 'POST',
-                body: JSON.stringify({ description }),
+                body: JSON.stringify({ description, tables }),
             }
         );
     },
@@ -521,7 +652,7 @@ export interface SyncRun {
 
 export interface DiscoveredConnection {
     name: string;
-    engine: 'postgres' | 'mysql' | 'mariadb' | 'sqlite';
+    engine: 'postgres' | 'mysql' | 'sqlite';
     host?: string;
     port?: number;
     database?: string;
@@ -727,5 +858,210 @@ export const backupsApi = {
 
     getLogById: (id: string): Promise<BackupLog> => {
         return fetchApi(`/backups/logs/${id}`);
+    },
+};
+
+// ============ Settings ============
+
+export interface Tag {
+    id: string;
+    name: string;
+    color: string;
+}
+
+// ============ Users (Admin) ============
+
+export interface UserInfo {
+    id: string;
+    email: string;
+    name: string | null;
+    role: 'admin' | 'editor' | 'viewer';
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const usersApi = {
+    getAll: () => fetchApi<UserInfo[]>('/users'),
+
+    getById: (id: string) => fetchApi<UserInfo>(`/users/${id}`),
+
+    updateRole: (id: string, role: 'admin' | 'editor' | 'viewer') =>
+        fetchApi<UserInfo>(`/users/${id}/role`, {
+            method: 'PATCH',
+            body: JSON.stringify({ role }),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/users/${id}`, {
+            method: 'DELETE',
+        }),
+};
+
+// ============ API Keys ============
+
+export interface ApiKeyInfo {
+    id: string;
+    name: string;
+    key?: string;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+}
+
+export const apiKeysApi = {
+    getAll: () => fetchApi<ApiKeyInfo[]>('/auth/api-keys'),
+
+    create: (name: string, expiresAt?: string) =>
+        fetchApi<ApiKeyInfo>('/auth/api-keys', {
+            method: 'POST',
+            body: JSON.stringify({ name, expiresAt }),
+        }),
+
+    delete: (id: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/auth/api-keys/${id}`, {
+            method: 'DELETE',
+        }),
+};
+
+// ============ Settings ============
+
+export const settingsApi = {
+    getAll: (): Promise<Record<string, unknown>> => {
+        return fetchApi('/settings');
+    },
+
+    get: <T>(key: string): Promise<T> => {
+        return fetchApi(`/settings/${key}`);
+    },
+
+    set: <T>(key: string, value: T): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+        });
+    },
+
+    delete: (key: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/${key}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // Tag-specific endpoints
+    getTags: (): Promise<Tag[]> => {
+        return fetchApi('/settings/tags/all');
+    },
+
+    createTag: (tag: Omit<Tag, 'id'>): Promise<Tag> => {
+        return fetchApi('/settings/tags', {
+            method: 'POST',
+            body: JSON.stringify(tag),
+        });
+    },
+
+    updateTag: (id: string, updates: Partial<Omit<Tag, 'id'>>): Promise<Tag | null> => {
+        return fetchApi(`/settings/tags/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updates),
+        });
+    },
+
+    deleteTag: (id: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/settings/tags/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
+    resetTags: (): Promise<Tag[]> => {
+        return fetchApi('/settings/tags/reset', {
+            method: 'POST',
+        });
+    },
+};
+
+// ============ Data Import ============
+
+export interface ImportPreviewResult {
+    columns: string[];
+    rows: Record<string, unknown>[];
+    totalRows: number;
+    format: 'csv' | 'json';
+}
+
+export interface ImportExecuteResult {
+    inserted: number;
+    updated: number;
+    errors: string[];
+}
+
+export const importApi = {
+    preview: async (
+        file: File,
+        options?: { format?: 'csv' | 'json'; delimiter?: string; hasHeader?: boolean }
+    ): Promise<ImportPreviewResult> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (options?.format) formData.append('format', options.format);
+        if (options?.delimiter) formData.append('delimiter', options.delimiter);
+        if (options?.hasHeader !== undefined)
+            formData.append('hasHeader', String(options.hasHeader));
+
+        const token = await useAuthStore.getState().getValidToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/import/preview`, {
+            method: 'POST',
+            body: formData,
+            headers,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+            throw new Error(error.message || 'Upload failed');
+        }
+
+        return response.json();
+    },
+
+    execute: (data: {
+        connectionId: string;
+        schema: string;
+        table: string;
+        columnMapping: Record<string, string>;
+        rows: Record<string, unknown>[];
+        mode?: 'insert' | 'upsert';
+    }): Promise<ImportExecuteResult> => {
+        return fetchApi('/import/execute', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+};
+
+// ============ User Preferences ============
+
+export const preferencesApi = {
+    getAll: (): Promise<Record<string, unknown>> => {
+        return fetchApi('/preferences');
+    },
+
+    get: <T>(key: string): Promise<{ value: T | null }> => {
+        return fetchApi(`/preferences/${key}`);
+    },
+
+    set: <T>(key: string, value: T): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+        });
+    },
+
+    delete: (key: string): Promise<{ success: boolean }> => {
+        return fetchApi(`/preferences/${key}`, {
+            method: 'DELETE',
+        });
     },
 };

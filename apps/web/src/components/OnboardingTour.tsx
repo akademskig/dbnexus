@@ -84,13 +84,13 @@ export function OnboardingTour({
                 color: theme.palette.primary.main,
             },
             {
-                id: 'projects',
-                title: 'Step 1: Add a Connection',
+                id: 'add-database',
+                title: 'Step 1: Add a Database',
                 description:
-                    'Start by adding your first database connection. Click "Add Connection" or use the scan feature to auto-discover databases.',
-                hint: '💡 Try the "Scan for Connections" button to find running databases',
+                    'Start by adding your first database connection. Use the "+" button in the header or scan to auto-discover running databases.',
+                hint: '💡 The scanner finds databases on common ports, in Docker, and in .env files',
                 icon: <StorageIcon />,
-                route: '/projects',
+                route: '/dashboard',
                 color: theme.palette.primary.main,
                 targetSelector: '[data-tour="add-connection"]',
             },
@@ -98,10 +98,10 @@ export function OnboardingTour({
                 id: 'organize',
                 title: 'Step 2: Organize Connections',
                 description:
-                    'Group related connections into Projects (e.g., "E-commerce App") and Sync Groups (e.g., dev/staging/prod) to keep things organized.',
+                    'Group related connections into Projects and Sync Groups to keep things organized and enable schema/data sync.',
                 hint: '💡 Sync Groups let you compare and sync schemas across environments',
                 icon: <FolderIcon />,
-                route: '/projects',
+                route: '/dashboard',
                 color: theme.palette.secondary.main,
                 targetSelector: '[data-tour="create-project"]',
             },
@@ -184,7 +184,7 @@ export function OnboardingTour({
                         title: 'Almost There! 🚀',
                         description:
                             'Add your first connection to unlock all features: Query Editor, Schema Diagram, Compare & Sync, and more!',
-                        hint: '💡 Click "Add Connection" on the Projects page or use "Scan for Connections" to auto-discover databases',
+                        hint: '💡 Click "Add Database" on the Projects page or use "Scan" to auto-discover databases',
                     };
                 }
                 return step;

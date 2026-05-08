@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -37,6 +37,8 @@ import SyncIcon from '@mui/icons-material/Sync';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { QueryResult, TableSchema, ForeignKeyInfo } from '@dbnexus/shared';
 import { CellValue } from './CellValue';
 import { useToastStore } from '../../stores/toastStore';
@@ -46,6 +48,8 @@ import { EditRowDialog } from './EditRowDialog';
 import { FilterPanel } from './FilterPanel';
 import { ActiveFilters } from './ActiveFilters';
 import { CloseOutlined } from '@mui/icons-material';
+import UploadIcon from '@mui/icons-material/Upload';
+import { ImportDialog } from './ImportDialog';
 
 interface ForeignKeyClickInfo {
     referencedTable: string;
@@ -72,6 +76,7 @@ interface DataTabProps {
     readonly onSearch: (query: string) => void;
     readonly searchQuery: string;
     readonly tableSchema?: TableSchema;
+    readonly hasTableSelected?: boolean;
     readonly onUpdateRow?: (
         oldRow: Record<string, unknown>,
         newRow: Record<string, unknown>
@@ -85,6 +90,10 @@ interface DataTabProps {
     readonly connectionDatabase?: string;
     readonly tableName?: string;
     readonly onRefresh?: () => void;
+    readonly onExecuteNoLimit?: () => void;
+    // For import
+    readonly connectionId?: string;
+    readonly selectedSchema?: string;
 }
 
 export function DataTab({
@@ -106,6 +115,7 @@ export function DataTab({
     onSearch,
     searchQuery,
     tableSchema,
+    hasTableSelected = false,
     onUpdateRow,
     onDeleteRow: _onDeleteRow,
     onDeleteRows: _onDeleteRows,
@@ -115,6 +125,9 @@ export function DataTab({
     connectionDatabase,
     tableName,
     onRefresh,
+    onExecuteNoLimit,
+    connectionId,
+    selectedSchema,
 }: DataTabProps) {
     const theme = useTheme<Theme>();
     const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -122,6 +135,7 @@ export function DataTab({
     const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     // Use external state if provided, otherwise use local state
     const [internalFilterModel, setInternalFilterModel] = useState<GridFilterModel>({ items: [] });
     const filterModel = externalFilterModel || internalFilterModel;
@@ -339,24 +353,29 @@ export function DataTab({
     // Use __rowIndex as internal DataGrid id to avoid conflicts with database 'id' column
     // Calculate global index based on current page and page size for server-side pagination
     // Use string format to ensure uniqueness and avoid conflicts with numeric database ids
-    const rows = result
-        ? result.rows.map((row, rowIndex) => {
-              const globalIndex = paginationModel.page * paginationModel.pageSize + rowIndex;
-              // Transform row data to match column field names (col_name_index format)
-              const transformedRow: Record<string, unknown> = {
-                  __rowIndex: `row_${globalIndex}`,
-                  __originalRow: row, // Keep original row data for operations
-              };
+    const rows = useMemo(
+        () =>
+            result
+                ? result?.rows?.map((row, rowIndex) => {
+                      const globalIndex =
+                          paginationModel.page * paginationModel.pageSize + rowIndex;
+                      // Transform row data to match column field names (col_name_index format)
+                      const transformedRow: Record<string, unknown> = {
+                          __rowIndex: `row_${globalIndex}`,
+                          __originalRow: row, // Keep original row data for operations
+                      };
 
-              // Map each column value to its indexed field name
-              result.columns.forEach((col, colIndex) => {
-                  const fieldName = `${col.name}_${colIndex}`;
-                  transformedRow[fieldName] = row[col.name];
-              });
+                      // Map each column value to its indexed field name
+                      result.columns.forEach((col, colIndex) => {
+                          const fieldName = `${col.name}_${colIndex}`;
+                          transformedRow[fieldName] = row[col.name];
+                      });
 
-              return transformedRow;
-          })
-        : [];
+                      return transformedRow;
+                  })
+                : [],
+        [result, paginationModel]
+    );
     // Get selected rows data
     const getSelectedRows = (): Record<string, unknown>[] => {
         return selectedRowIds
@@ -689,6 +708,22 @@ export function DataTab({
                                         {result.executionTimeMs}ms
                                     </Typography>
                                 </Box>
+                                {result.limitApplied && (
+                                    <Chip
+                                        icon={<WarningAmberIcon />}
+                                        label={`Limited to ${result.limitApplied} rows`}
+                                        size="small"
+                                        color="warning"
+                                        variant="outlined"
+                                        onClick={onExecuteNoLimit}
+                                        sx={{ cursor: onExecuteNoLimit ? 'pointer' : 'default' }}
+                                        title={
+                                            onExecuteNoLimit
+                                                ? 'Click to fetch all rows (may be slow)'
+                                                : undefined
+                                        }
+                                    />
+                                )}
                             </>
                         )}
 
@@ -842,6 +877,15 @@ export function DataTab({
                                 </Menu>
                             </>
                         )}
+
+                        {/* Import button */}
+                        {hasTableSelected && connectionId && selectedSchema && tableName && (
+                            <StyledTooltip title="Import data from CSV or JSON">
+                                <IconButton size="small" onClick={() => setImportDialogOpen(true)}>
+                                    <UploadIcon fontSize="small" />
+                                </IconButton>
+                            </StyledTooltip>
+                        )}
                     </Box>
 
                     {/* Active Filters Display */}
@@ -873,7 +917,7 @@ export function DataTab({
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                         {rows.length > 0 ? (
                             <DataGrid
-                                key={`datagrid-${totalRowCount}`}
+                                key={`datagrid-${tableName}-${totalRowCount}-${connectionHost}-${connectionDatabase}`}
                                 rows={rows}
                                 columns={columns}
                                 getRowId={(row) => row.__rowIndex}
@@ -973,12 +1017,20 @@ export function DataTab({
                     sx={{
                         flex: 1,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'text.secondary',
+                        p: 4,
+                        textAlign: 'center',
                     }}
                 >
-                    <Typography variant="body2">Loading data...</Typography>
+                    <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                    <Typography variant="body2">
+                        {hasTableSelected
+                            ? 'No data to display'
+                            : 'Select a table to view its data or run a query'}
+                    </Typography>
                 </Box>
             )}
 
@@ -990,6 +1042,19 @@ export function DataTab({
                 onClose={handleEditDialogClose}
                 onSave={handleEditDialogSave}
             />
+
+            {/* Import Dialog */}
+            {connectionId && selectedSchema && tableName && (
+                <ImportDialog
+                    open={importDialogOpen}
+                    onClose={() => setImportDialogOpen(false)}
+                    connectionId={connectionId}
+                    schema={selectedSchema}
+                    tableName={tableName}
+                    tableSchema={tableSchema}
+                    onSuccess={onRefresh}
+                />
+            )}
         </Box>
     );
 }

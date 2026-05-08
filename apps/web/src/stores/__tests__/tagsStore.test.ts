@@ -1,10 +1,32 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useTagsStore, TAG_COLORS } from '../tagsStore';
+
+// Mock the API
+vi.mock('../../lib/api', () => ({
+    settingsApi: {
+        getTags: vi.fn(),
+        createTag: vi.fn(),
+        updateTag: vi.fn(),
+        deleteTag: vi.fn(),
+        resetTags: vi.fn(),
+    },
+}));
+
+import { settingsApi } from '../../lib/api';
+
+const mockSettingsApi = settingsApi as {
+    getTags: ReturnType<typeof vi.fn>;
+    createTag: ReturnType<typeof vi.fn>;
+    updateTag: ReturnType<typeof vi.fn>;
+    deleteTag: ReturnType<typeof vi.fn>;
+    resetTags: ReturnType<typeof vi.fn>;
+};
 
 describe('tagsStore', () => {
     beforeEach(() => {
         // Reset store state before each test
-        useTagsStore.setState({ tags: [] });
+        useTagsStore.setState({ tags: [], isLoading: false, error: null });
+        vi.clearAllMocks();
     });
 
     it('should initialize with empty tags after reset', () => {
@@ -12,72 +34,91 @@ describe('tagsStore', () => {
         expect(state.tags).toEqual([]);
     });
 
-    it('should add a new tag', () => {
-        const { addTag } = useTagsStore.getState();
-        addTag({ name: 'Production', color: '239, 68, 68' });
+    it('should fetch tags from API', async () => {
+        const mockTags = [
+            { id: '1', name: 'production', color: '239, 68, 68' },
+            { id: '2', name: 'staging', color: '245, 158, 11' },
+        ];
+        mockSettingsApi.getTags.mockResolvedValue(mockTags);
+
+        await useTagsStore.getState().fetchTags();
+
+        const state = useTagsStore.getState();
+        expect(state.tags).toEqual(mockTags);
+        expect(state.isLoading).toBe(false);
+    });
+
+    it('should add a new tag via API', async () => {
+        const newTag = { id: 'new-id', name: 'Production', color: '239, 68, 68' };
+        mockSettingsApi.createTag.mockResolvedValue(newTag);
+
+        await useTagsStore.getState().addTag({ name: 'Production', color: '239, 68, 68' });
 
         const state = useTagsStore.getState();
         expect(state.tags).toHaveLength(1);
-        expect(state.tags[0].name).toBe('Production');
-        expect(state.tags[0].color).toBe('239, 68, 68');
-        expect(state.tags[0].id).toBeDefined();
+        expect(state.tags[0]).toEqual(newTag);
+        expect(mockSettingsApi.createTag).toHaveBeenCalledWith({
+            name: 'Production',
+            color: '239, 68, 68',
+        });
     });
 
-    it('should update an existing tag', () => {
-        const { addTag, updateTag } = useTagsStore.getState();
-        addTag({ name: 'Test', color: '100, 100, 100' });
+    it('should update an existing tag via API', async () => {
+        // Set initial state
+        useTagsStore.setState({
+            tags: [{ id: 'tag-1', name: 'Test', color: '100, 100, 100' }],
+        });
 
-        const tagId = useTagsStore.getState().tags[0].id;
-        updateTag(tagId, { name: 'Updated', color: '200, 200, 200' });
+        const updatedTag = { id: 'tag-1', name: 'Updated', color: '200, 200, 200' };
+        mockSettingsApi.updateTag.mockResolvedValue(updatedTag);
+
+        await useTagsStore
+            .getState()
+            .updateTag('tag-1', { name: 'Updated', color: '200, 200, 200' });
 
         const state = useTagsStore.getState();
         expect(state.tags[0].name).toBe('Updated');
         expect(state.tags[0].color).toBe('200, 200, 200');
     });
 
-    it('should delete a tag', () => {
-        const { addTag, deleteTag } = useTagsStore.getState();
-        addTag({ name: 'ToDelete', color: '100, 100, 100' });
+    it('should delete a tag via API', async () => {
+        // Set initial state
+        useTagsStore.setState({
+            tags: [{ id: 'tag-1', name: 'ToDelete', color: '100, 100, 100' }],
+        });
 
-        const tagId = useTagsStore.getState().tags[0].id;
-        expect(useTagsStore.getState().tags).toHaveLength(1);
+        mockSettingsApi.deleteTag.mockResolvedValue({ success: true });
 
-        deleteTag(tagId);
-        expect(useTagsStore.getState().tags).toHaveLength(0);
-    });
-
-    it('should handle multiple tags', () => {
-        const { addTag } = useTagsStore.getState();
-        addTag({ name: 'Tag1', color: '100, 0, 0' });
-        addTag({ name: 'Tag2', color: '0, 100, 0' });
-        addTag({ name: 'Tag3', color: '0, 0, 100' });
+        await useTagsStore.getState().deleteTag('tag-1');
 
         const state = useTagsStore.getState();
-        expect(state.tags).toHaveLength(3);
+        expect(state.tags).toHaveLength(0);
     });
 
-    it('should reset tags to default', () => {
-        const { addTag, resetTags } = useTagsStore.getState();
-        addTag({ name: 'Custom', color: '50, 50, 50' });
+    it('should reset tags to defaults via API', async () => {
+        const defaultTags = [
+            { id: 'production', name: 'production', color: '239, 68, 68' },
+            { id: 'staging', name: 'staging', color: '245, 158, 11' },
+            { id: 'development', name: 'development', color: '16, 185, 129' },
+            { id: 'read-only', name: 'read-only', color: '139, 92, 246' },
+        ];
+        mockSettingsApi.resetTags.mockResolvedValue(defaultTags);
 
-        resetTags();
+        await useTagsStore.getState().resetTags();
 
         const state = useTagsStore.getState();
-        // Default tags include production, staging, development, read-only
         expect(state.tags).toHaveLength(4);
         expect(state.tags.some((t) => t.name === 'production')).toBe(true);
     });
 
-    it('should only update specified fields', () => {
-        const { addTag, updateTag } = useTagsStore.getState();
-        addTag({ name: 'Original', color: '100, 100, 100' });
+    it('should handle fetch error', async () => {
+        mockSettingsApi.getTags.mockRejectedValue(new Error('Network error'));
 
-        const tagId = useTagsStore.getState().tags[0].id;
-        updateTag(tagId, { name: 'NewName' }); // Only update name
+        await useTagsStore.getState().fetchTags();
 
         const state = useTagsStore.getState();
-        expect(state.tags[0].name).toBe('NewName');
-        expect(state.tags[0].color).toBe('100, 100, 100'); // Color unchanged
+        expect(state.error).toBe('Network error');
+        expect(state.isLoading).toBe(false);
     });
 });
 
